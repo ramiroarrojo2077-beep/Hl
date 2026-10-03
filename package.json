@@ -1,0 +1,30 @@
+{
+  "name": "hl",
+  "version": "1.0.0",
+  "description": "Busca el precio de fábrica de cualquier producto y lo que debería costar en tu país",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "check": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ramiroarrojo2077-beep/Hl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ramiroarrojo2077-beep/Hl/issues"
+  },
+  "homepage": "https://github.com/ramiroarrojo2077-beep/Hl#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  }
+}

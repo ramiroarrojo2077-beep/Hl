@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Precio de Fábrica</title>
+<style>
+  :root {
+    --fondo: #f6f5f2;
+    --superficie: #ffffff;
+    --texto: #1c1b19;
+    --suave: #6b6862;
+    --borde: #e3e0da;
+    --acento: #1f6f5c;
+    --acento-texto: #ffffff;
+    --bien: #1f7a3a;
+    --mal: #b3261e;
+    --medio: #9a6700;
+    --barra: #cfe5dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #141413;
+      --superficie: #1e1e1c;
+      --texto: #ecebe7;
+      --suave: #a29f98;
+      --borde: #34332f;
+      --acento: #4fb39a;
+      --acento-texto: #0d1f1a;
+      --bien: #5cc27a;
+      --mal: #f08a80;
+      --medio: #e0b44a;
+      --barra: #24453c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.75rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--suave); margin: 0 0 24px; }
+  form {
+    display: grid;
+    grid-template-columns: 1fr 200px auto;
+    gap: 8px;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 8px;
+  }
+  input, select, button {
+    font: inherit;
+    color: inherit;
+    border-radius: 8px;
+    border: 1px solid var(--borde);
+    background: var(--fondo);
+    padding: 10px 12px;
+    min-width: 0;
+  }
+  button {
+    background: var(--acento);
+    color: var(--acento-texto);
+    border-color: var(--acento);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: progress; }
+  @media (max-width: 640px) { form { grid-template-columns: 1fr; } }
+
+  #progreso { margin: 20px 0 0; padding: 0; list-style: none; color: var(--suave); font-size: 0.9rem; }
+  #progreso li { padding: 2px 0; overflow-wrap: anywhere; }
+  #progreso li:last-child::after { content: " ⋯"; animation: parpadeo 1s infinite; }
+  #progreso.listo li:last-child::after { content: ""; }
+  @keyframes parpadeo { 50% { opacity: 0; } }
+  .error { margin-top: 20px; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--mal); color: var(--mal); }
+
+  .tarjeta {
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .cabecera { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+  .cabecera h2 { margin: 0; font-size: 1.3rem; }
+  .insignia { font-size: 0.8rem; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .alta { color: var(--bien); } .media { color: var(--medio); } .baja { color: var(--mal); }
+  .resumen { margin: 8px 0 0; color: var(--suave); }
+
+  .cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  @media (max-width: 640px) { .cifras { grid-template-columns: 1fr; } }
+  .cifra { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; }
+  .cifra .etiqueta { font-size: 0.85rem; color: var(--suave); }
+  .cifra .valor { font-size: 1.25rem; font-weight: 700; margin: 4px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .cifra .nota { font-size: 0.85rem; color: var(--suave); }
+  .veredicto { font-weight: 600; }
+
+  h3 { font-size: 1rem; margin: 0 0 12px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  td { padding: 8px 0; border-bottom: 1px solid var(--borde); vertical-align: top; }
+  td.monto { text-align: right; white-space: nowrap; padding-left: 12px; }
+  td .detalle { display: block; font-size: 0.85rem; color: var(--suave); }
+  tr.total td { font-weight: 700; border-bottom: none; }
+
+  .barra { margin-bottom: 10px; }
+  .barra .fila { display: flex; justify-content: space-between; font-size: 0.9rem; }
+  .barra .pista { height: 8px; border-radius: 4px; background: var(--borde); overflow: hidden; margin-top: 4px; }
+  .barra .relleno { height: 100%; background: var(--acento); }
+
+  .fuentes { margin: 0; padding: 0; list-style: none; }
+  .fuentes li { padding: 8px 0; border-bottom: 1px solid var(--borde); }
+  .fuentes li:last-child { border-bottom: none; }
+  .fuentes a { color: var(--acento); overflow-wrap: anywhere; }
+  .fuentes .dato { display: block; font-size: 0.85rem; color: var(--suave); }
+  .advertencias { margin: 0; padding-left: 20px; color: var(--suave); }
+  .aviso { margin-top: 24px; font-size: 0.8rem; color: var(--suave); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Precio de Fábrica</h1>
+  <p class="sub">Cuánto cuesta fabricarlo y cuánto debería costar en tu país.</p>
+
+  <form id="formulario">
+    <input id="producto" name="producto" placeholder="Ej: auriculares bluetooth, zapatillas running, silla de oficina" maxlength="200" required autofocus>
+    <select id="pais" name="pais" aria-label="País"></select>
+    <button id="boton" type="submit">Buscar</button>
+  </form>
+
+  <ul id="progreso" aria-live="polite"></ul>
+  <div id="error" class="error" hidden></div>
+  <div id="resultado" hidden></div>
+
+  <p class="aviso">Los valores son estimaciones a partir de fuentes públicas (mayoristas, fabricantes, normativa impositiva y tiendas). No incluyen cotizaciones formales ni costos de certificación salvo que se indique.</p>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const PAIS_GUARDADO = "pais";
+  let fuenteEventos = null;
+
+  function crear(tag, props = {}, ...hijos) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "class") el.className = v;
+      else el.setAttribute(k, v);
+    }
+    for (const h of hijos) if (h != null) el.append(h);
+    return el;
+  }
+
+  function dinero(monto, moneda) {
+    try {
+      return new Intl.NumberFormat("es", { style: "currency", currency: moneda, useGrouping: "always", maximumFractionDigits: monto < 100 ? 2 : 0 }).format(monto);
+    } catch {
+      return `${numero(monto)} ${moneda}`;
+    }
+  }
+  function numero(n) {
+    return n.toLocaleString("es", { useGrouping: "always", maximumFractionDigits: 2 });
+  }
+  function rango(r, moneda) {
+    return r.minimo === r.maximo ? dinero(r.minimo, moneda) : `${dinero(r.minimo, moneda)} – ${dinero(r.maximo, moneda)}`;
+  }
+  function urlSegura(url) {
+    try {
+      const u = new URL(url);
+      return u.protocol === "https:" || u.protocol === "http:" ? u.href : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function veredicto(justo, mercado) {
+    if (!mercado) return { texto: "No se encontró el precio local", clase: "" };
+    const medioMercado = (mercado.minimo + mercado.maximo) / 2;
+    if (medioMercado > justo.maximo) {
+      const extra = Math.round((medioMercado / justo.maximo - 1) * 100);
+      return { texto: `Está caro: ~${extra}% sobre lo razonable`, clase: "baja" };
+    }
+    if (medioMercado < justo.minimo) return { texto: "Está barato respecto de lo esperado", clase: "alta" };
+    return { texto: "Precio razonable", clase: "alta" };
+  }
+
+  function mostrar(r) {
+    const p = r.pais;
+    const v = veredicto(p.precio_justo, p.precio_mercado);
+    // El total se recalcula con las filas para que la tabla siempre cierre.
+    const total = p.costo_importado.length ? p.costo_importado.reduce((s, c) => s + c.monto, 0) : p.costo_importado_total;
+
+    const cabecera = crear("div", { class: "tarjeta" },
+      crear("div", { class: "cabecera" },
+        crear("h2", {}, r.producto),
+        crear("span", { class: `insignia ${r.confianza}` }, `Confianza ${r.confianza}`)),
+      crear("p", { class: "resumen" }, r.resumen));
+
+    const cifras = crear("div", { class: "cifras" },
+      crear("div", { class: "cifra" },
+        crear("div", { class: "etiqueta" }, `Precio de fábrica (${r.fabrica.condicion})`),
+        crear("div", { class: "valor" }, rango(r.fabrica.precio_unitario, r.fabrica.moneda)),
+        crear("div", { class: "nota" }, [r.fabrica.unidad, r.fabrica.moq && `mín. ${r.fabrica.moq}`, r.fabrica.origen].filter(Boolean).join(" · "))),
+      crear("div", { class: "cifra" },
+        crear("div", { class: "etiqueta" }, `Debería costar en ${p.nombre}`),
+        crear("div", { class: "valor" }, rango(p.precio_justo, p.moneda)),
+        crear("div", { class: "nota" }, `Importado: ${dinero(total, p.moneda)} + margen ${p.margen_supuesto}`)),
+      crear("div", { class: "cifra" },
+        crear("div", { class: "etiqueta" }, `Se vende hoy en ${p.nombre}`),
+        crear("div", { class: "valor" }, p.precio_mercado ? rango(p.precio_mercado, p.moneda) : "—"),
+        crear("div", { class: `nota veredicto ${v.clase}` }, v.texto)));
+
+    const filas = p.costo_importado.map((c) =>
+      crear("tr", {},
+        crear("td", {}, c.concepto, c.detalle ? crear("span", { class: "detalle" }, c.detalle) : null),
+        crear("td", { class: "monto" }, dinero(c.monto, p.moneda))));
+    filas.push(crear("tr", { class: "total" },
+      crear("td", {}, "Costo puesto en el país"),
+      crear("td", { class: "monto" }, dinero(total, p.moneda))));
+    const costo = crear("div", { class: "tarjeta" },
+      crear("h3", {}, "Cómo se llega al costo real"),
+      crear("table", {}, crear("tbody", {}, ...filas)),
+      crear("p", { class: "resumen" }, `Tipo de cambio: ${numero(p.tipo_cambio)} ${p.moneda} por USD (${p.tipo_cambio_detalle}).`));
+
+    const bloques = [cabecera, cifras, costo];
+
+    if (r.desglose_fabricacion.length) {
+      bloques.push(crear("div", { class: "tarjeta" },
+        crear("h3", {}, "En qué se va el costo de fábrica"),
+        ...r.desglose_fabricacion.map((d) => {
+          const pct = Math.max(0, Math.min(100, d.porcentaje));
+          const relleno = crear("div", { class: "relleno" });
+          relleno.style.width = `${pct}%`;
+          return crear("div", { class: "barra" },
+            crear("div", { class: "fila" }, crear("span", {}, d.concepto), crear("span", {}, `${Math.round(pct)}%`)),
+            crear("div", { class: "pista" }, relleno));
+        })));
+    }
+
+    if (r.fuentes.length) {
+      bloques.push(crear("div", { class: "tarjeta" },
+        crear("h3", {}, "Fuentes"),
+        crear("ul", { class: "fuentes" }, ...r.fuentes.map((f) => {
+          const href = urlSegura(f.url);
+          const titulo = href ? crear("a", { href, target: "_blank", rel: "noopener noreferrer" }, f.titulo || href) : crear("span", {}, f.titulo);
+          return crear("li", {}, titulo, crear("span", { class: "dato" }, `${f.tipo.replace("_", " ")} · ${f.dato}`));
+        }))));
+    }
+
+    if (r.advertencias.length) {
+      bloques.push(crear("div", { class: "tarjeta" },
+        crear("h3", {}, "A tener en cuenta"),
+        crear("ul", { class: "advertencias" }, ...r.advertencias.map((a) => crear("li", {}, a)))));
+    }
+
+    $("resultado").replaceChildren(...bloques);
+    $("resultado").hidden = false;
+  }
+
+  function terminar() {
+    if (fuenteEventos) fuenteEventos.close();
+    fuenteEventos = null;
+    $("boton").disabled = false;
+    $("boton").textContent = "Buscar";
+    $("progreso").classList.add("listo");
+  }
+
+  function progreso(mensaje) {
+    $("progreso").append(crear("li", {}, mensaje));
+  }
+
+  function fallar(mensaje) {
+    $("error").textContent = mensaje;
+    $("error").hidden = false;
+    terminar();
+  }
+
+  $("formulario").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const producto = $("producto").value.trim();
+    const pais = $("pais").value;
+    if (!producto) return;
+    try { localStorage.setItem(PAIS_GUARDADO, pais); } catch {}
+
+    if (fuenteEventos) fuenteEventos.close();
+    $("progreso").replaceChildren();
+    $("progreso").classList.remove("listo");
+    $("error").hidden = true;
+    $("resultado").hidden = true;
+    $("boton").disabled = true;
+    $("boton").textContent = "Buscando…";
+
+    const params = new URLSearchParams({ producto, pais });
+    fuenteEventos = new EventSource(`/api/buscar?${params}`);
+    fuenteEventos.addEventListener("progreso", (ev) => progreso(JSON.parse(ev.data).mensaje));
+    fuenteEventos.addEventListener("resultado", (ev) => {
+      terminar();
+      mostrar(JSON.parse(ev.data));
+    });
+    fuenteEventos.addEventListener("error", (ev) => {
+      // Evento "error" propio del servidor (trae datos) o corte de conexión (no trae).
+      fallar(ev.data ? JSON.parse(ev.data).mensaje : "Se cortó la conexión con el servidor.");
+    });
+  });
+
+  fetch("/api/paises")
+    .then((r) => r.json())
+    .then((paises) => {
+      let guardado = null;
+      try { guardado = localStorage.getItem(PAIS_GUARDADO); } catch {}
+      const select = $("pais");
+      for (const p of paises) select.append(crear("option", { value: p.codigo }, p.nombre));
+      select.value = paises.some((p) => p.codigo === guardado) ? guardado : "AR";
+    });
+</script>
+</body>
+</html>
