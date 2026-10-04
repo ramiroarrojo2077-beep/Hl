@@ -961,6 +961,7 @@ ui.btnAR.addEventListener("click", async () => {
   }
   stage = xrStage;
   modoStage = "ar";
+  seg.saltarRepetidos = true;
   aplicarVolteo();
   irA("ubicar");
   if (xrStage.hasCameraAccess === false) {
@@ -979,6 +980,7 @@ ui.btnDemo.addEventListener("click", () => {
   renderer.domElement.style.display = "block";
   stage = demo;
   modoStage = "demo";
+  seg.saltarRepetidos = false;
   irA("ubicar");
 });
 

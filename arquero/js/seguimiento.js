@@ -23,6 +23,9 @@ export class BallTracking {
     this.detector = new BallDetector(64, 64);
     this.tracker = new ShotTracker({ ballRadius: radio });
     this.radioNominal = radio;
+    // Con la cámara real dos imágenes idénticas son la misma (el sensor siempre
+    // tiene ruido); en la demo, con la escena quieta, pueden ser cuadros nuevos.
+    this.saltarRepetidos = true;
     this.tmp = {
       inv: new THREE.Matrix4(),
       proyInv: new THREE.Matrix4(),
@@ -115,7 +118,7 @@ export class BallTracking {
     // La misma imagen que el cuadro anterior (la pantalla va más rápido que la
     // cámara): no es una medición nueva. Contarla haría parecer que la pelota se
     // quedó quieta un instante y arruinaría la velocidad y la trayectoria.
-    if (detector.repetido) return { candidatas, ubicadas: [], elegida: -1, medida: null, evento: tracker.tick(t), repetido: true };
+    if (detector.repetido && this.saltarRepetidos) return { candidatas, ubicadas: [], elegida: -1, medida: null, evento: tracker.tick(t), repetido: true };
 
     // El seguimiento elige cuál es la pelota (la que sigue quieta, la que sale del
     // punto de reposo o la que va por la trayectoria); las demás se descartan.
