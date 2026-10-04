@@ -376,8 +376,13 @@ export class BallDetector {
           break;
         }
       }
-      if (igual) return this.last ? this.last.candidatas : [];
+      if (igual) {
+        // La pantalla puede ir más rápido que la cámara: es la misma imagen.
+        this.repetido = true;
+        return this.last ? this.last.candidatas : [];
+      }
     }
+    if (!ventana) this.repetido = false;
 
     // Homografías que llevan cada píxel de este cuadro a los dos anteriores,
     // descontando cuánto giró la cámara (en mano se mueve todo el tiempo).

@@ -112,6 +112,10 @@ export class BallTracking {
     const EXP = globalThis.process?.env?.EXP ?? "";
     const escalas = enImagen ? (EXP.includes("escalasAnchas") ? { min: 0.35 * enImagen.r, max: 2.2 * enImagen.r } : { min: 0.5 * enImagen.r, max: 1.8 * enImagen.r }) : null;
     const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo, escalas });
+    // La misma imagen que el cuadro anterior (la pantalla va más rápido que la
+    // cámara): no es una medición nueva. Contarla haría parecer que la pelota se
+    // quedó quieta un instante y arruinaría la velocidad y la trayectoria.
+    if (detector.repetido) return { candidatas, ubicadas: [], elegida: -1, medida: null, evento: tracker.tick(t), repetido: true };
 
     // El seguimiento elige cuál es la pelota (la que sigue quieta, la que sale del
     // punto de reposo o la que va por la trayectoria); las demás se descartan.

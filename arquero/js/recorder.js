@@ -180,9 +180,14 @@ export class ShotRecorder {
   // camara: PerspectiveCamera con la pose y proyección de la vista.
   capture({ texturaFondo = null, escenaFondo = null, escena, camara, ancho, alto }) {
     if (!this.grabando || this.leyendo) return;
-    // No más de 30 cuadros por segundo (la pantalla puede ir a 60).
+    // No más de 30 cuadros por segundo (la pantalla puede ir a 60) y, si el
+    // celular viene lento, menos: el seguimiento de la pelota tiene prioridad.
     const ahora = performance.now();
-    if (ahora - (this.ultimoCuadro ?? 0) < 1000 / FPS - 4) return;
+    const intervalo = ahora - (this.ultimaLlamada ?? ahora);
+    this.ultimaLlamada = ahora;
+    this.intervaloMedio = 0.9 * (this.intervaloMedio ?? 33) + 0.1 * Math.min(intervalo, 200);
+    const minimo = this.intervaloMedio > 45 ? 1000 / 12 : this.intervaloMedio > 38 ? 1000 / 20 : 1000 / FPS - 4;
+    if (ahora - (this.ultimoCuadro ?? 0) < minimo) return;
     this.ultimoCuadro = ahora;
     this.#relevar();
     this.#tamano(ancho, alto);

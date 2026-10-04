@@ -545,13 +545,14 @@ const marca = { pos: new THREE.Vector3(), lista: false };
 
 function seguirPelota(info) {
   const t = info.t;
-  const { candidatas, elegida, medida, evento } = seg.procesar(info, arcoGrupo.matrixWorld);
+  const { candidatas, elegida, medida, evento, repetido } = seg.procesar(info, arcoGrupo.matrixWorld);
   if (medida) {
     ultimaPosicion = medida;
     pelotaVistaEn = t;
   }
   mostrarTrayectoria(t);
-  anotarCuadro(info, t, candidatas, elegida, medida, evento);
+  // Una imagen repetida de la cámara no se anota (no es un cuadro nuevo).
+  if (!repetido || evento) anotarCuadro(info, t, candidatas, elegida, medida, evento);
   if (evento) manejarEvento(evento, t);
 
   // El aro sigue la trayectoria ajustada (suave) en vuelo y queda fijo donde

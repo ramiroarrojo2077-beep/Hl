@@ -16,7 +16,7 @@ const r = await sesion({
 });
 if (r.omitida) console.log("omitida", r.motivo ?? "");
 for (const [i, x] of (r.resultados ?? []).entries()) {
-  if (tiro !== undefined && i !== Number(tiro)) continue;
+  if (tiro !== undefined && x.n !== Number(tiro)) continue;
   console.log(x.texto);
   for (const f of x.filas ?? []) console.log("   ", JSON.stringify(f));
 }

@@ -360,6 +360,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     const antes = eventos.filter((e) => e.prediction && e.t <= verdad.t - 0.2 && e.t > tPatada).at(-1);
     const err = (p) => (p ? Math.hypot(p.x - verdad.x, p.y - verdad.y) * 100 : null);
     const res = {
+      n,
       sesion: semilla,
       rapidez: Math.round(rapidez),
       rasante,
@@ -383,7 +384,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
       res.texto = (
         `  [${nombre} s${semilla} #${n}] ${res.rapidez} m/s ${rasante ? "rasante" : "aire"}${efecto ? " efecto" : ""} a ${res.distancia} m · ` +
           `${res.lista ? "" : "NO LISTA · "}remate ${res.remate ? "sí" : "NO"}${falso ? " (FALSO antes)" : ""} · ${res.resultado ? `error ${res.error.toFixed(1)} cm (x ${res.errorX.toFixed(1)}, y ${res.errorY.toFixed(1)})` : "sin resultado"}` +
-          ` · vuelo ${vuelo.bien}/${vuelo.cuadros} bien, ${vuelo.mal} mal, ${vuelo.nada} nada · eventos ${eventos.map((e) => e.type[0]).join("")}`
+          ` · vuelo ${vuelo.bien}/${vuelo.cuadros} bien, ${vuelo.mal} mal, ${vuelo.nada} nada · eventos ${eventos.map((e) => e.type[0]).join("")}` +
+          ` · kicks ${eventos.filter((e) => e.type === "kick").map((e) => `${(e.t - tPatada).toFixed(2)}s/cal${e.prediction?.calidad?.toFixed(1)}/n${e.n ?? "?"}`).join(",")}`
       );
     }
     // La pelota vuelve a su lugar: unos cuadros quieta antes del próximo.

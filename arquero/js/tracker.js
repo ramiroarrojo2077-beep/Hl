@@ -706,7 +706,43 @@ export class ShotTracker {
     return false;
   }
 
+  // Con 2 mediciones y el punto de reposo, la física ajusta casi cualquier cosa:
+  // hace falta además la prueba lineal; con 3 o más, alcanza con la física.
   #remateCon(t, q, saliendo) {
+    const lineal = this.#remateLineal(t, q, saliendo);
+    if (saliendo.length < 3) return lineal && (EXP.includes("sinFisico") || !saliendo.every((o) => o.d) || this.#remateFisico(t, q, saliendo));
+    return lineal || this.#remateFisico(t, q, saliendo);
+  }
+
+  // Con los rayos de la cámara: la trayectoria física que sale del punto de
+  // reposo tiene que explicar las mediciones (la dirección se mide muy bien; la
+  // distancia por tamaño de una pelota borrosa, no) y ser un remate: rápido,
+  // hacia el arco.
+  #remateFisico(t, q, saliendo) {
+    if (EXP.includes("sinFisico") || saliendo.length < 2 || !saliendo.every((o) => o.d)) return false;
+    const pred = this.#predecir(saliendo, this.#reposoDe(q, saliendo));
+    if (!pred || pred.calidad == null || pred.calidad > 30) return false;
+    if (!(pred.vz < -ACERCAMIENTO_MINIMO) || Math.hypot(pred.vx, pred.vy, pred.vz) < VELOCIDAD_MINIMA) return false;
+    if (Number.isFinite(pred.tCross) && Math.abs(pred.x) > this.goalWidth / 2 + 4) return false;
+    if (!this.#seAleja(q, saliendo)) return false;
+    return true;
+  }
+
+  // En la imagen se tiene que ir alejando del lugar donde estaba, cuadro a
+  // cuadro, y (si se sabe) estar entre los píxeles que cambiaron.
+  #seAleja(q, saliendo) {
+    let antes = 0;
+    for (const m of saliendo) {
+      const d = Math.hypot(m.px - q.px, m.py - q.py) + Math.abs(m.pr - q.pr);
+      if (d < antes - 1) return false;
+      antes = d;
+    }
+    if (antes < 2.5) return false;
+    const conMovimiento = saliendo.filter((m) => m.moving != null);
+    return !(conMovimiento.length && conMovimiento.reduce((a, m) => a + m.moving, 0) / conMovimiento.length < MOVIMIENTO_MINIMO);
+  }
+
+  #remateLineal(t, q, saliendo) {
     const pts = [{ ...q, t: (q.tUlt + saliendo[0].t) / 2 }, ...saliendo];
     const ts = pts.map((m) => m.t - t);
     const [, vx, ex] = ajusteLineal(ts, pts.map((m) => m.x));
@@ -865,7 +901,7 @@ export class ShotTracker {
       this.shot = null;
       return null;
     }
-    return { type: "kick", t, prediction: this.shot.pred };
+    return { type: "kick", t, prediction: this.shot.pred, n: this.shot.obs.length };
   }
 
   #enVuelo(t, o) {
