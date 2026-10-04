@@ -10,8 +10,10 @@ export class PixelReader {
     this.escena = new THREE.Scene();
     this.camara = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.material = new THREE.ShaderMaterial({
-      uniforms: { map: { value: null } },
-      vertexShader: "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+      // region: (x, y, ancho, alto) de la imagen a leer, en coordenadas 0..1.
+      uniforms: { map: { value: null }, region: { value: new THREE.Vector4(0, 0, 1, 1) } },
+      vertexShader:
+        "uniform vec4 region; varying vec2 vUv; void main() { vUv = region.xy + uv * region.zw; gl_Position = vec4(position.xy, 0.0, 1.0); }",
       fragmentShader: "uniform sampler2D map; varying vec2 vUv; void main() { gl_FragColor = texture2D(map, vUv); }",
       depthTest: false,
       depthWrite: false,
@@ -29,25 +31,46 @@ export class PixelReader {
 
   // fuente: {texture} (imagen de la cámara en AR) o {scene, camera} (demo).
   read(fuente, width, height) {
-    if (!this.rt || this.rt.width !== width || this.rt.height !== height) {
-      this.rt?.dispose();
-      this.rt = new THREE.WebGLRenderTarget(width, height);
-      this.data = new Uint8Array(width * height * 4);
+    this.principal = this.#leer(this.principal, fuente, null, width, height);
+    return this.principal.data;
+  }
+
+  // Lee sólo una parte de la imagen, con otra resolución (para medir la pelota
+  // más fino). region: {x, y, w, h} en coordenadas 0..1, con y hacia arriba.
+  readRegion(fuente, region, width, height) {
+    this.recorte = this.#leer(this.recorte, fuente, region, width, height);
+    return this.recorte.data;
+  }
+
+  #leer(destino, fuente, region, width, height) {
+    if (!destino || destino.rt.width !== width || destino.rt.height !== height) {
+      destino?.rt.dispose();
+      destino = { rt: new THREE.WebGLRenderTarget(width, height), data: new Uint8Array(width * height * 4) };
     }
     const r = this.renderer;
     const rtAnterior = r.getRenderTarget();
     const xrAnterior = r.xr.enabled;
     r.xr.enabled = false;
-    r.setRenderTarget(this.rt);
+    r.setRenderTarget(destino.rt);
     if (fuente.texture) {
       this.material.uniforms.map.value = fuente.texture;
+      if (region) this.material.uniforms.region.value.set(region.x, region.y, region.w, region.h);
       r.render(this.escena, this.camara);
+      this.material.uniforms.region.value.set(0, 0, 1, 1);
     } else {
-      r.render(fuente.scene, fuente.camera);
+      const cam = fuente.camera;
+      if (region) {
+        // Una "imagen completa" de 1000 px de alto con la proporción de la cámara.
+        const alto = 1000;
+        const ancho = alto * cam.aspect;
+        cam.setViewOffset(ancho, alto, region.x * ancho, (1 - region.y - region.h) * alto, region.w * ancho, region.h * alto);
+      }
+      r.render(fuente.scene, cam);
+      if (region) cam.clearViewOffset();
     }
-    r.readRenderTargetPixels(this.rt, 0, 0, width, height, this.data);
+    r.readRenderTargetPixels(destino.rt, 0, 0, width, height, destino.data);
     r.setRenderTarget(rtAnterior);
     r.xr.enabled = xrAnterior;
-    return this.data;
+    return destino;
   }
 }

@@ -440,44 +440,137 @@ export class BallDetector {
     return this.#refinar(best);
   }
 
-  // Centro y radio con precisión de fracciones de píxel: momentos de la mancha
-  // ponderados por la probabilidad de cada píxel (los bordes cuentan a medias).
+  // Centro y radio con precisión de fracciones de píxel.
   #refinar(m) {
     const { width: w, height: h, labels, score } = this;
-    const [x0, y0, x1, y1] = m.caja;
-    let sw = 0;
-    let sx = 0;
-    let sy = 0;
-    let sxx = 0;
-    let syy = 0;
-    let sxy = 0;
-    for (let y = Math.max(0, y0 - 2); y <= Math.min(h - 1, y1 + 2); y++) {
-      for (let x = Math.max(0, x0 - 2); x <= Math.min(w - 1, x1 + 2); x++) {
-        const i = y * w + x;
-        const l = labels[i];
-        if (l !== 0 && l !== m.etiqueta) continue;
-        // Dentro de la mancha (huecos del cierre incluidos) pesa 1; en el borde, según su probabilidad.
-        const p = l === m.etiqueta ? Math.max(0.6, Math.min(1, score[i] / UMBRAL)) : Math.min(1, Math.max(0, (score[i] - 0.2) / (UMBRAL - 0.2)));
-        if (p <= 0) continue;
-        const cx = x + 0.5;
-        const cy = y + 0.5;
-        sw += p;
-        sx += p * cx;
-        sy += p * cy;
-        sxx += p * cx * cx;
-        syy += p * cy * cy;
-        sxy += p * cx * cy;
+    const fino = momentosSuaves(w, h, labels, score, m.etiqueta, m.caja);
+    return { ...fino, area: m.cnt, score: m.score, moving: m.mov };
+  }
+
+  // Vuelve a medir la pelota en un recorte de la cámara con más resolución.
+  // guess: {x, y, r} en píxeles del recorte. Devuelve {x, y, r, alargada} en
+  // píxeles del recorte, o null si no la encuentra donde se esperaba.
+  refine(rgba, w, h, guess) {
+    if (!this.prob) return null;
+    const n = w * h;
+    if (!this.recorte || this.recorte.n !== n) {
+      this.recorte = {
+        n,
+        score: new Float32Array(n),
+        mask: new Uint8Array(n),
+        tmp: new Uint8Array(n),
+        closed: new Uint8Array(n),
+        labels: new Int32Array(n),
+        stack: new Int32Array(n),
+      };
+    }
+    const { score, mask, tmp, closed, labels, stack } = this.recorte;
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const s = this.prob[casillero(rgba[j], rgba[j + 1], rgba[j + 2])];
+      score[i] = s;
+      mask[i] = s >= UMBRAL ? 1 : 0;
+    }
+    // Con más resolución los gajos son más grandes: cierre de 5x5.
+    dilatar(mask, tmp, w, h, 1);
+    dilatar(tmp, closed, w, h, 1);
+    dilatar(closed, tmp, w, h, 0);
+    dilatar(tmp, closed, w, h, 0);
+
+    // Semilla: el píxel de pelota más cercano a donde se la esperaba.
+    let semilla = -1;
+    let mejor = Infinity;
+    const busca = Math.max(2, guess.r * 0.6);
+    for (let y = Math.max(0, Math.floor(guess.y - busca)); y <= Math.min(h - 1, guess.y + busca); y++) {
+      for (let x = Math.max(0, Math.floor(guess.x - busca)); x <= Math.min(w - 1, guess.x + busca); x++) {
+        const d = (x + 0.5 - guess.x) ** 2 + (y + 0.5 - guess.y) ** 2;
+        if (closed[y * w + x] && d < mejor) {
+          mejor = d;
+          semilla = y * w + x;
+        }
       }
     }
-    const x = sx / sw;
-    const y = sy / sw;
-    const forma = ejes(sxx / sw - x * x, syy / sw - y * y, sxy / sw - x * y);
-    const rArea = Math.sqrt(sw / Math.PI);
-    // Redonda: promedio de dos estimaciones independientes. Con estela de
-    // movimiento el eje menor es el diámetro real.
-    const r = forma.alargada < 1.3 ? (rArea + (forma.rMenor + forma.rMayor) / 2) / 2 : forma.rMenor;
-    return { x, y, r, area: m.cnt, score: m.score, moving: m.mov, alargada: forma.alargada };
+    if (semilla < 0) return null;
+
+    labels.fill(0);
+    let tope = 0;
+    stack[tope++] = semilla;
+    labels[semilla] = 1;
+    let x0 = w;
+    let x1 = 0;
+    let y0 = h;
+    let y1 = 0;
+    while (tope > 0) {
+      const i = stack[--tope];
+      const x = i % w;
+      const y = (i - x) / w;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= h) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= w) continue;
+          const k = yy * w + xx;
+          if (closed[k] && !labels[k]) {
+            labels[k] = 1;
+            stack[tope++] = k;
+          }
+        }
+      }
+    }
+    // Si la mancha toca el borde del recorte, el recorte no alcanzó: no sirve.
+    if (x0 === 0 || y0 === 0 || x1 === w - 1 || y1 === h - 1) return null;
+    // Las demás manchas (un pie, otra cosa) no cuentan.
+    for (let i = 0; i < n; i++) if (closed[i] && !labels[i]) labels[i] = 2;
+
+    const fino = momentosSuaves(w, h, labels, score, 1, [x0, y0, x1, y1]);
+    const cerca = Math.hypot(fino.x - guess.x, fino.y - guess.y) < guess.r * 0.6;
+    const parecido = fino.r > guess.r * 0.6 && fino.r < guess.r * 1.5;
+    return cerca && parecido ? fino : null;
   }
+}
+
+// Momentos de la mancha `etiqueta` ponderados por la probabilidad de cada píxel:
+// dentro de la mancha (huecos del cierre incluidos) pesa 1; en el borde, según
+// su probabilidad. Otras manchas no cuentan.
+function momentosSuaves(w, h, labels, score, etiqueta, [x0, y0, x1, y1]) {
+  let sw = 0;
+  let sx = 0;
+  let sy = 0;
+  let sxx = 0;
+  let syy = 0;
+  let sxy = 0;
+  for (let y = Math.max(0, y0 - 2); y <= Math.min(h - 1, y1 + 2); y++) {
+    for (let x = Math.max(0, x0 - 2); x <= Math.min(w - 1, x1 + 2); x++) {
+      const i = y * w + x;
+      const l = labels[i];
+      if (l !== 0 && l !== etiqueta) continue;
+      const p =
+        l === etiqueta
+          ? Math.max(0.6, Math.min(1, score[i] / UMBRAL))
+          : Math.min(1, Math.max(0, (score[i] - 0.2) / (UMBRAL - 0.2)));
+      if (p <= 0) continue;
+      const cx = x + 0.5;
+      const cy = y + 0.5;
+      sw += p;
+      sx += p * cx;
+      sy += p * cy;
+      sxx += p * cx * cx;
+      syy += p * cy * cy;
+      sxy += p * cx * cy;
+    }
+  }
+  const x = sx / sw;
+  const y = sy / sw;
+  const forma = ejes(sxx / sw - x * x, syy / sw - y * y, sxy / sw - x * y);
+  const rArea = Math.sqrt(sw / Math.PI);
+  // Redonda: promedio de dos estimaciones independientes. Con estela de
+  // movimiento el eje menor es el diámetro real.
+  const r = forma.alargada < 1.3 ? (rArea + (forma.rMenor + forma.rMayor) / 2) / 2 : forma.rMenor;
+  return { x, y, r, alargada: forma.alargada };
 }
 
 // Ejes de una mancha a partir de sus varianzas. En un disco de radio r la

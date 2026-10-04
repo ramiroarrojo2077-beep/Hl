@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GRAVEDAD, ShotTracker, heightAt, locateBall } from "../js/tracker.js";
+import { ARRASTRE, GRAVEDAD, ShotTracker, heightAt, locateBall } from "../js/tracker.js";
 
 const R = 0.11;
 
@@ -101,7 +101,7 @@ test("locateBall usa el piso cuando la pelota rueda", () => {
 
 // Mediciones como las arma la app: rayo desde la cámara al centro de la pelota
 // (con ruido de ~0,5 px) y radio angular (con ruido de ~6 %).
-function medirTrayectoria({ camara, p0, v0, semilla, ruidoDir = 0.0015, ruidoTam = 0.06, quieto = 0.3 }) {
+function medirTrayectoria({ camara, p0, v0, semilla, ruidoDir = 0.0015, ruidoTam = 0.06, quieto = 0.3, arrastre = ARRASTRE }) {
   let s = semilla;
   const gauss = () => {
     let u = 0;
@@ -110,14 +110,27 @@ function medirTrayectoria({ camara, p0, v0, semilla, ruidoDir = 0.0015, ruidoTam
   };
   const obs = [];
   const dt = 1 / 30;
-  const enAire = v0.y !== 0;
+  // Física real: gravedad, resistencia del aire y piques, en pasos de 1 ms.
+  const p = { ...p0 };
+  const v = { ...v0 };
+  const avanzar = () => {
+    for (let n = 0; n < 1000 * dt; n++) {
+      const h = 0.001;
+      const rapidez = Math.hypot(v.x, v.y, v.z);
+      v.x -= arrastre * rapidez * v.x * h;
+      v.y -= (arrastre * rapidez * v.y + (p.y > R + 1e-4 || v.y > 0 ? GRAVEDAD : 0)) * h;
+      v.z -= arrastre * rapidez * v.z * h;
+      p.x += v.x * h;
+      p.y += v.y * h;
+      p.z += v.z * h;
+      if (p.y < R) {
+        p.y = R;
+        v.y = v.y < -0.5 ? -v.y * 0.6 : 0;
+      }
+    }
+  };
   for (let k = -Math.round(quieto / dt); k < 40; k++) {
-    const tau = Math.max(0, k * dt);
-    const p = {
-      x: p0.x + v0.x * tau,
-      y: enAire ? heightAt(p0.y, v0.y, tau, R) : R,
-      z: p0.z + v0.z * tau,
-    };
+    if (k > 0) avanzar();
     if (p.z < -0.3) break;
     const q = { x: p.x - camara.x, y: p.y - camara.y, z: p.z - camara.z };
     const dist = Math.hypot(q.x, q.y, q.z);
@@ -126,19 +139,30 @@ function medirTrayectoria({ camara, p0, v0, semilla, ruidoDir = 0.0015, ruidoTam
     d = { x: d.x / nd, y: d.y / nd, z: d.z / nd };
     const ang = Math.asin(R / dist) * (1 + gauss() * ruidoTam);
     const pos = locateBall(camara, d, ang, R);
-    obs.push({ t: 1 + k * dt, ...pos, px: 333 * (d.x / -d.z), py: 333 * (d.y / -d.z), pr: 333 * ang, o: camara, d, ang });
+    obs.push({ t: 1 + k * dt, ...pos, px: 333 * (d.x / -d.z), py: 333 * (d.y / -d.z), pr: 333 * ang, o: camara, d, ang, real: { ...p } });
   }
   return obs;
 }
 
 // Error (m) de cada predicción del punto de cruce, en orden: la primera es la
 // del momento en que se detecta el remate.
-function erroresPrediccion(obs, p0, v0, conRayos) {
+// Dónde cruza de verdad la línea (z = 0), interpolando la simulación.
+function cruceReal(obs) {
+  for (let i = 1; i < obs.length; i++) {
+    const a = obs[i - 1].real;
+    const b = obs[i].real;
+    if (a.z > 0 && b.z <= 0) {
+      const k = a.z / (a.z - b.z);
+      return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+    }
+  }
+  return null;
+}
+
+function erroresPrediccion(obs, conRayos) {
   const tr = new ShotTracker({ ballRadius: R });
   const errores = [];
-  const T = p0.z / -v0.z;
-  const x = p0.x + v0.x * T;
-  const y = v0.y !== 0 ? heightAt(p0.y, v0.y, T, R) : R;
+  const { x, y } = cruceReal(obs);
   const anotar = (e) => e?.prediction && errores.push(Math.hypot(e.prediction.x - x, e.prediction.y - y));
   for (const o of obs) {
     const { t, ...p } = o;
@@ -162,7 +186,7 @@ for (const [nombre, v0] of [
     const media = (conRayos, i) => {
       let s = 0;
       for (let k = 0; k < N; k++) {
-        const e = erroresPrediccion(medirTrayectoria({ camara, p0, v0, semilla: 300 + k }), p0, v0, conRayos);
+        const e = erroresPrediccion(medirTrayectoria({ camara, p0, v0, semilla: 300 + k }), conRayos);
         s += (i < 0 ? e[e.length - 1] : e[i]) / N;
       }
       return s;

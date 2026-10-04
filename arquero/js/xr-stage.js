@@ -136,6 +136,11 @@ export class XRStage {
       camMatrix: this.camMatrix,
       projMatrix: this.projMatrix,
       image,
+      // Recortes de la imagen de la cámara en su resolución real (para medir más fino).
+      region:
+        texture && image
+          ? { factor: ancho / image.width, leer: (reg, w, h) => this.reader.readRegion({ texture }, reg, w, h) }
+          : null,
       hit,
       anchor,
       cameraAvailable: Boolean(view.camera),

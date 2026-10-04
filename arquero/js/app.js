@@ -317,15 +317,48 @@ function rayo(info, x, y, w, h, destino) {
   return destino.transformDirection(info.camMatrix);
 }
 
+// Proyección en la imagen de la posición que predice la trayectoria, o null.
+function dondeDeberiaEstar(info, t, w, h) {
+  const p = tracker.expectedPosition(t);
+  if (!p) return null;
+  const mundo = tmp.v.set(p.x, p.y, p.z).applyMatrix4(arcoGrupo.matrixWorld);
+  const distancia = mundo.distanceTo(tmp.origen.setFromMatrixPosition(info.camMatrix));
+  const ndc = mundo.applyMatrix4(tmp.inv.copy(info.camMatrix).invert()).applyMatrix4(info.projMatrix);
+  if (!(Math.abs(ndc.x) < 1.2 && Math.abs(ndc.y) < 1.2 && ndc.z < 1)) return null;
+  const radio = ((info.projMatrix.elements[5] * h) / 2) * (PELOTAS[ajustes.pelota].radio / distancia);
+  return { x: ((ndc.x + 1) / 2) * w, y: ((ndc.y + 1) / 2) * h, r: Math.max(2, radio) };
+}
+
+// Vuelve a medir la pelota en un recorte de la cámara con su resolución real
+// (hasta 4 veces más fino que la imagen chica). Si no sale, queda la medición original.
+function refinar(info, det, w, h) {
+  const reg = info.region;
+  const factor = Math.min(4, reg?.factor ?? 0);
+  if (factor < 1.5) return det;
+  const lado = Math.max(5 * det.r, 24);
+  const x0 = det.x - lado / 2;
+  const y0 = det.y - lado / 2;
+  if (x0 < 0 || y0 < 0 || x0 + lado > w || y0 + lado > h) return det;
+  const tam = Math.min(192, Math.round(lado * factor));
+  const recorte = reg.leer({ x: x0 / w, y: y0 / h, w: lado / w, h: lado / h }, tam, tam);
+  const k = tam / lado;
+  const fino = detector.refine(recorte, tam, tam, { x: tam / 2, y: tam / 2, r: det.r * k });
+  if (!fino) return det;
+  return { ...det, x: x0 + fino.x / k, y: y0 + fino.y / k, r: fino.r / k, refinada: true };
+}
+
 function seguirPelota(info) {
   const { data, width: w, height: h } = info.image;
   detector.resize(w, h);
   const e = info.camMatrix.elements;
   const camara = { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
-  const near = ultimaDeteccion && info.t - ultimaDeteccion.t < 0.4 ? ultimaDeteccion : null;
-  const det = detector.detect(data, { camera: camara, near });
   const t = info.t;
+  // Durante el remate se busca donde la trayectoria dice que tiene que estar
+  // (así no se confunde con una pierna u otra cosa que se mueve).
+  const near = dondeDeberiaEstar(info, t, w, h) ?? (ultimaDeteccion && t - ultimaDeteccion.t < 0.4 ? ultimaDeteccion : null);
+  let det = detector.detect(data, { camera: camara, near });
   let evento = null;
+  if (det) det = refinar(info, det, w, h);
 
   if (det) {
     tmp.proyInv.copy(info.projMatrix).invert();
@@ -361,7 +394,7 @@ function seguirPelota(info) {
     }
   }
   if (registro) {
-    registro.push({ t: +t.toFixed(3), det: det && { x: +det.x.toFixed(1), y: +det.y.toFixed(1), r: +det.r.toFixed(1) }, p: det && ultimaPosicion && { x: +ultimaPosicion.x.toFixed(2), y: +ultimaPosicion.y.toFixed(2), z: +ultimaPosicion.z.toFixed(2), g: ultimaPosicion.onGround }, ev: evento?.type, pred: evento?.prediction && { x: +evento.prediction.x.toFixed(3), y: +evento.prediction.y.toFixed(3), aire: !evento.prediction.rolling }, st: tracker.state });
+    registro.push({ t: +t.toFixed(3), det: det && { x: +det.x.toFixed(2), y: +det.y.toFixed(2), r: +det.r.toFixed(2), fino: Boolean(det.refinada) }, p: det && ultimaPosicion && { x: +ultimaPosicion.x.toFixed(2), y: +ultimaPosicion.y.toFixed(2), z: +ultimaPosicion.z.toFixed(2), g: ultimaPosicion.onGround }, ev: evento?.type, pred: evento?.prediction && { x: +evento.prediction.x.toFixed(3), y: +evento.prediction.y.toFixed(3), aire: !evento.prediction.rolling }, st: tracker.state });
     if (registro.length > 600) registro.shift();
   }
   evento ??= tracker.tick(t);

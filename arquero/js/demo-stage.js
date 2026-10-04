@@ -266,11 +266,18 @@ export class DemoStage {
       const { width, height } = PixelReader.size(this.canvas.clientWidth, this.canvas.clientHeight);
       image = { data: this.reader.read({ scene: this.mundo, camera: this.camera }, width, height), width, height };
     }
+    const fuente = { scene: this.mundo, camera: this.camera };
     return {
       t,
       camMatrix: this.camera.matrixWorld,
       projMatrix: this.camera.projectionMatrix,
       image,
+      region: image
+        ? {
+            factor: (this.canvas.clientWidth * this.renderer.getPixelRatio()) / image.width,
+            leer: (reg, w, h) => this.reader.readRegion(fuente, reg, w, h),
+          }
+        : null,
       hit: null,
       anchor: null,
       cameraAvailable: true,

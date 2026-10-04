@@ -200,3 +200,67 @@ test("ubica la pelota con precisión de fracciones de píxel", () => {
   assert.ok(errCentro < 0.25, `centro: ${errCentro.toFixed(2)} px`);
   assert.ok(errRadio < 0.5, `radio: ${errRadio.toFixed(2)} px`);
 });
+
+// Recorte de tam×tam píxeles que cubre el cuadrado [x0, x0+lado]×[y0, y0+lado] de la imagen base.
+function recorteSuave(pelota, x0, y0, lado, tam, semilla) {
+  const rnd = azar(semilla);
+  const img = new Uint8Array(tam * tam * 4);
+  const k = lado / tam;
+  for (let y = 0; y < tam; y++) {
+    for (let x = 0; x < tam; x++) {
+      const n = (rnd() - 0.5) * 20;
+      const pasto = [50 + n, 130 + n, 45 + n];
+      let dentro = 0;
+      for (let sy = 0; sy < 4; sy++)
+        for (let sx = 0; sx < 4; sx++) {
+          const bx = x0 + (x + (sx + 0.5) / 4) * k;
+          const by = y0 + (y + (sy + 0.5) / 4) * k;
+          if ((bx - pelota.x) ** 2 + (by - pelota.y) ** 2 <= pelota.r ** 2) dentro++;
+        }
+      const a = dentro / 16;
+      const i = (y * tam + x) * 4;
+      for (let c = 0; c < 3; c++) img[i + c] = Math.max(0, Math.min(255, pasto[c] * (1 - a) + (235 + n * 0.2) * a));
+      img[i + 3] = 255;
+    }
+  }
+  return img;
+}
+
+test("el recorte en alta resolución mide la pelota todavía mejor", () => {
+  const det = new BallDetector(W, H);
+  det.learn(cuadroSuave({ x: 100, y: 60, r: 28 }, 1), 100, 60, 30);
+  let antes = 0;
+  let despues = 0;
+  let radioAntes = 0;
+  let radioDespues = 0;
+  const casos = [
+    { x: 40.3, y: 70.6, r: 4.4 },
+    { x: 120.75, y: 35.2, r: 3.1 },
+    { x: 77.45, y: 90.9, r: 5.3 },
+    { x: 150.1, y: 50.45, r: 6.7 },
+  ];
+  for (const [k, p] of casos.entries()) {
+    const d = det.detect(cuadroSuave(p, 10 + k));
+    assert.ok(d, `no encontró ${JSON.stringify(p)}`);
+    // Como en la app: un cuadrado de 5 radios alrededor, leído 4 veces más fino.
+    const lado = Math.max(5 * d.r, 24);
+    const tam = Math.round(lado * 4);
+    const x0 = d.x - lado / 2;
+    const y0 = d.y - lado / 2;
+    const fino = det.refine(recorteSuave(p, x0, y0, lado, tam, 50 + k), tam, tam, { x: tam / 2, y: tam / 2, r: (d.r * tam) / lado });
+    assert.ok(fino, `el refinado no la encontró ${JSON.stringify(p)}`);
+    const x = x0 + (fino.x * lado) / tam;
+    const y = y0 + (fino.y * lado) / tam;
+    const r = (fino.r * lado) / tam;
+    antes = Math.max(antes, Math.hypot(d.x - p.x, d.y - p.y));
+    despues = Math.max(despues, Math.hypot(x - p.x, y - p.y));
+    radioAntes = Math.max(radioAntes, Math.abs(d.r - p.r));
+    radioDespues = Math.max(radioDespues, Math.abs(r - p.r));
+  }
+  console.log(
+    `  centro ${antes.toFixed(3)} → ${despues.toFixed(3)} px · radio ${radioAntes.toFixed(3)} → ${radioDespues.toFixed(3)} px`,
+  );
+  assert.ok(despues < 0.1, `centro ${despues.toFixed(3)} px`);
+  assert.ok(radioDespues < 0.15, `radio ${radioDespues.toFixed(3)} px`);
+  assert.ok(radioDespues < radioAntes, "el radio no mejoró");
+});

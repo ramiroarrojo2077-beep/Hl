@@ -107,12 +107,34 @@ function base(d) {
   return [e1, e2];
 }
 
+// Resistencia del aire de una pelota de fútbol: a = -k·|v|·v, con
+// k = ρ·Cd·A / (2·m) ≈ 1,2 · 0,25 · 0,038 / (2 · 0,43) ≈ 0,013 1/m. A 15 m/s la
+// frena unos 3 m/s²: en 0,3 s se queda 15 cm atrás de una recta.
+export const ARRASTRE = 0.013;
+
+// Distancia recorrida a lo largo de la velocidad en τ segundos (con τ negativo,
+// hacia atrás): s(τ) = ln(1 + k·v·τ) / (k·v). Sin arrastre sería v·τ; acá se
+// devuelve el factor que multiplica a la velocidad.
+function factorArrastre(rapidez, tau) {
+  const a = ARRASTRE * rapidez * tau;
+  if (ARRASTRE * rapidez < 1e-6 || a <= -0.9) return tau;
+  return Math.log1p(a) / (ARRASTRE * rapidez);
+}
+
+// Tiempo para recorrer el factor f (inversa de factorArrastre).
+function tiempoArrastre(rapidez, f) {
+  if (ARRASTRE * rapidez < 1e-6) return f;
+  return Math.expm1(ARRASTRE * rapidez * f) / (ARRASTRE * rapidez);
+}
+
 // p = [x0, y0, z0, vx, vy, vz, tPatada] en tRef (en piso, y0 = R y vy = 0).
 function posicion(p, tau, R, piso) {
+  const vy = piso ? 0 : p[4];
+  const f = factorArrastre(Math.hypot(p[3], vy, p[5]), tau);
   return {
-    x: p[0] + p[3] * tau,
-    y: piso ? R : p[1] + p[4] * tau - (GRAVEDAD / 2) * tau * tau,
-    z: p[2] + p[5] * tau,
+    x: p[0] + p[3] * f,
+    y: piso ? R : p[1] + vy * f - (GRAVEDAD / 2) * tau * tau,
+    z: p[2] + p[5] * f,
   };
 }
 
@@ -345,14 +367,20 @@ export class ShotTracker {
     return null;
   }
 
+  // Dónde debería estar la pelota en el instante t según la trayectoria (o null).
+  expectedPosition(t) {
+    const pred = this.state === "flight" ? this.shot?.pred : null;
+    if (!pred) return null;
+    const p = posicion([pred.x0, pred.y0, pred.z0, pred.vx, pred.vy, pred.vz], t - pred.tRef, this.ballRadius, pred.rolling);
+    if (!pred.rolling && p.y < this.ballRadius) p.y = heightAt(pred.y0, pred.vy, t - pred.tRef, this.ballRadius);
+    return p;
+  }
+
   // ¿La medición está lejos de donde la trayectoria dice que debería estar?
   #rara(o, pred) {
     const tau = o.t - pred.tRef;
-    const p = {
-      x: pred.x0 + pred.vx * tau,
-      y: pred.rolling ? this.ballRadius : heightAt(pred.y0, pred.vy, tau, this.ballRadius),
-      z: pred.z0 + pred.vz * tau,
-    };
+    const p = posicion([pred.x0, pred.y0, pred.z0, pred.vx, pred.vy, pred.vz], tau, this.ballRadius, pred.rolling);
+    if (!pred.rolling && p.y < this.ballRadius) p.y = heightAt(pred.y0, pred.vy, tau, this.ballRadius);
     if (o.d) {
       // Ángulo entre el rayo medido y la dirección esperada (0,06 rad ≈ 20 px).
       const q = { x: p.x - o.o.x, y: p.y - o.o.y, z: p.z - o.o.z };
@@ -451,7 +479,13 @@ export class ShotTracker {
     if (vz >= 0) return { tRef, x0, y0, z0, vx, vy, vz, tCross: Infinity, x: x0, y: y0, speed: 0, rolling: enPiso };
 
     // Puede ser negativo: la última medición ya pasó la línea y el cruce fue antes.
-    const tauCruce = -z0 / vz;
+    // Con arrastre: primero cuánto avanza a lo largo de la velocidad hasta la
+    // línea, después cuánto tiempo le lleva.
+    const rapidez = Math.hypot(vx, vy, vz);
+    const f = -z0 / vz;
+    const tauCruce = tiempoArrastre(rapidez, f);
+    let y = enPiso ? R : y0 + vy * f - (GRAVEDAD / 2) * tauCruce * tauCruce;
+    if (!enPiso && y < R) y = heightAt(y0, vy, tauCruce, R); // picó antes de llegar
     return {
       tRef,
       x0,
@@ -461,9 +495,9 @@ export class ShotTracker {
       vy,
       vz,
       tCross: tRef + tauCruce,
-      x: x0 + vx * tauCruce,
-      y: heightAt(y0, vy, tauCruce, R),
-      speed: Math.hypot(vx, vy - GRAVEDAD * tauCruce, vz),
+      x: x0 + vx * f,
+      y,
+      speed: rapidez / (1 + ARRASTRE * rapidez * tauCruce),
       rolling: enPiso,
     };
   }
