@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application'
+}
+
+// En GitHub Actions cada compilación sube el número de versión, así el APK
+// nuevo se instala encima del anterior.
+def numero = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'com.arquero.ar'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.arquero.ar'
+        minSdk 26
+        targetSdk 35
+        versionCode numero
+        versionName "1.${numero}"
+    }
+
+    signingConfigs {
+        // Clave de prueba pública (como la "debug" de Android), guardada en el repo
+        // para que cada APK nuevo reemplace al anterior. Para publicar en Play
+        // Store hace falta una clave propia y privada.
+        prueba {
+            storeFile file('arquero-debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.prueba
+        }
+        debug {
+            signingConfig signingConfigs.prueba
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+    }
+}
+
+// El juego (la carpeta arquero/ del repo) va dentro del APK en assets/www.
+tasks.named('preBuild') {
+    doFirst {
+        if (!file('src/main/assets/www/index.html').exists()) {
+            throw new GradleException('Falta el juego en assets/www: corré "npm run android:web" en la raíz del repo.')
+        }
+    }
+}

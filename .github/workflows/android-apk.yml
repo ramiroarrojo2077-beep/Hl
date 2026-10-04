@@ -1,0 +1,62 @@
+# Compila el APK de Arquero AR y lo publica en Releases (etiqueta "apk"):
+# https://github.com/<dueño>/<repo>/releases/download/apk/arquero-ar.apk
+name: APK de Arquero AR
+
+on:
+  push:
+    paths:
+      - "arquero/**"
+      - "android/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/android-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run android:web
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - run: cp android/app/build/outputs/apk/release/app-release.apk arquero-ar.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arquero-ar-apk
+          path: arquero-ar.apk
+
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk --yes --cleanup-tag || true
+          gh release create apk arquero-ar.apk \
+            --target "$GITHUB_SHA" \
+            --title "Arquero AR (APK ${GITHUB_RUN_NUMBER})" \
+            --notes "APK de Arquero AR compilado desde ${GITHUB_REF_NAME} (${GITHUB_SHA::7}). Instalalo en un Android con Chrome y «Servicios de Google Play para RA»." \
+            --latest

@@ -857,8 +857,9 @@ addEventListener("resize", () => {
     ui.compat.className = "aviso ok";
   } else {
     ui.btnAR.disabled = true;
-    ui.compat.textContent =
-      "Este navegador no soporta realidad aumentada (WebXR). Usá Chrome en un Android compatible con ARCore. En iPhone, Safari todavía no lo permite. Mientras tanto podés probar la demo.";
+    ui.compat.textContent = new URLSearchParams(location.search).has("app")
+      ? "Esta ventana no tiene realidad aumentada. Volvé a la app Arquero AR y tocá «Abrir en Chrome». Si tampoco anda, instalá o actualizá «Servicios de Google Play para RA»."
+      : "Este navegador no soporta realidad aumentada (WebXR). Usá Chrome en un Android compatible con ARCore. En iPhone, Safari todavía no lo permite. Mientras tanto podés probar la demo.";
     ui.compat.className = "aviso error";
   }
   if (!recordingSupported()) {
