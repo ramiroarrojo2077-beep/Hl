@@ -56,6 +56,12 @@ Realidad aumentada en tu lugar real: escaneás el piso, ponés un arco con arque
 2. **Escanear la pelota**: aprende los colores de tu pelota y del lugar. Después la reconoce en cada cuadro de la cámara con precisión de fracciones de píxel.
 3. **Patear**: cuando la pelota queda quieta aparece «Pelota lista». El remate tiene que salir de ese punto, rápido y hacia el arco; la app lo detecta en dos cuadros y ajusta la trayectoria física (por el piso o por el aire, con gravedad y resistencia del aire) a lo que ve la cámara. Cada medición se refina leyendo esa zona de la cámara en su resolución real.
 
+Para medir bien en cualquier celular:
+
+- **Orientación de la cámara**: al mover el celular compara cómo se corre la imagen con el giro que informa ARCore y detecta sola si el navegador entrega la imagen dada vuelta o espejada (si no, todas las posiciones saldrían mal).
+- **Borde de la pelota**: el centro y el tamaño se miden sobre el borde real (donde cambia el color), ajustando un círculo con decenas de puntos y descartando los que no encajan. Así no lo engañan la sombra ni el sol de un costado.
+- **Tamaño real de la pelota**: mientras está quieta en el piso calcula su radio verdadero (no hace falta acertar el número de pelota).
+
 Para no confundirse: el detector propone varias manchas y el seguimiento elige la que tiene sentido físico (la que sigue quieta, la que sale del punto de reposo o la que va por la trayectoria, con el tamaño que corresponde a esa distancia). Una pierna, otro objeto claro o la detección que salta a otro lado se descartan, y si después de "detectar" un remate la pelota sigue en su lugar, se cancela sin dar resultado. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
 
 Dos modos:
@@ -93,6 +99,7 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 - Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
 - En modo fijo dejá el celular quieto, con el arco y el punto de remate a la vista, a 1-2 m detrás o al costado de donde pateás.
 - El botón ⚙ muestra lo que ve el detector (en violeta) para revisar que reconozca la pelota.
+- Si un tiro sale mal, tocá ⚙ → **Guardar registro para Claude** y mandá ese archivo: tiene lo que midió la cámara cuadro a cuadro y fotos del remate, para ver qué falló.
 
 ## Estructura
 

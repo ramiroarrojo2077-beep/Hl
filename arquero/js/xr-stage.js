@@ -59,6 +59,11 @@ export class XRStage {
     this.session?.end();
   }
 
+  // Corrige la orientación de la imagen de la cámara (ver orientacion.js).
+  setFlip(x, y) {
+    this.reader.setFlip(x, y);
+  }
+
   get hasCameraAccess() {
     const f = this.session?.enabledFeatures;
     return f ? f.includes("camera-access") : null;

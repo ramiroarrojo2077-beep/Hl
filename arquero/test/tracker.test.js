@@ -313,9 +313,33 @@ test("otro objeto redondo y claro quieto no impide detectar el remate de la pelo
   assert.ok(Math.abs(cruce.prediction.x - (0.2 + 4 / 13)) < 0.05, `x ${cruce.prediction.x}`);
 });
 
+test("al salir la pelota no se confunde con el pie que la sigue", () => {
+  // En el primer cuadro del remate el pie (alargado, más angosto y con más
+  // puntaje por estar cerca del lugar) y la pelota (redonda, del mismo tamaño) se ven a la vez.
+  const tr = new ShotTracker({ ballRadius: R });
+  correr(quieta(0, 6, 0, 0.8), tr);
+  assert.equal(tr.ready, true);
+  const pie = { x: 0.02, y: R, z: 5.7, onGround: true, px: 100.5, py: 23, pr: 4.5, score: 1.1, moving: 1, alargada: 2.8 };
+  const pelota = { x: 0.05, y: R, z: 5.4, onGround: true, px: 101, py: 26, pr: 7.6, score: 0.7, moving: 1, alargada: 1.02 };
+  assert.equal(tr.choose(0.8, [pie, pelota]), 1);
+});
+
 test("un objeto quieto que nunca se mueve no dispara nada", () => {
   const balde = { x: 1.5, y: R, z: 1.6, onGround: true, px: 150, py: 70, pr: 12, score: 0.95, moving: 0, alargada: 1.05 };
   const cuadros = [];
   for (let k = 0; k < 90; k++) cuadros.push({ t: k / 30, candidatas: [balde] });
   assert.deepEqual(correrConCandidatas(cuadros), []);
+});
+
+test("calibra el radio real de la pelota apoyada", async () => {
+  const { radioApoyada } = await import("../js/tracker.js");
+  const o = { x: 0.4, y: 1.25, z: 7.2 };
+  for (const radio of [0.095, 0.103, 0.11]) {
+    const c = { x: -0.3, y: radio, z: 3.1 };
+    const dist = Math.hypot(c.x - o.x, c.y - o.y, c.z - o.z);
+    const d = { x: (c.x - o.x) / dist, y: (c.y - o.y) / dist, z: (c.z - o.z) / dist };
+    assert.ok(Math.abs(radioApoyada(o, d, Math.asin(radio / dist)) - radio) < 1e-9);
+    // Con un 2 % de error en el radio angular, el radio sale con ~2 % de error.
+    assert.ok(Math.abs(radioApoyada(o, d, Math.asin(radio / dist) * 1.02) / radio - 1) < 0.025);
+  }
 });

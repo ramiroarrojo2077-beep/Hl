@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { BallDetector, matrizK } from "./detector.js";
-import { ShotTracker, locateBall } from "./tracker.js";
+import { ShotTracker, locateBall, radioApoyada } from "./tracker.js";
 import { ARCOS, DIFICULTADES, PELOTAS, alturaArquero, judgeShot } from "./keeper-ai.js";
 import { Goal } from "./goal.js";
 import { Keeper } from "./keeper.js";
 import { Sounds } from "./sounds.js";
 import { ShotRecorder, recordingSupported } from "./recorder.js";
 import { XRStage, xrSupported } from "./xr-stage.js";
+import { CameraOrientation, ORIENTACIONES } from "./orientacion.js";
 import { DemoStage } from "./demo-stage.js";
 
 // Radio del círculo de escaneo como fracción del lado corto de la pantalla.
@@ -45,6 +46,7 @@ const ui = {
   diag: $("diag"),
   diagCanvas: $("diag-canvas"),
   diagTexto: $("diag-texto"),
+  btnRegistro: $("btn-registro"),
   videos: $("videos"),
   listaVideos: $("lista-videos"),
   btnCerrarVideos: $("btn-cerrar-videos"),
@@ -161,6 +163,46 @@ function armarArco() {
 }
 
 // ---------- Estado del juego ----------
+
+// Orientación de la imagen de la cámara: se detecta sola (ver orientacion.js) y
+// se recuerda para la próxima vez en este celular.
+let volteo = { x: false, y: false };
+try {
+  volteo = { ...volteo, ...JSON.parse(localStorage.getItem("arquero-volteo") ?? "{}") };
+} catch {}
+const orientacion = new CameraOrientation();
+
+function aplicarVolteo() {
+  xrStage?.setFlip(volteo.x, volteo.y);
+  recorder?.setFlip(volteo.x, volteo.y);
+}
+
+// Cámara del cuadro para comparar con el anterior: K (proyección a píxeles) y R (giro).
+function camaraDe(info, w, h) {
+  const e = info.camMatrix.elements;
+  return { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
+}
+
+// Verifica la orientación con cada cuadro hasta estar seguro; si estaba al
+// revés, la corrige y descarta lo medido hasta ahora.
+function verificarOrientacion(info) {
+  if (orientacion.resultado !== null || !info.image) return;
+  const { data, width: w, height: h } = info.image;
+  const r = orientacion.observe(data, w, h, camaraDe(info, w, h));
+  if (r === null || r === 0) return;
+  const o = ORIENTACIONES[r];
+  volteo = { x: volteo.x !== o.x, y: volteo.y !== o.y };
+  try {
+    localStorage.setItem("arquero-volteo", JSON.stringify(volteo));
+  } catch {}
+  aplicarVolteo();
+  orientacion.reset(); // vuelve a verificar con la imagen corregida
+  detector.hasPrev = false;
+  detector.hasPrev2 = false;
+  tracker?.reset();
+  ultimaDeteccion = null;
+  pelotaVistaEn = -Infinity;
+}
 
 const sonidos = new Sounds();
 const detector = new BallDetector(64, 64);
@@ -294,6 +336,8 @@ function escanear(info) {
   const { data, width, height } = info.image;
   detector.resize(width, height);
   const res = detector.learn(data, width / 2, height / 2, RADIO_MIRA * Math.min(width, height));
+  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null } };
+  if (res.ok) reiniciarRadio();
   if (res.ok) {
     sonidos.whistle();
     irA("jugar");
@@ -307,6 +351,147 @@ function escanear(info) {
   ui.pasoTexto.textContent = motivos[res.motivo] ?? "No salió. Probá de nuevo.";
 }
 
+// ---------- Tamaño real de la pelota ----------
+//
+// Con la pelota quieta en el piso, la distancia se conoce por el piso y de ahí
+// sale su radio real tal como la ve esta cámara (ver radioApoyada). Ese radio
+// se usa para medir la distancia cuando va por el aire: así no importa si el
+// número de pelota elegido no es exacto, y se descuenta cualquier error fijo
+// de la medición del tamaño.
+let radioPelota = 0.11;
+let muestrasRadio = [];
+
+function radioNominal() {
+  return PELOTAS[ajustes.pelota].radio;
+}
+
+function reiniciarRadio() {
+  radioPelota = radioNominal();
+  muestrasRadio = [];
+  tracker?.setBallRadius(radioPelota);
+}
+
+function calibrarRadio(medida) {
+  if (!tracker.ready || !medida?.onGround || !medida.det?.refinada) return;
+  const reposo = tracker.restPosition();
+  if (!reposo || Math.hypot(medida.x - reposo.x, medida.z - reposo.z) > 0.25) return;
+  const r = radioApoyada(medida.o, medida.d, medida.ang);
+  if (!r) return;
+  muestrasRadio.push(r);
+  if (muestrasRadio.length > 90) muestrasRadio.shift();
+  if (muestrasRadio.length < 20) return;
+  const mediana = [...muestrasRadio].sort((a, b) => a - b)[muestrasRadio.length >> 1];
+  // Si da algo muy distinto, el problema es otro (el piso del arco a otra altura).
+  if (Math.abs(mediana / radioNominal() - 1) > 0.25) return;
+  radioPelota = mediana;
+  tracker.setBallRadius(radioPelota);
+}
+
+// ---------- Registro para diagnóstico ----------
+//
+// Guarda, cuadro a cuadro, lo que ve la cámara y lo que calcula la app (los
+// últimos ~40 s) y fotos de antes y durante los últimos tiros. Con el botón
+// "Guardar registro" se exporta en un archivo para mandárselo a quien arregla la app.
+
+const MAX_CUADROS = 1200;
+const bitacora = { cuadros: [], escaneo: null, tiros: [], previos: [], tiroActual: null };
+const r2 = (v) => Math.round(v * 100) / 100;
+const r4 = (v) => Math.round(v * 10000) / 10000;
+
+function copiaImagen(img, t) {
+  return { t, w: img.width, h: img.height, data: img.data.slice() };
+}
+
+function anotarCuadro(info, t, candidatas, elegida, medida, evento) {
+  const d = medida?.det;
+  const fila = {
+    t: r4(t),
+    cam: Array.from(info.camMatrix.elements, r4),
+    cands: candidatas.map((c) => [r2(c.x), r2(c.y), r2(c.r), r2(c.score), c.moving == null ? null : r2(c.moving), r2(c.alargada ?? 1)]),
+    elegida,
+    det: d && { x: r2(d.x), y: r2(d.y), r: r2(d.r), fino: Boolean(d.refinada), borde: d.borde ? r2(d.borde) : null },
+    p: medida && { x: r2(medida.x), y: r2(medida.y), z: r2(medida.z), g: medida.onGround },
+    ev: evento?.type,
+    pred: evento?.prediction && { x: r4(evento.prediction.x), y: r4(evento.prediction.y), aire: !evento.prediction.rolling },
+    st: tracker.state,
+    lista: tracker.ready,
+  };
+  bitacora.cuadros.push(fila);
+  if (bitacora.cuadros.length > MAX_CUADROS) bitacora.cuadros.shift();
+  registro?.push(fila);
+  if (registro && registro.length > 600) registro.shift();
+
+  // Fotos: siempre las últimas 3; durante un remate, todas (hasta 18).
+  const foto = copiaImagen(info.image, t);
+  if (evento?.type === "kick") bitacora.tiroActual = { fotos: [...bitacora.previos], eventos: [] };
+  if (bitacora.tiroActual) {
+    if (bitacora.tiroActual.fotos.length < 18) bitacora.tiroActual.fotos.push(foto);
+    if (evento) bitacora.tiroActual.eventos.push({ t: r4(t), tipo: evento.type, pred: fila.pred });
+    if (evento?.type === "cross" || evento?.type === "cancel") {
+      bitacora.tiros.push(bitacora.tiroActual);
+      if (bitacora.tiros.length > 3) bitacora.tiros.shift();
+      bitacora.tiroActual = null;
+    }
+  } else {
+    bitacora.previos.push(foto);
+    if (bitacora.previos.length > 3) bitacora.previos.shift();
+  }
+}
+
+function jpeg(foto) {
+  const c = document.createElement("canvas");
+  c.width = foto.w;
+  c.height = foto.h;
+  const ctx = c.getContext("2d");
+  const img = ctx.createImageData(foto.w, foto.h);
+  const fila = foto.w * 4;
+  // La imagen viene con la fila 0 abajo.
+  for (let y = 0; y < foto.h; y++) img.data.set(foto.data.subarray((foto.h - 1 - y) * fila, (foto.h - y) * fila), y * fila);
+  ctx.putImageData(img, 0, 0);
+  return c.toDataURL("image/jpeg", 0.8);
+}
+
+async function exportarRegistro() {
+  const boton = ui.btnRegistro;
+  const texto = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = "Preparando…";
+  await new Promise((ok) => setTimeout(ok, 30));
+  try {
+    const datos = {
+      app: "Arquero AR",
+      fecha: new Date().toISOString(),
+      navegador: navigator.userAgent,
+      ajustes,
+      modo: modoStage,
+      volteo,
+      orientacion: { resultado: orientacion.resultado, votos: orientacion.votos },
+      radioPelota: { nominal: radioNominal(), calibrado: radioPelota, muestras: muestrasRadio.length },
+      proyeccion: ultimaInfo ? Array.from(ultimaInfo.projMatrix.elements, r4) : null,
+      arco: ultimaInfo ? Array.from(arcoGrupo.matrixWorld.elements, r4) : null,
+      escaneo: bitacora.escaneo && { ...bitacora.escaneo.res, jpeg: jpeg(bitacora.escaneo.foto) },
+      tiros: bitacora.tiros.map((tiro) => ({ eventos: tiro.eventos, fotos: tiro.fotos.map((f) => ({ t: r4(f.t), jpeg: jpeg(f) })) })),
+      cuadros: bitacora.cuadros,
+    };
+    const nombre = `arquero-registro-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
+    const contenido = JSON.stringify(datos);
+    // Como texto se puede compartir por WhatsApp, mail, Drive…; si no, se descarga.
+    const archivo = new File([contenido], `${nombre}.txt`, { type: "text/plain" });
+    if (navigator.canShare?.({ files: [archivo] })) {
+      await navigator.share({ files: [archivo], title: "Registro de Arquero AR" }).catch(() => {});
+    } else {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([contenido], { type: "application/json" }));
+      a.download = `${nombre}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    }
+  } finally {
+    boton.disabled = false;
+    boton.textContent = texto;
+  }
+}
+
 // ---------- Seguimiento de la pelota ----------
 
 
@@ -316,7 +501,7 @@ function proyectar(info, p, w, h) {
   const distancia = mundo.distanceTo(new THREE.Vector3().setFromMatrixPosition(info.camMatrix));
   const ndc = mundo.applyMatrix4(new THREE.Matrix4().copy(info.camMatrix).invert()).applyMatrix4(info.projMatrix);
   if (!(Math.abs(ndc.x) < 1.2 && Math.abs(ndc.y) < 1.2 && ndc.z < 1)) return null;
-  const radio = ((info.projMatrix.elements[5] * h) / 2) * (PELOTAS[ajustes.pelota].radio / distancia);
+  const radio = ((info.projMatrix.elements[5] * h) / 2) * (radioPelota / distancia);
   return { x: ((ndc.x + 1) / 2) * w, y: ((ndc.y + 1) / 2) * h, r: Math.max(2, radio) };
 }
 
@@ -324,18 +509,20 @@ function proyectar(info, p, w, h) {
 // (hasta 4 veces más fino que la imagen chica). Si no sale, queda la medición original.
 function refinar(info, det, w, h) {
   const reg = info.region;
-  const factor = Math.min(4, reg?.factor ?? 0);
+  // Hasta 4 veces más fino, sin pasar de ~20 px de radio en el recorte: con eso
+  // el borde ya se mide con centésimas de píxel y cuesta poco.
+  const factor = Math.min(4, reg?.factor ?? 0, 20 / Math.max(det.r, 1));
   if (factor < 1.5) return det;
   const lado = Math.max(5 * det.r, 24);
   const x0 = det.x - lado / 2;
   const y0 = det.y - lado / 2;
   if (x0 < 0 || y0 < 0 || x0 + lado > w || y0 + lado > h) return det;
-  const tam = Math.min(192, Math.round(lado * factor));
+  const tam = Math.min(128, Math.round(lado * factor));
   const recorte = reg.leer({ x: x0 / w, y: y0 / h, w: lado / w, h: lado / h }, tam, tam);
   const k = tam / lado;
   const fino = detector.refine(recorte, tam, tam, { x: tam / 2, y: tam / 2, r: det.r * k });
   if (!fino) return det;
-  return { ...det, x: x0 + fino.x / k, y: y0 + fino.y / k, r: fino.r / k, refinada: true };
+  return { ...det, x: x0 + fino.x / k, y: y0 + fino.y / k, r: fino.r / k, refinada: true, borde: fino.borde ?? null };
 }
 
 // Posición 3D (en el arco) de una mancha de la imagen, con el rayo de la cámara
@@ -347,7 +534,7 @@ function ubicar(info, det, w, h) {
   const angular = (rayo(det.x - det.r, det.y).angleTo(rayo(det.x + det.r, det.y)) + rayo(det.x, det.y - det.r).angleTo(rayo(det.x, det.y + det.r))) / 4;
   const origen = new THREE.Vector3().setFromMatrixPosition(info.camMatrix).applyMatrix4(tmp.inv);
   const dir = centro.transformDirection(tmp.inv);
-  const p = locateBall(origen, dir, angular, PELOTAS[ajustes.pelota].radio);
+  const p = locateBall(origen, dir, angular, radioPelota);
   if (!(p.z > -1.5 && Math.hypot(p.x, p.z) < 40)) return null;
   return {
     ...p,
@@ -370,8 +557,7 @@ const marca = { pos: new THREE.Vector3(), lista: false };
 function seguirPelota(info) {
   const { data, width: w, height: h } = info.image;
   detector.resize(w, h);
-  const e = info.camMatrix.elements;
-  const camara = { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
+  const camara = camaraDe(info, w, h);
   const t = info.t;
   tmp.proyInv.copy(info.projMatrix).invert();
   tmp.inv.copy(arcoGrupo.matrixWorld).invert();
@@ -400,22 +586,10 @@ function seguirPelota(info) {
     pelotaVistaEn = t;
     const { det: _det, ...obs } = medida;
     evento = tracker.add(t, obs);
-  }
-  if (registro) {
-    const d = medida?.det;
-    registro.push({
-      t: +t.toFixed(3),
-      n: candidatas.length,
-      det: d && { x: +d.x.toFixed(2), y: +d.y.toFixed(2), r: +d.r.toFixed(2), fino: Boolean(d.refinada) },
-      p: medida && { x: +medida.x.toFixed(2), y: +medida.y.toFixed(2), z: +medida.z.toFixed(2), g: medida.onGround },
-      ev: evento?.type,
-      pred: evento?.prediction && { x: +evento.prediction.x.toFixed(3), y: +evento.prediction.y.toFixed(3), aire: !evento.prediction.rolling },
-      st: tracker.state,
-      lista: tracker.ready,
-    });
-    if (registro.length > 600) registro.shift();
+    calibrarRadio(medida);
   }
   evento ??= tracker.tick(t);
+  anotarCuadro(info, t, candidatas, elegida, medida, evento);
   if (evento) manejarEvento(evento, t);
 
   // El aro sigue la trayectoria ajustada (suave) en vuelo y queda fijo donde
@@ -468,7 +642,7 @@ function planificar(pred) {
     y: pred.y,
     tiempo: pred.tCross - tiro.tKick,
     arco: ARCOS[ajustes.arco],
-    radio: PELOTAS[ajustes.pelota].radio,
+    radio: radioPelota,
     dificultad: ajustes.dificultad,
     suerte: tiro.suerte,
   });
@@ -550,6 +724,13 @@ function reiniciarTiro(t) {
 
 // ---------- Diagnóstico ----------
 
+function volteoTexto() {
+  const o = ORIENTACIONES.find((k) => k.x === volteo.x && k.y === volteo.y).nombre;
+  if (modoStage !== "ar") return "simulada";
+  if (orientacion.resultado === 0) return `${o} (verificada)`;
+  return `${o} (verificando: mové un poco el celular)`;
+}
+
 let imagenDiag = null;
 function dibujarDiagnostico(img, det, pos) {
   const { width: w, height: h, data } = img;
@@ -586,7 +767,9 @@ function dibujarDiagnostico(img, det, pos) {
     `${w}×${h} · ` +
     (det ? `r ${det.r.toFixed(1)} px` : "sin pelota") +
     (pos ? ` · a ${Math.hypot(pos.x, pos.z).toFixed(1)} m del arco, ${pos.onGround ? "por el piso" : "en el aire"}` : "") +
-    ` · ${tracker.state}`;
+    ` · ${tracker.state}` +
+    ` · cámara ${volteoTexto()}` +
+    ` · pelota ${(radioPelota * 200).toFixed(1)} cm${muestrasRadio.length >= 20 ? " (medida)" : ""}`;
 }
 
 // ---------- Cuadro a cuadro ----------
@@ -596,6 +779,7 @@ function paso(info) {
   cuadro++;
   ultimaInfo = info;
   if (registro && info.image) window.__arquero.imagen = info.image;
+  if (modoStage === "ar") verificarOrientacion(info);
   const t = info.t;
   const dt = ultimoT === null ? 0 : Math.min(0.1, Math.max(0, t - ultimoT));
   ultimoT = t;
@@ -748,8 +932,10 @@ function prepararJuego() {
   leerAjustes();
   sonidos.unlock();
   armarArco();
-  tracker = new ShotTracker({ ballRadius: PELOTAS[ajustes.pelota].radio });
+  tracker = new ShotTracker({ ballRadius: radioNominal() });
+  reiniciarRadio();
   detector.forget();
+  orientacion.reset();
   marcador = { goles: 0, atajadas: 0, afuera: 0 };
   ui.marcador.textContent = textoMarcador();
   if (ajustes.modo === "fijo" && recordingSupported()) {
@@ -796,6 +982,7 @@ ui.btnAR.addEventListener("click", async () => {
   }
   stage = xrStage;
   modoStage = "ar";
+  aplicarVolteo();
   irA("ubicar");
   if (xrStage.hasCameraAccess === false) {
     mostrarPaso(
@@ -826,6 +1013,7 @@ ui.btnDiag.addEventListener("click", () => {
   mostrarDiag = !mostrarDiag;
   ui.diag.hidden = !mostrarDiag;
 });
+ui.btnRegistro.addEventListener("click", exportarRegistro);
 ui.btnVideos.addEventListener("click", () => {
   listarClips(ui.listaVideos);
   ui.videos.hidden = false;
@@ -911,6 +1099,12 @@ window.__arquero = {
   },
   get clips() {
     return recorder?.clips.length ?? 0;
+  },
+  get radioPelota() {
+    return { nominal: radioNominal(), calibrado: radioPelota, muestras: muestrasRadio.length };
+  },
+  get orientacion() {
+    return { volteo, verificada: orientacion.resultado === 0, votos: [...orientacion.votos] };
   },
   registro,
   patearA(x, y, velocidad) {

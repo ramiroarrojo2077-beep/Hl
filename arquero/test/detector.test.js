@@ -264,3 +264,82 @@ test("el recorte en alta resolución mide la pelota todavía mejor", () => {
   assert.ok(radioDespues < 0.15, `radio ${radioDespues.toFixed(3)} px`);
   assert.ok(radioDespues < radioAntes, "el radio no mejoró");
 });
+
+// Recorte realista: la pelota con un costado en sombra (luz desde arriba a la
+// izquierda), gajos negros y, si se pide, un pie oscuro tapando parte del borde.
+function recorteRealista(pelota, x0, y0, lado, tam, semilla, { pie = false } = {}) {
+  const rnd = azar(semilla);
+  const img = new Uint8Array(tam * tam * 4);
+  const k = lado / tam;
+  for (let y = 0; y < tam; y++) {
+    for (let x = 0; x < tam; x++) {
+      const n = (rnd() - 0.5) * 16;
+      let suma = [0, 0, 0];
+      for (let sy = 0; sy < 3; sy++)
+        for (let sx = 0; sx < 3; sx++) {
+          const bx = x0 + (x + (sx + 0.5) / 3) * k;
+          const by = y0 + (y + (sy + 0.5) / 3) * k;
+          let c = [50 + n, 130 + n, 45 + n];
+          const dx = (bx - pelota.x) / pelota.r;
+          const dy = (by - pelota.y) / pelota.r;
+          if (dx * dx + dy * dy <= 1) {
+            const nz = Math.sqrt(1 - dx * dx - dy * dy);
+            // Luz desde arriba a la izquierda (y crece hacia arriba).
+            const luz = Math.max(0, -0.55 * dx + 0.55 * dy + 0.62 * nz);
+            const brillo = 0.38 + 0.62 * luz;
+            const gajo = Math.sin(dx * 6.5) * Math.sin(dy * 6.5) > 0.55;
+            c = gajo ? [25, 25, 28] : [242 * brillo, 242 * brillo, 236 * brillo];
+          }
+          if (pie && bx > pelota.x + 0.35 * pelota.r && by < pelota.y - 0.1 * pelota.r) c = [40 + n * 0.3, 32, 30];
+          suma = suma.map((v, i) => v + c[i] / 9);
+        }
+      const i = (y * tam + x) * 4;
+      for (let c = 0; c < 3; c++) img[i + c] = Math.max(0, Math.min(255, suma[c]));
+      img[i + 3] = 255;
+    }
+  }
+  return img;
+}
+
+for (const pie of [false, true]) {
+  test(`el borde mide bien la pelota con sombra${pie ? " y un pie tapándola" : ""}`, () => {
+    const det = new BallDetector(W, H);
+    // Escaneo con la pelota bien iluminada.
+    det.learn(cuadroSuave({ x: 100, y: 60, r: 28 }, 1), 100, 60, 30);
+    const casos = [
+      { x: 40.3, y: 70.6, r: 5.4 },
+      { x: 120.75, y: 35.2, r: 7.1 },
+      { x: 77.45, y: 90.9, r: 9.3 },
+    ];
+    const err = { color: { c: 0, r: 0 }, borde: { c: 0, r: 0 } };
+    for (const [k, p] of casos.entries()) {
+      const lado = Math.max(5 * p.r, 24);
+      const tam = Math.round(lado * 4);
+      // Centro de partida algo corrido, como sale de la imagen chica.
+      const x0 = p.x + 0.3 - lado / 2;
+      const y0 = p.y - 0.2 - lado / 2;
+      const img = recorteRealista(p, x0, y0, lado, tam, 70 + k, { pie });
+      const guess = { x: tam / 2, y: tam / 2, r: p.r * 0.9 * (tam / lado) };
+      for (const modo of ["color", "borde"]) {
+        const f = det.refine(img, tam, tam, guess, { borde: modo === "borde" });
+        if (!f && modo === "color") {
+          // Con sombra el color directamente puede no encontrarla.
+          err.color.c = err.color.r = Infinity;
+          continue;
+        }
+        assert.ok(f, `${modo}: no la encontró ${JSON.stringify(p)}`);
+        const x = x0 + (f.x * lado) / tam;
+        const y = y0 + (f.y * lado) / tam;
+        const r = (f.r * lado) / tam;
+        err[modo].c = Math.max(err[modo].c, Math.hypot(x - p.x, y - p.y));
+        err[modo].r = Math.max(err[modo].r, Math.abs(r - p.r) / p.r);
+      }
+    }
+    console.log(
+      `  ${pie ? "con pie" : "con sombra"}: color centro ${err.color.c.toFixed(2)} px, radio ${(err.color.r * 100).toFixed(1)} % · borde centro ${err.borde.c.toFixed(2)} px, radio ${(err.borde.r * 100).toFixed(1)} %`,
+    );
+    assert.ok(err.borde.r < 0.02, `radio por borde ${(err.borde.r * 100).toFixed(1)} %`);
+    assert.ok(err.borde.c < 0.15, `centro por borde ${err.borde.c.toFixed(2)} px`);
+    assert.ok(err.borde.r < err.color.r, "el borde no mejoró el radio");
+  });
+}

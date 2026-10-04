@@ -111,6 +111,13 @@ function homografia(actual, anterior) {
   const rel = mul3(trasp3(anterior.R), actual.R);
   const coseno = (rel[0] + rel[4] + rel[8] - 1) / 2;
   if (coseno < Math.cos((8 * Math.PI) / 180)) return null;
+  return homografiaEntre(actual, anterior);
+}
+
+// Homografía (3x3 fila por fila) de los píxeles de `actual` a los de `anterior`
+// suponiendo que la cámara sólo giró.
+export function homografiaEntre(actual, anterior) {
+  const rel = mul3(trasp3(anterior.R), actual.R);
   return mul3(mul3(anterior.K, rel), inv3(actual.K));
 }
 
@@ -462,7 +469,7 @@ export class BallDetector {
   // Vuelve a medir la pelota en un recorte de la cámara con más resolución.
   // guess: {x, y, r} en píxeles del recorte. Devuelve {x, y, r, alargada} en
   // píxeles del recorte, o null si no la encuentra donde se esperaba.
-  refine(rgba, w, h, guess) {
+  refine(rgba, w, h, guess, { borde = true } = {}) {
     if (!this.prob) return null;
     const n = w * h;
     if (!this.recorte || this.recorte.n !== n) {
@@ -488,6 +495,39 @@ export class BallDetector {
     dilatar(closed, tmp, w, h, 0);
     dilatar(tmp, closed, w, h, 0);
 
+    const porColor = this.#refinarPorColor(w, h, guess);
+    if (!borde) return porColor;
+    // El borde real (donde la luz cambia) no depende del color: con sombra o
+    // mucho sol el color "come" un costado de la pelota, o directamente no la
+    // encuentra. Arranca de la medición por color si la hay, o de la aproximada.
+    // Con estela de movimiento (alargada) no es un círculo: queda lo del color.
+    if (porColor && porColor.alargada >= 1.3 && porColor.r >= guess.r * 0.8) return porColor;
+    // Se prueba desde varios puntos de partida, se repite desde cada resultado
+    // hasta que el círculo se asienta, y gana el que explica más puntos del borde.
+    const inicios = porColor ? [porColor, guess] : [guess];
+    const suave = suavizarColor(rgba, w, h);
+    let mejor = null;
+    for (const base of inicios) {
+      if (base.r < 4) continue;
+      let c = contornoEn(suave, w, h, base.x, base.y, base.r);
+      for (let i = 0; i < 3 && c; i++) {
+        const otra = contornoEn(suave, w, h, c.x, c.y, c.r);
+        if (!otra) break;
+        const quieto = Math.hypot(otra.x - c.x, otra.y - c.y) < 0.05 && Math.abs(otra.r - c.r) < 0.05;
+        c = otra;
+        if (quieto) break;
+      }
+      const valido = c && c.r > guess.r * 0.6 && c.r < guess.r * 1.6 && Math.hypot(c.x - guess.x, c.y - guess.y) < guess.r * 0.6;
+      if (valido && c.inliers >= 0.55 && (!mejor || c.inliers > mejor.inliers)) mejor = c;
+      if (mejor && mejor.inliers >= 0.85) break; // el contorno ya cierra casi entero
+    }
+    if (mejor) return { ...(porColor ?? {}), alargada: 1, x: mejor.x, y: mejor.y, r: mejor.r, borde: mejor.inliers };
+    return porColor;
+  }
+
+  #refinarPorColor(w, h, guess) {
+    const { closed, labels, stack, score } = this.recorte;
+    const n = w * h;
     // Semilla: el píxel de pelota más cercano a donde se la esperaba.
     let semilla = -1;
     let mejor = Infinity;
@@ -543,6 +583,166 @@ export class BallDetector {
     const parecido = fino.r > guess.r * 0.6 && fino.r < guess.r * 1.5;
     return cerca && parecido ? fino : null;
   }
+}
+
+// Busca el borde de la pelota en 64 direcciones desde (cx, cy) y ajusta un
+// círculo a esos puntos descartando los tramos que no cierran (un pie encima,
+// una sombra pegada). El borde es el último salto fuerte de color hacia afuera:
+// se usa el color y no sólo el brillo porque el costado en sombra de una pelota
+// blanca puede brillar igual que el pasto, y los gajos dan saltos adentro.
+// Devuelve {x, y, r, inliers} o null.
+export function contorno(rgba, w, h, cx, cy, r) {
+  return contornoEn(suavizarColor(rgba, w, h), w, h, cx, cy, r);
+}
+
+// Color suavizado 3x3 (menos ruido en la derivada), 3 valores por píxel.
+function suavizarColor(rgba, w, h) {
+  const S = new Float32Array(w * h * 3);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let r0 = 0;
+      let g0 = 0;
+      let b0 = 0;
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= h) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= w) continue;
+          const j = (yy * w + xx) * 4;
+          r0 += rgba[j];
+          g0 += rgba[j + 1];
+          b0 += rgba[j + 2];
+          n++;
+        }
+      }
+      const k = (y * w + x) * 3;
+      S[k] = r0 / n;
+      S[k + 1] = g0 / n;
+      S[k + 2] = b0 / n;
+    }
+  }
+  return S;
+}
+
+function contornoEn(S, w, h, cx, cy, r) {
+  const puntos = [];
+  const N = 64;
+  const paso = 0.25;
+  const desde = 0.55 * r;
+  const hasta = 1.6 * r;
+  const cuantos = Math.floor((hasta - desde) / paso) + 1;
+  const der = new Float32Array(cuantos);
+  for (let n = 0; n < N; n++) {
+    const ang = (2 * Math.PI * n) / N;
+    const dx = Math.cos(ang);
+    const dy = Math.sin(ang);
+    let m = 0; // derivadas válidas
+    let max = 0;
+    let r0 = 0;
+    let g0 = 0;
+    let b0 = 0;
+    let afuera = false;
+    for (let k = 0; k < cuantos; k++) {
+      const s = desde + k * paso;
+      // Muestra bilineal del color suavizado.
+      const u = cx + dx * s - 0.5;
+      const v = cy + dy * s - 0.5;
+      const i = Math.floor(u);
+      const j = Math.floor(v);
+      if (i < 0 || j < 0 || i + 1 >= w || j + 1 >= h) {
+        afuera = true;
+        break;
+      }
+      const a = u - i;
+      const bb = v - j;
+      const p0 = (j * w + i) * 3;
+      const p1 = p0 + w * 3;
+      const w00 = (1 - a) * (1 - bb);
+      const w10 = a * (1 - bb);
+      const w01 = (1 - a) * bb;
+      const w11 = a * bb;
+      const r1 = S[p0] * w00 + S[p0 + 3] * w10 + S[p1] * w01 + S[p1 + 3] * w11;
+      const g1 = S[p0 + 1] * w00 + S[p0 + 4] * w10 + S[p1 + 1] * w01 + S[p1 + 4] * w11;
+      const b1 = S[p0 + 2] * w00 + S[p0 + 5] * w10 + S[p1 + 2] * w01 + S[p1 + 5] * w11;
+      if (k > 0) {
+        const d = Math.sqrt((r1 - r0) ** 2 + (g1 - g0) ** 2 + (b1 - b0) ** 2) / paso;
+        der[m++] = d;
+        if (d > max) max = d;
+      }
+      r0 = r1;
+      g0 = g1;
+      b0 = b1;
+    }
+    if (afuera || m < 5 || !(max > 4)) continue;
+    // El último pico fuerte hacia afuera.
+    let k = -1;
+    for (let i = m - 2; i >= 1; i--) {
+      if (der[i] >= 0.4 * max && der[i] >= der[i - 1] && der[i] >= der[i + 1]) {
+        k = i;
+        break;
+      }
+    }
+    if (k < 1) continue;
+    // Ajuste parabólico del pico: posición del borde con fracción de paso.
+    const a = der[k - 1];
+    const b = der[k];
+    const c = der[k + 1];
+    const off = Math.max(-0.5, Math.min(0.5, (a - c) / (2 * (a - 2 * b + c) || 1)));
+    const s = desde + (k + 0.5 + off) * paso;
+    puntos.push([cx + dx * s, cy + dy * s]);
+  }
+  if (puntos.length < N * 0.5) return null;
+
+  let usados = puntos;
+  let circulo = null;
+  for (let iter = 0; iter < 5; iter++) {
+    circulo = ajustarCirculo(usados);
+    if (!circulo) return null;
+    const res = puntos.map(([x, y]) => Math.abs(Math.hypot(x - circulo.x, y - circulo.y) - circulo.r));
+    const mad = [...res].sort((p, q) => p - q)[res.length >> 1] * 1.4826;
+    const corte = Math.max(0.6, 2.5 * mad);
+    const nuevos = puntos.filter((_, i) => res[i] <= corte);
+    if (nuevos.length < 10) return null;
+    if (nuevos.length === usados.length) break;
+    usados = nuevos;
+  }
+  return { ...ajustarCirculo(usados), inliers: usados.length / N };
+}
+
+// Círculo por cuadrados mínimos (Kåsa): x² + y² + D·x + E·y + F = 0.
+function ajustarCirculo(p) {
+  let sxx = 0, sxy = 0, syy = 0, sx = 0, sy = 0, sz = 0, sxz = 0, syz = 0;
+  const n = p.length;
+  for (const [x, y] of p) {
+    const z = x * x + y * y;
+    sxx += x * x;
+    sxy += x * y;
+    syy += y * y;
+    sx += x;
+    sy += y;
+    sz += z;
+    sxz += x * z;
+    syz += y * z;
+  }
+  // [sxx sxy sx; sxy syy sy; sx sy n] · [D E F] = -[sxz syz sz]
+  const A = [sxx, sxy, sx, sxy, syy, sy, sx, sy, n];
+  const det = A[0] * (A[4] * A[8] - A[5] * A[7]) - A[1] * (A[3] * A[8] - A[5] * A[6]) + A[2] * (A[3] * A[7] - A[4] * A[6]);
+  if (Math.abs(det) < 1e-9) return null;
+  const b = [-sxz, -syz, -sz];
+  const resolver = (k) => {
+    const M = A.slice();
+    for (let f = 0; f < 3; f++) M[f * 3 + k] = b[f];
+    return (M[0] * (M[4] * M[8] - M[5] * M[7]) - M[1] * (M[3] * M[8] - M[5] * M[6]) + M[2] * (M[3] * M[7] - M[4] * M[6])) / det;
+  };
+  const D = resolver(0);
+  const E = resolver(1);
+  const F = resolver(2);
+  const x = -D / 2;
+  const y = -E / 2;
+  const r2 = x * x + y * y - F;
+  return r2 > 0 ? { x, y, r: Math.sqrt(r2) } : null;
 }
 
 // Momentos de la mancha `etiqueta` ponderados por la probabilidad de cada píxel:

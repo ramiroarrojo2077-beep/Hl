@@ -41,8 +41,9 @@ export class ShotRecorder {
     this.camaraQuad = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const vertex = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
     this.materialFondo = new THREE.ShaderMaterial({
-      uniforms: { map: { value: null } },
-      vertexShader: vertex,
+      uniforms: { map: { value: null }, volteo: { value: new THREE.Vector2(0, 0) } },
+      vertexShader:
+        "uniform vec2 volteo; varying vec2 vUv; void main() { vUv = mix(uv, 1.0 - uv, volteo); gl_Position = vec4(position.xy, 0.0, 1.0); }",
       fragmentShader: "uniform sampler2D map; varying vec2 vUv; void main() { gl_FragColor = vec4(texture2D(map, vUv).rgb, 1.0); }",
       depthTest: false,
       depthWrite: false,
@@ -68,6 +69,11 @@ export class ShotRecorder {
     });
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.materialFondo);
     this.quad.frustumCulled = false;
+  }
+
+  // Orientación de la imagen de la cámara (ver orientacion.js).
+  setFlip(x, y) {
+    this.materialFondo.uniforms.volteo.value.set(x ? 1 : 0, y ? 1 : 0);
   }
 
   get extension() {

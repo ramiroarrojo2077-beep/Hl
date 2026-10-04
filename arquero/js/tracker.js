@@ -33,6 +33,17 @@ export function locateBall(origin, dir, angularRadius, ballRadius) {
   };
 }
 
+// Radio real de una pelota apoyada en el piso, a partir del rayo de la cámara a
+// su centro (origen o, dirección d) y su radio angular. Apoyada, su centro está a
+// un radio del piso (y = R) y a una distancia R / sen(ang): de ahí sale R. Así
+// se calibra el tamaño de la pelota tal como la ve esta cámara (y no depende de
+// elegir bien el número de pelota). null si el rayo no baja hacia el piso.
+export function radioApoyada(o, d, ang) {
+  const s = Math.sin(ang);
+  if (!(d.y < -0.05) || !(s > 0) || !(o.y > 0)) return null;
+  return o.y / (1 - d.y / s);
+}
+
 // Ajuste por cuadrados mínimos de v(τ) = a + b·τ. Devuelve [a, b, error cuadrático medio].
 function ajusteLineal(ts, vs) {
   const n = ts.length;
@@ -350,6 +361,11 @@ export class ShotTracker {
     this.reset();
   }
 
+  // Radio calibrado de la pelota (ver radioApoyada). Sólo se cambia fuera de un remate.
+  setBallRadius(r) {
+    if (this.state !== "flight") this.ballRadius = r;
+  }
+
   reset() {
     this.state = "idle"; // idle → flight → done
     // Objetos quietos que pueden ser la pelota. Puede haber más de uno (otra
@@ -503,14 +519,25 @@ export class ShotTracker {
 
   // Entre las candidatas, la que puede haber salido del lugar de `q` (o seguir
   // su recorrido), con más puntaje y movimiento. -1 si ninguna.
+  // Tiene que tener el tamaño que traía la pelota en la imagen: cuadro a cuadro
+  // cambia poco (se aleja o se acerca de a medio metro). El pie que la sigue en
+  // el remate pasa por el mismo lugar, pero se ve alargado y de otro ancho (con
+  // estela de movimiento el ancho de la pelota sigue siendo su diámetro).
   #queSale(t, q, validas) {
     const ultima = q.saliendo[q.saliendo.length - 1] ?? { ...q, t: q.tUlt };
     const alcance = VELOCIDAD_MAXIMA * Math.max(t - ultima.t, 1 / 60) + 0.25;
+    const tolTamano = Math.log(1.45) + 1.5 * Math.max(t - ultima.t, 0);
     let mejor = null;
     for (const v of validas) {
       if (apartamiento(v.c, q) < 1.5) continue;
       if (distancia3(v.c, ultima) > alcance) continue;
-      const puntaje = v.c.score * (0.5 + (v.c.moving ?? 0));
+      let parecido = 1;
+      if (v.c.pr && ultima.pr) {
+        const tamano = Math.abs(Math.log(v.c.pr / ultima.pr));
+        if (tamano > tolTamano) continue;
+        parecido = 1 - (0.5 * tamano) / tolTamano;
+      }
+      const puntaje = (v.c.score * (0.5 + (v.c.moving ?? 0)) * parecido) / (1 + 0.3 * ((v.c.alargada ?? 1) - 1));
       if (!mejor || puntaje > mejor.puntaje) mejor = { ...v, puntaje };
     }
     return mejor ? mejor.i : -1;

@@ -11,9 +11,14 @@ export class PixelReader {
     this.camara = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.material = new THREE.ShaderMaterial({
       // region: (x, y, ancho, alto) de la imagen a leer, en coordenadas 0..1.
-      uniforms: { map: { value: null }, region: { value: new THREE.Vector4(0, 0, 1, 1) } },
+      // volteo: (1, 0) espeja, (0, 1) da vuelta; corrige cómo llega la imagen de la cámara.
+      uniforms: {
+        map: { value: null },
+        region: { value: new THREE.Vector4(0, 0, 1, 1) },
+        volteo: { value: new THREE.Vector2(0, 0) },
+      },
       vertexShader:
-        "uniform vec4 region; varying vec2 vUv; void main() { vUv = region.xy + uv * region.zw; gl_Position = vec4(position.xy, 0.0, 1.0); }",
+        "uniform vec4 region; uniform vec2 volteo; varying vec2 vUv; void main() { vec2 p = region.xy + uv * region.zw; vUv = mix(p, 1.0 - p, volteo); gl_Position = vec4(position.xy, 0.0, 1.0); }",
       fragmentShader: "uniform sampler2D map; varying vec2 vUv; void main() { gl_FragColor = texture2D(map, vUv); }",
       depthTest: false,
       depthWrite: false,
@@ -21,6 +26,11 @@ export class PixelReader {
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material);
     quad.frustumCulled = false;
     this.escena.add(quad);
+  }
+
+  // Orientación de la imagen de la cámara (ver orientacion.js).
+  setFlip(x, y) {
+    this.material.uniforms.volteo.value.set(x ? 1 : 0, y ? 1 : 0);
   }
 
   // Tamaño del buffer para una imagen de ancho × alto: el lado largo queda en `lado`.
