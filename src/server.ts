@@ -9,6 +9,11 @@ const MAX_LARGO_PRODUCTO = 200;
 const DURACION_CACHE_MS = 6 * 60 * 60 * 1000;
 
 const INDEX = new URL("../public/index.html", import.meta.url);
+const ARQUERO = new URL("../arquero/", import.meta.url);
+const TIPOS_ARQUERO: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+};
 
 // Las búsquedas repetidas (mismo producto y país) se responden al instante.
 const cache = new Map<string, { resultado: Resultado; vence: number }>();
@@ -67,6 +72,25 @@ async function manejarBusqueda(url: URL, res: http.ServerResponse): Promise<void
   res.end();
 }
 
+// Arquero AR: archivos estáticos de la carpeta arquero/ (sin subir de carpeta).
+async function servirArquero(ruta: string, res: http.ServerResponse): Promise<void> {
+  const archivo = new URL(ruta, ARQUERO);
+  const tipo = TIPOS_ARQUERO[ruta.slice(ruta.lastIndexOf("."))];
+  if (!archivo.href.startsWith(ARQUERO.href) || !tipo || ruta.includes("..")) {
+    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("No encontrado");
+    return;
+  }
+  try {
+    const contenido = await readFile(archivo);
+    res.writeHead(200, { "Content-Type": tipo });
+    res.end(contenido);
+  } catch {
+    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("No encontrado");
+  }
+}
+
 const servidor = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");
   try {
@@ -79,6 +103,11 @@ const servidor = http.createServer(async (req, res) => {
       res.end(JSON.stringify(PAISES.map(({ codigo, nombre, moneda }) => ({ codigo, nombre, moneda }))));
     } else if (req.method === "GET" && url.pathname === "/api/buscar") {
       await manejarBusqueda(url, res);
+    } else if (req.method === "GET" && url.pathname === "/arquero") {
+      res.writeHead(301, { Location: "/arquero/" });
+      res.end();
+    } else if (req.method === "GET" && url.pathname.startsWith("/arquero/")) {
+      await servirArquero(url.pathname.slice("/arquero/".length) || "index.html", res);
     } else {
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("No encontrado");
@@ -92,4 +121,5 @@ const servidor = http.createServer(async (req, res) => {
 
 servidor.listen(PUERTO, () => {
   console.log(`Precio de fábrica: http://localhost:${PUERTO}`);
+  console.log(`Arquero AR: http://localhost:${PUERTO}/arquero/`);
 });

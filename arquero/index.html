@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1410" />
+    <title>Arquero AR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+    <script type="importmap">
+      { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js" } }
+    </script>
+    <style>
+      :root {
+        --verde: #c6ff1a;
+        --amarillo: #ffd400;
+        --fondo: #0b1410;
+        --panel: rgba(10, 16, 13, 0.78);
+        --borde: rgba(255, 255, 255, 0.14);
+        --texto: #f2f6f3;
+        --tenue: #a9b8ae;
+        --rojo: #ff5a5f;
+        --radio-mira: 22vmin; /* = RADIO_MIRA en app.js */
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--fondo);
+        color: var(--texto);
+        font-family: Inter, system-ui, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      #escena {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+
+      /* ---------- Inicio ---------- */
+      #inicio {
+        min-height: 100%;
+        padding: max(24px, env(safe-area-inset-top)) 16px 32px;
+        background:
+          radial-gradient(120% 60% at 50% 0%, rgba(198, 255, 26, 0.16), transparent 60%),
+          repeating-linear-gradient(180deg, #0e1a14 0 64px, #0c1611 64px 128px);
+      }
+      .contenido {
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-family: "Archivo Black", Inter, sans-serif;
+        font-size: clamp(44px, 14vw, 72px);
+        line-height: 0.9;
+        margin: 8px 0 12px;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+      }
+      h1 span {
+        color: var(--verde);
+      }
+      .bajada {
+        color: var(--tenue);
+        font-size: 17px;
+        line-height: 1.45;
+        margin: 0 0 20px;
+      }
+      ol.pasos {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px;
+        display: grid;
+        gap: 8px;
+        counter-reset: paso;
+      }
+      ol.pasos li {
+        counter-increment: paso;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--borde);
+        border-radius: 14px;
+        padding: 12px 14px;
+        line-height: 1.35;
+      }
+      ol.pasos li::before {
+        content: counter(paso);
+        flex: none;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--verde);
+        color: #0b1410;
+        font-weight: 800;
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+      }
+      ol.pasos b {
+        display: block;
+      }
+      fieldset {
+        border: 1px solid var(--borde);
+        border-radius: 16px;
+        padding: 14px;
+        margin: 0 0 16px;
+        display: grid;
+        gap: 12px;
+      }
+      legend {
+        padding: 0 6px;
+        color: var(--tenue);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      label.campo {
+        display: grid;
+        gap: 6px;
+        font-size: 14px;
+        color: var(--tenue);
+      }
+      select {
+        appearance: none;
+        width: 100%;
+        font: inherit;
+        font-size: 16px;
+        color: var(--texto);
+        background: #13201a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a9b8ae' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;
+        border: 1px solid var(--borde);
+        border-radius: 12px;
+        padding: 12px 36px 12px 14px;
+      }
+      .modos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .modos label {
+        position: relative;
+        border: 1px solid var(--borde);
+        border-radius: 14px;
+        padding: 12px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 13px;
+        color: var(--tenue);
+        line-height: 1.35;
+      }
+      .modos label b {
+        display: block;
+        color: var(--texto);
+        font-size: 15px;
+        margin-bottom: 4px;
+      }
+      .modos input {
+        position: absolute;
+        opacity: 0;
+      }
+      .modos label:has(input:checked) {
+        border-color: var(--verde);
+        background: rgba(198, 255, 26, 0.08);
+      }
+      .modos label:has(input:focus-visible) {
+        outline: 2px solid var(--verde);
+        outline-offset: 2px;
+      }
+      .boton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        min-height: 54px;
+        border: 0;
+        border-radius: 16px;
+        background: var(--verde);
+        color: #0b1410;
+        font: 800 17px Inter, system-ui, sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.12s, filter 0.12s;
+      }
+      .boton:active {
+        transform: scale(0.98);
+      }
+      .boton:disabled {
+        filter: grayscale(1) brightness(0.6);
+        cursor: not-allowed;
+      }
+      .boton.secundario {
+        background: transparent;
+        color: var(--texto);
+        border: 1px solid var(--borde);
+      }
+      .boton.chico {
+        width: auto;
+        min-height: 38px;
+        padding: 0 14px;
+        font-size: 14px;
+        border-radius: 12px;
+      }
+      .aviso {
+        font-size: 14px;
+        line-height: 1.4;
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin: 10px 0;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--tenue);
+      }
+      .aviso.ok {
+        color: var(--verde);
+        background: rgba(198, 255, 26, 0.08);
+      }
+      .aviso.error {
+        color: #ffd2d3;
+        background: rgba(255, 90, 95, 0.12);
+      }
+      .acciones-inicio {
+        display: grid;
+        gap: 10px;
+      }
+      #clips-inicio h2 {
+        font-size: 18px;
+        margin: 28px 0 10px;
+      }
+
+      /* ---------- HUD dentro de la RA ---------- */
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        font-size: 15px;
+        z-index: 2;
+      }
+      #hud > *,
+      #hud button,
+      #hud a,
+      #hud video {
+        pointer-events: auto;
+      }
+      .barra {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      .ficha {
+        background: var(--panel);
+        border: 1px solid var(--borde);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-weight: 700;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        white-space: nowrap;
+      }
+      .ficha.ok {
+        color: var(--verde);
+      }
+      .barra .espacio {
+        flex: 1;
+      }
+      .icono {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid var(--borde);
+        background: var(--panel);
+        color: var(--texto);
+        font-size: 18px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      #rec {
+        color: #fff;
+        background: rgba(220, 30, 40, 0.85);
+        border-color: transparent;
+      }
+      #rec::before {
+        content: "";
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #fff;
+        margin-right: 6px;
+        animation: titila 1s steps(2) infinite;
+      }
+      @keyframes titila {
+        50% {
+          opacity: 0;
+        }
+      }
+      #btn-videos {
+        width: auto;
+        min-height: 38px;
+        padding: 0 14px;
+        font-size: 14px;
+        border-radius: 999px;
+      }
+      #hud:not([data-modo="fijo"]) #estado-celu,
+      #hud:not([data-fase="jugar"]) #estado-pelota,
+      #hud:not([data-fase="jugar"]) #estado-celu {
+        display: none;
+      }
+      #mira {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: calc(var(--radio-mira) * 2);
+        height: calc(var(--radio-mira) * 2);
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 3px dashed var(--verde);
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+        pointer-events: none !important;
+      }
+      #banner {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 26%;
+        text-align: center;
+        pointer-events: none !important;
+      }
+      #banner-texto {
+        font-family: "Archivo Black", Inter, sans-serif;
+        font-size: clamp(48px, 16vw, 110px);
+        line-height: 1;
+        text-shadow:
+          0 4px 0 rgba(0, 0, 0, 0.45),
+          0 0 30px rgba(0, 0, 0, 0.5);
+      }
+      #banner-sub {
+        margin-top: 8px;
+        font-weight: 800;
+        font-size: 20px;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+      }
+      #banner.entra #banner-texto {
+        animation: entra 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+      }
+      @keyframes entra {
+        from {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--borde);
+        border-radius: 20px;
+        padding: 14px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        max-width: 560px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .panel h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      .panel p {
+        margin: 0 0 12px;
+        color: var(--tenue);
+        line-height: 1.4;
+      }
+      .panel .botones {
+        display: grid;
+        gap: 8px;
+      }
+      .abajo {
+        display: grid;
+        gap: 8px;
+      }
+      .abajo .barra {
+        justify-content: center;
+      }
+      #diag {
+        position: fixed;
+        right: 12px;
+        top: 70px;
+        width: min(46vw, 260px);
+        background: var(--panel);
+        border-radius: 12px;
+        padding: 6px;
+        font-size: 11px;
+        color: var(--tenue);
+      }
+      #diag canvas {
+        width: 100%;
+        display: block;
+        border-radius: 8px;
+        image-rendering: pixelated;
+      }
+      #videos {
+        position: fixed;
+        inset: 0;
+        background: rgba(5, 8, 7, 0.94);
+        padding: max(16px, env(safe-area-inset-top)) 16px 16px;
+        overflow-y: auto;
+        z-index: 3;
+      }
+      #videos .cabecera {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 560px;
+        margin: 0 auto 12px;
+      }
+      #videos h2 {
+        margin: 0;
+      }
+      ul.clips {
+        list-style: none;
+        margin: 0 auto;
+        padding: 0;
+        display: grid;
+        gap: 14px;
+        max-width: 560px;
+      }
+      ul.clips video {
+        width: 100%;
+        max-height: 60vh;
+        border-radius: 14px;
+        background: #000;
+      }
+      ul.clips .acciones {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      ul.clips .acciones span {
+        flex: 1;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="inicio">
+      <div class="contenido">
+        <h1>Arquero <span>AR</span></h1>
+        <p class="bajada">
+          Escaneá tu lugar, poné un arco con arquero en tu piso real y pateale con tu pelota de verdad. Cuando la
+          pateás, el arquero se tira a atajarla.
+        </p>
+        <ol class="pasos">
+          <li><div><b>Ubicá el arco</b>Apuntá al piso y elegí dónde va (contra una pared es ideal).</div></li>
+          <li><div><b>Escaneá tu pelota</b>Así la app aprende cuál es y la sigue cuando la pateás.</div></li>
+          <li><div><b>Pateá</b>Detecta el remate, calcula por dónde entra y el arquero se tira.</div></li>
+        </ol>
+
+        <fieldset>
+          <legend>Modo</legend>
+          <div class="modos">
+            <label>
+              <input type="radio" name="modo" value="mano" checked />
+              <b>En mano</b>
+              Sostenés el celu y mirás la jugada. Compensa el movimiento de la cámara.
+            </label>
+            <label>
+              <input type="radio" name="modo" value="fijo" />
+              <b>Fijo + video</b>
+              Lo apoyás mirando al arco: más preciso y graba cada tiro con el arquero.
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ajustes</legend>
+          <label class="campo">Arco <select id="sel-arco"></select></label>
+          <label class="campo">Pelota <select id="sel-pelota"></select></label>
+          <label class="campo">Arquero <select id="sel-dificultad"></select></label>
+        </fieldset>
+
+        <div class="acciones-inicio">
+          <button id="btn-ar" class="boton">Entrar en realidad aumentada</button>
+          <p id="compat" class="aviso">Revisando si tu celular soporta realidad aumentada…</p>
+          <button id="btn-demo" class="boton secundario">Probar la demo sin AR</button>
+        </div>
+
+        <section id="clips-inicio" hidden>
+          <h2>Tus tiros grabados</h2>
+          <p class="aviso">Los videos quedan hasta que cierres la página: descargalos o compartilos.</p>
+          <ul id="lista-clips-inicio" class="clips"></ul>
+        </section>
+      </div>
+    </main>
+
+    <div id="hud" hidden>
+      <div class="barra">
+        <span id="marcador" class="ficha">Goles 0 · Atajadas 0</span>
+        <span id="rec" class="ficha" hidden>REC</span>
+        <span class="espacio"></span>
+        <button id="btn-reubicar" class="icono" aria-label="Reubicar arco" title="Reubicar arco">⌖</button>
+        <button id="btn-reescanear" class="icono" aria-label="Escanear la pelota de nuevo" title="Escanear pelota">◎</button>
+        <button id="btn-diag" class="icono" aria-label="Ver qué detecta la cámara" title="Diagnóstico">⚙</button>
+        <button id="btn-salir" class="icono" aria-label="Salir" title="Salir">✕</button>
+      </div>
+
+      <div id="mira" hidden></div>
+      <div id="banner" hidden>
+        <div id="banner-texto"></div>
+        <div id="banner-sub"></div>
+      </div>
+      <div id="diag" hidden>
+        <canvas id="diag-canvas" width="64" height="64"></canvas>
+        <div id="diag-texto"></div>
+      </div>
+
+      <div class="abajo">
+        <div class="barra">
+          <span id="estado-pelota" class="ficha">○ Buscando la pelota…</span>
+          <span id="estado-celu" class="ficha">Celular en movimiento</span>
+          <button id="btn-videos" class="boton" hidden>Videos (0)</button>
+        </div>
+        <section id="paso" class="panel">
+          <h2 id="paso-titulo"></h2>
+          <p id="paso-texto"></p>
+          <div class="botones">
+            <button id="btn-accion" class="boton"></button>
+            <button id="btn-secundario" class="boton secundario" hidden></button>
+          </div>
+        </section>
+      </div>
+
+      <div id="videos" hidden>
+        <div class="cabecera">
+          <h2>Tiros grabados</h2>
+          <button id="btn-cerrar-videos" class="icono" aria-label="Cerrar">✕</button>
+        </div>
+        <ul id="lista-videos" class="clips"></ul>
+      </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

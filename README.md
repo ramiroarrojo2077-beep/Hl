@@ -43,3 +43,53 @@ Las búsquedas repetidas (mismo producto y país) se guardan en memoria 6 horas 
 ## Aclaración
 
 Los resultados son estimaciones hechas con fuentes públicas, no cotizaciones formales. Antes de comprar o importar, confirmá con el proveedor y con un despachante de aduana.
+
+---
+
+# Arquero AR
+
+Realidad aumentada en tu lugar real: escaneás el piso, ponés un arco con arquero, escaneás tu pelota de verdad y, cuando la pateás, el arquero virtual se tira a atajarla. Puede grabar cada tiro con el arquero incluido.
+
+## Qué hace
+
+1. **Ubicar el arco**: con ARCore (WebXR *hit-test*) encuentra el piso real y fija el arco ahí (con *anchors*, no se corre aunque muevas el celular).
+2. **Escanear la pelota**: aprende los colores de tu pelota y del lugar. Después la reconoce en cada cuadro de la cámara con precisión de fracciones de píxel.
+3. **Patear**: sigue la pelota en 3D, detecta el remate en dos cuadros y ajusta la trayectoria física (recta por el piso o parábola con gravedad) a lo que ve la cámara. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
+
+Dos modos:
+
+- **En mano**: sostenés el celular y mirás la jugada. Descuenta el giro de la cámara (con la orientación de ARCore) para seguir detectando la pelota en movimiento.
+- **Fijo + video**: apoyás el celular mirando al arco. Es el modo más preciso y graba cada tiro (desde unos segundos antes hasta el resultado) en un video que podés descargar o compartir.
+
+## Requisitos
+
+- Un celular **Android con Chrome** compatible con ARCore ("Servicios de Google Play para RA" instalado). Usa WebXR con `camera-access`, que Chrome soporta en Android.
+- En **iPhone**, Safari todavía no tiene WebXR para realidad aumentada. Ahí sólo anda la demo.
+- La página tiene que abrirse con **https** (o `localhost`).
+
+## Cómo abrirla en el celular
+
+- **GitHub Pages**: en el repo, *Settings → Pages → Source: GitHub Actions*. Cada cambio en `arquero/` que llegue a la rama principal se publica solo (workflow `arquero-pages.yml`) en `https://ramiroarrojo2077-beep.github.io/Hl/`.
+- **Desde tu compu**: `npm start` y abrí `http://localhost:3000/arquero/`. Para usarla en el celular conectalo por USB, abrí `chrome://inspect` en la compu y activá *Port forwarding* del puerto 3000; en el celular entrá a `localhost:3000/arquero/`.
+
+## Consejos para que detecte mejor
+
+- Escaneá la pelota con buena luz, llenando el círculo.
+- Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
+- En modo fijo dejá el celular quieto, con el arco y el punto de remate a la vista, a 1-2 m detrás o al costado de donde pateás.
+- El botón ⚙ muestra lo que ve el detector (en violeta) para revisar que reconozca la pelota.
+
+## Estructura
+
+- `arquero/index.html`: interfaz (inicio, pasos y HUD sobre la cámara).
+- `arquero/js/app.js`: flujo del juego (ubicar → escanear → patear), resultados y videos.
+- `arquero/js/xr-stage.js`: sesión WebXR (hit-test, anchors, imagen de la cámara).
+- `arquero/js/detector.js`: reconocimiento de la pelota en la imagen (colores aprendidos, movimiento compensando el giro de la cámara, centro y radio subpíxel).
+- `arquero/js/tracker.js`: posición 3D, detección del remate y ajuste de la trayectoria a los rayos de la cámara.
+- `arquero/js/keeper-ai.js`: hasta dónde llega el arquero según la dificultad y el resultado del tiro.
+- `arquero/js/keeper.js`, `goal.js`: el arquero y el arco en 3D (sin archivos externos).
+- `arquero/js/recorder.js`: grabación de cada tiro (cámara + arquero) con MediaRecorder.
+- `arquero/js/demo-stage.js`: demo sin realidad aumentada que simula la cámara, para probar en cualquier navegador.
+
+`npm test` corre las pruebas del detector, el seguimiento y el arquero.
+
