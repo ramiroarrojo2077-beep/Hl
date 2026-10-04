@@ -180,7 +180,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   const poseInformada = (tau) => {
     const c = camaraEn(tau);
     const e = (0.03 * Math.PI) / 180;
-    return { pos: c.pos.map((v) => v + rnd.normal() * 0.001), R: rotar(c.R, rnd.normal() * e, rnd.normal() * e, rnd.normal() * e) };
+    return { pos: c.pos.map((v) => v + rndC.normal() * 0.001), R: rotar(c.R, rndC.normal() * e, rndC.normal() * e, rndC.normal() * e) };
   };
   const aMundo = (cam) => new THREE.Matrix4().multiplyMatrices(arcoReal, matrizCamara(cam));
 
@@ -191,11 +191,14 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   let estadoEn = () => estado;
   let t = 0;
   let cuadroN = 0;
+  // Azar de cada cuadro (temblor de la pose, cuadros perdidos), aparte del de los
+  // remates: así cada remate es el mismo aunque cambie lo que hace el seguimiento.
+  let rndC = azar(semilla * 7919 + 1);
   const leer = (reg, ww, hh) => sim.leer(ww, hh, reg);
   const cuadro = (camEn = camaraEn, fija = cfg.modo === "fijo") => {
     // 30 cuadros por segundo con un poco de variación y alguno perdido.
-    t += 1 / FPS + rnd.normal() * 0.001;
-    if (rnd() < 0.03) t += 1 / FPS;
+    t += 1 / FPS + rndC.normal() * 0.001;
+    if (rndC() < 0.03) t += 1 / FPS;
     cuadroN++;
     sim.cuadro(t, camEn, estadoEn, { fija });
     const img = sim.leer(w, h);
@@ -231,6 +234,11 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   let msTotal = 0;
   let msCuadros = 0;
   for (let n = 0; n < tiros; n++) {
+    // Cada remate arranca en un instante fijo y con su propio azar.
+    rndC = azar(semilla * 7919 + 100 + n);
+    t = 40 + n * 25;
+    sim.cuadroId = (n + 1) * 100000;
+    seg.reset();
     // Remate al azar, desde un punto que se vea bien.
     let p0 = null;
     for (let k = 0; k < 20 && !p0; k++) {

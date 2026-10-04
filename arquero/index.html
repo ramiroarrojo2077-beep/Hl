@@ -59,11 +59,24 @@
         max-width: 520px;
         margin: 0 auto;
       }
+      .portada {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 4px 0 18px;
+      }
+      .logo {
+        flex: none;
+        width: 64px;
+        height: 64px;
+        color: var(--verde);
+        filter: drop-shadow(0 6px 18px rgba(198, 255, 26, 0.25));
+      }
       h1 {
         font-family: "Archivo Black", Inter, sans-serif;
-        font-size: clamp(44px, 14vw, 72px);
-        line-height: 0.9;
-        margin: 8px 0 12px;
+        font-size: clamp(34px, 10vw, 52px);
+        line-height: 0.95;
+        margin: 0 0 6px;
         letter-spacing: -0.02em;
         text-transform: uppercase;
       }
@@ -72,14 +85,154 @@
       }
       .bajada {
         color: var(--tenue);
+        font-size: 15px;
+        line-height: 1.4;
+        margin: 0;
+      }
+      .modos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .modos label {
+        position: relative;
+        display: grid;
+        gap: 4px;
+        align-content: start;
+        border: 1.5px solid var(--borde);
+        border-radius: 18px;
+        padding: 14px;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 13px;
+        color: var(--tenue);
+        line-height: 1.35;
+        transition: border-color 0.15s, background 0.15s, transform 0.12s;
+      }
+      .modos label:active {
+        transform: scale(0.98);
+      }
+      .modos .icono-modo {
+        font-size: 26px;
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .modos label b {
+        color: var(--texto);
         font-size: 17px;
-        line-height: 1.45;
-        margin: 0 0 20px;
+      }
+      .modos input {
+        position: absolute;
+        opacity: 0;
+      }
+      .modos label:has(input:checked) {
+        border-color: var(--verde);
+        background: rgba(198, 255, 26, 0.09);
+        box-shadow: 0 0 0 3px rgba(198, 255, 26, 0.12);
+      }
+      .modos label:has(input:focus-visible) {
+        outline: 2px solid var(--verde);
+        outline-offset: 2px;
+      }
+      .nota {
+        color: var(--tenue);
+        font-size: 13px;
+        margin: 10px 2px 16px;
+      }
+      .record {
+        margin: -6px 2px 14px;
+        font-size: 14px;
+        color: var(--amarillo);
+        font-weight: 700;
+      }
+      .boton.grande {
+        min-height: 62px;
+        font-size: 19px;
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(198, 255, 26, 0.22);
+      }
+      .ajustes {
+        display: grid;
+        gap: 14px;
+        margin: 18px 0;
+        padding: 16px;
+        border: 1px solid var(--borde);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+      .grupo {
+        display: grid;
+        gap: 8px;
+      }
+      .grupo .titulo {
+        color: var(--tenue);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .chips {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .chips.cuatro {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .chips button {
+        min-height: 44px;
+        padding: 6px 12px;
+        border-radius: 12px;
+        border: 1.5px solid var(--borde);
+        background: #13201a;
+        color: var(--texto);
+        font: 700 15px Inter, system-ui, sans-serif;
+        line-height: 1.15;
+        cursor: pointer;
+      }
+      .chips button small {
+        display: block;
+        font-weight: 500;
+        font-size: 11px;
+        color: var(--tenue);
+      }
+      .chips button[aria-pressed="true"] {
+        border-color: var(--verde);
+        background: rgba(198, 255, 26, 0.12);
+        color: var(--verde);
+      }
+      details.consejos {
+        border: 1px solid var(--borde);
+        border-radius: 16px;
+        margin: 0 0 10px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+      details.consejos summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 14px 16px;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      details.consejos summary::-webkit-details-marker {
+        display: none;
+      }
+      details.consejos summary::after {
+        content: "+";
+        color: var(--verde);
+        font-size: 22px;
+        line-height: 1;
+      }
+      details.consejos[open] summary::after {
+        content: "–";
+      }
+      details.consejos > :not(summary) {
+        margin: 0 14px 14px;
       }
       ol.pasos {
         list-style: none;
         padding: 0;
-        margin: 0 0 20px;
         display: grid;
         gap: 8px;
         counter-reset: paso;
@@ -90,92 +243,40 @@
         gap: 12px;
         align-items: flex-start;
         background: rgba(255, 255, 255, 0.04);
-        border: 1px solid var(--borde);
-        border-radius: 14px;
-        padding: 12px 14px;
+        border-radius: 12px;
+        padding: 10px 12px;
         line-height: 1.35;
+        font-size: 14px;
       }
       ol.pasos li::before {
         content: counter(paso);
         flex: none;
-        width: 26px;
-        height: 26px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
         background: var(--verde);
         color: #0b1410;
         font-weight: 800;
         display: grid;
         place-items: center;
-        font-size: 14px;
+        font-size: 13px;
       }
       ol.pasos b {
         display: block;
       }
-      fieldset {
-        border: 1px solid var(--borde);
-        border-radius: 16px;
-        padding: 14px;
-        margin: 0 0 16px;
+      ul.tips {
+        padding-left: 18px;
         display: grid;
-        gap: 12px;
-      }
-      legend {
-        padding: 0 6px;
-        color: var(--tenue);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-      label.campo {
-        display: grid;
-        gap: 6px;
-        font-size: 14px;
-        color: var(--tenue);
-      }
-      select {
-        appearance: none;
-        width: 100%;
-        font: inherit;
-        font-size: 16px;
-        color: var(--texto);
-        background: #13201a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a9b8ae' stroke-width='2' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;
-        border: 1px solid var(--borde);
-        border-radius: 12px;
-        padding: 12px 36px 12px 14px;
-      }
-      .modos {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
         gap: 8px;
-      }
-      .modos label {
-        position: relative;
-        border: 1px solid var(--borde);
-        border-radius: 14px;
-        padding: 12px;
-        cursor: pointer;
-        background: rgba(255, 255, 255, 0.03);
-        font-size: 13px;
+        font-size: 14px;
+        line-height: 1.4;
         color: var(--tenue);
-        line-height: 1.35;
       }
-      .modos label b {
-        display: block;
+      ul.tips b {
         color: var(--texto);
-        font-size: 15px;
-        margin-bottom: 4px;
       }
-      .modos input {
-        position: absolute;
-        opacity: 0;
-      }
-      .modos label:has(input:checked) {
-        border-color: var(--verde);
-        background: rgba(198, 255, 26, 0.08);
-      }
-      .modos label:has(input:focus-visible) {
-        outline: 2px solid var(--verde);
-        outline-offset: 2px;
+      #btn-demo {
+        margin-top: 6px;
       }
       .boton {
         display: inline-flex;
@@ -468,45 +569,82 @@
   <body>
     <main id="inicio">
       <div class="contenido">
-        <h1>Arquero <span>AR</span></h1>
-        <p class="bajada">
-          Escaneá tu lugar, poné un arco con arquero en tu piso real y pateale con tu pelota de verdad. Cuando la
-          pateás, el arquero se tira a atajarla.
-        </p>
-        <ol class="pasos">
-          <li><div><b>Ubicá el arco</b>Apuntá al piso y elegí dónde va (contra una pared es ideal).</div></li>
-          <li><div><b>Escaneá tu pelota</b>Así la app aprende cuál es y la sigue cuando la pateás.</div></li>
-          <li><div><b>Pateá</b>Detecta el remate, calcula por dónde entra y el arquero se tira.</div></li>
-        </ol>
-
-        <fieldset>
-          <legend>Modo</legend>
-          <div class="modos">
-            <label>
-              <input type="radio" name="modo" value="mano" checked />
-              <b>En mano</b>
-              Sostenés el celu y mirás la jugada. Compensa el movimiento de la cámara.
-            </label>
-            <label>
-              <input type="radio" name="modo" value="fijo" />
-              <b>Fijo + video</b>
-              Lo apoyás mirando al arco: más preciso y graba cada tiro con el arquero.
-            </label>
+        <header class="portada">
+          <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M6 50V14h52v36" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round" />
+            <path d="M14 22h36M14 30h36M14 38h36M22 14v36M32 14v36M42 14v36" stroke="currentColor" stroke-opacity=".28" stroke-width="1.5" />
+            <circle cx="46" cy="46" r="11" fill="#fff" />
+            <path d="M46 40l5 3.6-1.9 5.9h-6.2L41 43.6z" fill="#0b1410" />
+          </svg>
+          <div>
+            <h1>Arquero <span>AR</span></h1>
+            <p class="bajada">Un arco con arquero en tu piso real. Pateale con tu pelota de verdad y se tira a atajar.</p>
           </div>
-        </fieldset>
+        </header>
 
-        <fieldset>
-          <legend>Ajustes</legend>
-          <label class="campo">Arco <select id="sel-arco"></select></label>
-          <label class="campo">Pelota <select id="sel-pelota"></select></label>
-          <label class="campo">Arquero <select id="sel-dificultad"></select></label>
-        </fieldset>
+        <div class="modos" role="radiogroup" aria-label="Modo de juego">
+          <label>
+            <input type="radio" name="modo" value="mano" checked />
+            <span class="icono-modo" aria-hidden="true">📱</span>
+            <b>En mano</b>
+            <span>Mirás la jugada con el celu en la mano.</span>
+          </label>
+          <label>
+            <input type="radio" name="modo" value="fijo" />
+            <span class="icono-modo" aria-hidden="true">🎯</span>
+            <b>Apoyado</b>
+            <span>Celu quieto y al costado: el más preciso.</span>
+          </label>
+        </div>
+        <p class="nota">🎥 En los dos modos cada tiro se graba con el arquero.</p>
+        <p id="record" class="record" hidden></p>
 
         <div class="acciones-inicio">
-          <button id="btn-ar" class="boton">Entrar en realidad aumentada</button>
+          <button id="btn-ar" class="boton grande">Jugar en realidad aumentada</button>
           <p id="compat" class="aviso">Revisando si tu celular soporta realidad aumentada…</p>
-          <button id="btn-demo" class="boton secundario">Probar la demo sin AR</button>
         </div>
+
+        <section class="ajustes" aria-label="Ajustes">
+          <div class="grupo">
+            <span class="titulo">Arco</span>
+            <div class="chips" data-select="sel-arco"></div>
+          </div>
+          <div class="grupo">
+            <span class="titulo">Pelota</span>
+            <div class="chips" data-select="sel-pelota"></div>
+          </div>
+          <div class="grupo">
+            <span class="titulo">Arquero</span>
+            <div class="chips" data-select="sel-dificultad"></div>
+          </div>
+          <div hidden>
+            <select id="sel-arco"></select>
+            <select id="sel-pelota"></select>
+            <select id="sel-dificultad"></select>
+          </div>
+        </section>
+
+        <details class="consejos">
+          <summary>Cómo se juega</summary>
+          <ol class="pasos">
+            <li><div><b>Ubicá el arco</b>Apuntá al piso y tocá dónde va (contra una pared es ideal).</div></li>
+            <li><div><b>Escaneá tu pelota</b>Acercate hasta que llene el círculo: así la app aprende cuál es.</div></li>
+            <li><div><b>Pateá</b>Cuando diga «Pelota lista», pateá. El arquero se tira hacia tu remate.</div></li>
+          </ol>
+        </details>
+        <details class="consejos">
+          <summary>Para que sea lo más preciso posible</summary>
+          <ul class="tips">
+            <li><b>Al costado, no detrás.</b> Si el celular está detrás del que patea, su pierna tapa la pelota en el golpe.</li>
+            <li><b>Apoyado y horizontal</b> entran mejor la pelota y el arco, y la imagen no tiembla.</li>
+            <li><b>Buena luz.</b> Con poca luz la cámara expone más y un remate fuerte sale borroso (igual lo sigue, pero mide peor).</li>
+            <li><b>Esperá «Pelota lista»</b> antes de patear (la pelota quieta medio segundo).</li>
+            <li><b>Un fondo distinto</b> a la pelota (pasto, una pared de otro color) ayuda.</li>
+            <li>Si un tiro sale mal, tocá ⚙ → «Guardar registro para Claude» y mandá el archivo.</li>
+          </ul>
+        </details>
+
+        <button id="btn-demo" class="boton secundario">Probar la demo sin AR</button>
 
         <section id="clips-inicio" hidden>
           <h2>Tus tiros grabados</h2>

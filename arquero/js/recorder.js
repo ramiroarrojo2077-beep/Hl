@@ -11,7 +11,8 @@ import * as THREE from "three";
 
 const PREVIA_MINIMA = 4; // s
 const RELEVO = 10; // s
-const LADO_LARGO = 960; // px del video
+const LADO_LARGO = 720; // px del video (más es más pesado de componer y codificar)
+const FPS = 30;
 
 const TIPOS = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"];
 
@@ -39,14 +40,17 @@ export class ShotRecorder {
     // Pasada final: la escena 3D sale en espacio lineal y la cámara ya viene en
     // sRGB, así que se convierte la escena y se la pega encima de la cámara.
     this.camaraQuad = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const vertex = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+    // Se compone dado vuelta (y hacia abajo): así lo que se lee de la GPU ya
+    // está en el orden de filas del canvas y no hay que copiarlo fila por fila.
+    const vertex = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.x, -position.y, 0.0, 1.0); }";
     this.materialFondo = new THREE.ShaderMaterial({
       uniforms: { map: { value: null }, volteo: { value: new THREE.Vector2(0, 0) } },
       vertexShader:
-        "uniform vec2 volteo; varying vec2 vUv; void main() { vUv = mix(uv, 1.0 - uv, volteo); gl_Position = vec4(position.xy, 0.0, 1.0); }",
+        "uniform vec2 volteo; varying vec2 vUv; void main() { vUv = mix(uv, 1.0 - uv, volteo); gl_Position = vec4(position.x, -position.y, 0.0, 1.0); }",
       fragmentShader: "uniform sampler2D map; varying vec2 vUv; void main() { gl_FragColor = vec4(texture2D(map, vUv).rgb, 1.0); }",
       depthTest: false,
       depthWrite: false,
+      side: THREE.DoubleSide, // dado vuelta queda "de espaldas"
     });
     this.materialMezcla = new THREE.ShaderMaterial({
       uniforms: { map: { value: null } },
@@ -66,6 +70,7 @@ export class ShotRecorder {
       transparent: true,
       depthTest: false,
       depthWrite: false,
+      side: THREE.DoubleSide,
     });
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.materialFondo);
     this.quad.frustumCulled = false;
@@ -90,17 +95,17 @@ export class ShotRecorder {
       this.canvas.height = h;
       this.rt?.dispose();
       this.rtSalida?.dispose();
-      this.rt = new THREE.WebGLRenderTarget(w, h, { samples: 4 });
+      this.rt = new THREE.WebGLRenderTarget(w, h, { samples: 2 });
       this.rtSalida = new THREE.WebGLRenderTarget(w, h);
       this.buffer = new Uint8Array(w * h * 4);
-      this.imagen = this.ctx2d.createImageData(w, h);
+      this.imagen = new ImageData(new Uint8ClampedArray(this.buffer.buffer), w, h);
     }
   }
 
   start() {
     if (this.grabando) return;
     this.grabando = true;
-    this.stream = this.canvas.captureStream(30);
+    this.stream = this.canvas.captureStream(FPS);
     this.activas = [this.#nueva()];
   }
 
@@ -114,7 +119,7 @@ export class ShotRecorder {
   }
 
   #nueva() {
-    const rec = new MediaRecorder(this.stream, this.tipo ? { mimeType: this.tipo, videoBitsPerSecond: 5e6 } : undefined);
+    const rec = new MediaRecorder(this.stream, this.tipo ? { mimeType: this.tipo, videoBitsPerSecond: 3.5e6 } : undefined);
     const g = { rec, partes: [], desde: performance.now() / 1000, descartada: false };
     rec.ondataavailable = (e) => e.data.size && g.partes.push(e.data);
     rec.onstop = () => {
@@ -175,6 +180,10 @@ export class ShotRecorder {
   // camara: PerspectiveCamera con la pose y proyección de la vista.
   capture({ texturaFondo = null, escenaFondo = null, escena, camara, ancho, alto }) {
     if (!this.grabando || this.leyendo) return;
+    // No más de 30 cuadros por segundo (la pantalla puede ir a 60).
+    const ahora = performance.now();
+    if (ahora - (this.ultimoCuadro ?? 0) < 1000 / FPS - 4) return;
+    this.ultimoCuadro = ahora;
     this.#relevar();
     this.#tamano(ancho, alto);
     const r = this.renderer;
@@ -224,10 +233,7 @@ export class ShotRecorder {
 
   #dibujar(w, h) {
     if (w !== this.canvas.width || h !== this.canvas.height) return;
-    // La GPU entrega las filas de abajo hacia arriba.
-    const fila = w * 4;
-    const datos = this.imagen.data;
-    for (let y = 0; y < h; y++) datos.set(this.buffer.subarray((h - 1 - y) * fila, (h - y) * fila), y * fila);
+    // Ya viene en el orden del canvas (se compuso dado vuelta).
     const c = this.ctx2d;
     c.putImageData(this.imagen, 0, 0);
 
@@ -251,6 +257,13 @@ export class ShotRecorder {
       c.strokeText(this.leyenda.texto, w / 2, h * 0.3);
       c.fillStyle = this.leyenda.color;
       c.fillText(this.leyenda.texto, w / 2, h * 0.3);
+      if (this.leyenda.detalle) {
+        c.font = `800 ${24 * u}px system-ui, sans-serif`;
+        c.lineWidth = 5 * u;
+        c.strokeText(this.leyenda.detalle, w / 2, h * 0.3 + 46 * u);
+        c.fillStyle = "#fff";
+        c.fillText(this.leyenda.detalle, w / 2, h * 0.3 + 46 * u);
+      }
       c.textAlign = "left";
     }
   }

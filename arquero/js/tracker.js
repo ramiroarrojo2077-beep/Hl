@@ -304,6 +304,10 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null) {
     vz: p[5],
     enPiso: !usarAire,
     tPatada: p[6],
+    // Qué tan bien explica las mediciones (suma de residuos al cuadrado, en
+    // unidades del error de medición) y cuántos datos hubo.
+    costo: usarAire ? aire.costo : piso.costo,
+    datos,
   };
 }
 
@@ -326,6 +330,8 @@ const VELOCIDAD_MAXIMA = 45; // m/s; más rápido que esto entre dos mediciones 
 const ALARGADA_MAXIMA = 3; // estela de movimiento de un remate; más que eso no es la pelota
 const ALARGADA_QUIETA = 1.6; // quieta, la pelota se ve redonda (una pierna o una media, no)
 const MOVIMIENTO_MINIMO = 0.15; // fracción de píxeles que cambiaron (si se sabe)
+// Interruptores para comparar variantes en el banco de pruebas (en la app, vacío).
+const EXP = globalThis.process?.env?.EXP ?? "";
 
 // Cuánto se apartó `o` del punto `r`, en unidades de la tolerancia (1 = en el borde).
 // De costado la medición es muy precisa; en profundidad depende de cómo se midió.
@@ -430,6 +436,7 @@ export class ShotTracker {
     this.quietos = [];
     this.shot = null;
     this.vistoEn = -Infinity;
+    this.historial = [];
   }
 
   // ¿Hay una pelota quieta y lista para patear?
@@ -458,6 +465,10 @@ export class ShotTracker {
   observe(t, candidatas) {
     this.vistoEn = t;
     this.observadoEn = t;
+    // Lo visto en los últimos cuadros, para elegir después la secuencia que mejor
+    // explica un remate (ver #mejorCadena).
+    this.historial.push({ t, cands: candidatas });
+    if (this.historial.length > 10) this.historial.shift();
     if (this.state === "flight") {
       // ¿La pelota sigue en su lugar? (lo que se movió era otra cosa: una pierna
       // que la tapaba). Se mira entre todas las manchas, no sólo la que se sigue.
@@ -538,6 +549,8 @@ export class ShotTracker {
           tamano = Math.abs(Math.log(c.ang / esperado));
           if (tamano > Math.log(1.8)) continue;
         }
+        // La medida buscando donde dice la trayectoria (ver seguimiento.js) es la
+        // más confiable si está cerca.
         const costo = cerca + tamano / 0.4 + ((c.alargada ?? 1) - 1) * (c.estela ? 0.04 : 0.3);
         if (costo < menor) {
           menor = costo;
@@ -599,7 +612,12 @@ export class ShotTracker {
       // con otra cosa (el pie que tapaba la pelota) la pelota igual entra.
       const continua = !ultima || continuaDe(t, ultima, v.c);
       const parecido = v.c.pr && q.pr ? 1 - 0.5 * Math.min(1, Math.abs(Math.log(v.c.pr / q.pr)) / Math.log(1.5)) : 1;
-      const puntaje = (v.c.score * (0.5 + (v.c.moving ?? 0)) * parecido * (continua ? 1 : 0.6)) / (1 + (v.c.estela ? 0.05 : 0.3) * ((v.c.alargada ?? 1) - 1));
+      // En el golpe la pelota sale más rápido que el pie (que viene detrás y frena):
+      // entre lo que sale del lugar, la que más avanzó hacia el arco es la pelota.
+      const avance = EXP.includes("sinAvance") ? 1 : 1 + 1.5 * Math.min(2, Math.max(0, q.z - v.c.z));
+      const puntaje =
+        (v.c.score * (0.5 + (v.c.moving ?? 0)) * parecido * avance * (continua ? 1 : 0.6)) /
+        (1 + (v.c.estela ? 0.05 : 0.3) * ((v.c.alargada ?? 1) - 1));
       if (!mejor || puntaje > mejor.puntaje) mejor = { ...v, puntaje };
     }
     return mejor ? mejor.i : -1;
@@ -718,21 +736,122 @@ export class ShotTracker {
     return true;
   }
 
+  // Entre todo lo que se vio desde que la pelota dejó de estar quieta, la
+  // secuencia que mejor explica un remate: sale del punto de reposo en línea
+  // recta, hacia el arco, a velocidad de pelota (el pie que sale junto con ella
+  // va más lento y frena). Se prueba cada candidata de los dos últimos cuadros
+  // como punta y se cuenta en cuántos cuadros anteriores hay algo donde esa
+  // recta dice. Devuelve la lista de mediciones o null.
+  #mejorCadena(t, q) {
+    return this.#cadenas(t, q)[0] ?? null;
+  }
+
+  // Las secuencias candidatas (las mejores primero, sin repetir la punta).
+  #cadenas(t, q) {
+    const cuadros = this.historial.filter((h) => h.t > q.tUlt && h.t <= t);
+    if (cuadros.length < 2) return [];
+    const t0 = (q.tUlt + cuadros[0].t) / 2;
+    const R = this.ballRadius;
+    const todas = [];
+    for (const fin of cuadros.slice(-2)) {
+      for (const c of fin.cands) {
+        if (!tamanoDePelota(c) || (c.alargada ?? 1) > (c.estela ? 12 : ALARGADA_MAXIMA)) continue;
+        const dt = fin.t - t0;
+        if (dt <= 0) continue;
+        const vx = (c.x - q.x) / dt;
+        const vz = (c.z - q.z) / dt;
+        // Altura: tiro por el aire (con gravedad) o rasante.
+        const vy = (c.y - (q.onGround ? R : q.y) + (GRAVEDAD / 2) * dt * dt) / dt;
+        const rapidez = Math.hypot(vx, vy, vz);
+        if (rapidez < VELOCIDAD_MINIMA || rapidez > VELOCIDAD_MAXIMA || -vz < ACERCAMIENTO_MINIMO) continue;
+        if (Math.abs(c.x + vx * (c.z / -vz)) > this.goalWidth / 2 + 4) continue;
+        const cadena = [];
+        let error = 0;
+        for (const h of cuadros) {
+          if (h === fin) {
+            cadena.push({ ...c, t: h.t });
+            continue;
+          }
+          if (h.t > fin.t) continue;
+          const tau = h.t - t0;
+          const px = q.x + vx * tau;
+          const pz = q.z + vz * tau;
+          const py = Math.max(R, (q.onGround ? R : q.y) + vy * tau - (GRAVEDAD / 2) * tau * tau);
+          let cerca = null;
+          for (const k of h.cands) {
+            // Con la distancia medida por tamaño se tolera más error en profundidad.
+            const tol = 0.2 + (k.onGround ? 0 : 0.12 * Math.hypot(k.x - (k.o?.x ?? k.x), k.z - (k.o?.z ?? k.z)));
+            const e = Math.hypot(k.x - px, k.z - pz, k.onGround ? 0 : k.y - py) / tol;
+            if (e < 1 && (!cerca || e < cerca.e)) cerca = { k, e };
+          }
+          if (cerca) {
+            cadena.push({ ...cerca.k, t: h.t });
+            error += cerca.e;
+          }
+        }
+        if (cadena.length < 2) continue;
+        // Más cuadros que la confirman; a igualdad, la más rápida (la pelota, no el pie).
+        const valor = cadena.length - 0.3 * (error / cadena.length) + rapidez / 100;
+        todas.push({ valor, cadena: cadena.sort((a, b) => a.t - b.t), rapidez });
+      }
+    }
+    todas.sort((a, b) => b.valor - a.valor);
+    const distintas = [];
+    for (const c of todas) {
+      const fin = c.cadena.at(-1);
+      if (distintas.some((d) => d.cadena.at(-1) === fin || (d.cadena.at(-1).px === fin.px && d.cadena.at(-1).py === fin.py))) continue;
+      distintas.push(c);
+      if (distintas.length >= 4) break;
+    }
+    return distintas;
+  }
+
+  // Entre la secuencia que se viene siguiendo y las alternativas, la que mejor
+  // cumple la física de una pelota (ajuste de la trayectoria completa a los
+  // rayos de la cámara: el pie que sale junto con la pelota sube y frena, y no
+  // ajusta). Devuelve las mediciones de la elegida.
+  #mejorHipotesis(t, q, actual) {
+    const opciones = [actual, ...this.#cadenas(t, q).map((c) => c.cadena)];
+    let mejor = null;
+    for (const obs of opciones) {
+      if (obs.length < 2 || !obs.every((o) => o.d)) continue;
+      const reposo = this.#reposoDe(q, obs);
+      const pred = this.#predecir(obs, reposo);
+      if (!pred || pred.calidad == null || !(pred.vz < 0)) continue;
+      // Más mediciones explicadas es mejor; con pocas, cualquier cosa ajusta.
+      const valor = pred.calidad + 4 / obs.length;
+      if (!mejor || valor < mejor.valor) mejor = { obs, valor, actual: obs === actual };
+    }
+    if (!mejor) return actual;
+    if (mejor.actual) return actual;
+    // Para cambiar, la otra tiene que ser claramente mejor.
+    const actualPred = actual.length >= 2 && actual.every((o) => o.d) ? this.#predecir(actual, this.#reposoDe(q, actual)) : null;
+    const valorActual = actualPred?.calidad != null && actualPred.vz < 0 ? actualPred.calidad + 4 / actual.length : Infinity;
+    return mejor.valor < 0.6 * valorActual ? mejor.obs : actual;
+  }
+
+  #reposoDe(q, obs) {
+    return {
+      x: q.x,
+      y: q.onGround ? this.ballRadius : q.y,
+      z: q.z,
+      onGround: q.onGround,
+      sigma: q.onGround ? 0.02 : 0.08,
+      tMin: q.tUlt,
+      tMax: obs[0].t,
+    };
+  }
+
   #arrancarVuelo(t, q) {
+    // ¿Hay una secuencia que explique mejor el remate que la que se venía siguiendo?
+    let obs = q.saliendo.slice();
+    if (!EXP.includes("sinCadena")) obs = this.#mejorHipotesis(t, q, obs);
     this.state = "flight";
     this.shot = {
       tKick: t,
-      obs: q.saliendo.slice(),
+      obs,
       origen: q,
-      reposo: {
-        x: q.x,
-        y: q.onGround ? this.ballRadius : q.y,
-        z: q.z,
-        onGround: q.onGround,
-        sigma: q.onGround ? 0.02 : 0.08,
-        tMin: q.tUlt,
-        tMax: q.saliendo[0].t,
-      },
+      reposo: this.#reposoDe(q, obs),
       lastSeen: t,
       pred: null,
       rechazos: 0,
@@ -765,6 +884,16 @@ export class ShotTracker {
     }
     s.rechazos = 0;
     s.obs.push(o);
+    // Al principio del vuelo: ¿hay otra secuencia que explique mejor el remate
+    // (sale del punto de reposo, en línea, más rápido)? El pie que salió junto
+    // con la pelota frena; la pelota sigue. Si es así, se cambia a esa.
+    if (!EXP.includes("sinHipotesis") && t - s.tKick < 0.35 && s.reposo && s.origen) {
+      const elegida = this.#mejorHipotesis(t, s.origen, s.obs);
+      if (elegida !== s.obs) {
+        s.obs = elegida;
+        s.reposo = this.#reposoDe(s.origen, elegida);
+      }
+    }
     if (s.obs.length > 14) {
       s.obs.shift();
       // Con muchas mediciones manda lo último: el punto de la patada ya quedó
@@ -801,8 +930,7 @@ export class ShotTracker {
 
 
 
-  #predecir() {
-    const { obs, reposo } = this.shot;
+  #predecir(obs = this.shot.obs, reposo = this.shot.reposo) {
     if (obs.length < 2) return null;
     const R = this.ballRadius;
     const tRef = obs[obs.length - 1].t;
@@ -821,13 +949,15 @@ export class ShotTracker {
     }
 
     // Con los rayos de la cámara se ajusta la trayectoria física completa.
+    let calidad = null;
     if (obs.length + (reposo ? 1 : 0) >= 3 && obs.every((o) => o.d)) {
       const ajuste = ajustarTrayectoria(obs, tRef, { x0, y0: Math.max(y0, R), z0, vx, vy, vz }, R, reposo);
       ({ x0, y0, z0, vx, vy, vz } = ajuste);
       enPiso = ajuste.enPiso;
+      calidad = ajuste.costo / (3 * ajuste.datos);
     }
 
-    if (vz >= 0) return { tRef, x0, y0, z0, vx, vy, vz, tCross: Infinity, x: x0, y: y0, speed: 0, rolling: enPiso };
+    if (vz >= 0) return { tRef, x0, y0, z0, vx, vy, vz, tCross: Infinity, x: x0, y: y0, speed: 0, rolling: enPiso, calidad };
 
     // Con arrastre: primero cuánto avanza a lo largo de la velocidad hasta la
     // línea, después cuánto tiempo le lleva.
@@ -848,7 +978,10 @@ export class ShotTracker {
       x: x0 + vx * f,
       y,
       speed: rapidez / (1 + ARRASTRE * rapidez * tauCruce),
+      // Velocidad con la que salió del pie (hacia atrás desde tRef, con el arrastre).
+      kickSpeed: reposo ? rapidez / Math.max(0.5, 1 - ARRASTRE * rapidez * Math.max(0, tRef - reposo.tMax)) : rapidez,
       rolling: enPiso,
+      calidad,
     };
   }
 

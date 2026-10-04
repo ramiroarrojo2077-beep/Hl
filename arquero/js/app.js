@@ -71,6 +71,36 @@ llenar(ui.selPelota, PELOTAS, ajustes.pelota);
 llenar(ui.selDificultad, DIFICULTADES, ajustes.dificultad);
 for (const r of ui.modos) r.checked = r.value === ajustes.modo;
 
+// Botones rápidos para cada ajuste (cambian el select que lee el juego).
+// "Fútbol 5 (3 × 2 m)" → Fútbol 5 con "3 × 2 m" chiquito abajo.
+function chips(select) {
+  const caja = document.querySelector(`.chips[data-select="${select.id}"]`);
+  if (!caja) return;
+  const marcar = () => {
+    for (const b of caja.children) b.setAttribute("aria-pressed", String(b.dataset.valor === select.value));
+  };
+  caja.classList.toggle("cuatro", select.options.length === 4);
+  caja.replaceChildren(
+    ...[...select.options].map((o) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.valor = o.value;
+      const [, principal, detalle] = o.text.match(/^(.*?)(?:\s*\((.*)\))?$/);
+      b.textContent = principal;
+      if (detalle) b.append(Object.assign(document.createElement("small"), { textContent: detalle }));
+      b.onclick = () => {
+        select.value = o.value;
+        marcar();
+        leerAjustes();
+      };
+      return b;
+    }),
+  );
+  marcar();
+}
+for (const s of [ui.selArco, ui.selPelota, ui.selDificultad]) chips(s);
+for (const r of ui.modos) r.addEventListener("change", leerAjustes);
+
 function leerAjustes() {
   ajustes = {
     arco: ui.selArco.value,
@@ -127,6 +157,41 @@ marcaPelota.renderOrder = 10;
 marcaPelota.visible = false;
 scene.add(marcaPelota);
 
+// Trayectoria prevista (línea punteada) y punto donde entra al arco.
+const PUNTOS_TRAYECTORIA = 32;
+const trayectoria = new THREE.Line(
+  new THREE.BufferGeometry().setFromPoints(Array.from({ length: PUNTOS_TRAYECTORIA }, () => new THREE.Vector3())),
+  new THREE.LineDashedMaterial({ color: 0xffd400, dashSize: 0.14, gapSize: 0.09, transparent: true, opacity: 0.95, depthTest: false }),
+);
+trayectoria.frustumCulled = false;
+trayectoria.renderOrder = 9;
+trayectoria.visible = false;
+const impacto = new THREE.Mesh(
+  new THREE.RingGeometry(0.09, 0.14, 40),
+  new THREE.MeshBasicMaterial({ color: 0xffd400, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false }),
+);
+impacto.renderOrder = 9;
+impacto.visible = false;
+
+function mostrarTrayectoria(t) {
+  const pred = tracker.state === "flight" ? tracker.shot?.pred : null;
+  if (!pred || !Number.isFinite(pred.tCross)) {
+    if (tracker.state !== "done") trayectoria.visible = impacto.visible = false;
+    return;
+  }
+  const pos = trayectoria.geometry.attributes.position;
+  const desde = Math.min(t, pred.tCross);
+  for (let k = 0; k < PUNTOS_TRAYECTORIA; k++) {
+    const p = tracker.expectedPosition(desde + ((pred.tCross - desde) * k) / (PUNTOS_TRAYECTORIA - 1));
+    if (p) pos.setXYZ(k, p.x, p.y, p.z);
+  }
+  pos.needsUpdate = true;
+  trayectoria.computeLineDistances();
+  trayectoria.geometry.computeBoundingSphere();
+  impacto.position.set(pred.x, pred.y, 0.02);
+  trayectoria.visible = impacto.visible = true;
+}
+
 // Pelota virtual que rebota en los guantes cuando el arquero ataja.
 const pelotaRebote = new THREE.Mesh(
   new THREE.SphereGeometry(1, 20, 14),
@@ -146,7 +211,7 @@ function armarArco() {
   const dims = ARCOS[ajustes.arco];
   arco = new Goal(dims);
   arquero = new Keeper(alturaArquero(dims.alto));
-  arcoGrupo.add(arco.group, arquero.root);
+  arcoGrupo.add(arco.group, arquero.root, trayectoria, impacto);
   const w = dims.ancho;
   sol.position.set(w * 0.25, 6, 3.5);
   sol.target.position.set(0, 0, 0.3);
@@ -214,6 +279,17 @@ let camaraAnterior = null;
 let quietoDesde = null;
 let mostrarDiag = false;
 let marcador = { goles: 0, atajadas: 0, afuera: 0 };
+// Remate más fuerte medido en este celular (km/h).
+let record = 0;
+try {
+  record = Number(localStorage.getItem("arquero-record")) || 0;
+} catch {}
+function mostrarRecord() {
+  const el = document.getElementById("record");
+  el.hidden = !record;
+  el.textContent = `⚡ Tu remate más fuerte: ${record} km/h`;
+}
+mostrarRecord();
 let puntoDemo = new THREE.Vector3(0, 0, -6);
 // ?registro guarda lo que ve el detector cuadro a cuadro (para depurar).
 const registro = new URLSearchParams(location.search).has("registro") ? [] : null;
@@ -283,11 +359,12 @@ function irA(nueva) {
     const fijo = ajustes.modo === "fijo";
     let texto = fijo
       ? "Apoyá el celular quieto y horizontal, al costado (no detrás del que patea: su pierna tapa la pelota), donde se vean el arco y la pelota. Cuando diga «Pelota lista», pateá. Cada tiro se graba solo."
-      : "Apuntá al arco con la pelota a la vista, mejor desde el costado. Dejala quieta y, cuando diga «Pelota lista», pateá: el arquero se tira hacia tu remate.";
+      : "Apuntá al arco con la pelota a la vista, mejor desde el costado. Cuando diga «Pelota lista», pateá: el arquero se tira hacia tu remate. Cada tiro se graba solo.";
     if (modoStage === "demo") texto = "Deslizá el dedo desde la pelota hacia el arco para patear, o tocá Patear al azar.";
     mostrarPaso("3 · ¡Pateá!", texto, modoStage === "demo" ? { texto: "Patear al azar", fn: patearAlAzar } : null);
     if (modoStage === "demo") demo.goToTripod();
-    if (fijo && recorder) {
+    // Se graba en los dos modos (en mano, se ve lo que vio el celular).
+    if (recorder) {
       recorder.start();
       actualizarRec();
     }
@@ -473,6 +550,7 @@ function seguirPelota(info) {
     ultimaPosicion = medida;
     pelotaVistaEn = t;
   }
+  mostrarTrayectoria(t);
   anotarCuadro(info, t, candidatas, elegida, medida, evento);
   if (evento) manejarEvento(evento, t);
 
@@ -578,6 +656,19 @@ function resultado(juicio, pred, dims, t) {
     sub = { arriba: "Por arriba", derecha: "Desviado a la derecha", izquierda: "Desviado a la izquierda" }[juicio.detalle];
   }
   if (navigator.vibrate) navigator.vibrate(juicio.resultado === "gol" ? [80, 60, 160] : 60);
+  // Velocidad del remate.
+  const kmh = Number.isFinite(pred.kickSpeed) ? Math.round(pred.kickSpeed * 3.6) : null;
+  if (kmh && kmh > 10 && kmh < 200) {
+    leyenda.detalle = `${kmh} km/h`;
+    sub = sub ? `${kmh} km/h · ${sub}` : `${kmh} km/h`;
+    if (kmh > record) {
+      record = kmh;
+      try {
+        localStorage.setItem("arquero-record", String(record));
+      } catch {}
+      if (marcador.goles + marcador.atajadas + marcador.afuera > 1) sub += " · ¡récord!";
+    }
+  }
   ui.bannerTexto.textContent = leyenda.texto;
   ui.bannerTexto.style.color = leyenda.color;
   ui.bannerSub.textContent = sub;
@@ -596,6 +687,7 @@ function resultado(juicio, pred, dims, t) {
 
 function reiniciarTiro(t) {
   reiniciarEn = null;
+  trayectoria.visible = impacto.visible = false;
   tiro = null;
   tracker.reset();
   arquero.reset(t);
@@ -823,7 +915,7 @@ function prepararJuego() {
   orientacion.reset();
   marcador = { goles: 0, atajadas: 0, afuera: 0 };
   ui.marcador.textContent = textoMarcador();
-  if (ajustes.modo === "fijo" && recordingSupported()) {
+  if (recordingSupported()) {
     recorder ??= new ShotRecorder(renderer);
     recorder.onClip = () => {
       actualizarRec();
@@ -846,6 +938,7 @@ function salir() {
   fase = "inicio";
   ui.hud.hidden = true;
   ui.inicio.hidden = false;
+  mostrarRecord();
   renderer.domElement.style.display = "none";
   const n = recorder?.clips.length ?? 0;
   ui.clipsInicio.hidden = n === 0;

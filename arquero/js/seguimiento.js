@@ -109,12 +109,28 @@ export class BallTracking {
     const soloSuelo = !enVuelo && !tracker.ready;
     // Si se sabe dónde está (quieta o en vuelo), se sabe de qué tamaño se ve:
     // las formas redondas se buscan sólo en esas escalas (mucho más rápido).
-    const escalas = enImagen ? { min: 0.5 * enImagen.r, max: 1.8 * enImagen.r } : null;
+    const EXP = globalThis.process?.env?.EXP ?? "";
+    const escalas = enImagen ? (EXP.includes("escalasAnchas") ? { min: 0.35 * enImagen.r, max: 2.2 * enImagen.r } : { min: 0.5 * enImagen.r, max: 1.8 * enImagen.r }) : null;
     const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo, escalas });
 
     // El seguimiento elige cuál es la pelota (la que sigue quieta, la que sale del
     // punto de reposo o la que va por la trayectoria); las demás se descartan.
     const ubicadas = candidatas.map((c) => this.ubicar(info, c, w, h)).filter(Boolean);
+    // En vuelo, además, se la busca directamente donde dice la trayectoria, en la
+    // imagen de alta resolución y por su borde redondo: si está ahí se la
+    // encuentra aunque la búsqueda general la haya confundido con otra cosa.
+    // Sólo si la búsqueda general no encontró nada cerca de lo previsto.
+    const nadaCerca = enImagen && !ubicadas.some((u) => Math.hypot(u.px - enImagen.x, u.py - enImagen.y) < Math.max(4, 1.5 * enImagen.r));
+    if (!EXP.includes("sinLocal") && enVuelo && enImagen && nadaCerca && tracker.shot?.obs.length >= 2) {
+      const guia = { x: enImagen.x, y: enImagen.y, r: enImagen.r, score: 1, moving: 1, alargada: 1 };
+      const fina = this.refinar(info, guia, w, h);
+      const cerca = Math.hypot(fina.x - guia.x, fina.y - guia.y) < Math.max(3, 1.3 * guia.r);
+      if (fina.refinada && cerca && fina.r > 0.6 * guia.r && fina.r < 1.6 * guia.r && (fina.borde ?? 0) >= 0.55) {
+        const local = this.ubicar(info, { ...fina, score: 1.3 }, w, h);
+        const repetida = local && ubicadas.some((u) => Math.hypot(u.px - local.px, u.py - local.py) < 0.5 * local.pr);
+        if (local && !repetida) ubicadas.push({ ...local, local: true });
+      }
+    }
     tracker.observe(t, ubicadas);
     const elegida = tracker.choose(t, ubicadas);
     let evento = null;

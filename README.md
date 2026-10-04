@@ -71,10 +71,12 @@ Para no confundirse con otras cosas blancas (medias, botines, líneas de cal, pa
 
 El detector propone varias manchas y el seguimiento elige la que tiene sentido físico (la que sigue quieta, la que sale del punto de reposo o la que va por la trayectoria, con el tamaño que corresponde a esa distancia). Una pierna, otro objeto claro o la detección que salta a otro lado se descartan, y si después de "detectar" un remate la pelota sigue en su lugar, se cancela sin dar resultado. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
 
-Dos modos:
+Dos modos (en los dos se graba cada tiro, desde unos segundos antes hasta el resultado, en un video para descargar o compartir):
 
 - **En mano**: sostenés el celular y mirás la jugada. Descuenta el giro de la cámara (con la orientación de ARCore) para seguir detectando la pelota en movimiento.
-- **Fijo + video**: apoyás el celular mirando al arco. Es el modo más preciso y graba cada tiro (desde unos segundos antes hasta el resultado) en un video que podés descargar o compartir.
+- **Apoyado**: el celular quieto y al costado, mirando al arco. Es el modo más preciso.
+
+Mientras la pelota vuela se dibuja la trayectoria prevista y el punto donde va a entrar; al final se muestra la velocidad del remate en km/h (y queda tu récord en el menú).
 
 ## Requisitos
 
