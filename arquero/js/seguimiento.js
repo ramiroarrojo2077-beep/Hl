@@ -1,0 +1,199 @@
+import * as THREE from "three";
+import { BallDetector, matrizK } from "./detector.js";
+import { ShotTracker, locateBall, radioApoyada } from "./tracker.js";
+
+// Seguimiento de la pelota cuadro a cuadro: detecta, mide fino, ubica en 3D y
+// le pasa todo al ShotTracker. No toca la pantalla ni el DOM, así que también
+// corre en Node (banco de pruebas con imágenes simuladas, ver sim/).
+//
+// Cada cuadro llega como `info`:
+//   t: segundos; camMatrix, projMatrix: THREE.Matrix4 de la cámara (mundo);
+//   image: {data, width, height} RGBA chica con la fila 0 abajo;
+//   region: {factor, leer(reg, w, h)} para leer recortes en resolución real, o null.
+// `arco` es la matriz (THREE.Matrix4) que lleva coordenadas del arco al mundo.
+
+// Cámara del cuadro para comparar con el anterior: K (proyección a píxeles) y R (giro).
+export function camaraDe(info, w, h) {
+  const e = info.camMatrix.elements;
+  return { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
+}
+
+export class BallTracking {
+  constructor({ radio }) {
+    this.detector = new BallDetector(64, 64);
+    this.tracker = new ShotTracker({ ballRadius: radio });
+    this.radioNominal = radio;
+    this.tmp = {
+      inv: new THREE.Matrix4(),
+      proyInv: new THREE.Matrix4(),
+      vista: new THREE.Matrix4(),
+      v: new THREE.Vector3(),
+      c: new THREE.Vector3(),
+    };
+    this.reiniciarRadio();
+    this.reset();
+  }
+
+  // Empieza de cero el seguimiento (no lo aprendido de la pelota).
+  reset() {
+    this.tracker.reset();
+    this.detector.hasPrev = false;
+    this.detector.hasPrev2 = false;
+    this.ultimaDeteccion = null;
+  }
+
+  // ---------- Tamaño real de la pelota ----------
+  //
+  // Con la pelota quieta en el piso, la distancia se conoce por el piso y de ahí
+  // sale su radio real tal como la ve esta cámara (ver radioApoyada). Ese radio
+  // se usa para medir la distancia cuando va por el aire: así no importa si el
+  // número de pelota elegido no es exacto, y se descuenta cualquier error fijo
+  // de la medición del tamaño.
+  setAnchoArco(ancho) {
+    this.tracker.setGoalWidth(ancho);
+  }
+
+  setRadioNominal(r) {
+    this.radioNominal = r;
+    this.reiniciarRadio();
+  }
+
+  reiniciarRadio() {
+    this.radio = this.radioNominal;
+    this.muestrasRadio = [];
+    this.tracker.setBallRadius(this.radio);
+  }
+
+  #calibrarRadio(medida) {
+    const { tracker } = this;
+    if (!tracker.ready || !medida?.onGround || !medida.det?.refinada) return;
+    const reposo = tracker.restPosition();
+    if (!reposo || Math.hypot(medida.x - reposo.x, medida.z - reposo.z) > 0.25) return;
+    const r = radioApoyada(medida.o, medida.d, medida.ang);
+    if (!r) return;
+    const m = this.muestrasRadio;
+    m.push(r);
+    if (m.length > 90) m.shift();
+    if (m.length < 20) return;
+    const mediana = [...m].sort((a, b) => a - b)[m.length >> 1];
+    // Si da algo muy distinto, el problema es otro (el piso del arco a otra altura).
+    if (Math.abs(mediana / this.radioNominal - 1) > 0.25) return;
+    this.radio = mediana;
+    tracker.setBallRadius(mediana);
+  }
+
+  // ---------- Cuadro a cuadro ----------
+
+  // Devuelve {candidatas, elegida, medida, evento}.
+  procesar(info, arco) {
+    const { detector, tracker, tmp } = this;
+    const { data, width: w, height: h } = info.image;
+    detector.resize(w, h);
+    const camara = camaraDe(info, w, h);
+    const t = info.t;
+    tmp.proyInv.copy(info.projMatrix).invert();
+    tmp.inv.copy(arco).invert();
+    tmp.vista.copy(info.camMatrix).invert();
+
+    // Dónde buscar: en vuelo, donde dice la trayectoria; lista, donde quedó quieta.
+    const enVuelo = tracker.state === "flight";
+    const esperado = tracker.expectedPosition(t) ?? tracker.restPosition();
+    const enImagen = esperado ? this.proyectar(info, esperado, arco, w, h) : null;
+    // En vuelo se favorece lo que está cerca de donde dice la trayectoria. Quieta
+    // no: si la que quedó "lista" fuera otra cosa, la pelota de verdad perdería
+    // puntaje y nunca se corregiría.
+    const near = enVuelo ? enImagen : null;
+    const foco = enVuelo && enImagen ? { x: enImagen.x, y: enImagen.y, r: Math.max(4 * enImagen.r, 20) } : null;
+    // Mientras no hay una pelota lista, se busca sólo en el piso (ahí está quieta);
+    // lista o en vuelo, en toda la imagen: al patearla se eleva sobre el horizonte.
+    const soloSuelo = !enVuelo && !tracker.ready;
+    const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo });
+
+    // El seguimiento elige cuál es la pelota (la que sigue quieta, la que sale del
+    // punto de reposo o la que va por la trayectoria); las demás se descartan.
+    const ubicadas = candidatas.map((c) => this.ubicar(info, c, w, h)).filter(Boolean);
+    tracker.observe(t, ubicadas);
+    const elegida = tracker.choose(t, ubicadas);
+    let evento = null;
+    let medida = null;
+    if (elegida >= 0) {
+      medida = ubicadas[elegida];
+      const fina = this.refinar(info, medida.det, w, h);
+      if (fina.refinada) medida = this.ubicar(info, fina, w, h) ?? medida;
+      this.ultimaDeteccion = { ...medida.det, t };
+      const { det: _det, ...obs } = medida;
+      evento = tracker.add(t, obs);
+      this.#calibrarRadio(medida);
+    }
+    evento ??= tracker.tick(t);
+    return { candidatas, ubicadas, elegida, medida, evento };
+  }
+
+  // Proyección en la imagen de un punto del arco (metros), o null si queda fuera.
+  proyectar(info, p, arco, w, h) {
+    const { tmp } = this;
+    const mundo = tmp.v.set(p.x, p.y, p.z).applyMatrix4(arco);
+    const distancia = mundo.distanceTo(tmp.c.setFromMatrixPosition(info.camMatrix));
+    const ndc = mundo.applyMatrix4(tmp.vista.copy(info.camMatrix).invert()).applyMatrix4(info.projMatrix);
+    if (!(Math.abs(ndc.x) < 1.2 && Math.abs(ndc.y) < 1.2 && ndc.z < 1)) return null;
+    const radio = ((info.projMatrix.elements[5] * h) / 2) * (this.radio / distancia);
+    return { x: ((ndc.x + 1) / 2) * w, y: ((ndc.y + 1) / 2) * h, r: Math.max(2, radio) };
+  }
+
+  // Vuelve a medir la pelota en un recorte de la cámara con su resolución real
+  // (hasta 4 veces más fino que la imagen chica). Si no sale, queda la medición original.
+  refinar(info, det, w, h) {
+    const reg = info.region;
+    if (det.estela) return det; // borrosa: no hay borde que medir
+    // Hasta 4 veces más fino, sin pasar de ~20 px de radio en el recorte: con eso
+    // el borde ya se mide con centésimas de píxel y cuesta poco.
+    const factor = Math.min(4, reg?.factor ?? 0, 20 / Math.max(det.r, 1));
+    if (factor < 1.5) return det;
+    const lado = Math.max(5 * det.r, 24);
+    const x0 = det.x - lado / 2;
+    const y0 = det.y - lado / 2;
+    if (x0 < 0 || y0 < 0 || x0 + lado > w || y0 + lado > h) return det;
+    const tam = Math.min(128, Math.round(lado * factor));
+    const recorte = reg.leer({ x: x0 / w, y: y0 / h, w: lado / w, h: lado / h }, tam, tam);
+    const k = tam / lado;
+    const alto = this.detector.arribaDelHorizonte(det.x, det.y);
+    const fino = this.detector.refine(recorte, tam, tam, { x: tam / 2, y: tam / 2, r: det.r * k }, { alto });
+    if (!fino) return det;
+    return { ...det, x: x0 + fino.x / k, y: y0 + fino.y / k, r: fino.r / k, refinada: true, borde: fino.borde ?? null };
+  }
+
+  // Posición 3D (en el arco) de una mancha de la imagen, con el rayo de la cámara
+  // que pasa por su centro. null si queda en un lugar imposible.
+  // Usa tmp.proyInv y tmp.inv del cuadro (ver procesar).
+  ubicar(info, det, w, h) {
+    const { tmp } = this;
+    const rayo = (x, y) =>
+      new THREE.Vector3((x / w) * 2 - 1, (y / h) * 2 - 1, 0.5).applyMatrix4(tmp.proyInv).normalize().transformDirection(info.camMatrix);
+    const centro = rayo(det.x, det.y);
+    const angular = (rayo(det.x - det.r, det.y).angleTo(rayo(det.x + det.r, det.y)) + rayo(det.x, det.y - det.r).angleTo(rayo(det.x, det.y + det.r))) / 4;
+    const origen = new THREE.Vector3().setFromMatrixPosition(info.camMatrix).applyMatrix4(tmp.inv);
+    const dir = centro.transformDirection(tmp.inv);
+    const p = locateBall(origen, dir, angular, this.radio);
+    if (!(p.z > -1.5 && Math.hypot(p.x, p.z) < 40)) return null;
+    // Qué radio real tendría si estuviera apoyada en el piso ahí, comparado con
+    // el de la pelota: una mancha chica en el piso (un botín lejos, la base de un
+    // palo) o una grande (una pierna cerca) no es la pelota.
+    const real = radioApoyada(origen, dir, angular);
+    return {
+      ...p,
+      escala: real ? real / this.radio : null,
+      px: det.x,
+      py: det.y,
+      pr: det.r,
+      score: det.score,
+      moving: det.moving,
+      alargada: det.alargada,
+      estela: Boolean(det.estela),
+      // Rayo de la cámara en coordenadas del arco, para ajustar la trayectoria.
+      o: { x: origen.x, y: origen.y, z: origen.z },
+      d: { x: dir.x, y: dir.y, z: dir.z },
+      ang: angular,
+      det,
+    };
+  }
+}

@@ -62,7 +62,14 @@ Para medir bien en cualquier celular:
 - **Borde de la pelota**: el centro y el tamaño se miden sobre el borde real (donde cambia el color), ajustando un círculo con decenas de puntos y descartando los que no encajan. Así no lo engañan la sombra ni el sol de un costado.
 - **Tamaño real de la pelota**: mientras está quieta en el piso calcula su radio verdadero (no hace falta acertar el número de pelota).
 
-Para no confundirse: el detector propone varias manchas y el seguimiento elige la que tiene sentido físico (la que sigue quieta, la que sale del punto de reposo o la que va por la trayectoria, con el tamaño que corresponde a esa distancia). Una pierna, otro objeto claro o la detección que salta a otro lado se descartan, y si después de "detectar" un remate la pelota sigue en su lugar, se cancela sin dar resultado. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
+Para no confundirse con otras cosas blancas (medias, botines, líneas de cal, palos, el cielo):
+
+- **Formas redondas del tamaño justo**: además de las manchas de color, busca círculos (color de pelota en el centro y no alrededor). Así la pelota pegada a la media del que patea o a una línea sigue apareciendo como pelota.
+- **Tamaño según el piso**: como sabe dónde está el piso, sabe de qué tamaño se ve una pelota apoyada en cada lugar de la imagen; lo que es más chico o más grande no es la pelota.
+- **Fondo por zonas**: aprende los colores del piso y los de arriba del horizonte por separado, así un cielo o una pared blancos no hacen "desaparecer" a una pelota blanca en el pasto.
+- **Al patear**: la pelota que sale se compara con la que estaba quieta (lugar y tamaño); si el pie se coló como "la pelota saliendo", se descarta y se sigue con la pelota. Una medición borrosa suelta no anula el remate.
+
+El detector propone varias manchas y el seguimiento elige la que tiene sentido físico (la que sigue quieta, la que sale del punto de reposo o la que va por la trayectoria, con el tamaño que corresponde a esa distancia). Una pierna, otro objeto claro o la detección que salta a otro lado se descartan, y si después de "detectar" un remate la pelota sigue en su lugar, se cancela sin dar resultado. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
 
 Dos modos:
 
@@ -97,9 +104,17 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 - Escaneá la pelota con buena luz, llenando el círculo.
 - Antes de patear esperá a que diga **«Pelota lista»** (la pelota quieta medio segundo).
 - Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
-- En modo fijo dejá el celular quieto, con el arco y el punto de remate a la vista, a 1-2 m detrás o al costado de donde pateás.
+- En modo fijo dejá el celular quieto y horizontal, con el arco y el punto de remate a la vista, al costado de donde pateás (si está justo detrás, la pierna del que patea tapa la pelota en el momento del golpe).
 - El botón ⚙ muestra lo que ve el detector (en violeta) para revisar que reconozca la pelota.
 - Si un tiro sale mal, tocá ⚙ → **Guardar registro para Claude** y mandá ese archivo: tiene lo que midió la cámara cuadro a cuadro y fotos del remate, para ver qué falló.
+
+## Banco de pruebas de precisión
+
+`arquero/sim/` tiene un simulador de la cámara del celular (pasto o patio, arco, pelota con gajos y sombra, piernas del que patea, estela por la exposición, ruido del sensor, color submuestreado, celular apoyado o en mano) y corre el seguimiento real de la app sobre cientos de remates al azar (8 a 32 m/s, rasantes, al ángulo, con efecto):
+
+    node arquero/sim/banco.mjs --escenario fijo-sol,mano --sesiones 6 --tiros 4
+
+Mide en cuántos remates detecta la patada, en cuántos da resultado y cuánto erra el punto de cruce. `node arquero/sim/traza.mjs escenario semilla tiro` muestra cuadro a cuadro qué vio y qué decidió.
 
 ## Estructura
 

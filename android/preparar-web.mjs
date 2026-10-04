@@ -13,7 +13,7 @@ await mkdir(new URL("vendor/", destino), { recursive: true });
 const origen = fileURLToPath(new URL("arquero/", raiz));
 await cp(origen, fileURLToPath(destino), {
   recursive: true,
-  filter: (ruta) => !ruta.startsWith(`${origen}test`),
+  filter: (ruta) => !ruta.startsWith(`${origen}test`) && !ruta.startsWith(`${origen}sim`),
 });
 for (const archivo of ["three.module.js", "three.core.js"]) {
   await cp(new URL(`node_modules/three/build/${archivo}`, raiz), new URL(`vendor/${archivo}`, destino));
