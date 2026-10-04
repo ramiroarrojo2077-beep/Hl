@@ -22,6 +22,8 @@ const UMBRAL = 0.5;
 const FACTOR_QUIETO = 0.75;
 const DIFERENCIA_MOVIMIENTO = 45;
 const AREA_MINIMA = 5;
+const UMBRAL_FOCO = 0.35; // donde se espera la pelota en vuelo
+const CANDIDATAS = 4;
 const BRILLOS = [0.82, 0.91, 1, 1.1]; // la pelota de lejos o a la sombra cambia de brillo
 const CUADROS_POR_ACTUALIZACION = 6;
 
@@ -287,8 +289,16 @@ export class BallDetector {
   //   movimiento; null si no se sabe cómo se movió la cámara.
   // near: dónde estaba la pelota hace poco ({x, y, r}).
   // ventana: {x, y, r} para buscar sólo en esa zona.
-  detect(rgba, { camera = null, near = null, ventana = null, aprender = true } = {}) {
-    if (!this.prob) return null;
+  detect(rgba, opciones = {}) {
+    return this.detectAll(rgba, opciones)[0] ?? null;
+  }
+
+  // Como detect, pero devuelve todas las manchas que podrían ser la pelota (las
+  // mejores primero), para que el seguimiento elija la que tiene sentido.
+  // foco: {x, y, r} zona donde se espera la pelota (en vuelo): ahí se acepta con
+  //   menos probabilidad, porque a toda velocidad se ve borrosa y mezclada con el fondo.
+  detectAll(rgba, { camera = null, near = null, ventana = null, foco = null, aprender = true } = {}) {
+    if (!this.prob) return [];
     const { width: w, height: h, prob, colorPelota, score, mask, prev, prev2, moving } = this;
     const n = w * h;
 
@@ -302,7 +312,7 @@ export class BallDetector {
           break;
         }
       }
-      if (igual) return this.last ? this.last.best : null;
+      if (igual) return this.last ? this.last.candidatas : [];
     }
 
     // Homografías que llevan cada píxel de este cuadro a los dos anteriores,
@@ -310,6 +320,7 @@ export class BallDetector {
     const h1 = camera && this.hasPrev && this.camPrev ? homografia(camera, this.camPrev) : null;
     const h2 = h1 && this.hasPrev2 && this.camPrev2 ? homografia(camera, this.camPrev2) : null;
     const v2 = ventana ? ventana.r * ventana.r : 0;
+    const f2 = foco ? foco.r * foco.r : 0;
 
     for (let y = 0, i = 0; y < h; y++) {
       for (let x = 0; x < w; x++, i++) {
@@ -344,9 +355,11 @@ export class BallDetector {
           }
         }
         score[i] = s;
-        mask[i] = s >= UMBRAL ? 1 : 0;
+        const enFoco = foco && (x + 0.5 - foco.x) ** 2 + (y + 0.5 - foco.y) ** 2 < f2;
+        mask[i] = s >= (enFoco ? UMBRAL_FOCO : UMBRAL) ? 1 : 0;
       }
     }
+    this.conMovimiento = Boolean(h1);
     if (!ventana) {
       this.hasPrev2 = this.hasPrev;
       this.camPrev2 = this.camPrev;
@@ -359,19 +372,19 @@ export class BallDetector {
     dilatar(mask, this.tmp, w, h, 1);
     dilatar(this.tmp, this.closed, w, h, 0);
 
-    const best = this.#mejorMancha(near);
-    this.last = { best };
-    if (aprender && !ventana) this.#aprenderFondo(rgba, best);
-    return best;
+    const candidatas = this.#manchas(near);
+    this.last = { candidatas };
+    if (aprender && !ventana) this.#aprenderFondo(rgba, candidatas[0] ?? null);
+    return candidatas;
   }
 
-  #mejorMancha(near) {
+  #manchas(near) {
     const { width: w, height: h, closed, labels, stack, moving } = this;
     const n = w * h;
     const rMax = 0.45 * Math.min(w, h);
     labels.fill(0);
     let etiqueta = 0;
-    let best = null;
+    const todas = [];
 
     for (let inicio = 0; inicio < n; inicio++) {
       if (!closed[inicio] || labels[inicio]) continue;
@@ -432,12 +445,11 @@ export class BallDetector {
         const d = Math.hypot(mx + 0.5 - near.x, my + 0.5 - near.y) / (3 * near.r + 8);
         score *= 1 / (1 + d * d);
       }
-      if (!best || score > best.score) {
-        best = { etiqueta, score, mov: mov / cnt, caja: [x0, y0, x1, y1], mx, my, forma, cnt };
-      }
+      if (score > 0.08) todas.push({ etiqueta, score, mov: mov / cnt, caja: [x0, y0, x1, y1], mx, my, forma, cnt });
     }
-    if (!best || best.score <= 0.08) return null;
-    return this.#refinar(best);
+    todas.sort((a, b) => b.score - a.score);
+    const conMovimiento = this.conMovimiento;
+    return todas.slice(0, CANDIDATAS).map((m) => ({ ...this.#refinar(m), moving: conMovimiento ? m.mov : null }));
   }
 
   // Centro y radio con precisión de fracciones de píxel.

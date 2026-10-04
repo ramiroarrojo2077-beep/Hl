@@ -6,11 +6,9 @@
 
 export const GRAVEDAD = 9.81;
 
-const VENTANA_REMATE = 0.2; // s de historia para decidir si hubo remate
-const VELOCIDAD_MINIMA = 3; // m/s
-const ACERCAMIENTO_MINIMO = 2; // m/s hacia el arco
+const VELOCIDAD_MINIMA = 5; // m/s: más lento es acomodar la pelota, no patear
+const ACERCAMIENTO_MINIMO = 3.5; // m/s hacia el arco
 const VUELO_MAXIMO = 3; // s
-const SALTO_MAXIMO = 45; // m/s; más que esto entre dos cuadros es un error de medición
 
 // Ubica la pelota a partir del rayo de la cámara que pasa por su centro.
 // La distancia sale del tamaño aparente (radio angular); si la pelota va por el
@@ -299,9 +297,52 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null) {
 }
 
 // ---------- Seguimiento ----------
+//
+// La pelota pasa por tres momentos:
+// 1. Sin ubicar: se la ve, pero todavía no quedó quieta en un lugar.
+// 2. Lista: quedó quieta (QUIETA_TIEMPO) y ese punto queda como "reposo". Sólo
+//    desde acá se puede patear: el remate tiene que arrancar en ese punto, ir
+//    rápido hacia el arco y en línea. Cualquier otra cosa que se mueva lejos de
+//    la pelota (una pierna, otro objeto claro) se descarta.
+// 3. En vuelo: se ajusta la trayectoria. Si la pelota vuelve a verse en el
+//    punto de reposo, era una falsa alarma y se cancela. El resultado sólo se
+//    da si la trayectoria se confirmó con más mediciones.
 
-// ¿La pelota se movió entre dos mediciones consecutivas (en la imagen)?
-const semovio = (a, b) => Math.hypot(b.px - a.px, b.py - a.py) > 2 || Math.abs(b.pr - a.pr) > Math.max(1, 0.15 * a.pr);
+const QUIETA_TIEMPO = 0.4; // s quieta para quedar lista
+const TOLERANCIA_LATERAL = 0.12; // m (la dirección del rayo se mide muy bien)
+const TOLERANCIA_PROFUNDIDAD = 0.12; // m, más un 10 % de la distancia si se mide por tamaño
+const VELOCIDAD_MAXIMA = 45; // m/s; más rápido que esto entre dos mediciones no es la pelota
+const ALARGADA_MAXIMA = 3; // estela de movimiento de un remate; más que eso no es la pelota
+const ALARGADA_QUIETA = 1.6; // quieta, la pelota se ve redonda (una pierna o una media, no)
+const MOVIMIENTO_MINIMO = 0.15; // fracción de píxeles que cambiaron (si se sabe)
+
+// Cuánto se apartó `o` del punto `r`, en unidades de la tolerancia (1 = en el borde).
+// De costado la medición es muy precisa; en profundidad depende de cómo se midió.
+function apartamiento(o, r) {
+  const dx = o.x - r.x;
+  const dy = o.y - r.y;
+  const dz = o.z - r.z;
+  if (!o.d) return Math.hypot(dx, dy, dz) / (TOLERANCIA_LATERAL + (o.onGround ? 0 : 0.15));
+  const radial = dx * o.d.x + dy * o.d.y + dz * o.d.z;
+  const lateral = Math.sqrt(Math.max(0, dx * dx + dy * dy + dz * dz - radial * radial));
+  const distancia = Math.hypot(o.x - o.o.x, o.y - o.o.y, o.z - o.o.z);
+  const tolProf = TOLERANCIA_PROFUNDIDAD + (o.onGround && r.onGround ? 0 : 0.1 * distancia);
+  return Math.max(lateral / TOLERANCIA_LATERAL, Math.abs(radial) / tolProf);
+}
+
+// ¿La mancha `c` es la pelota que está quieta en `q`? Tiene que estar en el lugar,
+// ser redonda y del mismo tamaño en la imagen (un botín apoyado ahí no cuenta).
+function ocupa(c, q, tolerancia = 1.5) {
+  if ((c.alargada ?? 1) > ALARGADA_QUIETA) return false;
+  if (c.pr && q.pr && Math.abs(Math.log(c.pr / q.pr)) > 0.4) return false;
+  return apartamiento(c, q) < tolerancia;
+}
+
+const mediana = (vs) => {
+  const o = [...vs].sort((a, b) => a - b);
+  return o[o.length >> 1];
+};
+const distancia3 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
 export class ShotTracker {
   constructor({ ballRadius }) {
@@ -311,59 +352,218 @@ export class ShotTracker {
 
   reset() {
     this.state = "idle"; // idle → flight → done
-    this.obs = [];
+    // Objetos quietos que pueden ser la pelota. Puede haber más de uno (otra
+    // pelota, un cono o un balde claro): se vigilan todos y el remate puede salir
+    // de cualquiera; lo que nunca se mueve nunca dispara nada.
+    this.quietos = [];
     this.shot = null;
+    this.vistoEn = -Infinity;
+  }
+
+  // ¿Hay una pelota quieta y lista para patear?
+  get ready() {
+    return this.state === "idle" && this.quietos.some((q) => q.armado);
+  }
+
+  // La pelota lista principal (la que más se parece a la escaneada y se vio hace poco).
+  #principal() {
+    let mejor = null;
+    for (const q of this.quietos) {
+      if (!q.armado) continue;
+      const valor = q.score * Math.min(q.n, 30) - (this.vistoEn - q.tUlt) * 10;
+      if (!mejor || valor > mejor.valor) mejor = { q, valor };
+    }
+    return mejor?.q ?? null;
+  }
+
+  // Dónde está quieta la pelota lista para patear (o null).
+  restPosition() {
+    const q = this.#principal();
+    return q ? { x: q.x, y: q.y, z: q.z } : null;
+  }
+
+  // Mira todas las manchas del cuadro y lleva la cuenta de las que están quietas.
+  observe(t, candidatas) {
+    this.vistoEn = t;
+    this.observadoEn = t;
+    if (this.state !== "idle") return;
+    for (const c of candidatas) {
+      if ((c.alargada ?? 1) > ALARGADA_QUIETA) continue;
+      let q = null;
+      let menor = 1.2;
+      for (const k of this.quietos) {
+        const a = apartamiento(c, k);
+        if (a < menor && ocupa(c, k, 1.2)) {
+          menor = a;
+          q = k;
+        }
+      }
+      if (q) {
+        // Promedio que se va asentando: cuanto más tiempo quieta, más fija.
+        const k = 1 / Math.min(q.n + 1, 12);
+        q.x += (c.x - q.x) * k;
+        q.y += (c.y - q.y) * k;
+        q.z += (c.z - q.z) * k;
+        q.score += ((c.score ?? 0.5) - q.score) * k;
+        q.n++;
+        q.tUlt = t;
+        q.px = c.px;
+        q.py = c.py;
+        q.pr = c.pr;
+        q.onGround = c.onGround;
+        if (!q.armado && t - q.t0 >= QUIETA_TIEMPO && q.n >= 5) q.armado = true;
+      } else if (this.quietos.length < 6) {
+        this.quietos.push({ ...posicionDe(c), t0: t, tUlt: t, n: 1, score: c.score ?? 0.5, armado: false, saliendo: [], saltos: 0 });
+      }
+    }
+    // Se olvidan los que no se ven más (los armados aguantan más: el jugador
+    // puede tapar la pelota al acercarse).
+    this.quietos = this.quietos.filter((q) => t - q.tUlt < (q.armado ? 4 : 0.4) || q.saliendo.length);
+  }
+
+  // Elige cuál de las manchas candidatas es la pelota (índice, o -1 si ninguna).
+  // Cada candidata: {x, y, z, onGround, px, py, pr, score, moving, alargada, o?, d?}.
+  choose(t, candidatas) {
+    if (!candidatas.length || this.state === "done") return -1;
+    const validas = candidatas.map((c, i) => ({ c, i })).filter(({ c }) => (c.alargada ?? 1) <= ALARGADA_MAXIMA);
+    if (!validas.length) return -1;
+
+    if (this.state === "flight") {
+      // La más cerca de donde la trayectoria dice que tiene que estar.
+      // La más cerca de donde la trayectoria dice que tiene que estar, del tamaño
+      // que tiene que tener a esa distancia y redonda (el pie que sigue a la pelota
+      // en el remate pasa cerca, pero es más grande o más chico y alargado).
+      // Con el rayo de la cámara se compara el ángulo (0,08 rad ≈ 25 px); sin él, metros.
+      // Al principio del vuelo la trayectoria todavía es poco confiable: también
+      // vale la continuidad del movimiento en la imagen (cuadro a cuadro la pelota
+      // se corre parejo).
+      const e = this.expectedPosition(t);
+      const vuelo = this.shot.obs;
+      const confiable = vuelo.length >= 4;
+      let enImagen = null;
+      if (vuelo.length >= 2) {
+        const [a, b] = vuelo.slice(-2);
+        const k = (t - b.t) / Math.max(b.t - a.t, 1e-3);
+        enImagen = { x: b.px + (b.px - a.px) * k, y: b.py + (b.py - a.py) * k, r: b.pr };
+      }
+      let mejor = -1;
+      let menor = Infinity;
+      for (const { c, i } of validas) {
+        let cerca = c.d ? anguloA(c, e) / (confiable ? 0.08 : 0.12) : distancia3(c, e) / 0.6;
+        if (enImagen) cerca = Math.min(cerca, Math.hypot(c.px - enImagen.x, c.py - enImagen.y) / Math.max(15, 2.5 * enImagen.r));
+        if (cerca >= 1) continue;
+        let tamano = 0;
+        if (confiable && c.d && c.ang) {
+          const esperado = Math.asin(Math.min(1, this.ballRadius / Math.max(distancia3(e, c.o), this.ballRadius * 1.01)));
+          tamano = Math.abs(Math.log(c.ang / esperado));
+          if (tamano > Math.log(1.8)) continue;
+        }
+        const costo = cerca + tamano / 0.4 + ((c.alargada ?? 1) - 1) * 0.3;
+        if (costo < menor) {
+          menor = costo;
+          mejor = i;
+        }
+      }
+      return mejor;
+    }
+
+    const armados = this.quietos.filter((q) => q.armado);
+    if (armados.length) {
+      // Si una pelota ya venía saliendo de su lugar, se sigue con la que continúa.
+      const enCurso = armados.find((q) => q.saliendo.length);
+      if (enCurso) {
+        const i = this.#queSale(t, enCurso, validas);
+        if (i >= 0) return i;
+      }
+      // ¿Sigue alguna en su lugar? Se queda con la principal.
+      const principal = this.#principal();
+      let quieta = null;
+      for (const v of validas) {
+        for (const q of armados) {
+          if (!ocupa(v.c, q)) continue;
+          const a = apartamiento(v.c, q) + (q === principal ? 0 : 0.5);
+          if (!quieta || a < quieta.a) quieta = { ...v, a };
+        }
+      }
+      // ¿O alguna salió de su lugar? (Ya no hay una pelota donde estaba.)
+      for (const q of armados) {
+        const sigue = validas.some(({ c }) => ocupa(c, q));
+        if (sigue) continue;
+        const i = this.#queSale(t, q, validas);
+        if (i >= 0) return i;
+      }
+      return quieta ? quieta.i : -1;
+    }
+
+    // Todavía ninguna lista: la de mejor puntaje, priorizando la que ya se venía viendo quieta.
+    const conocida = validas.filter(({ c }) => this.quietos.some((q) => apartamiento(c, q) < 1.2));
+    const grupo = conocida.length ? conocida : validas;
+    return grupo.sort((a, b) => b.c.score - a.c.score)[0].i;
+  }
+
+  // Entre las candidatas, la que puede haber salido del lugar de `q` (o seguir
+  // su recorrido), con más puntaje y movimiento. -1 si ninguna.
+  #queSale(t, q, validas) {
+    const ultima = q.saliendo[q.saliendo.length - 1] ?? { ...q, t: q.tUlt };
+    const alcance = VELOCIDAD_MAXIMA * Math.max(t - ultima.t, 1 / 60) + 0.25;
+    let mejor = null;
+    for (const v of validas) {
+      if (apartamiento(v.c, q) < 1.5) continue;
+      if (distancia3(v.c, ultima) > alcance) continue;
+      const puntaje = v.c.score * (0.5 + (v.c.moving ?? 0));
+      if (!mejor || puntaje > mejor.puntaje) mejor = { ...v, puntaje };
+    }
+    return mejor ? mejor.i : -1;
   }
 
   // p: {x, y, z, onGround, px, py, pr} (posición en el arco y en la imagen) y,
-  // si se conocen, el rayo de la cámara: o (origen), d (dirección) y ang (radio angular).
+  // si se conocen, el rayo de la cámara: o (origen), d (dirección) y ang (radio
+  // angular); moving: fracción de píxeles que cambiaron (null si no se sabe).
   // Devuelve un evento {type: 'kick' | 'update' | 'cross' | 'cancel', ...} o null.
   add(t, p) {
     if (this.state === "done") return null;
     const o = { t, ...p };
+    if (this.state === "flight") return this.#enVuelo(t, o);
+    // Si no se llamó a observe en este cuadro, la medición elegida cuenta como la única.
+    if (this.observadoEn !== t) this.observe(t, [p]);
 
-    if (this.state === "idle") {
-      const ultimo = this.obs[this.obs.length - 1];
-      if (ultimo && t > ultimo.t) {
-        const salto = Math.hypot(o.x - ultimo.x, o.y - ultimo.y, o.z - ultimo.z) / (t - ultimo.t);
-        if (salto > SALTO_MAXIMO) {
-          this.obs = [o];
-          return null;
-        }
-      }
-      this.obs.push(o);
-      while (this.obs.length && this.obs[0].t < t - 1) this.obs.shift();
-      return this.#buscarRemate(t);
-    }
-
-    // En vuelo: descarta mediciones muy lejos de lo esperado (otra cosa que se
-    // movió). Si se repite, el que está mal es el modelo y se aceptan.
-    const s = this.shot;
-    if (s.pred && s.obs.length >= 4 && s.rechazos < 2 && this.#rara(o, s.pred)) {
-      s.rechazos++;
-      return this.tick(t);
-    }
-    s.rechazos = 0;
-    s.obs.push(o);
-    if (s.obs.length > 14) s.obs.shift();
-    s.lastSeen = t;
-    s.pred = this.#predecir();
-
-    if (!s.pred || s.pred.vz > -0.8) {
-      if (s.obs.length >= 5 || t - s.tKick > 0.6) return this.#cancelar();
+    const armados = this.quietos.filter((q) => q.armado);
+    if (!armados.length) return null;
+    // Sigue (o volvió) a su lugar: si algo venía "saliendo", era otra cosa.
+    const enLugar = armados.find((q) => ocupa(o, q));
+    if (enLugar) {
+      enLugar.saliendo = [];
+      enLugar.saltos = 0;
       return null;
     }
-    if (t >= s.pred.tCross) return this.#cruce();
-    return { type: "update", t, prediction: s.pred };
+    // ¿De cuál salió? Primero la que ya venía saliendo.
+    const ordenados = [...armados].sort((a, b) => b.saliendo.length - a.saliendo.length);
+    for (const q of ordenados) {
+      const ultima = q.saliendo[q.saliendo.length - 1] ?? { ...q, t: q.tUlt };
+      if (distancia3(o, ultima) > VELOCIDAD_MAXIMA * Math.max(t - ultima.t, 1 / 60) + 0.25) continue;
+      q.saliendo.push(o);
+      // Se fue despacio (la están acomodando): deja de estar lista.
+      if (t - q.saliendo[0].t > 0.3 || q.saliendo.length > 5) {
+        this.quietos = this.quietos.filter((k) => k !== q);
+        return null;
+      }
+      if (q.saliendo.length >= 2 && this.#esRemate(t, q)) return this.#arrancarVuelo(t, q);
+      return null;
+    }
+    // Apareció lejos de todo de golpe: no es la pelota.
+    return null;
   }
 
   // Avanza el tiempo aunque no haya mediciones (la pelota se puede perder de vista).
   tick(t) {
     if (this.state !== "flight") return null;
     const s = this.shot;
-    if (t - s.tKick > VUELO_MAXIMO) return this.#cancelar();
-    if (s.pred && t >= s.pred.tCross + 0.03) return this.#cruce();
-    if (!s.pred && t - s.lastSeen > 0.5) return this.#cancelar();
+    if (t - s.tKick > VUELO_MAXIMO) return this.#cancelar(false);
+    if (s.pred && t >= s.pred.tCross + 0.03) {
+      // Sin confirmar (la pelota no se volvió a ver) no se da resultado.
+      return s.confirmadas >= 1 ? this.#cruce() : this.#cancelar(false);
+    }
+    if (!s.pred && t - s.lastSeen > 0.5) return this.#cancelar(false);
     return null;
   }
 
@@ -376,79 +576,99 @@ export class ShotTracker {
     return p;
   }
 
+  // ¿Lo que sale del lugar de `q` es un remate de verdad?
+  #esRemate(t, q) {
+    const pts = [{ ...q, t: (q.tUlt + q.saliendo[0].t) / 2 }, ...q.saliendo];
+    const ts = pts.map((m) => m.t - t);
+    const [, vx, ex] = ajusteLineal(ts, pts.map((m) => m.x));
+    const [, vz, ez] = ajusteLineal(ts, pts.map((m) => m.z));
+    const porTamano = q.saliendo.some((m) => !m.onGround);
+    // En línea: con la distancia medida por tamaño se tolera más ruido.
+    if (Math.hypot(ex, ez) > (porTamano ? 0.45 : 0.25)) return false;
+    if (Math.hypot(vx, vz) < VELOCIDAD_MINIMA || -vz < ACERCAMIENTO_MINIMO) return false;
+    if (q.saliendo[q.saliendo.length - 1].z < 0.15) return false;
+    // En la imagen se tiene que ir alejando del lugar donde estaba, cuadro a cuadro.
+    let antes = 0;
+    for (const m of q.saliendo) {
+      const d = Math.hypot(m.px - q.px, m.py - q.py) + Math.abs(m.pr - q.pr);
+      if (d < antes - 1) return false;
+      antes = d;
+    }
+    if (antes < 2.5) return false;
+    // Si se sabe qué píxeles cambiaron, la pelota tiene que estar entre ellos.
+    const conMovimiento = q.saliendo.filter((m) => m.moving != null);
+    if (conMovimiento.length && conMovimiento.reduce((a, m) => a + m.moving, 0) / conMovimiento.length < MOVIMIENTO_MINIMO) {
+      return false;
+    }
+    return true;
+  }
+
+  #arrancarVuelo(t, q) {
+    this.state = "flight";
+    this.shot = {
+      tKick: t,
+      obs: q.saliendo.slice(),
+      origen: q,
+      reposo: {
+        x: q.x,
+        y: q.onGround ? this.ballRadius : q.y,
+        z: q.z,
+        onGround: q.onGround,
+        sigma: q.onGround ? 0.02 : 0.08,
+        tMin: q.tUlt,
+        tMax: q.saliendo[0].t,
+      },
+      lastSeen: t,
+      pred: null,
+      rechazos: 0,
+      confirmadas: 0,
+    };
+    q.saliendo = [];
+    this.shot.pred = this.#predecir();
+    if (!this.shot.pred || !(this.shot.pred.vz < 0)) {
+      this.state = "idle";
+      this.shot = null;
+      return null;
+    }
+    return { type: "kick", t, prediction: this.shot.pred };
+  }
+
+  #enVuelo(t, o) {
+    const s = this.shot;
+    // La pelota sigue en el punto de reposo: no la patearon (se movió otra cosa).
+    if (t - s.tKick < 0.6 && ocupa(o, s.origen, 1.2)) return this.#cancelar(true, o);
+
+    // Descarta mediciones muy lejos de lo esperado. Si se repite, el que está mal
+    // es el modelo y se aceptan.
+    if (s.pred && s.obs.length >= 3 && s.rechazos < 2 && this.#rara(o, s.pred)) {
+      s.rechazos++;
+      return this.tick(t);
+    }
+    s.rechazos = 0;
+    s.obs.push(o);
+    if (s.obs.length > 14) s.obs.shift();
+    s.lastSeen = t;
+    s.confirmadas++;
+    s.pred = this.#predecir();
+
+    if (!s.pred || s.pred.vz > -0.8) {
+      if (s.obs.length >= 5 || t - s.tKick > 0.6) return this.#cancelar(false);
+      return null;
+    }
+    if (t >= s.pred.tCross) return this.#cruce();
+    return { type: "update", t, prediction: s.pred };
+  }
+
   // ¿La medición está lejos de donde la trayectoria dice que debería estar?
   #rara(o, pred) {
     const tau = o.t - pred.tRef;
     const p = posicion([pred.x0, pred.y0, pred.z0, pred.vx, pred.vy, pred.vz], tau, this.ballRadius, pred.rolling);
     if (!pred.rolling && p.y < this.ballRadius) p.y = heightAt(pred.y0, pred.vy, tau, this.ballRadius);
-    if (o.d) {
-      // Ángulo entre el rayo medido y la dirección esperada (0,06 rad ≈ 20 px).
-      const q = { x: p.x - o.o.x, y: p.y - o.o.y, z: p.z - o.o.z };
-      const n = Math.hypot(q.x, q.y, q.z);
-      return (q.x * o.d.x + q.y * o.d.y + q.z * o.d.z) / n < Math.cos(0.06);
-    }
+    if (o.d) return anguloA(o, p) > 0.06; // 0,06 rad ≈ 20 px
     return Math.hypot(o.x - p.x, o.z - p.z) > Math.max(1.5, 0.4 * Math.abs(p.z));
   }
 
-  #buscarRemate(t) {
-    // Las tres últimas mediciones: con la pelota quieta antes, alcanzan dos
-    // cuadros en movimiento para reconocer el remate.
-    const recientes = this.obs.filter((o) => o.t >= t - VENTANA_REMATE).slice(-3);
-    if (recientes.length < 3) return null;
-    const primero = recientes[0];
-    const ultimo = recientes[recientes.length - 1];
-    const ts = recientes.map((o) => o.t - t);
-    const [, vx, ex] = ajusteLineal(ts, recientes.map((o) => o.x));
-    const [, vz, ez] = ajusteLineal(ts, recientes.map((o) => o.z));
-    const velocidad = Math.hypot(vx, vz);
 
-    // La profundidad medida por tamaño es ruidosa: además exigimos que la
-    // pelota se haya movido de verdad en la imagen y siempre hacia el arco.
-    const movioEnImagen =
-      Math.hypot(ultimo.px - primero.px, ultimo.py - primero.py) > 2.5 ||
-      Math.abs(ultimo.pr - primero.pr) / Math.max(primero.pr, 1) > 0.25;
-    let retrocesos = 0;
-    for (let i = 1; i < recientes.length; i++) if (recientes[i].z > recientes[i - 1].z + 0.05) retrocesos++;
-    const remate =
-      velocidad > VELOCIDAD_MINIMA &&
-      -vz > ACERCAMIENTO_MINIMO &&
-      ultimo.z > 0.15 &&
-      Math.hypot(ex, ez) < 0.35 &&
-      movioEnImagen &&
-      retrocesos <= 1;
-    if (!remate) return null;
-
-    // Desde qué medición la pelota ya estaba en movimiento, y dónde estaba quieta antes.
-    const h = this.obs;
-    let m = h.length - 1;
-    while (m > 0 && semovio(h[m - 1], h[m])) m--;
-    const vuelo = h.slice(m);
-    if (vuelo.length < 2) return null;
-    let reposo = null;
-    if (m > 0) {
-      const ancla = h[m - 1];
-      const quietas = h.slice(0, m).filter((o) => o.t >= ancla.t - 0.6 && !semovio(o, ancla));
-      const prom = (k) => quietas.reduce((a, o) => a + o[k], 0) / quietas.length;
-      const enPiso = quietas.filter((o) => o.onGround).length >= quietas.length / 2;
-      reposo = {
-        x: prom("x"),
-        y: enPiso ? this.ballRadius : prom("y"),
-        z: prom("z"),
-        sigma: (enPiso ? 0.03 : 0.15) / Math.sqrt(Math.min(quietas.length, 4)),
-        tMin: ancla.t,
-        tMax: h[m].t,
-      };
-    }
-
-    this.state = "flight";
-    this.shot = { tKick: t, obs: vuelo, reposo, lastSeen: t, pred: null, rechazos: 0 };
-    this.shot.pred = this.#predecir();
-    if (!this.shot.pred) {
-      this.reset();
-      return null;
-    }
-    return { type: "kick", t, prediction: this.shot.pred };
-  }
 
   #predecir() {
     const { obs, reposo } = this.shot;
@@ -478,7 +698,6 @@ export class ShotTracker {
 
     if (vz >= 0) return { tRef, x0, y0, z0, vx, vy, vz, tCross: Infinity, x: x0, y: y0, speed: 0, rolling: enPiso };
 
-    // Puede ser negativo: la última medición ya pasó la línea y el cruce fue antes.
     // Con arrastre: primero cuánto avanza a lo largo de la velocidad hasta la
     // línea, después cuánto tiempo le lleva.
     const rapidez = Math.hypot(vx, vy, vz);
@@ -507,8 +726,22 @@ export class ShotTracker {
     return { type: "cross", t: this.shot.pred.tCross, tKick: this.shot.tKick, prediction: this.shot.pred };
   }
 
-  #cancelar() {
-    this.reset();
-    return { type: "cancel" };
+  // seguiaQuieta: la pelota se vio otra vez en su lugar, así que sigue lista.
+  #cancelar(seguiaQuieta, o = null) {
+    const origen = this.shot?.origen;
+    this.state = "idle";
+    this.shot = null;
+    if (!seguiaQuieta && origen) this.quietos = this.quietos.filter((q) => q !== origen);
+    if (seguiaQuieta && origen && o) origen.tUlt = o.t;
+    return { type: "cancel", falsaAlarma: seguiaQuieta };
   }
+}
+
+const posicionDe = (c) => ({ x: c.x, y: c.y, z: c.z, onGround: c.onGround, px: c.px, py: c.py, pr: c.pr });
+
+// Ángulo entre el rayo medido de `o` y la dirección desde su cámara hasta `p`.
+function anguloA(o, p) {
+  const q = { x: p.x - o.o.x, y: p.y - o.o.y, z: p.z - o.o.z };
+  const n = Math.hypot(q.x, q.y, q.z) || 1;
+  return Math.acos(Math.min(1, (q.x * o.d.x + q.y * o.d.y + q.z * o.d.z) / n));
 }

@@ -54,7 +54,9 @@ Realidad aumentada en tu lugar real: escaneás el piso, ponés un arco con arque
 
 1. **Ubicar el arco**: con ARCore (WebXR *hit-test*) encuentra el piso real y fija el arco ahí (con *anchors*, no se corre aunque muevas el celular).
 2. **Escanear la pelota**: aprende los colores de tu pelota y del lugar. Después la reconoce en cada cuadro de la cámara con precisión de fracciones de píxel.
-3. **Patear**: sigue la pelota en 3D, detecta el remate en dos cuadros y ajusta la trayectoria física (por el piso o por el aire, con gravedad y resistencia del aire) a lo que ve la cámara; cada medición se refina leyendo esa zona de la cámara en su resolución real. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
+3. **Patear**: cuando la pelota queda quieta aparece «Pelota lista». El remate tiene que salir de ese punto, rápido y hacia el arco; la app lo detecta en dos cuadros y ajusta la trayectoria física (por el piso o por el aire, con gravedad y resistencia del aire) a lo que ve la cámara. Cada medición se refina leyendo esa zona de la cámara en su resolución real.
+
+Para no confundirse: el detector propone varias manchas y el seguimiento elige la que tiene sentido físico (la que sigue quieta, la que sale del punto de reposo o la que va por la trayectoria, con el tamaño que corresponde a esa distancia). Una pierna, otro objeto claro o la detección que salta a otro lado se descartan, y si después de "detectar" un remate la pelota sigue en su lugar, se cancela sin dar resultado. Con eso calcula por dónde va a cruzar la línea y el arquero se tira a ese punto. Según la dificultad, su reacción y lo lejos que llega, ataja o es gol.
 
 Dos modos:
 
@@ -87,6 +89,7 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 ## Consejos para que detecte mejor
 
 - Escaneá la pelota con buena luz, llenando el círculo.
+- Antes de patear esperá a que diga **«Pelota lista»** (la pelota quieta medio segundo).
 - Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
 - En modo fijo dejá el celular quieto, con el arco y el punto de remate a la vista, a 1-2 m detrás o al costado de donde pateás.
 - El botón ⚙ muestra lo que ve el detector (en violeta) para revisar que reconozca la pelota.

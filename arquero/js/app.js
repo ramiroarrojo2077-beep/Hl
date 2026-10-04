@@ -189,8 +189,6 @@ const registro = new URLSearchParams(location.search).has("registro") ? [] : nul
 const tmp = {
   inv: new THREE.Matrix4(),
   proyInv: new THREE.Matrix4(),
-  origen: new THREE.Vector3(),
-  dir: new THREE.Vector3(),
   v: new THREE.Vector3(),
   quat: new THREE.Quaternion(),
 };
@@ -254,8 +252,8 @@ function irA(nueva) {
     detector.hasPrev = false;
     const fijo = ajustes.modo === "fijo";
     let texto = fijo
-      ? "Apoyá el celular quieto donde se vean el arco y la pelota. Cada tiro se graba solo con el arquero."
-      : "Apuntá al arco con la pelota a la vista y pateá. El arquero va a tirarse hacia tu remate.";
+      ? "Apoyá el celular quieto donde se vean el arco y la pelota. Dejá la pelota quieta y, cuando diga «Pelota lista», pateá. Cada tiro se graba solo."
+      : "Apuntá al arco con la pelota a la vista. Dejala quieta y, cuando diga «Pelota lista», pateá: el arquero se tira hacia tu remate.";
     if (modoStage === "demo") texto = "Deslizá el dedo desde la pelota hacia el arco para patear, o tocá Patear al azar.";
     mostrarPaso("3 · ¡Pateá!", texto, modoStage === "demo" ? { texto: "Patear al azar", fn: patearAlAzar } : null);
     if (modoStage === "demo") demo.goToTripod();
@@ -311,19 +309,12 @@ function escanear(info) {
 
 // ---------- Seguimiento de la pelota ----------
 
-// Rayo de la cámara que pasa por el píxel (x, y) de la imagen (y hacia arriba).
-function rayo(info, x, y, w, h, destino) {
-  destino.set((x / w) * 2 - 1, (y / h) * 2 - 1, 0.5).applyMatrix4(tmp.proyInv).normalize();
-  return destino.transformDirection(info.camMatrix);
-}
 
-// Proyección en la imagen de la posición que predice la trayectoria, o null.
-function dondeDeberiaEstar(info, t, w, h) {
-  const p = tracker.expectedPosition(t);
-  if (!p) return null;
-  const mundo = tmp.v.set(p.x, p.y, p.z).applyMatrix4(arcoGrupo.matrixWorld);
-  const distancia = mundo.distanceTo(tmp.origen.setFromMatrixPosition(info.camMatrix));
-  const ndc = mundo.applyMatrix4(tmp.inv.copy(info.camMatrix).invert()).applyMatrix4(info.projMatrix);
+// Proyección en la imagen de un punto del arco (metros), o null si queda fuera.
+function proyectar(info, p, w, h) {
+  const mundo = new THREE.Vector3(p.x, p.y, p.z).applyMatrix4(arcoGrupo.matrixWorld);
+  const distancia = mundo.distanceTo(new THREE.Vector3().setFromMatrixPosition(info.camMatrix));
+  const ndc = mundo.applyMatrix4(new THREE.Matrix4().copy(info.camMatrix).invert()).applyMatrix4(info.projMatrix);
   if (!(Math.abs(ndc.x) < 1.2 && Math.abs(ndc.y) < 1.2 && ndc.z < 1)) return null;
   const radio = ((info.projMatrix.elements[5] * h) / 2) * (PELOTAS[ajustes.pelota].radio / distancia);
   return { x: ((ndc.x + 1) / 2) * w, y: ((ndc.y + 1) / 2) * h, r: Math.max(2, radio) };
@@ -347,69 +338,108 @@ function refinar(info, det, w, h) {
   return { ...det, x: x0 + fino.x / k, y: y0 + fino.y / k, r: fino.r / k, refinada: true };
 }
 
+// Posición 3D (en el arco) de una mancha de la imagen, con el rayo de la cámara
+// que pasa por su centro. null si queda en un lugar imposible.
+function ubicar(info, det, w, h) {
+  const rayo = (x, y) =>
+    new THREE.Vector3((x / w) * 2 - 1, (y / h) * 2 - 1, 0.5).applyMatrix4(tmp.proyInv).normalize().transformDirection(info.camMatrix);
+  const centro = rayo(det.x, det.y);
+  const angular = (rayo(det.x - det.r, det.y).angleTo(rayo(det.x + det.r, det.y)) + rayo(det.x, det.y - det.r).angleTo(rayo(det.x, det.y + det.r))) / 4;
+  const origen = new THREE.Vector3().setFromMatrixPosition(info.camMatrix).applyMatrix4(tmp.inv);
+  const dir = centro.transformDirection(tmp.inv);
+  const p = locateBall(origen, dir, angular, PELOTAS[ajustes.pelota].radio);
+  if (!(p.z > -1.5 && Math.hypot(p.x, p.z) < 40)) return null;
+  return {
+    ...p,
+    px: det.x,
+    py: det.y,
+    pr: det.r,
+    score: det.score,
+    moving: det.moving,
+    alargada: det.alargada,
+    // Rayo de la cámara en coordenadas del arco, para ajustar la trayectoria.
+    o: { x: origen.x, y: origen.y, z: origen.z },
+    d: { x: dir.x, y: dir.y, z: dir.z },
+    ang: angular,
+    det,
+  };
+}
+
+const marca = { pos: new THREE.Vector3(), lista: false };
+
 function seguirPelota(info) {
   const { data, width: w, height: h } = info.image;
   detector.resize(w, h);
   const e = info.camMatrix.elements;
   const camara = { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
   const t = info.t;
-  // Durante el remate se busca donde la trayectoria dice que tiene que estar
-  // (así no se confunde con una pierna u otra cosa que se mueve).
-  const near = dondeDeberiaEstar(info, t, w, h) ?? (ultimaDeteccion && t - ultimaDeteccion.t < 0.4 ? ultimaDeteccion : null);
-  let det = detector.detect(data, { camera: camara, near });
+  tmp.proyInv.copy(info.projMatrix).invert();
+  tmp.inv.copy(arcoGrupo.matrixWorld).invert();
+
+  // Dónde buscar: en vuelo, donde dice la trayectoria; lista, donde quedó quieta.
+  const enVuelo = tracker.state === "flight";
+  const esperado = tracker.expectedPosition(t) ?? tracker.restPosition();
+  const enImagen = esperado ? proyectar(info, esperado, w, h) : null;
+  const near = enImagen ?? (ultimaDeteccion && t - ultimaDeteccion.t < 0.4 ? ultimaDeteccion : null);
+  const foco = enVuelo && enImagen ? { x: enImagen.x, y: enImagen.y, r: Math.max(4 * enImagen.r, 20) } : null;
+  const candidatas = detector.detectAll(data, { camera: camara, near, foco });
+
+  // El seguimiento elige cuál es la pelota (la que sigue quieta, la que sale del
+  // punto de reposo o la que va por la trayectoria); las demás se descartan.
+  const ubicadas = candidatas.map((c) => ubicar(info, c, w, h)).filter(Boolean);
+  tracker.observe(t, ubicadas);
+  const elegida = tracker.choose(t, ubicadas);
   let evento = null;
-  if (det) det = refinar(info, det, w, h);
-
-  if (det) {
-    tmp.proyInv.copy(info.projMatrix).invert();
-    const centro = rayo(info, det.x, det.y, w, h, new THREE.Vector3());
-    const a = rayo(info, det.x - det.r, det.y, w, h, new THREE.Vector3());
-    const b = rayo(info, det.x + det.r, det.y, w, h, new THREE.Vector3());
-    const c = rayo(info, det.x, det.y - det.r, w, h, new THREE.Vector3());
-    const d = rayo(info, det.x, det.y + det.r, w, h, new THREE.Vector3());
-    const angular = (a.angleTo(b) + c.angleTo(d)) / 4;
-
-    // Al sistema del arco.
-    tmp.inv.copy(arcoGrupo.matrixWorld).invert();
-    const origen = tmp.origen.setFromMatrixPosition(info.camMatrix).applyMatrix4(tmp.inv);
-    const dir = tmp.dir.copy(centro).transformDirection(tmp.inv);
-    const radio = PELOTAS[ajustes.pelota].radio;
-    const p = locateBall(origen, dir, angular, radio);
-
-    if (p.z > -1.5 && Math.hypot(p.x, p.z) < 40) {
-      ultimaDeteccion = { ...det, t };
-      ultimaPosicion = p;
-      pelotaVistaEn = t;
-      marcaPelota.position.set(p.x, p.y, p.z).applyMatrix4(arcoGrupo.matrixWorld);
-      evento = tracker.add(t, {
-        ...p,
-        px: det.x,
-        py: det.y,
-        pr: det.r,
-        // Rayo de la cámara en coordenadas del arco, para ajustar la trayectoria.
-        o: { x: origen.x, y: origen.y, z: origen.z },
-        d: { x: dir.x, y: dir.y, z: dir.z },
-        ang: angular,
-      });
-    }
+  let medida = null;
+  if (elegida >= 0) {
+    medida = ubicadas[elegida];
+    const fina = refinar(info, medida.det, w, h);
+    if (fina.refinada) medida = ubicar(info, fina, w, h) ?? medida;
+    ultimaDeteccion = { ...medida.det, t };
+    ultimaPosicion = medida;
+    pelotaVistaEn = t;
+    const { det: _det, ...obs } = medida;
+    evento = tracker.add(t, obs);
   }
   if (registro) {
-    registro.push({ t: +t.toFixed(3), det: det && { x: +det.x.toFixed(2), y: +det.y.toFixed(2), r: +det.r.toFixed(2), fino: Boolean(det.refinada) }, p: det && ultimaPosicion && { x: +ultimaPosicion.x.toFixed(2), y: +ultimaPosicion.y.toFixed(2), z: +ultimaPosicion.z.toFixed(2), g: ultimaPosicion.onGround }, ev: evento?.type, pred: evento?.prediction && { x: +evento.prediction.x.toFixed(3), y: +evento.prediction.y.toFixed(3), aire: !evento.prediction.rolling }, st: tracker.state });
+    const d = medida?.det;
+    registro.push({
+      t: +t.toFixed(3),
+      n: candidatas.length,
+      det: d && { x: +d.x.toFixed(2), y: +d.y.toFixed(2), r: +d.r.toFixed(2), fino: Boolean(d.refinada) },
+      p: medida && { x: +medida.x.toFixed(2), y: +medida.y.toFixed(2), z: +medida.z.toFixed(2), g: medida.onGround },
+      ev: evento?.type,
+      pred: evento?.prediction && { x: +evento.prediction.x.toFixed(3), y: +evento.prediction.y.toFixed(3), aire: !evento.prediction.rolling },
+      st: tracker.state,
+      lista: tracker.ready,
+    });
     if (registro.length > 600) registro.shift();
   }
   evento ??= tracker.tick(t);
   if (evento) manejarEvento(evento, t);
 
+  // El aro sigue la trayectoria ajustada (suave) en vuelo y queda fijo donde
+  // la pelota está quieta; no salta con cada medición.
   const vista = t - pelotaVistaEn < 0.25;
-  marcaPelota.visible = vista;
-  marcaPelota.material.color.set(tracker.state === "flight" ? 0xffd400 : 0xc6ff1a);
+  const lista = tracker.ready;
+  const fija = tracker.expectedPosition(t) ?? (lista ? tracker.restPosition() : null);
+  if (fija) marca.pos.set(fija.x, fija.y, fija.z);
+  else if (vista && ultimaPosicion) marca.pos.lerp(tmp.v.set(ultimaPosicion.x, ultimaPosicion.y, ultimaPosicion.z), 0.5);
+  marcaPelota.position.copy(marca.pos).applyMatrix4(arcoGrupo.matrixWorld);
+  marcaPelota.visible = tracker.state === "flight" || (lista && t - pelotaVistaEn < 1.5) || vista;
+  marcaPelota.material.color.set(tracker.state === "flight" ? 0xffd400 : lista ? 0xc6ff1a : 0xffffff);
   marcaPelota.quaternion.setFromRotationMatrix(info.camMatrix);
-  ui.estadoPelota.textContent = vista ? "● Pelota detectada" : "○ Buscando la pelota…";
-  ui.estadoPelota.classList.toggle("ok", vista);
-  if (tracker.state === "idle" && vista && ultimaPosicion) arquero.seguir(ultimaPosicion.x);
-  arquero.mirar(t - pelotaVistaEn < 0.6 ? ultimaPosicion : null);
 
-  if (mostrarDiag) dibujarDiagnostico(info.image, det, ultimaPosicion);
+  ui.estadoPelota.textContent = lista
+    ? "● Pelota lista: ¡pateá!"
+    : vista
+      ? "● Pelota vista: dejala quieta"
+      : "○ Buscando la pelota…";
+  ui.estadoPelota.classList.toggle("ok", lista);
+  if (tracker.state === "idle" && (lista || vista)) arquero.seguir(marca.pos.x);
+  arquero.mirar(tracker.state === "flight" || lista || t - pelotaVistaEn < 0.6 ? { x: marca.pos.x, y: marca.pos.y, z: marca.pos.z } : null);
+
+  if (mostrarDiag) dibujarDiagnostico(info.image, medida?.det ?? null, medida);
 }
 
 function manejarEvento(ev, t) {
@@ -421,6 +451,7 @@ function manejarEvento(ev, t) {
   } else if (ev.type === "update") {
     planificar(ev.prediction);
   } else if (ev.type === "cancel") {
+    // Falsa alarma (la pelota seguía en su lugar) o un tiro que no se pudo seguir.
     tiro = null;
     arquero.reset(t);
     recorder?.shotCancelled();
