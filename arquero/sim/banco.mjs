@@ -228,6 +228,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   seg.reset();
 
   const resultados = [];
+  let msTotal = 0;
+  let msCuadros = 0;
   for (let n = 0; n < tiros; n++) {
     // Remate al azar, desde un punto que se vea bien.
     let p0 = null;
@@ -274,7 +276,10 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     let listaAlPatear = null;
     while (t < fin && !(terminado !== null && t > terminado + 0.2)) {
       const info = cuadro();
+      const t0 = performance.now();
       const r = seg.procesar(info, arcoApp);
+      msTotal += performance.now() - t0;
+      msCuadros++;
       if (listaAlPatear === null && info.t >= tPatada) listaAlPatear = seg.tracker.ready || seg.tracker.state !== "idle";
       if (fotos && fotos.taus.some((x) => Math.abs(info.t - tPatada - x) < 0.017)) {
         // Imagen y máscara del detector (violeta), con la pelota real marcada.
@@ -363,6 +368,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
       errorAntes: antes ? err(antes.prediction) : null,
       vuelo,
       filas: traza ? filas : undefined,
+      ms: msTotal / Math.max(1, msCuadros),
     };
     resultados.push(res);
     if (detalle) {
@@ -406,6 +412,7 @@ export function resumir(rs) {
     vueloBien: pct(v.b, v.c),
     vueloMal: pct(v.m, v.c),
     pxMediana: cuantil(rs.flatMap((r) => r.vuelo.errores), 0.5),
+    ms: rs.length ? rs.reduce((a, r) => a + r.ms, 0) / rs.length : 0,
   };
 }
 
@@ -459,7 +466,7 @@ export async function correr({ escenarios, sesiones, tiros, semilla, detalle }) 
     console.log(
       `${nombre.padEnd(14)} tiros ${f.tiros} · lista ${f.lista} · remate ${f.remate} · falsos ${f.falsos} · resultado ${f.resultado} (≥20 m/s: ${f.resultadoRapidos})` +
         ` · error cm mediana ${cm(f.errorMediana)} / 90% ${cm(f.error90)} · 0,2 s antes ${cm(f.errorAntesMediana)}` +
-        ` · vuelo bien ${f.vueloBien} mal ${f.vueloMal} · px ${f.pxMediana?.toFixed(2) ?? "-"} · ${f.segundos} s`,
+        ` · vuelo bien ${f.vueloBien} mal ${f.vueloMal} · px ${f.pxMediana?.toFixed(2) ?? "-"} · ${f.ms.toFixed(1)} ms/cuadro · ${f.segundos} s`,
     );
   }
   return tabla;

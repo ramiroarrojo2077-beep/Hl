@@ -55,23 +55,25 @@ function normalizar(h) {
 
 // Cierre morfológico 3x3 (dilatar y erosionar): une los gajos negros y blancos
 // de una pelota clásica en una sola mancha.
+// Se hace por filas y después por columnas (6 lecturas por píxel en vez de 9).
+let filas3 = new Uint8Array(0);
 function dilatar(src, dst, w, h, valor) {
+  const n = w * h;
+  if (filas3.length < n) filas3 = new Uint8Array(n);
+  const f = filas3;
+  const otro = 1 - valor;
   for (let y = 0; y < h; y++) {
+    const o = y * w;
     for (let x = 0; x < w; x++) {
-      let r = 1 - valor;
-      for (let dy = -1; dy <= 1 && r !== valor; dy++) {
-        const yy = y + dy;
-        if (yy < 0 || yy >= h) continue;
-        for (let dx = -1; dx <= 1; dx++) {
-          const xx = x + dx;
-          if (xx < 0 || xx >= w) continue;
-          if (src[yy * w + xx] === valor) {
-            r = valor;
-            break;
-          }
-        }
-      }
-      dst[y * w + x] = r;
+      const i = o + x;
+      f[i] = src[i] === valor || (x > 0 && src[i - 1] === valor) || (x < w - 1 && src[i + 1] === valor) ? valor : otro;
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    const o = y * w;
+    for (let x = 0; x < w; x++) {
+      const i = o + x;
+      dst[i] = f[i] === valor || (y > 0 && f[i - w] === valor) || (y < h - 1 && f[i + w] === valor) ? valor : otro;
     }
   }
 }
@@ -357,7 +359,8 @@ export class BallDetector {
   // foco: {x, y, r} zona donde se espera la pelota (en vuelo): ahí se acepta con
   //   menos probabilidad, porque a toda velocidad se ve borrosa y mezclada con el fondo.
   // soloSuelo: buscar sólo debajo del horizonte (la pelota quieta está en el piso).
-  detectAll(rgba, { camera = null, near = null, ventana = null, foco = null, aprender = true, soloSuelo = false } = {}) {
+  // escalas: {min, max} radios (en píxeles) que puede tener la pelota, si se sabe.
+  detectAll(rgba, { camera = null, near = null, ventana = null, foco = null, aprender = true, soloSuelo = false, escalas = null } = {}) {
     if (!this.prob) return [];
     const { width: w, height: h, probs, colorPelota, score, mask, prev, prev2, moving, estela, alfa } = this;
     const n = w * h;
@@ -384,14 +387,37 @@ export class BallDetector {
     const f2 = foco ? foco.r * foco.r : 0;
     const hz = horizonte(camera);
     if (!ventana) this.hz = hz;
-    const hzBusqueda = soloSuelo ? hz : null;
 
+    let pixelesEstela = 0;
     for (let y = 0, i = 0; y < h; y++) {
-      for (let x = 0; x < w; x++, i++) {
+      // Componente vertical del rayo, que cambia linealmente a lo largo de la fila.
+      let hv = hz ? hz[0] * 0.5 + hz[1] * (y + 0.5) + hz[2] : -1;
+      const dhv = hz ? hz[0] : 0;
+      // Homografía al cuadro anterior, también lineal a lo largo de la fila.
+      let hx = 0;
+      let hy = 0;
+      let hw = 1;
+      if (h1) {
+        hx = h1[0] * 0.5 + h1[1] * (y + 0.5) + h1[2];
+        hy = h1[3] * 0.5 + h1[4] * (y + 0.5) + h1[5];
+        hw = h1[6] * 0.5 + h1[7] * (y + 0.5) + h1[8];
+      }
+      for (let x = 0; x < w; x++, i++, hv += dhv) {
+        let k1 = -1;
+        if (h1) {
+          const px = Math.floor(hx / hw);
+          const py = Math.floor(hy / hw);
+          if (px >= 0 && py >= 0 && px < w && py < h) k1 = (py * w + px) * 4;
+          hx += h1[0];
+          hy += h1[3];
+          hw += h1[6];
+        }
         moving[i] = 0;
-        if ((ventana && (x + 0.5 - ventana.x) ** 2 + (y + 0.5 - ventana.y) ** 2 > v2) || !alPiso(hzBusqueda, x, y)) {
+        const piso = hv < MARGEN_HORIZONTE;
+        if ((ventana && (x + 0.5 - ventana.x) ** 2 + (y + 0.5 - ventana.y) ** 2 > v2) || (soloSuelo && !piso)) {
           score[i] = 0;
           mask[i] = 0;
+          estela[i] = 0;
           continue;
         }
         const j = i * 4;
@@ -399,9 +425,8 @@ export class BallDetector {
         const g = rgba[j + 1];
         const b = rgba[j + 2];
         const q = casillero(r, g, b);
-        const prob = alPiso(hz, x, y) ? probs[0] : probs[1];
+        const prob = piso ? probs[0] : probs[1];
         let s = prob[q];
-        const k1 = h1 ? muestra(h1, x, y, w, h) : -1;
         estela[i] = 0;
         if (k1 >= 0) {
           const d = Math.abs(r - prev[k1]) + Math.abs(g - prev[k1 + 1]) + Math.abs(b - prev[k1 + 2]);
@@ -428,6 +453,7 @@ export class BallDetector {
                 if (d2 > 18) {
                   estela[i] = 1;
                   alfa[i] = Math.min(1, a);
+                  pixelesEstela++;
                 }
               }
             }
@@ -467,8 +493,8 @@ export class BallDetector {
     dilatar(this.tmp, this.closed, w, h, 0);
 
     const manchas = this.#manchas(near);
-    const formas = this.#picos(near);
-    const estelas = h1 && cm ? this.#estelas(near) : [];
+    const formas = this.#picos(near, escalas);
+    const estelas = h1 && cm && pixelesEstela >= 6 ? this.#estelas(near) : [];
     if (this.depurar) this.depuracion = { manchas, formas, estelas, todas: this.todasManchas };
     const candidatas = this.#combinar(manchas, [...formas, ...estelas]);
     this.last = { candidatas };
@@ -557,7 +583,8 @@ export class BallDetector {
   // media blanca del que patea, una línea de cal, un palo) forma con eso una sola
   // mancha alargada, pero igual aparece acá: sólo 1 o 2 direcciones dan "pelota".
   // Se prueba en varias escalas y en cada lugar queda la que mejor responde.
-  #picos(near) {
+  // escalas: {min, max} radios a probar (si se sabe de qué tamaño se espera).
+  #picos(near, escalas = null) {
     const { width: w, height: h, score, moving } = this;
     const W1 = w + 1;
     const n1 = W1 * (h + 1);
@@ -592,12 +619,13 @@ export class BallDetector {
     const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7071, 0.7071], [-0.7071, 0.7071], [0.7071, -0.7071], [-0.7071, -0.7071]];
     const sur = new Float64Array(8);
     const picos = [];
-    const rMax = Math.min(40, 0.3 * Math.min(w, h));
-    for (let r = 1.8; r <= rMax; r *= 1.3) {
+    const rMax = Math.min(40, 0.3 * Math.min(w, h), escalas ? escalas.max : Infinity);
+    const rMin = escalas ? Math.max(1.8, escalas.min) : 1.8;
+    for (let r = rMin; r <= rMax; r *= 1.3) {
       const a = Math.max(0.5, 0.62 * r);
       const b = Math.max(0.5, 0.33 * r);
       const D = 1.5 * r;
-      const paso = Math.max(1, Math.floor(r / 3));
+      const paso = Math.max(1, Math.floor(r / 2.5));
       for (let y = 0; y < h; y += paso) {
         for (let x = 0; x < w; x += paso) {
           if (score[y * w + x] < 0.4) continue;
@@ -610,13 +638,18 @@ export class BallDetector {
           for (let k = 0; k < 8; k++) {
             const v = caja(I, cx + D * DIRS[k][0], cy + D * DIRS[k][1], b);
             if (v < 0) continue;
-            sur[validas++] = v;
+            // Inserción ordenada (de menor a mayor).
+            let j = validas++;
+            while (j > 0 && sur[j - 1] > v) {
+              sur[j] = sur[j - 1];
+              j--;
+            }
+            sur[j] = v;
             if (v < 0.3) aisladas++;
           }
           if (validas < 5) continue;
           // Los 5 costados más "limpios".
-          const s = Array.from(sur.subarray(0, validas)).sort((p, q) => p - q);
-          const bajos = (s[0] + s[1] + s[2] + s[3] + s[4]) / 5;
+          const bajos = (sur[0] + sur[1] + sur[2] + sur[3] + sur[4]) / 5;
           const resp = C - bajos;
           if (resp < 0.45) continue;
           picos.push({ x: cx, y: cy, r, resp, aisladas: aisladas / validas });

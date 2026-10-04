@@ -107,7 +107,10 @@ export class BallTracking {
     // Mientras no hay una pelota lista, se busca sólo en el piso (ahí está quieta);
     // lista o en vuelo, en toda la imagen: al patearla se eleva sobre el horizonte.
     const soloSuelo = !enVuelo && !tracker.ready;
-    const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo });
+    // Si se sabe dónde está (quieta o en vuelo), se sabe de qué tamaño se ve:
+    // las formas redondas se buscan sólo en esas escalas (mucho más rápido).
+    const escalas = enImagen ? { min: 0.5 * enImagen.r, max: 1.8 * enImagen.r } : null;
+    const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo, escalas });
 
     // El seguimiento elige cuál es la pelota (la que sigue quieta, la que sale del
     // punto de reposo o la que va por la trayectoria); las demás se descartan.

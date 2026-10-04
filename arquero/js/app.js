@@ -350,7 +350,7 @@ function radioNominal() {
 // "Guardar registro" se exporta en un archivo para mandárselo a quien arregla la app.
 
 const MAX_CUADROS = 1200;
-const bitacora = { cuadros: [], escaneo: null, tiros: [], previos: [], tiroActual: null };
+const bitacora = { cuadros: [], escaneo: null, tiros: [], previos: [], siguientePrevia: 0, tiroActual: null };
 const r2 = (v) => Math.round(v * 100) / 100;
 const r4 = (v) => Math.round(v * 10000) / 10000;
 
@@ -377,11 +377,11 @@ function anotarCuadro(info, t, candidatas, elegida, medida, evento) {
   registro?.push(fila);
   if (registro && registro.length > 600) registro.shift();
 
-  // Fotos: siempre las últimas 3; durante un remate, todas (hasta 18).
-  const foto = copiaImagen(info.image, t);
-  if (evento?.type === "kick") bitacora.tiroActual = { fotos: [...bitacora.previos], eventos: [] };
+  // Fotos: siempre las últimas 3 (en lugares reusados, para no generar basura de
+  // memoria en cada cuadro); durante un remate, todas (hasta 18).
+  if (evento?.type === "kick") bitacora.tiroActual = { fotos: ultimasFotos().map((f) => ({ ...f, data: f.data.slice() })), eventos: [] };
   if (bitacora.tiroActual) {
-    if (bitacora.tiroActual.fotos.length < 18) bitacora.tiroActual.fotos.push(foto);
+    if (bitacora.tiroActual.fotos.length < 18) bitacora.tiroActual.fotos.push(copiaImagen(info.image, t));
     if (evento) bitacora.tiroActual.eventos.push({ t: r4(t), tipo: evento.type, pred: fila.pred });
     if (evento?.type === "cross" || evento?.type === "cancel") {
       bitacora.tiros.push(bitacora.tiroActual);
@@ -389,9 +389,23 @@ function anotarCuadro(info, t, candidatas, elegida, medida, evento) {
       bitacora.tiroActual = null;
     }
   } else {
-    bitacora.previos.push(foto);
-    if (bitacora.previos.length > 3) bitacora.previos.shift();
+    guardarPrevia(info.image, t);
   }
+}
+
+function guardarPrevia(img, t) {
+  const k = bitacora.siguientePrevia++ % 3;
+  let f = bitacora.previos[k];
+  if (!f || f.data.length !== img.data.length) f = bitacora.previos[k] = { data: new Uint8Array(img.data.length) };
+  f.data.set(img.data);
+  f.t = t;
+  f.w = img.width;
+  f.h = img.height;
+}
+
+// Las fotos previas en orden.
+function ultimasFotos() {
+  return bitacora.previos.filter(Boolean).sort((a, b) => a.t - b.t);
 }
 
 function jpeg(foto) {
