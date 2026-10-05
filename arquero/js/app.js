@@ -403,13 +403,16 @@ function escanear(info) {
   detector.resize(width, height);
   const res = detector.learn(data, width / 2, height / 2, RADIO_MIRA * Math.min(width, height), camaraDe(info, width, height));
   // El tamaño real de la pelota (apoyada en el piso): así no importa el número elegido.
-  const radio = res.ok ? seg.radioEscaneada(info, arcoGrupo.matrixWorld, res.det) : null;
-  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null, radio } };
+  // También dónde quedó: lo que está quieto ahí es la pelota (no otra cosa parecida).
+  const medida = res.ok ? seg.medirEscaneada(info, arcoGrupo.matrixWorld, res.det) : null;
+  const radio = medida?.radio ?? null;
+  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null, radio, lugar: medida?.pos ?? null } };
   if (res.ok) {
     if (radio) seg.setRadioNominal(radio);
     else seg.reiniciarRadio();
     sonidos.whistle();
     irA("jugar");
+    tracker.marcarEscaneada(medida?.pos ?? null);
     return;
   }
   const motivos = {
@@ -649,15 +652,21 @@ function pelotaMovida(t) {
   const lista = tracker.quietos.filter((q) => q.armado);
   if (!lista.length || lista.some((q) => t - q.tUlt < 0.6)) return null;
   let mejor = null;
-  for (const q of tracker.quietos) if (!q.armado && q.n >= 5 && t - q.tUlt < 0.15 && (!mejor || q.n > mejor.n)) mejor = q;
+  // Tiene que parecerse a la pelota tanto como la que estaba lista y verse hace rato.
+  const referencia = Math.max(...lista.map((q) => q.score));
+  for (const q of tracker.quietos) if (!q.armado && q.n >= 15 && q.score >= 0.8 * referencia && t - q.tUlt < 0.15 && (!mejor || q.n > mejor.n)) mejor = q;
   return mejor;
 }
 
 // Lo que se viene viendo quieto en un mismo lugar (todavía sin estar lista).
 function candidataQuieta(t) {
   let mejor = null;
-  for (const q of tracker.quietos) if (q.n >= 3 && t - q.tUlt < 0.3 && (!mejor || q.n > mejor.n)) mejor = q;
-  return mejor;
+  for (const q of tracker.quietos) {
+    if (q.n < 3 || t - q.tUlt >= 0.3) continue;
+    const valor = q.n + (tracker.esEscaneada(q) ? 1000 : 0);
+    if (!mejor || valor > mejor.valor) mejor = { q, valor };
+  }
+  return mejor?.q ?? null;
 }
 
 function manejarEvento(ev, t) {

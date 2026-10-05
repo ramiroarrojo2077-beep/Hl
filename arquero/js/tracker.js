@@ -365,7 +365,9 @@ const TOLERANCIA_LATERAL = 0.12; // m (la dirección del rayo se mide muy bien)
 const TOLERANCIA_PROFUNDIDAD = 0.12; // m, más un 10 % de la distancia si se mide por tamaño
 const VELOCIDAD_MAXIMA = 45; // m/s; más rápido que esto entre dos mediciones no es la pelota
 const ALARGADA_MAXIMA = 3; // estela de movimiento de un remate; más que eso no es la pelota
-const ALARGADA_QUIETA = 1.6; // quieta, la pelota se ve redonda (una pierna o una media, no)
+const ALARGADA_QUIETA = 1.6;
+const MAX_QUIETOS = 10; // objetos quietos que se vigilan a la vez
+const CERCA_ESCANEADA = 0.35; // m alrededor de donde se escaneó la pelota // quieta, la pelota se ve redonda (una pierna o una media, no)
 const MOVIMIENTO_MINIMO = 0.15; // fracción de píxeles que cambiaron (si se sabe)
 
 // Cuánto se apartó `o` del punto `r`, en unidades de la tolerancia (1 = en el borde).
@@ -487,10 +489,22 @@ export class ShotTracker {
     let mejor = null;
     for (const q of this.quietos) {
       if (!q.armado) continue;
-      const valor = q.score * Math.min(q.n, 30) - (this.vistoEn - q.tUlt) * 10;
+      const valor = q.score * Math.min(q.n, 30) - (this.vistoEn - q.tUlt) * 10 + (this.esEscaneada(q) ? 100 : 0);
       if (!mejor || valor > mejor.valor) mejor = { q, valor };
     }
     return mejor?.q ?? null;
+  }
+
+  // Dónde estaba la pelota cuando se la escaneó (en el piso): lo que está quieto
+  // ahí es la pelota, aunque haya otras cosas parecidas a la vista. Vale hasta el
+  // primer remate (después puede quedar en cualquier lado).
+  marcarEscaneada(p) {
+    this.escaneada = p ? { x: p.x, z: p.z } : null;
+  }
+
+  // ¿`c` (una mancha o un objeto quieto) está donde se escaneó la pelota?
+  esEscaneada(c) {
+    return Boolean(this.escaneada) && Math.hypot(c.x - this.escaneada.x, c.z - this.escaneada.z) < CERCA_ESCANEADA;
   }
 
   // Dónde está quieta la pelota lista para patear (o null).
@@ -541,8 +555,17 @@ export class ShotTracker {
         q.pr = c.pr;
         q.onGround = c.onGround;
         if (!q.armado && t - q.t0 >= QUIETA_TIEMPO && q.n >= 5) q.armado = true;
-      } else if (this.quietos.length < 6) {
-        this.quietos.push({ ...posicionDe(c), t0: t, tUlt: t, n: 1, score: c.score ?? 0.5, armado: false, saliendo: [], saltos: 0 });
+      } else {
+        // Si ya hay muchos (motas del piso, otras cosas), se reemplaza el que
+        // menos se vio; la pelota escaneada siempre entra.
+        if (this.quietos.length >= MAX_QUIETOS) {
+          let peor = null;
+          for (const k of this.quietos) if (!k.armado && !this.esEscaneada(k) && (!peor || k.n < peor.n)) peor = k;
+          if (peor && (this.esEscaneada(c) || peor.n <= 2)) this.quietos.splice(this.quietos.indexOf(peor), 1);
+        }
+        if (this.quietos.length < MAX_QUIETOS) {
+          this.quietos.push({ ...posicionDe(c), t0: t, tUlt: t, n: 1, score: c.score ?? 0.5, armado: false, saliendo: [], saltos: 0 });
+        }
       }
     }
     // Se olvidan los que no se ven más (los armados aguantan más: el jugador
@@ -629,6 +652,8 @@ export class ShotTracker {
     // Todavía ninguna lista: la de mejor puntaje, priorizando la que ya se venía
     // viendo quieta y la que tiene el tamaño de la pelota.
     const delTamano = validas.filter(({ c }) => tamanoDePelota(c));
+    const escaneada = delTamano.filter(({ c }) => c.onGround && this.esEscaneada(c));
+    if (escaneada.length) return escaneada.sort((a, b) => b.c.score - a.c.score)[0].i;
     const conocida = delTamano.filter(({ c }) => this.quietos.some((q) => apartamiento(c, q) < 1.2));
     const grupo = conocida.length ? conocida : delTamano.length ? delTamano : validas;
     return grupo.sort((a, b) => b.c.score - a.c.score)[0].i;
@@ -954,6 +979,7 @@ export class ShotTracker {
     }
     const pred = this.#predecir();
     this.shot.pred = pred && pred.vz < 0 ? pred : sinPrior;
+    this.escaneada = null;
     return { type: "kick", t, prediction: this.shot.pred, n: this.shot.obs.length };
   }
 

@@ -69,22 +69,27 @@ export class BallTracking {
     this.reiniciarRadio();
   }
 
-  // Radio real de la pelota escaneada (apoyada en el piso): sale de su tamaño en
-  // la imagen y de la altura de la cámara sobre el piso (ver radioApoyada). Así
-  // no importa qué número de pelota quedó elegido. det: la que encontró el
-  // escaneo. null si no se puede medir.
-  radioEscaneada(info, arco, det) {
+  // Dónde está (en el piso, en coordenadas del arco) y qué radio real tiene la
+  // pelota escaneada. El radio sale de su tamaño en la imagen y la altura de la
+  // cámara sobre el piso (ver radioApoyada), sólo si su borde se distingue bien
+  // y da un número de pelota parecido al elegido (si no, null: manda el elegido).
+  // det: la que encontró el escaneo. null si no se puede ubicar.
+  medirEscaneada(info, arco, det) {
     if (!det || !arco) return null;
     const { data, width: w, height: h } = info.image;
     this.tmp.proyInv.copy(info.projMatrix).invert();
     this.tmp.inv.copy(arco).invert();
+    const lugar = this.ubicar(info, det, w, h);
+    if (!lugar) return null;
+    const pos = { x: lugar.x, y: lugar.y, z: lugar.z };
     // Sólo por el borde: la mancha de color puede no cubrir toda la pelota o
-    // (con un piso parecido) pasarse. Si el borde no se distingue, no se mide.
+    // (con un piso parecido) pasarse.
     const fino = this.detector.refine(data, w, h, det);
-    if (!fino || (fino.borde ?? 0) < 0.5 || Math.abs(Math.log(fino.r / det.r)) > 0.35) return null;
+    if (!fino || (fino.borde ?? 0) < 0.5 || Math.abs(Math.log(fino.r / det.r)) > 0.35) return { pos, radio: null };
     const m = this.ubicar(info, { ...det, x: fino.x, y: fino.y, r: fino.r }, w, h);
     const r = m ? radioApoyada(m.o, m.d, m.ang) : null;
-    return r > 0.08 && r < 0.13 ? r : null;
+    const creible = r && Math.abs(Math.log(r / this.radioNominal)) < 0.2;
+    return { pos, radio: creible ? r : null };
   }
 
   reiniciarRadio() {

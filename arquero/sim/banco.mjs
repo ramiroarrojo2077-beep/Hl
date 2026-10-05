@@ -311,10 +311,12 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   const aprendio = seg.detector.learn(infoEscaneo.image.data, w / 2, h / 2, radioMira, camEsc);
   if (!aprendio.ok) return { omitida: true, motivo: `escaneo: ${aprendio.motivo}` };
   // Como en la app: el radio real de la pelota sale del escaneo.
-  const radioEscaneo = seg.radioEscaneada(infoEscaneo, arcoApp, aprendio.det);
+  const medidaEscaneo = seg.medirEscaneada(infoEscaneo, arcoApp, aprendio.det);
+  const radioEscaneo = medidaEscaneo?.radio ?? null;
   if (radioEscaneo && !(process.env.EXP ?? "").includes("sinRadioEscaneo")) seg.setRadioNominal(radioEscaneo);
   seg.reiniciarRadio();
   seg.reset();
+  if (!(process.env.EXP ?? "").includes("sinEscaneada")) seg.tracker.marcarEscaneada(medidaEscaneo?.pos ?? null);
 
   const resultados = [];
   let msTotal = 0;

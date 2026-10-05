@@ -372,3 +372,22 @@ test("un remate muy rápido y borroso no se va a las nubes", () => {
     assert.ok(Math.abs(pred.y - y) < 0.6, `cruza a ${pred.y.toFixed(2)} m (de verdad ${y.toFixed(2)} m)`);
   }
 });
+
+test("después del escaneo sigue a la pelota escaneada aunque haya muchas otras cosas quietas", () => {
+  // Diez motas del piso (más puntaje que la pelota, aparecen antes) y la pelota
+  // donde se la escaneó.
+  const motas = Array.from({ length: 10 }, (_, k) => ({ x: -2 + 0.4 * k, y: R, z: 2.5, onGround: true, px: 20 + 15 * k, py: 60, pr: 7, score: 0.95, moving: 0, alargada: 1.05 }));
+  const pelota = { x: 0.3, y: R, z: 4, onGround: true, px: 106, py: 28, pr: 8, score: 0.6, moving: 0, alargada: 1.05 };
+  const tr = new ShotTracker({ ballRadius: R });
+  tr.marcarEscaneada({ x: 0.32, z: 4.05 });
+  let elegida = -1;
+  for (let k = 0; k < 30; k++) {
+    const candidatas = [...motas, pelota];
+    tr.observe(k / 30, candidatas);
+    elegida = tr.choose(k / 30, candidatas);
+  }
+  assert.equal(tr.ready, true);
+  assert.equal(elegida, motas.length, "tiene que elegir la pelota");
+  const reposo = tr.restPosition();
+  assert.ok(Math.hypot(reposo.x - pelota.x, reposo.z - pelota.z) < 0.05, JSON.stringify(reposo));
+});
