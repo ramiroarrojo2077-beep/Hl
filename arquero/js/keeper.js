@@ -111,6 +111,17 @@ function segmento(largo, rArriba, rAbajo, mat) {
   return pieza(g, mat);
 }
 
+// Un miembro con forma de músculo (más ancho en el medio que en las puntas),
+// colgando hacia -y desde el origen. perfil: [[radio, fracción del largo], …].
+function musculo(largo, perfil, mat, profundidad = 1) {
+  // De abajo hacia arriba (así las caras miran hacia afuera), cerrado en las puntas.
+  const puntos = perfil.map(([r, k]) => new THREE.Vector2(r, -k * largo)).reverse();
+  const g = new THREE.LatheGeometry([new THREE.Vector2(0, -largo), ...puntos, new THREE.Vector2(0, 0)], 20);
+  const m = pieza(g, mat);
+  m.scale.z = profundidad;
+  return m;
+}
+
 const lerp = (a, b, k) => a + (b - a) * k;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const suave = (k) => k * k * (3 - 2 * k);
@@ -163,18 +174,27 @@ export class Keeper {
     );
     short.scale.set(1.05, 1, 0.75);
     cadera.add(short);
+    // Elástico de la cintura.
+    const cintura = pieza(new THREE.TorusGeometry(0.09, 0.008, 8, 28), m.panel, 0, 0.045, 0);
+    cintura.rotation.x = Math.PI / 2;
+    cintura.scale.set(1.05, 0.75, 1);
+    cadera.add(cintura);
 
     this.piernas = [-1, 1].map((lado) => {
       const muslo = new THREE.Group();
       muslo.position.set(lado * 0.058, -0.02, 0);
-      const pierna = segmento(0.23, 0.052, 0.04, m.piel);
+      const pierna = musculo(0.23, [[0.05, 0], [0.056, 0.25], [0.052, 0.55], [0.042, 0.85], [0.039, 1]], m.piel, 0.92);
       const botamanga = segmento(0.1, 0.06, 0.055, m.short);
       botamanga.position.y = 0.01;
       muslo.add(pierna, botamanga);
       const rodilla = new THREE.Group();
       rodilla.position.y = -0.23;
       rodilla.add(pieza(new THREE.SphereGeometry(0.041, 14, 10), m.piel));
-      const canilla = segmento(0.2, 0.041, 0.029, m.medias);
+      // Media con la pantorrilla marcada y la canillera debajo.
+      const canilla = musculo(0.2, [[0.04, 0], [0.046, 0.3], [0.04, 0.6], [0.03, 0.9], [0.028, 1]], m.medias, 0.95);
+      const canillera = pieza(new THREE.CapsuleGeometry(0.03, 0.08, 4, 10), m.medias, 0, -0.09, 0.012);
+      canillera.scale.set(1, 1, 0.75);
+      rodilla.add(canillera);
       const franja = segmento(0.025, 0.043, 0.042, m.panel);
       franja.position.y = -0.03;
       rodilla.add(canilla, franja);
@@ -208,6 +228,11 @@ export class Keeper {
     const pecho = pieza(new THREE.LatheGeometry(perfil, 32), m.camiseta);
     pecho.scale.set(1.12, 1, 0.68);
     this.torso.add(pecho);
+    // Cuello de la camiseta.
+    const cuello = pieza(new THREE.TorusGeometry(0.036, 0.007, 8, 24), m.panel, 0, 0.318, 0);
+    cuello.rotation.x = Math.PI / 2;
+    cuello.scale.set(1, 0.8, 1);
+    this.torso.add(cuello);
 
     // Cuello y cabeza.
     this.cabeza = new THREE.Group();
@@ -240,11 +265,11 @@ export class Keeper {
       const hombro = new THREE.Group();
       hombro.position.set(lado * 0.128, 0.262, 0);
       hombro.add(pieza(new THREE.SphereGeometry(0.045, 16, 12), m.manga));
-      hombro.add(segmento(0.165, 0.04, 0.033, m.manga));
+      hombro.add(musculo(0.165, [[0.04, 0], [0.043, 0.35], [0.037, 0.75], [0.033, 1]], m.manga, 0.92));
       const codo = new THREE.Group();
       codo.position.y = -0.165;
       codo.add(pieza(new THREE.SphereGeometry(0.036, 12, 10), m.panel));
-      codo.add(segmento(0.145, 0.033, 0.026, m.manga));
+      codo.add(musculo(0.145, [[0.033, 0], [0.036, 0.3], [0.03, 0.7], [0.026, 1]], m.manga, 0.9));
       const muneca = new THREE.Group();
       muneca.position.y = -0.145;
       const guante = new THREE.Group();
@@ -253,8 +278,15 @@ export class Keeper {
       palma.scale.set(1.18, 1, 0.58);
       const dorso = pieza(new THREE.CapsuleGeometry(0.03, 0.04, 6, 10), m.dorso, 0, -0.06, -0.008);
       dorso.scale.set(1.15, 1, 0.45);
-      const dedos = pieza(new THREE.CapsuleGeometry(0.03, 0.045, 6, 12), m.guante, 0, -0.112, 0.004);
-      dedos.scale.set(1.25, 1, 0.5);
+      // Cuatro dedos, algo abiertos (guantes de arquero).
+      const dedos = new THREE.Group();
+      for (let k = 0; k < 4; k++) {
+        const x = (k - 1.5) * 0.017;
+        const dedo = pieza(new THREE.CapsuleGeometry(0.0095, 0.04 - Math.abs(k - 1.5) * 0.006, 4, 8), m.guante, x, -0.118 + Math.abs(k - 1.5) * 0.004, 0.004);
+        dedo.rotation.z = (k - 1.5) * 0.07;
+        dedo.scale.z = 0.85;
+        dedos.add(dedo);
+      }
       const pulgar = pieza(new THREE.CapsuleGeometry(0.014, 0.036, 4, 8), m.guante, -lado * 0.036, -0.062, 0.014);
       pulgar.rotation.z = -lado * 0.55;
       const palmaInterior = pieza(new THREE.BoxGeometry(0.05, 0.07, 0.004), m.palma, 0, -0.08, 0.018);

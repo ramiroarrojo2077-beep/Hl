@@ -402,9 +402,12 @@ function escanear(info) {
   const { data, width, height } = info.image;
   detector.resize(width, height);
   const res = detector.learn(data, width / 2, height / 2, RADIO_MIRA * Math.min(width, height), camaraDe(info, width, height));
-  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null } };
+  // El tamaño real de la pelota (apoyada en el piso): así no importa el número elegido.
+  const radio = res.ok ? seg.radioEscaneada(info, arcoGrupo.matrixWorld, res.det) : null;
+  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null, radio } };
   if (res.ok) {
-    seg.reiniciarRadio();
+    if (radio) seg.setRadioNominal(radio);
+    else seg.reiniciarRadio();
     sonidos.whistle();
     irA("jugar");
     return;

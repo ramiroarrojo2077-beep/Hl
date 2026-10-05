@@ -16,6 +16,7 @@ import { Worker, isMainThread, parentPort, workerData } from "node:worker_thread
 import { availableParallelism } from "node:os";
 import { appendFileSync } from "node:fs";
 import { BallTracking, camaraDe } from "../js/seguimiento.js";
+import { PELOTAS } from "../js/keeper-ai.js";
 import { PixelReader } from "../js/pixels.js";
 import { CamaraSimulada, crearEscena } from "./escena.js";
 import { azar, volar, apuntar, piernas } from "./fisica.js";
@@ -167,7 +168,8 @@ const suave = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = false, fotos = null, soloVer = false }) {
   const ARCO = cfg.arco ?? ARCO_CANCHA;
   const rnd = azar(semilla);
-  const R = rnd.elegir([0.11, 0.11, 0.108, 0.105]);
+  // Pelota N.º 5 (o la que diga PELOTA, p. ej. PELOTA=3: más chica).
+  const R = rnd.elegir([0.11, 0.11, 0.108, 0.105]) * (PELOTAS[process.env.PELOTA ?? cfg.pelotaN ?? 5].radio / 0.11);
   const escena = crearEscena({
     semilla: semilla * 13 + 1,
     lugar: cfg.lugar ?? "cancha",
@@ -264,7 +266,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   };
   const aMundo = (cam) => new THREE.Matrix4().multiplyMatrices(arcoReal, matrizCamara(cam));
 
-  const seg = new BallTracking({ radio: 0.11 });
+  // El número de pelota elegido en la app (AJUSTE; si no, el que es).
+  const seg = new BallTracking({ radio: PELOTAS[process.env.AJUSTE ?? process.env.PELOTA ?? cfg.pelotaN ?? 5].radio });
   seg.setAnchoArco(ARCO.ancho);
   seg.detector.depurar = Boolean(process.env.DEPURAR);
   let estado = { pelota: { c: base, eje: [1, 0, 0], angulo: 0 }, cuerpos: [] };
@@ -307,6 +310,9 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   seg.detector.observeBackground(infoEscaneo.image.data, { x: w / 2, y: h / 2, r: radioMira }, camEsc);
   const aprendio = seg.detector.learn(infoEscaneo.image.data, w / 2, h / 2, radioMira, camEsc);
   if (!aprendio.ok) return { omitida: true, motivo: `escaneo: ${aprendio.motivo}` };
+  // Como en la app: el radio real de la pelota sale del escaneo.
+  const radioEscaneo = seg.radioEscaneada(infoEscaneo, arcoApp, aprendio.det);
+  if (radioEscaneo && !(process.env.EXP ?? "").includes("sinRadioEscaneo")) seg.setRadioNominal(radioEscaneo);
   seg.reiniciarRadio();
   seg.reset();
 
@@ -502,7 +508,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
           `${res.lista ? "" : "NO LISTA · "}remate ${res.remate ? "sí" : "NO"}${falso ? " (FALSO antes)" : ""} · ${res.resultado ? `error ${res.error.toFixed(1)} cm (x ${res.errorX.toFixed(1)}, y ${res.errorY.toFixed(1)})` : "sin resultado"}` +
           ` · vuelo ${vuelo.bien}/${vuelo.cuadros} bien, ${vuelo.mal} mal, ${vuelo.nada} nada · eventos ${eventos.map((e) => e.type[0]).join("")}` +
           ` · kicks ${eventos.filter((e) => e.type === "kick").map((e) => `${(e.t - tPatada).toFixed(2)}s/cal${e.prediction?.calidad?.toFixed(1)}/n${e.n ?? "?"}`).join(",")}` +
-          (n === 0 ? ` · fuga ${aprendio.fuga?.toFixed(2)}` : "")
+          (n === 0 ? ` · fuga ${aprendio.fuga?.toFixed(2)} · radio ${radioEscaneo ? (radioEscaneo * 100).toFixed(1) : "-"}/${(R * 100).toFixed(1)} cm` : "") +
+          ` · calibrado ${(seg.radio * 100).toFixed(1)} cm (${seg.muestrasRadio.length})`
       );
     }
     // La pelota vuelve a su lugar: unos cuadros quieta antes del próximo.
