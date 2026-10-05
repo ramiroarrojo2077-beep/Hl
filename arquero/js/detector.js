@@ -243,120 +243,23 @@ export class BallDetector {
   // Aprende los colores de la pelota: tiene que ocupar el círculo de centro
   // (cx, cy) y radio `radius`. Toma como pelota el 60 % interior del círculo
   // y como fondo todo lo que queda fuera de 1,35 radios.
-  // Aprende los colores de la pelota con una sola imagen (ver aprenderVistas).
   learn(rgba, cx, cy, radius, camera = null) {
-    return this.aprenderVistas([this.muestrasVista(rgba, cx, cy, radius, camera)], { rgba, cx, cy, radius, camera });
-  }
-
-  // Lo que hay en una imagen para aprender, ya contado en histogramas (sin
-  // guardar la foto: es liviano y no traba la cámara mientras se escanea):
-  // los colores de la pelota (el 60 % interior del círculo), con y sin la
-  // tolerancia angosta de brillo para los grises (ver BRILLOS_GRISES), los del
-  // fondo (fuera de 1,35 radios; por zona: piso o arriba del horizonte) y dos
-  // histogramas chicos (pelota y lo que la rodea) para comparar vistas.
-  muestrasVista(rgba, cx, cy, radius, camera = null) {
-    const { width: w, height: h } = this;
-    const hz = horizonte(camera);
-    const rIn2 = (radius * 0.6) ** 2;
-    const rOut2 = (radius * 1.35) ** 2;
-    const rAnillo2 = (radius * 1.9) ** 2;
-    const pelota = new Float32Array(CASILLEROS);
-    const pelotaGris = new Float32Array(CASILLEROS);
-    const fondo = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
-    const chica = new Float32Array(512);
-    const anillo = new Float32Array(512);
-    let nb = 0;
-    let nbGris = 0;
-    const nf = [0, 0];
-    const suma = [0, 0, 0, 0];
-    let na = 0;
-    for (let y = 0; y < h; y++) {
-      const dy = y + 0.5 - cy;
-      for (let x = 0; x < w; x++) {
-        const dx = x + 0.5 - cx;
-        const d2 = dx * dx + dy * dy;
-        if (d2 > rIn2 && d2 < rOut2) continue;
-        const i = (y * w + x) * 4;
-        const r = rgba[i];
-        const g = rgba[i + 1];
-        const b = rgba[i + 2];
-        const q8 = ((r >> 5) << 6) | ((g >> 5) << 3) | (b >> 5);
-        if (d2 <= rIn2) {
-          suma[0] += r;
-          suma[1] += g;
-          suma[2] += b;
-          suma[3]++;
-          chica[q8]++;
-          const mx = Math.max(r, g, b);
-          const gris = mx - Math.min(r, g, b) < 0.15 * mx + 6;
-          for (const k of BRILLOS) {
-            pelota[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
-            nb++;
-          }
-          for (const k of gris ? BRILLOS_GRISES : BRILLOS) {
-            pelotaGris[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
-            nbGris++;
-          }
-        } else {
-          const z = alPiso(hz, x, y) ? 0 : 1;
-          const f = fondo[z];
-          for (const k of BRILLOS) {
-            f[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
-            nf[z]++;
-          }
-          if (d2 <= rAnillo2) {
-            anillo[q8]++;
-            na++;
-          }
-        }
-      }
-    }
-    for (let q = 0; q < 512; q++) {
-      chica[q] /= Math.max(1, suma[3]);
-      anillo[q] /= Math.max(1, na);
-    }
-    return { pelota, pelotaGris, fondo, nb, nbGris, nf, suma, chica, anillo };
-  }
-
-  // Escaneo completo: varias vistas de la pelota desde distintos lados (o
-  // girándola). Cada vista suma sus colores; el fondo de todas también.
-  // vistas: lista de muestrasVista. final: la última imagen {rgba, cx, cy, radius,
-  // camera}, para comprobar que con lo aprendido se ve una pelota redonda.
-  aprenderVistas(vistas, final) {
-    const { rgba, cx, cy, radius, camera } = final;
-    // grisesAngostos: para los colores casi grises de la pelota se tolera menos
-    // cambio de brillo (ver BRILLOS_GRISES); sólo si el fondo se le parece.
-    const acumular = (grisesAngostos) => {
-      const pelota = new Float32Array(CASILLEROS);
-      const fondo = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
-      let nb = 0;
-      const nf = [0, 0];
-      const suma = [0, 0, 0, 0];
-      for (const v of vistas) {
-        const p = grisesAngostos ? v.pelotaGris : v.pelota;
-        for (let q = 0; q < CASILLEROS; q++) pelota[q] += p[q];
-        nb += grisesAngostos ? v.nbGris : v.nb;
-        for (const z of [0, 1]) {
-          for (let q = 0; q < CASILLEROS; q++) fondo[z][q] += v.fondo[z][q];
-          nf[z] += v.nf[z];
-        }
-        for (let c = 0; c < 4; c++) suma[c] += v.suma[c];
-      }
-      return { pelota, fondo, nb, nf, suma };
-    };
+    const m = this.#muestras(rgba, cx, cy, radius, camera);
     // ¿El fondo de este escaneo se parece a la pelota? (con los colores tal cual)
-    const parecido = (a) => {
-      const z = a.nf[0] >= 50 * BRILLOS.length ? 0 : 1;
-      const pb = normalizar(suavizar(a.pelota.slice()));
-      const pf = normalizar(suavizar(a.fondo[z].slice()));
+    const parecido = () => {
+      const z = m.nf[0] >= 50 * BRILLOS.length ? 0 : 1;
+      const pb = normalizar(suavizar(m.pelota.slice()));
+      const pf = normalizar(suavizar(m.fondo[z].slice()));
       let confusos = 0;
-      for (let q = 0; q < CASILLEROS; q++) if (pb[q] >= pf[q]) confusos += a.fondo[z][q];
-      return confusos / Math.max(1, a.nf[z]);
+      for (let q = 0; q < CASILLEROS; q++) if (pb[q] >= pf[q]) confusos += m.fondo[z][q];
+      return confusos / Math.max(1, m.nf[z]);
     };
-    let acum = acumular(false);
-    const fondoParecido = !SIN_BRILLO_GRIS && acum.nb > 0 && parecido(acum) > 0.13;
-    if (fondoParecido) acum = acumular(true);
-    const { pelota, fondo, nb, nf, suma } = acum;
+    // Si se parece, para los colores casi grises de la pelota se tolera menos
+    // cambio de brillo (ver BRILLOS_GRISES).
+    const fondoParecido = !SIN_BRILLO_GRIS && m.nb > 0 && parecido() > 0.13;
+    const pelota = fondoParecido ? m.pelotaGris : m.pelota;
+    const nb = fondoParecido ? m.nbGris : m.nb;
+    const { fondo, nf, suma } = m;
     if (nb < 12 * BRILLOS.length || nf[0] + nf[1] < 50 * BRILLOS.length) return { ok: false, motivo: "imagen-chica" };
 
     this.cortesPrevios = null; // la pelota (y el corte) se aprenden de nuevo
@@ -417,65 +320,61 @@ export class BallDetector {
     return { ok: true, fuga, det, aviso: fuga > 0.15 ? "fondo-parecido" : null };
   }
 
-  // ---------- Escaneo del entorno ----------
-  // Después de escanear la pelota, mirando el lugar donde se va a jugar (piso,
-  // arco, paredes): se aprende bien qué es "fondo" en ese lugar. excluir: zonas
-  // {x, y, r} donde puede estar la pelota (no se cuentan como fondo).
-  empezarEntorno() {
-    this.entorno = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
-    this.entornoCuadros = 0;
-  }
-
-  observarEntorno(rgba, camera = null, excluir = []) {
-    if (!this.entorno) return;
+  // Los colores de la imagen del escaneo, contados en histogramas: los de la
+  // pelota (el 60 % interior del círculo), con y sin la tolerancia angosta de
+  // brillo para los grises (ver BRILLOS_GRISES), y los del fondo (fuera de 1,35
+  // radios; por zona: piso o arriba del horizonte).
+  #muestras(rgba, cx, cy, radius, camera) {
     const { width: w, height: h } = this;
     const hz = horizonte(camera);
-    const zonas = excluir.filter(Boolean).map((e) => ({ x: e.x, y: e.y, r2: (e.r * 2 + 3) ** 2 }));
-    for (let y = 0; y < h; y += 2) {
-      for (let x = (y >> 1) & 1; x < w; x += 2) {
-        if (zonas.some((z) => (x + 0.5 - z.x) ** 2 + (y + 0.5 - z.y) ** 2 < z.r2)) continue;
-        // Lo que es claramente color de pelota (por si la pelota no salió entre
-        // las candidatas) tampoco: no tiene que pasar a ser "fondo".
-        if (this.score[y * w + x] >= 0.85) continue;
+    const rIn2 = (radius * 0.6) ** 2;
+    const rOut2 = (radius * 1.35) ** 2;
+    const pelota = new Float32Array(CASILLEROS);
+    const pelotaGris = new Float32Array(CASILLEROS);
+    const fondo = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
+    let nb = 0;
+    let nbGris = 0;
+    const nf = [0, 0];
+    const suma = [0, 0, 0, 0];
+    for (let y = 0; y < h; y++) {
+      const dy = y + 0.5 - cy;
+      for (let x = 0; x < w; x++) {
+        const dx = x + 0.5 - cx;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > rIn2 && d2 < rOut2) continue;
         const i = (y * w + x) * 4;
-        this.entorno[alPiso(hz, x, y) ? 0 : 1][casillero(rgba[i], rgba[i + 1], rgba[i + 2])]++;
-      }
-    }
-    this.entornoCuadros++;
-  }
-
-  // Mezcla lo visto del entorno con el fondo del escaneo. Devuelve qué parte
-  // del entorno se confunde con la pelota (o null si no alcanzó lo que se vio).
-  terminarEntorno() {
-    const e = this.entorno;
-    this.entorno = null;
-    if (!e || this.entornoCuadros < 3 || !this.pelota) return null;
-    let confusion = null;
-    for (const z of [0, 1]) {
-      const total = e[z].reduce((a, v) => a + v, 0);
-      if (total < 500) continue;
-      const visto = normalizar(suavizar(e[z].slice()));
-      const mezcla = this.fondoEscaneo[z].map((v, q) => 0.35 * v + 0.65 * visto[q]);
-      this.fondoEscaneo[z] = mezcla;
-      this.fondo[z] = mezcla.slice();
-      if (z === 0) {
-        // Con los colores tal cual: ¿cuánto del piso pasaría por pelota?
-        confusion = 0;
-        for (let q = 0; q < CASILLEROS; q++) {
-          const pb = this.pelota[q];
-          if (pb / (pb + mezcla[q] + 1e-9) >= UMBRAL) confusion += e[z][q] / total;
+        const r = rgba[i];
+        const g = rgba[i + 1];
+        const b = rgba[i + 2];
+        if (d2 <= rIn2) {
+          suma[0] += r;
+          suma[1] += g;
+          suma[2] += b;
+          suma[3]++;
+          const mx = Math.max(r, g, b);
+          const gris = mx - Math.min(r, g, b) < 0.15 * mx + 6;
+          for (const k of BRILLOS) {
+            pelota[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
+            nb++;
+          }
+          for (const k of gris ? BRILLOS_GRISES : BRILLOS) {
+            pelotaGris[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
+            nbGris++;
+          }
+        } else {
+          const z = alPiso(hz, x, y) ? 0 : 1;
+          const f = fondo[z];
+          for (const k of BRILLOS) {
+            f[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
+            nf[z]++;
+          }
         }
       }
     }
-    this.fondoEscaneo[1] ??= this.fondoEscaneo[0];
-    this.cortesPrevios = null;
-    this.#armarTablas();
-    if (confusion !== null && confusion > 0.13) this.fondoParecido = true;
-    return confusion;
+    return { pelota, pelotaGris, fondo, nb, nbGris, nf, suma };
   }
 
   forget() {
-    this.entorno = null;
     this.prob = null;
     this.fondoParecido = false;
     this.cortes = null;

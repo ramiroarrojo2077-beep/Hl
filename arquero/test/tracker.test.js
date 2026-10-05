@@ -343,3 +343,32 @@ test("calibra el radio real de la pelota apoyada", async () => {
     assert.ok(Math.abs(radioApoyada(o, d, Math.asin(radio / dist) * 1.02) / radio - 1) < 0.025);
   }
 });
+
+test("un remate muy rápido y borroso no se va a las nubes", () => {
+  // A toda velocidad la pelota sale estirada y su ancho se mide más chico: por
+  // tamaño parece más lejos (y, con el rayo hacia arriba, más alta).
+  const camara = { x: 1.2, y: 1.4, z: 6.5 };
+  const p0 = { x: 0, y: R, z: 4.5 };
+  for (const [semilla, v0] of [
+    [41, { x: 1.5, y: 1, z: -27 }],
+    [42, { x: -2, y: 2.5, z: -26 }],
+  ]) {
+    const obs = medirTrayectoria({ camara, p0, v0, semilla }).map((o) => {
+      if (o.t <= 1) return o;
+      const ang = o.ang * 0.6;
+      return { ...o, ang, pr: o.pr * 0.6, ...locateBall(camara, o.d, ang, R) };
+    });
+    // Altura real al cruzar la línea (pasa en un cuadro casi 1 m: se extrapola).
+    const [a, b] = obs.slice(-2).map((o) => o.real);
+    const y = a.y + ((b.y - a.y) * a.z) / (a.z - b.z);
+    const tr = new ShotTracker({ ballRadius: R });
+    let pred = null;
+    for (const o of obs) {
+      const { t, ...p } = o;
+      const e = tr.add(t, p) ?? tr.tick(t);
+      if (e?.prediction) pred = e.prediction;
+    }
+    assert.ok(pred, "tiene que detectar el remate");
+    assert.ok(Math.abs(pred.y - y) < 0.6, `cruza a ${pred.y.toFixed(2)} m (de verdad ${y.toFixed(2)} m)`);
+  }
+});

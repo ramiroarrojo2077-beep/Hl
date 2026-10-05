@@ -71,6 +71,32 @@ export const ESCENARIOS = {
     distancia: [1.2, 2.5],
     rapidez: [5, 15],
   },
+  // Lo mismo, con remates muy fuertes (la pelota sale como una estela).
+  "casa-encima-rapido": {
+    modo: "mano",
+    encima: true,
+    lugar: "interior",
+    piso: "granito",
+    pelota: "multicolor",
+    luz: "interior",
+    exposicion: 0.012,
+    ruido: { foton: 0.0012, lectura: 0.00015 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [1.2, 2.5],
+    rapidez: [16, 30],
+  },
+  // Adentro con el celular en la mano, remates muy fuertes.
+  "casa-mano-rapido": {
+    modo: "mano",
+    lugar: "interior",
+    luz: "interior",
+    exposicion: 0.025,
+    ruido: { foton: 0.0015, lectura: 0.0002 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [3, 6],
+    rapidez: [20, 32],
+    traslacion: 3,
+  },
   // El que patea tiene el celular en la mano (se mueve mucho al patear).
   "pateando": { modo: "pateando", luz: "nublado", exposicion: 0.008, ruido: { foton: 0.0006, lectura: 0.00004 } },
 };
@@ -273,39 +299,14 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     seg.detector.resize(w, h);
     if (k % 2 === 0) seg.detector.observeBackground(info.image.data, null, camaraDe(info, w, h));
   }
-  // Escaneo: como en la app, varias vistas dando la vuelta alrededor de la
-  // pelota (LADOS=1 para el escaneo de una sola foto).
-  const lados = Number(process.env.LADOS ?? cfg.lados ?? 6);
+  const posEscaneo = [base[0] + 0.05, R + 0.85, base[2] + 0.35];
+  const camEscaneo = { pos: posEscaneo, R: mirar(posEscaneo, base) };
+  const infoEscaneo = cuadro(() => camEscaneo, false);
   const radioMira = 0.22 * Math.min(w, h);
-  const vistas = [];
-  let final = null;
-  for (let k = 0; k < lados; k++) {
-    const a = Math.atan2(0.05, 0.35) + (2 * Math.PI * k) / lados;
-    const posEscaneo = [base[0] + 0.354 * Math.sin(a), R + 0.85, base[2] + 0.354 * Math.cos(a)];
-    const camEscaneo = { pos: posEscaneo, R: mirar(posEscaneo, base) };
-    const infoEscaneo = cuadro(() => camEscaneo, false);
-    const camEsc = camaraDe(infoEscaneo, w, h);
-    if (k === 0) seg.detector.observeBackground(infoEscaneo.image.data, { x: w / 2, y: h / 2, r: radioMira }, camEsc);
-    vistas.push(seg.detector.muestrasVista(infoEscaneo.image.data, w / 2, h / 2, radioMira, camEsc));
-    final = { rgba: infoEscaneo.image.data.slice(), cx: w / 2, cy: h / 2, radius: radioMira, camera: camEsc };
-  }
-  const aprendio = seg.detector.aprenderVistas(vistas, final);
+  const camEsc = camaraDe(infoEscaneo, w, h);
+  seg.detector.observeBackground(infoEscaneo.image.data, { x: w / 2, y: h / 2, r: radioMira }, camEsc);
+  const aprendio = seg.detector.learn(infoEscaneo.image.data, w / 2, h / 2, radioMira, camEsc);
   if (!aprendio.ok) return { omitida: true, motivo: `escaneo: ${aprendio.motivo}` };
-  // Escaneo del entorno (como en la app): unos cuadros barriendo el lugar de
-  // juego con la cámara; lo que no es la pelota se aprende como fondo.
-  const cuadrosEntorno = Number(process.env.ENTORNO ?? cfg.entorno ?? 12);
-  if (cuadrosEntorno > 0) {
-    seg.detector.empezarEntorno();
-    for (let k = 0; k < cuadrosEntorno; k++) {
-      const giro = -0.35 + (0.7 * k) / Math.max(1, cuadrosEntorno - 1);
-      const info = cuadro(() => ({ pos: camBase.pos, R: rotar(camBase.R, 0, giro, 0) }), cfg.modo === "fijo");
-      seg.detector.resize(w, h);
-      const camara = camaraDe(info, w, h, arcoApp);
-      const candidatas = seg.detector.detectAll(info.image.data, { camera: camara, aprender: false, radio: seg.radio, etapa: "quieta" });
-      seg.detector.observarEntorno(info.image.data, camara, candidatas.slice(0, 2));
-    }
-    seg.detector.terminarEntorno();
-  }
   seg.reiniciarRadio();
   seg.reset();
 

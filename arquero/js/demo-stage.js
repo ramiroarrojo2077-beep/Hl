@@ -200,23 +200,6 @@ export class DemoStage {
     this.moveCamera(p.clone().addScaledVector(desde, horizontal).setY(p.y + alto), p);
   }
 
-  // Para el escaneo completo: da la vuelta alrededor de la pelota (ángulo en
-  // radianes, a la distancia en que llena el círculo).
-  orbitarPelota(angulo, fraccion = 0.22) {
-    const p = this.pelota.position;
-    const mitadVertical = THREE.MathUtils.degToRad(this.camera.fov / 2);
-    const tanCorto = Math.tan(mitadVertical) * Math.min(1, this.camera.aspect);
-    const distancia = this.radio / (2 * fraccion * tanCorto * 1.05);
-    const alto = distancia * 0.3;
-    const horizontal = Math.sqrt(distancia * distancia - alto * alto);
-    const pos = new THREE.Vector3(p.x + horizontal * Math.sin(angulo), p.y + alto, p.z + horizontal * Math.cos(angulo));
-    this.camera.position.copy(pos);
-    this.camera.lookAt(p);
-    // (Corta cualquier movimiento de cámara en curso.)
-    this.desde = null;
-    this.hacia = null;
-  }
-
   goToTripod() {
     this.moveCamera(this.tripode, this.mira);
   }

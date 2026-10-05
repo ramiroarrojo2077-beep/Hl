@@ -115,6 +115,17 @@ const V_TIPICA = 30; // m/s
 // movimiento, la pelota se ve más chica o más grande de lo que es.
 const TAMANO_RELATIVO = Number(EXP.match(/tamRel=([\d.]+)/)?.[1] ?? 0);
 const S_V = 3; // m/s
+// Error relativo del ancho de una estela (la pelota borrosa por la velocidad).
+const S_TAMANO_ESTELA = Number(EXP.match(/sEstela=([\d.]+)/)?.[1] ?? 0.35);
+const SIN_ESTELA_TAMANO = EXP.includes("sinEstelaTam");
+// Una pelota pateada sale con una inclinación limitada: los remates fuertes van
+// bajos o a media altura, y aun una vaselina lenta no sale vertical. Más que
+// esto (velocidad vertical al salir del pie, según la horizontal) es una
+// trayectoria que se fue a las nubes por una medición mala (la distancia por
+// tamaño de una estela, una pierna que sube), no un remate.
+const SUBIDA_MAXIMA = (vh) => 2 + 0.6 * vh; // m/s
+const S_SUBIDA = 1; // m/s
+const SIN_SUBIDA = EXP.includes("sinSubida");
 
 function base(d) {
   // Dos ejes perpendiculares al rayo.
@@ -170,7 +181,9 @@ function residuos(caso, p, out) {
     const [e1, e2] = bases[i];
     out[k++] = (qx * e1.x + qy * e1.y + qz * e1.z) / dist / S_DIRECCION;
     out[k++] = (qx * e2.x + qy * e2.y + qz * e2.z) / dist / S_DIRECCION;
-    out[k++] = (Math.asin(Math.min(1, R / dist)) - o.ang) / (TAMANO_RELATIVO ? Math.hypot(S_TAMANO, TAMANO_RELATIVO * o.ang) : S_TAMANO);
+    // Una estela (borrosa por la velocidad) tiene un ancho poco confiable.
+    const sTamano = o.estela && !SIN_ESTELA_TAMANO ? Math.hypot(S_TAMANO, S_TAMANO_ESTELA * o.ang) : TAMANO_RELATIVO ? Math.hypot(S_TAMANO, TAMANO_RELATIVO * o.ang) : S_TAMANO;
+    out[k++] = (Math.asin(Math.min(1, R / dist)) - o.ang) / sTamano;
   }
   if (reposo) {
     const P = posicion(p, p[6] - tRef, R, piso);
@@ -179,6 +192,12 @@ function residuos(caso, p, out) {
     out[k++] = (P.z - reposo.z) / reposo.sigma;
   }
   if (caso.prior) out[k++] = Math.max(0, Math.hypot(p[3], p[4], p[5]) - V_TIPICA) / S_V;
+  if (caso.subida) {
+    // Velocidad vertical al salir (en la patada, o al principio de lo medido).
+    const tau0 = (reposo ? p[6] : obs[0].t) - tRef;
+    const vySalida = p[4] - GRAVEDAD * tau0;
+    out[k++] = Math.max(0, vySalida - SUBIDA_MAXIMA(Math.hypot(p[3], p[5]))) / S_SUBIDA;
+  }
   return out;
 }
 
@@ -211,7 +230,7 @@ function minimizar(caso, inicial) {
   const { piso, reposo } = caso;
   const libres = [...(piso ? [0, 2, 3, 5] : [0, 1, 2, 3, 4, 5]), ...(reposo ? [6] : [])];
   const n = libres.length;
-  const m = caso.obs.length * 3 + (reposo ? 3 : 0) + (caso.prior ? 1 : 0);
+  const m = caso.obs.length * 3 + (reposo ? 3 : 0) + (caso.prior ? 1 : 0) + (caso.subida ? 1 : 0);
   const acotar = (q) => {
     if (piso) {
       q[1] = caso.R;
@@ -286,7 +305,7 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null, { prior
   const p0 = [inicial.x0, inicial.y0, inicial.z0, inicial.vx, inicial.vy, inicial.vz, tPatada];
   const comun = { obs, bases, tRef, R, reposo, prior };
   const piso = minimizar({ ...comun, piso: true }, p0);
-  let aire = minimizar({ ...comun, piso: false }, p0);
+  let aire = minimizar({ ...comun, piso: false, subida: !SIN_SUBIDA }, p0);
 
   // Si la parábola pica dentro del tramo medido, se ajusta sólo después del pique.
   const [, y0, , , vy] = aire.p;
@@ -297,7 +316,7 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null, { prior
     const despues = obs.filter((o) => o.t - tRef > tauPique + 0.02);
     const primera = obs[0].t - tRef;
     if (tauPique > primera && tauPique < 0 && despues.length >= 3 && despues.length < obs.length) {
-      const caso = { obs: despues, bases: despues.map((o) => base(o.d)), tRef, R, reposo: null, piso: false, prior };
+      const caso = { obs: despues, bases: despues.map((o) => base(o.d)), tRef, R, reposo: null, piso: false, prior, subida: !SIN_SUBIDA };
       const rebote = minimizar(caso, [...aire.p.slice(0, 4), Math.abs(vy) * 0.5, aire.p[5], tPatada]);
       aire = { p: rebote.p, costo: rebote.costo * (obs.length / despues.length) };
     }

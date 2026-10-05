@@ -103,7 +103,7 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 
 ## Consejos para que detecte mejor
 
-- Escaneá la pelota con buena luz, llenando el círculo. El escaneo es completo: tocá **Empezar escaneo** y caminá alrededor de la pelota (o girala con la mano) sin sacarla del círculo; el anillo se llena con cada lado nuevo (6 lados) o tocá **Listo** antes. Así aprende todos sus colores y no la confunde de ningún lado.
+- Escaneá la pelota con buena luz, llenando el círculo.
 - Antes de patear esperá a que diga **«Pelota lista»** (la pelota quieta medio segundo).
 - Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
 - En modo fijo dejá el celular quieto y horizontal, con el arco y el punto de remate a la vista, al costado de donde pateás (si está justo detrás, la pierna del que patea tapa la pelota en el momento del golpe).

@@ -269,13 +269,8 @@ let stage = null;
 let modoStage = null; // 'ar' | 'demo'
 let xrStage = null;
 let demo = null;
-let fase = "inicio"; // inicio → ubicar → escanear (pelota) → entorno → jugar
-// Escaneo completo en curso (ver empezarEscaneo), o null.
-let escaneo = null;
-// Escaneo del entorno en curso (ver muestrearEntorno), o null.
-let entorno = null;
-const ENTORNO_CUADROS = 24;
-const LADOS_OBJETIVO = 6;
+let fase = "inicio"; // inicio → ubicar → escanear → jugar
+let pedidoEscaneo = false;
 let tiro = null;
 let pelotaVistaEn = -Infinity;
 let ultimoT = null;
@@ -301,7 +296,6 @@ const registro = new URLSearchParams(location.search).has("registro") ? [] : nul
 
 const tmp = {
   v: new THREE.Vector3(),
-  d: new THREE.Vector3(),
   quat: new THREE.Quaternion(),
   m: new THREE.Matrix4(),
 };
@@ -330,9 +324,6 @@ function irA(nueva) {
   fase = nueva;
   ui.hud.dataset.fase = nueva;
   ui.mira.hidden = nueva !== "escanear";
-  if (nueva !== "escanear") escaneo = null;
-  if (nueva !== "entorno") entorno = null;
-  actualizarMira();
   reticula.visible = false;
   marcaPelota.visible = false;
   if (nueva !== "jugar") {
@@ -355,23 +346,13 @@ function irA(nueva) {
   } else if (nueva === "escanear") {
     arcoGrupo.visible = true;
     arco.setPreview(false);
-    escaneo = null;
     mostrarPaso(
       "2 · Escaneá tu pelota",
-      "Acercate hasta que la pelota llene el círculo y tocá Empezar. Después caminá alrededor de ella (o girala con la mano) sin sacarla del círculo: así la app aprende todos sus lados y no la confunde.",
-      { texto: "Empezar escaneo", fn: empezarEscaneo },
+      "Acercate a la pelota hasta que llene el círculo y tocá Escanear. Así la app aprende cómo es tu pelota.",
+      { texto: "Escanear pelota", fn: () => (pedidoEscaneo = true) },
       { texto: "Reubicar arco", fn: () => irA("ubicar") },
     );
     if (modoStage === "demo") demo.lookAtBall(RADIO_MIRA);
-  } else if (nueva === "entorno") {
-    arcoGrupo.visible = true;
-    entorno = { cuadros: 0, t0: null };
-    detector.empezarEntorno();
-    mostrarPaso(
-      "3 · Escaneá el lugar",
-      "Mové el celular despacio mostrando el piso alrededor, el arco y las paredes donde vas a jugar. Así la app distingue tu pelota de todo lo demás.",
-      { texto: "Saltar", fn: terminarEntorno },
-    );
   } else if (nueva === "jugar") {
     arcoGrupo.visible = true;
     tracker.reset();
@@ -381,7 +362,7 @@ function irA(nueva) {
       ? "Apoyá el celular quieto y horizontal, al costado (no detrás del que patea: su pierna tapa la pelota), donde se vean el arco y la pelota. Cuando diga «Pelota lista», pateá. Cada tiro se graba solo."
       : "Apuntá al arco con la pelota a la vista, mejor desde el costado. Cuando diga «Pelota lista», pateá: el arquero se tira hacia tu remate. Cada tiro se graba solo.";
     if (modoStage === "demo") texto = "Deslizá el dedo desde la pelota hacia el arco para patear, o tocá Patear al azar.";
-    mostrarPaso("4 · ¡Pateá!", texto, modoStage === "demo" ? { texto: "Patear al azar", fn: patearAlAzar } : null);
+    mostrarPaso("3 · ¡Pateá!", texto, modoStage === "demo" ? { texto: "Patear al azar", fn: patearAlAzar } : null);
     if (modoStage === "demo") demo.goToTripod();
     // Se graba en los dos modos (en mano, se ve lo que vio el celular).
     if (recorder) {
@@ -417,140 +398,23 @@ const camaraActual = () => ultimaInfo?.camMatrix ?? camaraVirtual.matrixWorld;
 
 // ---------- Escaneo ----------
 
-// ---------- Escaneo completo de la pelota ----------
-//
-// Se juntan vistas de la pelota desde varios lados (caminando alrededor o
-// girándola con la mano). Cada ~0,2 s se mira el círculo: si hay algo distinto
-// de lo que lo rodea (la pelota), parecido a lo ya escaneado y que muestra otro
-// lado (otro ángulo alrededor, o colores nuevos), se suma. Con LADOS_OBJETIVO
-// lados (o al tocar Listo) se aprende todo junto. Cada vista es liviana (no
-// traba la cámara); lo pesado se hace una sola vez al final.
-
-function empezarEscaneo() {
-  sonidos.unlock();
-  escaneo = { vistas: [], hAcum: new Float32Array(512), sectores: new Set(), ultimoT: -Infinity, t0: null, final: null, procesando: false };
-  actualizarEscaneo();
-}
-
-// Diferencia entre dos histogramas normalizados (0 iguales, 1 nada en común).
-function diferencia(a, b) {
-  let d = 0;
-  for (let q = 0; q < a.length; q++) d += Math.abs(a[q] - b[q]);
-  return d / 2;
-}
-
-// En qué octavo alrededor de la pelota está el celular (o null si no se sabe):
-// la pelota está donde el centro de la imagen toca el piso.
-function sectorAlrededor(info) {
-  const cam = tmp.v.setFromMatrixPosition(info.camMatrix);
-  const dir = tmp.d.set(0, 0, -1).transformDirection(info.camMatrix);
-  if (dir.y > -0.15) return null;
-  const s = (arcoGrupo.position.y + seg.radio - cam.y) / dir.y;
-  if (!(s > 0 && s < 4)) return null;
-  const az = Math.atan2(-dir.x, -dir.z);
-  return Math.floor((az + Math.PI) / (Math.PI / 4)) % 8;
-}
-
-function capturarVista(info) {
-  const { data, width: w, height: h } = info.image;
-  detector.resize(w, h);
-  escaneo.ultimoT = info.t;
-  escaneo.t0 ??= info.t;
-  const camara = camaraDe(info, w, h);
-  const radio = RADIO_MIRA * Math.min(w, h);
-  const m = detector.muestrasVista(data, w / 2, h / 2, radio, camara);
-  const hb = m.chica;
-  // ¿Hay algo en el círculo distinto de lo que lo rodea?
-  if (diferencia(hb, m.anillo) < 0.3) return actualizarEscaneo("Poné la pelota dentro del círculo, llenándolo.");
-  const n = escaneo.vistas.length;
-  if (n) {
-    let comun = 0;
-    for (let q = 0; q < hb.length; q++) comun += Math.min(hb[q], escaneo.hAcum[q]);
-    if (comun < 0.15) return actualizarEscaneo("Eso no parece la misma pelota: mantenela en el círculo.");
+function escanear(info) {
+  const { data, width, height } = info.image;
+  detector.resize(width, height);
+  const res = detector.learn(data, width / 2, height / 2, RADIO_MIRA * Math.min(width, height), camaraDe(info, width, height));
+  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null } };
+  if (res.ok) {
+    seg.reiniciarRadio();
+    sonidos.whistle();
+    irA("jugar");
+    return;
   }
-  const sector = sectorAlrededor(info);
-  const otroLado = !n || diferencia(hb, escaneo.hAcum) >= 0.12 || (sector !== null && !escaneo.sectores.has(sector));
-  if (!otroLado) return actualizarEscaneo();
-  escaneo.vistas.push(m);
-  if (sector !== null) escaneo.sectores.add(sector);
-  for (let q = 0; q < hb.length; q++) escaneo.hAcum[q] += (hb[q] - escaneo.hAcum[q]) / (n + 1);
-  escaneo.final = { rgba: data.slice(), w, h, cx: w / 2, cy: h / 2, radius: radio, camera: camara };
-  if (!n) bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: null };
-  sonidos.tick();
-  if (navigator.vibrate) navigator.vibrate(15);
-  if (n + 1 >= LADOS_OBJETIVO) terminarEscaneo();
-  else actualizarEscaneo();
-}
-
-function actualizarMira() {
-  const n = escaneo?.vistas.length ?? 0;
-  ui.mira.style.setProperty("--progreso", String(Math.min(1, n / LADOS_OBJETIVO)));
-  ui.mira.classList.toggle("escaneando", Boolean(escaneo));
-}
-
-function actualizarEscaneo(pista = null) {
-  actualizarMira();
-  if (!escaneo || escaneo.procesando) return;
-  const n = escaneo.vistas.length;
-  const texto = pista ?? (n ? "Seguí girando alrededor de la pelota (o girala) sin sacarla del círculo." : "Poné la pelota en el círculo, llenándolo.");
-  ui.pasoTexto.textContent = `${n} de ${LADOS_OBJETIVO} lados · ${texto}`;
-  ui.btnAccion.textContent = n ? `Listo (${n} de ${LADOS_OBJETIVO})` : "Escaneando…";
-  ui.btnAccion.disabled = n === 0;
-  ui.btnAccion.onclick = terminarEscaneo;
-}
-
-function terminarEscaneo() {
-  if (!escaneo?.vistas.length || escaneo.procesando) return;
-  escaneo.procesando = true;
-  ui.btnAccion.disabled = true;
-  ui.pasoTexto.textContent = "Aprendiendo los colores de tu pelota…";
-  // Un respiro para que se vea el mensaje antes del cálculo.
-  setTimeout(() => {
-    const { vistas, final } = escaneo;
-    detector.resize(final.w, final.h);
-    const res = detector.aprenderVistas(vistas, final);
-    bitacora.escaneo = { ...(bitacora.escaneo ?? { foto: null }), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null, lados: vistas.length } };
-    escaneo = null;
-    if (res.ok) {
-      seg.reiniciarRadio();
-      sonidos.tick();
-      irA("entorno");
-      return;
-    }
-    irA("escanear");
-    const motivos = {
-      "no-se-distingue": "No pude distinguir la pelota. Acercate más (que llene el círculo) y probá con buena luz.",
-      "fondo-parecido": "El piso se parece mucho a la pelota. Probá escanearla sobre otro fondo.",
-      "imagen-chica": "La imagen de la cámara es muy chica. Probá de nuevo.",
-    };
-    ui.pasoTexto.textContent = motivos[res.motivo] ?? "No salió. Probá de nuevo.";
-  }, 40);
-}
-
-// ---------- Escaneo del entorno ----------
-// Unos segundos mirando el lugar: lo que no es la pelota (las candidatas que
-// podrían serlo se dejan afuera) se aprende como fondo de ese lugar.
-function muestrearEntorno(info) {
-  const { data, width: w, height: h } = info.image;
-  detector.resize(w, h);
-  entorno.t0 ??= info.t;
-  const camara = camaraDe(info, w, h, arcoGrupo.matrixWorld);
-  const candidatas = detector.detectAll(data, { camera: camara, aprender: false, radio: seg.radio, etapa: "quieta" });
-  detector.observarEntorno(data, camara, candidatas.slice(0, 2));
-  entorno.cuadros++;
-  const avance = Math.min(1, entorno.cuadros / ENTORNO_CUADROS);
-  ui.pasoTexto.textContent = `${Math.round(avance * 100)} % · Mové el celular despacio mostrando el piso, el arco y las paredes donde vas a jugar.`;
-  if (avance >= 1) terminarEntorno();
-}
-
-function terminarEntorno() {
-  if (!entorno) return;
-  entorno = null;
-  const confusion = detector.terminarEntorno();
-  if (bitacora.escaneo?.res) bitacora.escaneo.res.entorno = confusion;
-  detector.hasPrev = false;
-  sonidos.whistle();
-  irA("jugar");
+  const motivos = {
+    "no-se-distingue": "No pude distinguir la pelota. Acercate más (que llene el círculo) y probá con buena luz.",
+    "fondo-parecido": "El piso se parece mucho a la pelota. Probá escanearla sobre otro fondo.",
+    "imagen-chica": "La imagen de la cámara es muy chica. Probá de nuevo.",
+  };
+  ui.pasoTexto.textContent = motivos[res.motivo] ?? "No salió. Probá de nuevo.";
 }
 
 function radioNominal() {
@@ -1014,17 +878,15 @@ function paso(info) {
       detector.observeBackground(info.image.data, null, camaraDe(info, info.image.width, info.image.height));
     }
   } else if (fase === "escanear") {
-    if (escaneo && !escaneo.procesando && modoStage === "demo") demo.orbitarPelota((t - (escaneo.t0 ?? t)) * 0.9, RADIO_MIRA);
-    if (escaneo && !escaneo.procesando && info.image && t - escaneo.ultimoT >= 0.2) {
-      capturarVista(info);
-    } else if (!escaneo && info.image && cuadro % 4 === 0) {
+    if (pedidoEscaneo && info.image) {
+      pedidoEscaneo = false;
+      escanear(info);
+    } else if (info.image && cuadro % 4 === 0) {
       // Mientras tanto aprende los colores del lugar (sin mirar el círculo).
       const { data, width: w, height: h } = info.image;
       detector.resize(w, h);
       detector.observeBackground(data, { x: w / 2, y: h / 2, r: RADIO_MIRA * Math.min(w, h) }, camaraDe(info, w, h));
     }
-  } else if (fase === "entorno") {
-    if (entorno && info.image && cuadro % 3 === 0) muestrearEntorno(info);
   } else if (fase === "jugar") {
     if (!info.cameraAvailable) {
       ui.estadoPelota.textContent = "Sin acceso a la cámara";
@@ -1064,7 +926,7 @@ function paso(info) {
 renderer.setAnimationLoop((time, xrFrame) => {
   if (!stage) return;
   if (modoStage === "ar" && !xrFrame) return;
-  const pixeles = fase === "ubicar" || fase === "escanear" || fase === "entorno" || fase === "jugar";
+  const pixeles = fase === "ubicar" || fase === "escanear" || fase === "jugar";
   const grabar = Boolean(recorder?.grabando);
   const info = stage.frame(time, xrFrame, { pixels: pixeles, record: grabar });
   if (info) paso(info);

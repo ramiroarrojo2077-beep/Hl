@@ -40,23 +40,6 @@ export class Sounds {
     src.start(t);
   }
 
-  // Un "tic" corto (cada lado de la pelota que se escaneó).
-  tick() {
-    if (!this.ctx) return;
-    const ctx = this.ctx;
-    const t = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(1320, t);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.18, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    osc.connect(g).connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + 0.1);
-  }
-
   whistle() {
     if (!this.ctx) return;
     const ctx = this.ctx;
