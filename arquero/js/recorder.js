@@ -11,8 +11,11 @@ import * as THREE from "three";
 
 const PREVIA_MINIMA = 4; // s
 const RELEVO = 10; // s
-const LADO_LARGO = 720; // px del video (más es más pesado de componer y codificar)
-const FPS = 30;
+// Cada cuadro del video se compone en la GPU y se lee a la CPU: es lo que más
+// pesa al grabar. 540 px de lado largo es la mitad de píxeles que 720 (se ve
+// bien en el celular) y 24 cuadros por segundo alcanzan para un video fluido.
+const LADO_LARGO = 540; // px del video
+const FPS = 24;
 
 const TIPOS = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"];
 
@@ -95,7 +98,9 @@ export class ShotRecorder {
       this.canvas.height = h;
       this.rt?.dispose();
       this.rtSalida?.dispose();
-      this.rt = new THREE.WebGLRenderTarget(w, h, { samples: 2 });
+      // Sin antialiasing por muestreo múltiple: a este tamaño casi no se nota y
+      // cuesta bastante en la GPU del celular.
+      this.rt = new THREE.WebGLRenderTarget(w, h);
       this.rtSalida = new THREE.WebGLRenderTarget(w, h);
       this.buffer = new Uint8Array(w * h * 4);
       this.imagen = new ImageData(new Uint8ClampedArray(this.buffer.buffer), w, h);
@@ -119,7 +124,7 @@ export class ShotRecorder {
   }
 
   #nueva() {
-    const rec = new MediaRecorder(this.stream, this.tipo ? { mimeType: this.tipo, videoBitsPerSecond: 3.5e6 } : undefined);
+    const rec = new MediaRecorder(this.stream, this.tipo ? { mimeType: this.tipo, videoBitsPerSecond: 2.5e6 } : undefined);
     const g = { rec, partes: [], desde: performance.now() / 1000, descartada: false };
     rec.ondataavailable = (e) => e.data.size && g.partes.push(e.data);
     rec.onstop = () => {
@@ -180,13 +185,13 @@ export class ShotRecorder {
   // camara: PerspectiveCamera con la pose y proyección de la vista.
   capture({ texturaFondo = null, escenaFondo = null, escena, camara, ancho, alto }) {
     if (!this.grabando || this.leyendo) return;
-    // No más de 30 cuadros por segundo (la pantalla puede ir a 60) y, si el
+    // No más de FPS cuadros por segundo (la pantalla puede ir a 60) y, si el
     // celular viene lento, menos: el seguimiento de la pelota tiene prioridad.
     const ahora = performance.now();
     const intervalo = ahora - (this.ultimaLlamada ?? ahora);
     this.ultimaLlamada = ahora;
     this.intervaloMedio = 0.9 * (this.intervaloMedio ?? 33) + 0.1 * Math.min(intervalo, 200);
-    const minimo = this.intervaloMedio > 45 ? 1000 / 12 : this.intervaloMedio > 38 ? 1000 / 20 : 1000 / FPS - 4;
+    const minimo = this.intervaloMedio > 45 ? 1000 / 10 : this.intervaloMedio > 38 ? 1000 / 15 : 1000 / FPS - 4;
     if (ahora - (this.ultimoCuadro ?? 0) < minimo) return;
     this.ultimoCuadro = ahora;
     this.#relevar();

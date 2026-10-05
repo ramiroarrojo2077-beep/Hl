@@ -147,6 +147,25 @@ export class BallTracking {
         if (local && !repetida) ubicadas.push({ ...local, local: true });
       }
     }
+    // Quieta (lista, o viéndose quieta en un lugar): si no aparece sola ahí
+    // porque está pegada a algo también marcado (una pierna, una línea: forman
+    // una sola mancha), se la busca por su borde redondo y su tamaño en ese
+    // lugar. Sólo si ahí sigue habiendo color de pelota y nada se movió (si se
+    // movió, puede estar saliendo: que decida el seguimiento).
+    const quieta = !enVuelo && tracker.state === "idle" ? (tracker.ready ? enImagen : this.#quietaEnImagen(info, arco, w, h)) : null;
+    if (!EXP.includes("sinLocalQuieta") && quieta) {
+      const ocupada = ubicadas.some((u) => Math.hypot(u.px - quieta.x, u.py - quieta.y) < 0.5 * quieta.r && Math.abs(Math.log(u.pr / quieta.r)) < 0.35);
+      const zona = ocupada ? null : detector.promedioEn(quieta.x, quieta.y, 0.8 * quieta.r);
+      if (zona && zona.score >= 0.45 && zona.moving < 0.3) {
+        const guia = { x: quieta.x, y: quieta.y, r: quieta.r, score: 1, moving: 0, alargada: 1 };
+        const fina = this.refinar(info, guia, w, h);
+        const cerca = Math.hypot(fina.x - guia.x, fina.y - guia.y) < Math.max(2, 0.4 * guia.r);
+        if (fina.refinada && cerca && Math.abs(Math.log(fina.r / guia.r)) < 0.3 && (fina.borde ?? 0) >= 0.6) {
+          const local = this.ubicar(info, { ...fina, score: 1.2, moving: zona.moving }, w, h);
+          if (local) ubicadas.push({ ...local, local: true });
+        }
+      }
+    }
     tracker.observe(t, ubicadas);
     const elegida = tracker.choose(t, ubicadas);
     let evento = null;
@@ -162,6 +181,14 @@ export class BallTracking {
     }
     evento ??= tracker.tick(t);
     return { candidatas, ubicadas, elegida, medida, evento };
+  }
+
+  // Dónde (en la imagen) está lo que se viene viendo quieto, todavía sin estar
+  // lista (visto al menos 3 veces hace poco), o null.
+  #quietaEnImagen(info, arco, w, h) {
+    let mejor = null;
+    for (const q of this.tracker.quietos) if (q.n >= 3 && info.t - q.tUlt < 0.5 && (!mejor || q.n > mejor.n)) mejor = q;
+    return mejor ? this.proyectar(info, mejor, arco, w, h) : null;
   }
 
   // Proyección en la imagen de un punto del arco (metros), o null si queda fuera.

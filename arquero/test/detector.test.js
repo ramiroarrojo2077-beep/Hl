@@ -408,3 +408,56 @@ test("lista para patear no descarta la pelota más grande (recién pateada, en e
   for (let k = 0; k < 4; k++) c = det.detectAll(granito({ pelota: { x: 100, y: 60, r: 2.6 * RADIO_PX }, semilla: 20 + k }), { camera: ABAJO, radio: RADIO, etapa: "lista" });
   assert.ok(c.some((k) => Math.hypot(k.x - 100, k.y - 60) < 4 && k.r > 1.8 * RADIO_PX), `candidatas: ${c.map((k) => `${k.x.toFixed(0)},${k.y.toFixed(0)} r${k.r.toFixed(1)}`).join(" ")}`);
 });
+
+// ---------- Escaneo completo (varias vistas) ----------
+
+// Pasto con una pelota de un color de cada lado (se ve uno u otro según la vista).
+function pelotaDeUnColor(color, { x = 100, y = 60, r = 28, semilla = 1 } = {}) {
+  const rnd = azar(semilla);
+  const img = new Uint8Array(W * H * 4);
+  for (let yy = 0; yy < H; yy++)
+    for (let xx = 0; xx < W; xx++) {
+      const i = (yy * W + xx) * 4;
+      const n = (rnd() - 0.5) * 30;
+      let c = [50 + n, 130 + n + ((xx >> 3) % 2) * 15, 45 + n];
+      if ((xx + 0.5 - x) ** 2 + (yy + 0.5 - y) ** 2 <= r * r) c = color.map((v) => v + n * 0.2);
+      img[i] = Math.max(0, Math.min(255, c[0]));
+      img[i + 1] = Math.max(0, Math.min(255, c[1]));
+      img[i + 2] = Math.max(0, Math.min(255, c[2]));
+      img[i + 3] = 255;
+    }
+  return img;
+}
+const ROJO = [200, 40, 45];
+const AZUL = [40, 60, 200];
+
+test("con el escaneo completo reconoce la pelota de los dos lados", () => {
+  const lado = (det) => {
+    let d = null;
+    for (let k = 0; k < 3; k++) d = det.detect(pelotaDeUnColor(AZUL, { x: 60, y: 70, r: 10, semilla: 9 + k }));
+    return d && Math.hypot(d.x - 60, d.y - 70) < 3 ? d : null;
+  };
+  // Sólo un lado (rojo): el lado azul no lo reconoce.
+  const uno = new BallDetector(W, H);
+  assert.equal(uno.learn(pelotaDeUnColor(ROJO), 100, 60, 30).ok, true);
+  assert.equal(lado(uno), null, "con un solo lado no debería reconocer el otro color");
+  // Los dos lados: sí.
+  const todo = new BallDetector(W, H);
+  const rojo = pelotaDeUnColor(ROJO);
+  const azul = pelotaDeUnColor(AZUL, { semilla: 3 });
+  const vistas = [todo.muestrasVista(rojo, 100, 60, 30), todo.muestrasVista(azul, 100, 60, 30)];
+  const res = todo.aprenderVistas(vistas, { rgba: azul, cx: 100, cy: 60, radius: 30 });
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.ok(lado(todo), "con el escaneo completo tiene que reconocer el lado azul");
+});
+
+test("escaneo del entorno: aprende el fondo del lugar sin borrar la pelota", () => {
+  const det = new BallDetector(W, H);
+  assert.equal(det.learn(cuadro({ pelota: { x: 100, y: 60, r: 28 } }), 100, 60, 30).ok, true);
+  det.empezarEntorno();
+  for (let k = 0; k < 5; k++) det.observarEntorno(cuadro({ pelota: { x: 150, y: 40, r: 8 }, semilla: 30 + k }), null, [{ x: 150, y: 40, r: 8 }]);
+  const confusion = det.terminarEntorno();
+  assert.ok(confusion !== null && confusion < 0.05, `confusión ${confusion}`);
+  const d = det.detect(cuadro({ pelota: { x: 37, y: 85, r: 7 }, semilla: 77 }));
+  assert.ok(d && Math.hypot(d.x - 37, d.y - 85) < 2, `la encontró en ${d?.x},${d?.y}`);
+});

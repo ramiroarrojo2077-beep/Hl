@@ -31,3 +31,24 @@ test("la dificultad cambia el resultado", () => {
   assert.equal(judgeShot({ ...tiro, dificultad: "facil" }).resultado, "gol");
   assert.equal(judgeShot({ ...tiro, dificultad: "imposible" }).resultado, "atajada");
 });
+
+test("si no lee el remate y se tira al otro lado, es gol aunque sea fácil de atajar", () => {
+  const tiro = { ...base, x: 0.9, y: 0.6, tiempo: 0.9 };
+  assert.equal(judgeShot({ ...tiro, lectura: 0 }).resultado, "atajada");
+  const mal = judgeShot({ ...tiro, lectura: 0.99, adivina: 0.1 });
+  assert.equal(mal.resultado, "gol");
+  assert.ok(mal.manos.x < 0, `se tiró a ${mal.manos.x}`);
+});
+
+test("en fácil se pueden hacer goles; en imposible casi no", () => {
+  let golesFacil = 0;
+  let golesImposible = 0;
+  const azar = (k) => ((k * 2654435761) % 1000) / 1000;
+  for (let k = 0; k < 200; k++) {
+    const tiro = { ...base, x: -1.2 + 2.4 * azar(k + 1), y: 0.2 + 1.5 * azar(k + 7), tiempo: 0.8, lectura: azar(k + 13), adivina: azar(k + 29) };
+    if (judgeShot({ ...tiro, dificultad: "facil" }).resultado === "gol") golesFacil++;
+    if (judgeShot({ ...tiro, dificultad: "imposible" }).resultado === "gol") golesImposible++;
+  }
+  assert.ok(golesFacil > 60, `goles en fácil: ${golesFacil}/200`);
+  assert.ok(golesImposible < golesFacil / 2, `goles en imposible: ${golesImposible}/200`);
+});

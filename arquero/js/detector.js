@@ -38,6 +38,7 @@ const SIN_TAMANO_PISO = EXP_DET.includes("sinTamanoPiso");
 const SIN_CONTRASTE_TAMANO = EXP_DET.includes("sinContrasteTamano");
 const SIN_BRILLO_GRIS = EXP_DET.includes("sinBrilloGris");
 const SIN_APERTURA = EXP_DET.includes("sinApertura");
+const SIN_AISLADA = EXP_DET.includes("sinAislada");
 const CUADROS_POR_ACTUALIZACION = 6;
 
 const casillero = (r, g, b) => ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
@@ -242,11 +243,87 @@ export class BallDetector {
   // Aprende los colores de la pelota: tiene que ocupar el círculo de centro
   // (cx, cy) y radio `radius`. Toma como pelota el 60 % interior del círculo
   // y como fondo todo lo que queda fuera de 1,35 radios.
+  // Aprende los colores de la pelota con una sola imagen (ver aprenderVistas).
   learn(rgba, cx, cy, radius, camera = null) {
+    return this.aprenderVistas([this.muestrasVista(rgba, cx, cy, radius, camera)], { rgba, cx, cy, radius, camera });
+  }
+
+  // Lo que hay en una imagen para aprender, ya contado en histogramas (sin
+  // guardar la foto: es liviano y no traba la cámara mientras se escanea):
+  // los colores de la pelota (el 60 % interior del círculo), con y sin la
+  // tolerancia angosta de brillo para los grises (ver BRILLOS_GRISES), los del
+  // fondo (fuera de 1,35 radios; por zona: piso o arriba del horizonte) y dos
+  // histogramas chicos (pelota y lo que la rodea) para comparar vistas.
+  muestrasVista(rgba, cx, cy, radius, camera = null) {
     const { width: w, height: h } = this;
     const hz = horizonte(camera);
     const rIn2 = (radius * 0.6) ** 2;
     const rOut2 = (radius * 1.35) ** 2;
+    const rAnillo2 = (radius * 1.9) ** 2;
+    const pelota = new Float32Array(CASILLEROS);
+    const pelotaGris = new Float32Array(CASILLEROS);
+    const fondo = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
+    const chica = new Float32Array(512);
+    const anillo = new Float32Array(512);
+    let nb = 0;
+    let nbGris = 0;
+    const nf = [0, 0];
+    const suma = [0, 0, 0, 0];
+    let na = 0;
+    for (let y = 0; y < h; y++) {
+      const dy = y + 0.5 - cy;
+      for (let x = 0; x < w; x++) {
+        const dx = x + 0.5 - cx;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > rIn2 && d2 < rOut2) continue;
+        const i = (y * w + x) * 4;
+        const r = rgba[i];
+        const g = rgba[i + 1];
+        const b = rgba[i + 2];
+        const q8 = ((r >> 5) << 6) | ((g >> 5) << 3) | (b >> 5);
+        if (d2 <= rIn2) {
+          suma[0] += r;
+          suma[1] += g;
+          suma[2] += b;
+          suma[3]++;
+          chica[q8]++;
+          const mx = Math.max(r, g, b);
+          const gris = mx - Math.min(r, g, b) < 0.15 * mx + 6;
+          for (const k of BRILLOS) {
+            pelota[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
+            nb++;
+          }
+          for (const k of gris ? BRILLOS_GRISES : BRILLOS) {
+            pelotaGris[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
+            nbGris++;
+          }
+        } else {
+          const z = alPiso(hz, x, y) ? 0 : 1;
+          const f = fondo[z];
+          for (const k of BRILLOS) {
+            f[casillero(Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k))]++;
+            nf[z]++;
+          }
+          if (d2 <= rAnillo2) {
+            anillo[q8]++;
+            na++;
+          }
+        }
+      }
+    }
+    for (let q = 0; q < 512; q++) {
+      chica[q] /= Math.max(1, suma[3]);
+      anillo[q] /= Math.max(1, na);
+    }
+    return { pelota, pelotaGris, fondo, nb, nbGris, nf, suma, chica, anillo };
+  }
+
+  // Escaneo completo: varias vistas de la pelota desde distintos lados (o
+  // girándola). Cada vista suma sus colores; el fondo de todas también.
+  // vistas: lista de muestrasVista. final: la última imagen {rgba, cx, cy, radius,
+  // camera}, para comprobar que con lo aprendido se ve una pelota redonda.
+  aprenderVistas(vistas, final) {
+    const { rgba, cx, cy, radius, camera } = final;
     // grisesAngostos: para los colores casi grises de la pelota se tolera menos
     // cambio de brillo (ver BRILLOS_GRISES); sólo si el fondo se le parece.
     const acumular = (grisesAngostos) => {
@@ -255,34 +332,15 @@ export class BallDetector {
       let nb = 0;
       const nf = [0, 0];
       const suma = [0, 0, 0, 0];
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const dx = x + 0.5 - cx;
-          const dy = y + 0.5 - cy;
-          const d2 = dx * dx + dy * dy;
-          const dentro = d2 <= rIn2;
-          if (!dentro && d2 < rOut2) continue;
-          const zona = alPiso(hz, x, y) ? 0 : 1;
-          const i = (y * w + x) * 4;
-          if (dentro) {
-            suma[0] += rgba[i];
-            suma[1] += rgba[i + 1];
-            suma[2] += rgba[i + 2];
-            suma[3]++;
-          }
-          const mx = Math.max(rgba[i], rgba[i + 1], rgba[i + 2]);
-          const gris = grisesAngostos && dentro && mx - Math.min(rgba[i], rgba[i + 1], rgba[i + 2]) < 0.15 * mx + 6;
-          for (const k of gris ? BRILLOS_GRISES : BRILLOS) {
-            const q = casillero(Math.min(255, rgba[i] * k), Math.min(255, rgba[i + 1] * k), Math.min(255, rgba[i + 2] * k));
-            if (dentro) {
-              pelota[q]++;
-              nb++;
-            } else {
-              fondo[zona][q]++;
-              nf[zona]++;
-            }
-          }
+      for (const v of vistas) {
+        const p = grisesAngostos ? v.pelotaGris : v.pelota;
+        for (let q = 0; q < CASILLEROS; q++) pelota[q] += p[q];
+        nb += grisesAngostos ? v.nbGris : v.nb;
+        for (const z of [0, 1]) {
+          for (let q = 0; q < CASILLEROS; q++) fondo[z][q] += v.fondo[z][q];
+          nf[z] += v.nf[z];
         }
+        for (let c = 0; c < 4; c++) suma[c] += v.suma[c];
       }
       return { pelota, fondo, nb, nf, suma };
     };
@@ -343,8 +401,13 @@ export class BallDetector {
     this.hasPrev2 = false;
     for (const a of this.acumulado) a.fill(0);
     this.cuadros = 0;
-    const det = this.detect(rgba, { ventana: { x: cx, y: cy, r: radius * 1.7 }, aprender: false, camera });
-    const encontrada = det !== null && Math.hypot(det.x - cx, det.y - cy) < radius * 0.6 && det.r > radius * 0.4;
+    // (Entre todas las candidatas: con un piso moteado, un puntito puede tener
+    // más puntaje que la pelota, pero la pelota está centrada y llena el círculo.)
+    const det =
+      this.detectAll(rgba, { ventana: { x: cx, y: cy, r: radius * 1.7 }, aprender: false, camera }).find(
+        (c) => Math.hypot(c.x - cx, c.y - cy) < radius * 0.6 && c.r > radius * 0.4,
+      ) ?? null;
+    const encontrada = det !== null;
     if (!encontrada || fugaFinal > 0.45) {
       [this.prob, this.probs, this.colorPelota, this.pelota, this.fondoEscaneo, this.fondo, this.colorMedio, this.cortes] = anterior;
       this.cortesPrevios = this.cortes;
@@ -354,7 +417,65 @@ export class BallDetector {
     return { ok: true, fuga, det, aviso: fuga > 0.15 ? "fondo-parecido" : null };
   }
 
+  // ---------- Escaneo del entorno ----------
+  // Después de escanear la pelota, mirando el lugar donde se va a jugar (piso,
+  // arco, paredes): se aprende bien qué es "fondo" en ese lugar. excluir: zonas
+  // {x, y, r} donde puede estar la pelota (no se cuentan como fondo).
+  empezarEntorno() {
+    this.entorno = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
+    this.entornoCuadros = 0;
+  }
+
+  observarEntorno(rgba, camera = null, excluir = []) {
+    if (!this.entorno) return;
+    const { width: w, height: h } = this;
+    const hz = horizonte(camera);
+    const zonas = excluir.filter(Boolean).map((e) => ({ x: e.x, y: e.y, r2: (e.r * 2 + 3) ** 2 }));
+    for (let y = 0; y < h; y += 2) {
+      for (let x = (y >> 1) & 1; x < w; x += 2) {
+        if (zonas.some((z) => (x + 0.5 - z.x) ** 2 + (y + 0.5 - z.y) ** 2 < z.r2)) continue;
+        // Lo que es claramente color de pelota (por si la pelota no salió entre
+        // las candidatas) tampoco: no tiene que pasar a ser "fondo".
+        if (this.score[y * w + x] >= 0.85) continue;
+        const i = (y * w + x) * 4;
+        this.entorno[alPiso(hz, x, y) ? 0 : 1][casillero(rgba[i], rgba[i + 1], rgba[i + 2])]++;
+      }
+    }
+    this.entornoCuadros++;
+  }
+
+  // Mezcla lo visto del entorno con el fondo del escaneo. Devuelve qué parte
+  // del entorno se confunde con la pelota (o null si no alcanzó lo que se vio).
+  terminarEntorno() {
+    const e = this.entorno;
+    this.entorno = null;
+    if (!e || this.entornoCuadros < 3 || !this.pelota) return null;
+    let confusion = null;
+    for (const z of [0, 1]) {
+      const total = e[z].reduce((a, v) => a + v, 0);
+      if (total < 500) continue;
+      const visto = normalizar(suavizar(e[z].slice()));
+      const mezcla = this.fondoEscaneo[z].map((v, q) => 0.35 * v + 0.65 * visto[q]);
+      this.fondoEscaneo[z] = mezcla;
+      this.fondo[z] = mezcla.slice();
+      if (z === 0) {
+        // Con los colores tal cual: ¿cuánto del piso pasaría por pelota?
+        confusion = 0;
+        for (let q = 0; q < CASILLEROS; q++) {
+          const pb = this.pelota[q];
+          if (pb / (pb + mezcla[q] + 1e-9) >= UMBRAL) confusion += e[z][q] / total;
+        }
+      }
+    }
+    this.fondoEscaneo[1] ??= this.fondoEscaneo[0];
+    this.cortesPrevios = null;
+    this.#armarTablas();
+    if (confusion !== null && confusion > 0.13) this.fondoParecido = true;
+    return confusion;
+  }
+
   forget() {
+    this.entorno = null;
     this.prob = null;
     this.fondoParecido = false;
     this.cortes = null;
@@ -418,6 +539,25 @@ export class BallDetector {
     this.probs = probs;
     this.prob = probs[0];
     this.colorPelota = color;
+  }
+
+  // Promedio de "es pelota" y de "cambió" dentro del círculo (x, y, r) del último
+  // cuadro (ver seguimiento: buscar la pelota quieta pegada a otra cosa).
+  promedioEn(x, y, r) {
+    const { width: w, height: h, score, moving } = this;
+    let n = 0;
+    let s = 0;
+    let m = 0;
+    const r2 = r * r;
+    for (let yy = Math.max(0, Math.floor(y - r)); yy < Math.min(h, Math.ceil(y + r)); yy++)
+      for (let xx = Math.max(0, Math.floor(x - r)); xx < Math.min(w, Math.ceil(x + r)); xx++) {
+        if ((xx + 0.5 - x) ** 2 + (yy + 0.5 - y) ** 2 > r2) continue;
+        const i = yy * w + xx;
+        n++;
+        s += Math.min(1, score[i]);
+        m += moving[i];
+      }
+    return n ? { score: s / n, moving: m / n } : null;
   }
 
   // ¿El punto (x, y) de la imagen chica está arriba del horizonte? (último cuadro)
@@ -727,6 +867,24 @@ export class BallDetector {
     return Math.exp(-(l * l) / (2 * 0.3 * 0.3));
   }
 
+  // Qué tan sola está una mancha de radio r en (x, y): 1 si en un anillo
+  // alrededor (de 1,4 a 2,2 radios) no hay nada marcado, 0 si está todo marcado.
+  #aislamiento(x, y, r) {
+    const { width: w, height: h, closed } = this;
+    let vistos = 0;
+    let marcados = 0;
+    for (const k of [1.4, 2.2]) {
+      for (let a = 0; a < 24; a++) {
+        const px = Math.floor(x + k * r * Math.cos((a * Math.PI) / 12));
+        const py = Math.floor(y + k * r * Math.sin((a * Math.PI) / 12));
+        if (px < 0 || py < 0 || px >= w || py >= h) continue;
+        vistos++;
+        marcados += closed[py * w + px];
+      }
+    }
+    return vistos ? 1 - marcados / vistos : 1;
+  }
+
   #manchas(near) {
     const { width: w, height: h, closed, labels, stack, moving } = this;
     const n = w * h;
@@ -793,6 +951,9 @@ export class BallDetector {
 
       let score = Math.min(cnt / (Math.PI * forma.rMayor * forma.rMenor), 1) * Math.min(1, cnt / 40) * (1 + (0.5 * mov) / cnt);
       if (forma.alargada > 1.6) score *= 0.8;
+      // Una mancha sola, con nada marcado alrededor, es muy probablemente la
+      // pelota: gana prioridad. Pegada a otras cosas marcadas, pierde un poco.
+      if (!SIN_AISLADA) score *= 0.7 + 0.5 * this.#aislamiento(mx + 0.5, my + 0.5, Math.sqrt(cnt / Math.PI));
       if (near) {
         const d = Math.hypot(mx + 0.5 - near.x, my + 0.5 - near.y) / (3 * near.r + 8);
         score *= 1 / (1 + d * d);
@@ -926,7 +1087,7 @@ export class BallDetector {
       const rArea = Math.sqrt(sw / Math.PI);
       const r = p.aisladas >= 0.75 ? Math.min(1.3 * p.r, Math.max(0.75 * p.r, rArea)) : p.r;
       const mov = (caja(IM, p.x, p.y, 0.7 * p.r) + 1e-9) * 1;
-      let sc = p.resp * Math.min(1, (Math.PI * p.r * p.r) / 25) * (0.6 + 0.4 * p.aisladas) * (1 + 0.5 * Math.max(0, mov));
+      let sc = p.resp * Math.min(1, (Math.PI * p.r * p.r) / 25) * (SIN_AISLADA ? 0.6 + 0.4 * p.aisladas : 0.5 + 0.6 * p.aisladas) * (1 + 0.5 * Math.max(0, mov));
       if (this.#pisoParecido) sc *= 0.25 + 0.75 * this.#pesoTamano(p.x, p.y, p.r);
       if (near) {
         const d = Math.hypot(p.x + mx - near.x, p.y + my - near.y) / (3 * near.r + 8);
