@@ -55,6 +55,22 @@ export const ESCENARIOS = {
     distancia: [3, 6],
     rapidez: [6, 20],
   },
+  // Como juega el usuario: adentro, piso de granito moteado, pelota blanca con
+  // parches de colores, el que patea sostiene el celular a ~1 m casi encima de
+  // la pelota y el arco chico está cerca (1,2 a 2,5 m).
+  "casa-encima": {
+    modo: "mano",
+    encima: true,
+    lugar: "interior",
+    piso: "granito",
+    pelota: "multicolor",
+    luz: "interior",
+    exposicion: 0.012,
+    ruido: { foton: 0.0012, lectura: 0.00015 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [1.2, 2.5],
+    rapidez: [5, 15],
+  },
   // El que patea tiene el celular en la mano (se mueve mucho al patear).
   "pateando": { modo: "pateando", luz: "nublado", exposicion: 0.008, ruido: { foton: 0.0006, lectura: 0.00004 } },
 };
@@ -131,11 +147,12 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     lugar: cfg.lugar ?? "cancha",
     arco: ARCO,
     luz: cfg.luz,
-    pelota: rnd.elegir(["clasica", "clasica", "azul", "amarilla", "naranja"]),
+    pelota: cfg.pelota ?? rnd.elegir(["clasica", "clasica", "azul", "amarilla", "naranja"]),
     R,
+    piso: cfg.piso ?? null,
   });
   // Apoyado, el celular suele ir horizontal (entran la pelota y el arco); en la mano, de las dos formas.
-  const horizontal = cfg.modo === "fijo" || (cfg.modo === "mano" && rnd() < 0.5);
+  const horizontal = !cfg.encima && (cfg.modo === "fijo" || (cfg.modo === "mano" && rnd() < 0.5));
   const sim = new CamaraSimulada({
     escena,
     ancho: horizontal ? 2160 : 1080,
@@ -157,7 +174,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     let pos;
     // Al costado: atrás del que patea, su cuerpo taparía la pelota.
     const costado = (a, b) => (rnd() < 0.5 ? -1 : 1) * rnd.entre(a, b);
-    if (cfg.modo === "fijo" && escena.habitacion) pos = [base[0] + costado(0.6, 2.2), rnd.entre(0.4, 1.2), base[2] + rnd.entre(0.5, 2.5)];
+    if (cfg.encima) pos = [base[0] + rnd.entre(-0.25, 0.25), rnd.entre(0.9, 1.15), base[2] + rnd.entre(0, 0.3)];
+    else if (cfg.modo === "fijo" && escena.habitacion) pos = [base[0] + costado(0.6, 2.2), rnd.entre(0.4, 1.2), base[2] + rnd.entre(0.5, 2.5)];
     else if (cfg.modo === "fijo") pos = [base[0] + costado(1.2, 3), rnd.entre(0.5, 1.3), base[2] + rnd.entre(0.3, 2.5)];
     else if (cfg.modo === "mano" && escena.habitacion) pos = [base[0] + costado(0.5, 2.2), rnd.entre(1.3, 1.6), base[2] + rnd.entre(0.5, 2.5)];
     else if (cfg.modo === "mano") pos = [base[0] + costado(1.5, 3.5), rnd.entre(1.35, 1.6), base[2] + rnd.entre(0.3, 3)];
@@ -165,14 +183,16 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     // Adentro, el celular tiene que estar dentro de la habitación.
     const H = escena.habitacion;
     if (H && (Math.abs(pos[0]) > H.ancho - 0.3 || pos[2] > H.fondo - 0.3)) continue;
-    const mira = [base[0] * 0.5, 0.6, base[2] * (cfg.modo === "pateando" ? 0.4 : 0.45)];
+    const mira = cfg.encima ? [base[0] * 0.6, 0, base[2] * rnd.entre(0.45, 0.65)] : [base[0] * 0.5, 0.6, base[2] * (cfg.modo === "pateando" ? 0.4 : 0.45)];
     const cam = { pos, R: mirar(pos, mira) };
     const enImagen = (p, m) => {
       const q = proyectar(sim, cam, p, w, h);
       return q && q.x > m && q.x < w - m && q.y > m && q.y < h - m;
     };
-    const ok =
-      enImagen(base, 25) &&
+    const ok = cfg.encima
+      ? // Casi encima de la pelota no entra todo el arco: alcanza con el centro.
+        enImagen(base, 40) && enImagen([0, 0, 0], 10)
+      : enImagen(base, 25) &&
       [[-ARCO.ancho / 2 - 0.3, 0, 0], [ARCO.ancho / 2 + 0.3, 0, 0], [-ARCO.ancho / 2 - 0.3, ARCO.alto + 0.2, 0], [ARCO.ancho / 2 + 0.3, ARCO.alto + 0.2, 0]].every((p) =>
         enImagen(p, 3),
       );
@@ -312,7 +332,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
 
     const eventos = [];
     const filas = [];
-    const vuelo = { cuadros: 0, bien: 0, mal: 0, nada: 0, errores: [] };
+    const vuelo = { cuadros: 0, bien: 0, mal: 0, nada: 0, presente: 0, siguiendo: 0, errores: [] };
     const fin = tPatada + real.t + 0.5;
     let terminado = null;
     let listaAlPatear = null;
@@ -323,6 +343,31 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
       msTotal += performance.now() - t0;
       msCuadros++;
       if (listaAlPatear === null && info.t >= tPatada) listaAlPatear = seg.tracker.ready || seg.tracker.state !== "idle";
+      if (process.env.PROBS && Math.abs(info.t - tPatada - Number(process.env.PROBS)) < 0.017) {
+        // Para depurar el modelo de color: cuánto "es pelota" el piso y la pelota.
+        const d = seg.detector;
+        const vp = proyectar(sim, info.camaraReal, p0, w, h);
+        const img = info.image.data;
+        const est = { piso: [], pelota: [] };
+        for (let y = 0; y < h; y += 3)
+          for (let x = 0; x < w; x += 3) {
+            const i = (y * w + x) * 4;
+            const q = ((img[i] >> 4) << 8) | ((img[i + 1] >> 4) << 4) | (img[i + 2] >> 4);
+            const dentro = vp && Math.hypot(x + 0.5 - vp.x, y + 0.5 - vp.y) < 0.8 * vp.r;
+            const lejos = !vp || Math.hypot(x + 0.5 - vp.x, y + 0.5 - vp.y) > 2.5 * vp.r;
+            if (dentro) est.pelota.push([img[i], img[i + 1], img[i + 2], d.probs[0][q], d.pelota[q], d.fondo[0][q]]);
+            else if (lejos && d.arribaDelHorizonte(x + 0.5, y + 0.5) === false) est.piso.push([img[i], img[i + 1], img[i + 2], d.probs[0][q], d.pelota[q], d.fondo[0][q]]);
+          }
+        const resumen = (v) => {
+          const alto = v.filter((p) => p[3] >= 0.5).length / Math.max(1, v.length);
+          const lum = v.map((p) => 0.3 * p[0] + 0.59 * p[1] + 0.11 * p[2]).sort((a, b) => a - b);
+          return `n ${v.length} · prob≥0,5 ${(100 * alto).toFixed(0)}% · luz p10 ${lum[Math.floor(0.1 * lum.length)]?.toFixed(0)} p50 ${lum[lum.length >> 1]?.toFixed(0)} p90 ${lum[Math.floor(0.9 * lum.length)]?.toFixed(0)}`;
+        };
+        console.log("PROBS piso:", resumen(est.piso), "| pelota:", resumen(est.pelota));
+        const muestras = (v, k) => v.filter((_, j) => j % Math.max(1, Math.floor(v.length / k)) === 0).slice(0, k).map((p) => `${p.slice(0, 3).join("/")} p${p[3].toFixed(2)} b${(1000 * p[4]).toFixed(2)} f${(1000 * p[5]).toFixed(2)}`);
+        console.log("  piso:", muestras(est.piso, 12).join(" | "));
+        console.log("  pelota:", muestras(est.pelota, 12).join(" | "));
+      }
       if (fotos && fotos.taus.some((x) => Math.abs(info.t - tPatada - x) < 0.017)) {
         // Imagen y máscara del detector (violeta), con la pelota real marcada.
         const { png } = await import("./png.js");
@@ -374,11 +419,15 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
         const verdad = proyectar(sim, info.camaraReal, tray.posicion(tau), w, h);
         if (verdad && verdad.x > 0 && verdad.x < w && verdad.y > 0 && verdad.y < h) {
           vuelo.cuadros++;
+          // ¿La pelota estaba entre las candidatas? (si no, el problema es detectarla)
+          const tol = Math.max(2.5, 0.6 * verdad.r);
+          if (r.ubicadas.some((u) => Math.hypot(u.px - verdad.x, u.py - verdad.y) < tol)) vuelo.presente++;
+          if (seg.tracker.state === "flight" || seg.tracker.state === "done") vuelo.siguiendo++;
           if (process.env.ESTELAS) {
             // Para calibrar: tamaño (escala) de las estelas que son la pelota y de las que no.
             const lineas = r.ubicadas
               .filter((u) => u.estela)
-              .map((u) => `${Math.hypot(u.px - verdad.x, u.py - verdad.y) < Math.max(2.5, 0.6 * verdad.r) ? "bien" : "mal"} ${(u.escala ?? -1).toFixed(3)} ${(u.alargada ?? 1).toFixed(2)} ${u.onGround ? "p" : "a"}\n`);
+              .map((u) => `${Math.hypot(u.px - verdad.x, u.py - verdad.y) < Math.max(2.5, 0.6 * verdad.r) ? "bien" : "mal"} ${(u.escala ?? -1).toFixed(3)} ${(u.alargada ?? 1).toFixed(2)} ${u.onGround ? "p" : "a"} ${u.pr.toFixed(2)} ${(u.det.rCobertura ?? -1).toFixed(2)} ${verdad.r.toFixed(2)}\n`);
             if (lineas.length) appendFileSync(process.env.ESTELAS, lineas.join(""));
           }
           const m = r.medida?.det;
@@ -426,7 +475,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
         `  [${nombre} s${semilla} #${n}] ${res.rapidez} m/s ${rasante ? "rasante" : "aire"}${efecto ? " efecto" : ""} a ${res.distancia} m · ` +
           `${res.lista ? "" : "NO LISTA · "}remate ${res.remate ? "sí" : "NO"}${falso ? " (FALSO antes)" : ""} · ${res.resultado ? `error ${res.error.toFixed(1)} cm (x ${res.errorX.toFixed(1)}, y ${res.errorY.toFixed(1)})` : "sin resultado"}` +
           ` · vuelo ${vuelo.bien}/${vuelo.cuadros} bien, ${vuelo.mal} mal, ${vuelo.nada} nada · eventos ${eventos.map((e) => e.type[0]).join("")}` +
-          ` · kicks ${eventos.filter((e) => e.type === "kick").map((e) => `${(e.t - tPatada).toFixed(2)}s/cal${e.prediction?.calidad?.toFixed(1)}/n${e.n ?? "?"}`).join(",")}`
+          ` · kicks ${eventos.filter((e) => e.type === "kick").map((e) => `${(e.t - tPatada).toFixed(2)}s/cal${e.prediction?.calidad?.toFixed(1)}/n${e.n ?? "?"}`).join(",")}` +
+          (n === 0 ? ` · fuga ${aprendio.fuga?.toFixed(2)}` : "")
       );
     }
     // La pelota vuelve a su lugar: unos cuadros quieta antes del próximo.
@@ -448,7 +498,10 @@ export function resumir(rs) {
   const conRes = rs.filter((r) => r.resultado);
   const errores = conRes.map((r) => r.error);
   const antes = rs.filter((r) => r.errorAntes !== null).map((r) => r.errorAntes);
-  const v = rs.reduce((a, r) => ({ c: a.c + r.vuelo.cuadros, b: a.b + r.vuelo.bien, m: a.m + r.vuelo.mal }), { c: 0, b: 0, m: 0 });
+  const v = rs.reduce(
+    (a, r) => ({ c: a.c + r.vuelo.cuadros, b: a.b + r.vuelo.bien, m: a.m + r.vuelo.mal, p: a.p + r.vuelo.presente, s: a.s + r.vuelo.siguiendo }),
+    { c: 0, b: 0, m: 0, p: 0, s: 0 },
+  );
   const rapidos = rs.filter((r) => r.rapidez >= 20);
   return {
     tiros: n,
@@ -462,6 +515,8 @@ export function resumir(rs) {
     errorAntesMediana: cuantil(antes, 0.5),
     vueloBien: pct(v.b, v.c),
     vueloMal: pct(v.m, v.c),
+    vueloPresente: pct(v.p, v.c),
+    vueloSiguiendo: pct(v.s, v.c),
     pxMediana: cuantil(rs.flatMap((r) => r.vuelo.errores), 0.5),
     ms: rs.length ? rs.reduce((a, r) => a + r.ms, 0) / rs.length : 0,
   };
@@ -520,7 +575,7 @@ export async function correr({ escenarios, sesiones, tiros, semilla, detalle }) 
     console.log(
       `${nombre.padEnd(14)} tiros ${f.tiros} · lista ${f.lista} · remate ${f.remate} · falsos ${f.falsos} · resultado ${f.resultado} (≥20 m/s: ${f.resultadoRapidos})` +
         ` · error cm mediana ${cm(f.errorMediana)} / 90% ${cm(f.error90)} · 0,2 s antes ${cm(f.errorAntesMediana)}` +
-        ` · vuelo bien ${f.vueloBien} mal ${f.vueloMal} · px ${f.pxMediana?.toFixed(2) ?? "-"} · ${f.ms.toFixed(1)} ms/cuadro · ${f.segundos} s`,
+        ` · vuelo bien ${f.vueloBien} mal ${f.vueloMal} (detectada ${f.vueloPresente}, ya en vuelo ${f.vueloSiguiendo}) · px ${f.pxMediana?.toFixed(2) ?? "-"} · ${f.ms.toFixed(1)} ms/cuadro · ${f.segundos} s`,
     );
   }
   return tabla;

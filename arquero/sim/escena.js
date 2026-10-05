@@ -32,6 +32,16 @@ export const PELOTAS_SIM = {
   azul: { base: [0.8, 0.8, 0.8], parche: [0.03, 0.08, 0.5] },
   amarilla: { base: [0.75, 0.62, 0.06], parche: [0.04, 0.04, 0.04] },
   naranja: { base: [0.85, 0.3, 0.04], parche: [0.85, 0.85, 0.85] },
+  // Blanca con parches de colores (como muchas pelotas actuales).
+  multicolor: {
+    base: [0.82, 0.82, 0.8],
+    parche: [0.05, 0.15, 0.6],
+    parches: [
+      [0.05, 0.15, 0.6],
+      [0.06, 0.45, 0.15],
+      [0.6, 0.06, 0.06],
+    ],
+  },
 };
 
 // Textura con niveles de detalle (mipmaps), RGB lineal.
@@ -146,6 +156,29 @@ function texturaMadera(rnd, n = 512) {
       d[i * 3] = base[0] * k;
       d[i * 3 + 1] = base[1] * k;
       d[i * 3 + 2] = base[2] * k;
+    }
+  return mipmaps(d, n);
+}
+
+// Granito (o terrazo) de 40 cm: gris moteado de blanco y negro, con juntas.
+// Los puntitos blancos tienen el color de una pelota blanca.
+function texturaGranito(rnd, n = 1024) {
+  const lado = Math.round((0.4 / 4) * n);
+  const gris = rnd.entre(0.42, 0.55);
+  const d = new Float32Array(n * n * 3);
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      const junta = x % lado < 2 || y % lado < 2;
+      const u = rnd();
+      let k;
+      if (junta) k = 0.3;
+      else if (u < 0.14) k = rnd.entre(1.55, 1.85); // blanco
+      else if (u < 0.3) k = rnd.entre(0.15, 0.35); // negro
+      else k = rnd.entre(0.85, 1.15);
+      d[i * 3] = Math.min(0.95, gris * k);
+      d[i * 3 + 1] = Math.min(0.95, gris * k * 0.99);
+      d[i * 3 + 2] = Math.min(0.95, gris * k * 0.97);
     }
   return mipmaps(d, n);
 }
@@ -320,7 +353,7 @@ function hash(a, b) {
 }
 
 // Escena: piso, lugar, luz. opciones.lugar: 'cancha' | 'patio' | 'interior'.
-export function crearEscena({ semilla = 1, lugar = "cancha", arco = { ancho: 3, alto: 2 }, luz = "sol", pelota = "clasica", R = 0.11 }) {
+export function crearEscena({ semilla = 1, lugar = "cancha", arco = { ancho: 3, alto: 2 }, luz = "sol", pelota = "clasica", R = 0.11, piso = null }) {
   const rnd = azar(semilla);
   const azSol = rnd.entre(0, 2 * Math.PI);
   const elSol = luz === "sol" ? rnd.entre(0.45, 1.0) : rnd.entre(0.5, 1.2);
@@ -346,7 +379,16 @@ export function crearEscena({ semilla = 1, lugar = "cancha", arco = { ancho: 3, 
     cielo: luces.cielo,
     total,
     pelota: PELOTAS_SIM[pelota],
-    piso: lugar === "cancha" ? texturaPasto(rnd) : lugar === "interior" ? (rnd() < 0.5 ? texturaMadera(rnd) : texturaBaldosa(rnd)) : texturaCemento(rnd),
+    piso:
+      piso === "granito"
+        ? texturaGranito(rnd)
+        : lugar === "cancha"
+          ? texturaPasto(rnd)
+          : lugar === "interior"
+            ? rnd() < 0.5
+              ? texturaMadera(rnd)
+              : texturaBaldosa(rnd)
+            : texturaCemento(rnd),
     pared: lugar === "patio" ? { z: -0.5, tex: texturaPared(rnd, 256, rnd() < 0.5) } : null,
     habitacion: lugar === "interior" ? habitacion(rnd) : null,
     // Luz de tubo o LED con red de 50 Hz: el brillo late a 100 Hz.
@@ -713,8 +755,10 @@ export class CamaraSimulada {
       n[0] = 0;
       n[1] = 1;
       n[2] = 0;
-      const huella = (t * this.pixAng) / Math.max(-dy, 0.03) / (4 / 512);
-      leerTextura(E.piso, (px / 4) * 512, (pz / 4) * 512, huella, alb);
+      // La textura cubre 4 m (con más o menos resolución según el piso).
+      const nt = E.piso[0].n;
+      const huella = (t * this.pixAng) / Math.max(-dy, 0.03) / (4 / nt);
+      leerTextura(E.piso, (px / 4) * nt, (pz / 4) * nt, huella, alb);
       if (E.lugar === "cancha") {
         // Franjas del corte del pasto y líneas de cal.
         const franja = Math.floor(pz / 1.5) % 2 === 0 ? 1.12 : 0.88;
@@ -764,8 +808,16 @@ export class CamaraSimulada {
       const ly = M[3] * n[0] + M[4] * n[1] + M[5] * n[2];
       const lz = M[6] * n[0] + M[7] * n[1] + M[8] * n[2];
       let max = -1;
-      for (const v of ICOSAEDRO) max = Math.max(max, v[0] * lx + v[1] * ly + v[2] * lz);
-      const col = max > COS_PENTAGONO ? E.pelota.parche : E.pelota.base;
+      let cual = 0;
+      for (let j = 0; j < ICOSAEDRO.length; j++) {
+        const v = ICOSAEDRO[j];
+        const c = v[0] * lx + v[1] * ly + v[2] * lz;
+        if (c > max) {
+          max = c;
+          cual = j;
+        }
+      }
+      const col = max > COS_PENTAGONO ? (E.pelota.parches?.[cual % E.pelota.parches.length] ?? E.pelota.parche) : E.pelota.base;
       alb[0] = col[0];
       alb[1] = col[1];
       alb[2] = col[2];

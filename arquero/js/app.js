@@ -35,6 +35,7 @@ const ui = {
   bannerTexto: $("banner-texto"),
   bannerSub: $("banner-sub"),
   estadoPelota: $("estado-pelota"),
+  consejo: $("consejo"),
   estadoCelu: $("estado-celu"),
   rec: $("rec"),
   btnReubicar: $("btn-reubicar"),
@@ -271,7 +272,6 @@ let demo = null;
 let fase = "inicio"; // inicio → ubicar → escanear → jugar
 let pedidoEscaneo = false;
 let tiro = null;
-let ultimaPosicion = null;
 let pelotaVistaEn = -Infinity;
 let ultimoT = null;
 let reiniciarEn = null;
@@ -297,6 +297,7 @@ const registro = new URLSearchParams(location.search).has("registro") ? [] : nul
 const tmp = {
   v: new THREE.Vector3(),
   quat: new THREE.Quaternion(),
+  m: new THREE.Matrix4(),
 };
 
 function textoMarcador() {
@@ -423,11 +424,15 @@ function radioNominal() {
 // ---------- Registro para diagnóstico ----------
 //
 // Guarda, cuadro a cuadro, lo que ve la cámara y lo que calcula la app (los
-// últimos ~40 s) y fotos de antes y durante los últimos tiros. Con el botón
-// "Guardar registro" se exporta en un archivo para mandárselo a quien arregla la app.
+// últimos ~40 s), fotos de antes y durante los últimos tiros y, cada 2 s, una
+// foto con lo que el detector cree que es pelota (aunque no haya habido remate:
+// así se ve qué confundió). Con el botón "Guardar registro" se exporta en un
+// archivo para mandárselo a quien arregla la app.
 
 const MAX_CUADROS = 1200;
-const bitacora = { cuadros: [], escaneo: null, tiros: [], previos: [], siguientePrevia: 0, tiroActual: null };
+const VISTAZOS = 12;
+const CADA_VISTAZO = 2; // s
+const bitacora = { cuadros: [], escaneo: null, tiros: [], previos: [], siguientePrevia: 0, tiroActual: null, vistazos: [], siguienteVistazo: 0, ultimoVistazo: -Infinity };
 const r2 = (v) => Math.round(v * 100) / 100;
 const r4 = (v) => Math.round(v * 10000) / 10000;
 
@@ -439,6 +444,8 @@ function anotarCuadro(info, t, candidatas, elegida, medida, evento) {
   const d = medida?.det;
   const fila = {
     t: r4(t),
+    // Tamaño de la imagen del detector (cambia si se gira el celular).
+    wh: [info.image.width, info.image.height],
     cam: Array.from(info.camMatrix.elements, r4),
     cands: candidatas.map((c) => [r2(c.x), r2(c.y), r2(c.r), r2(c.score), c.moving == null ? null : r2(c.moving), r2(c.alargada ?? 1)]),
     elegida,
@@ -468,6 +475,26 @@ function anotarCuadro(info, t, candidatas, elegida, medida, evento) {
   } else {
     guardarPrevia(info.image, t);
   }
+  if (t - bitacora.ultimoVistazo >= CADA_VISTAZO || t < bitacora.ultimoVistazo) guardarVistazo(info.image, t, fila);
+}
+
+// Foto y "mapa de pelota" del detector (0 a 255), en lugares reusados.
+function guardarVistazo(img, t, fila) {
+  const score = detector.score;
+  const n = img.width * img.height;
+  if (!score || score.length < n) return;
+  bitacora.ultimoVistazo = t;
+  const k = bitacora.siguienteVistazo++ % VISTAZOS;
+  let f = bitacora.vistazos[k];
+  if (!f || f.data.length !== img.data.length) f = bitacora.vistazos[k] = { data: new Uint8Array(img.data.length), mapa: new Uint8Array(n) };
+  f.data.set(img.data);
+  for (let i = 0; i < n; i++) f.mapa[i] = Math.min(255, score[i] * 255);
+  f.t = t;
+  f.w = img.width;
+  f.h = img.height;
+  f.cands = fila.cands;
+  f.elegida = fila.elegida;
+  f.lista = fila.lista;
 }
 
 function guardarPrevia(img, t) {
@@ -498,6 +525,16 @@ function jpeg(foto) {
   return c.toDataURL("image/jpeg", 0.8);
 }
 
+// Un mapa de 0 a 255 (un byte por píxel, fila 0 abajo) como imagen en grises.
+function jpegGris(mapa, w, h) {
+  const rgba = new Uint8Array(w * h * 4);
+  for (let i = 0; i < w * h; i++) {
+    rgba[i * 4] = rgba[i * 4 + 1] = rgba[i * 4 + 2] = mapa[i];
+    rgba[i * 4 + 3] = 255;
+  }
+  return jpeg({ w, h, data: rgba });
+}
+
 async function exportarRegistro() {
   const boton = ui.btnRegistro;
   const texto = boton.textContent;
@@ -518,6 +555,11 @@ async function exportarRegistro() {
       arco: ultimaInfo ? Array.from(arcoGrupo.matrixWorld.elements, r4) : null,
       escaneo: bitacora.escaneo && { ...bitacora.escaneo.res, jpeg: jpeg(bitacora.escaneo.foto) },
       tiros: bitacora.tiros.map((tiro) => ({ eventos: tiro.eventos, fotos: tiro.fotos.map((f) => ({ t: r4(f.t), jpeg: jpeg(f) })) })),
+      imagen: ultimaInfo?.image ? { w: ultimaInfo.image.width, h: ultimaInfo.image.height } : null,
+      vistazos: bitacora.vistazos
+        .filter(Boolean)
+        .sort((a, b) => a.t - b.t)
+        .map((f) => ({ t: r4(f.t), cands: f.cands, elegida: f.elegida, lista: f.lista, jpeg: jpeg(f), mapa: jpegGris(f.mapa, f.w, f.h) })),
       cuadros: bitacora.cuadros,
     };
     const nombre = `arquero-registro-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}`;
@@ -546,22 +588,22 @@ const marca = { pos: new THREE.Vector3(), lista: false };
 function seguirPelota(info) {
   const t = info.t;
   const { candidatas, elegida, medida, evento, repetido } = seg.procesar(info, arcoGrupo.matrixWorld);
-  if (medida) {
-    ultimaPosicion = medida;
-    pelotaVistaEn = t;
-  }
+  if (medida) pelotaVistaEn = t;
   mostrarTrayectoria(t);
   // Una imagen repetida de la cámara no se anota (no es un cuadro nuevo).
   if (!repetido || evento) anotarCuadro(info, t, candidatas, elegida, medida, evento);
   if (evento) manejarEvento(evento, t);
 
   // El aro sigue la trayectoria ajustada (suave) en vuelo y queda fijo donde
-  // la pelota está quieta; no salta con cada medición.
-  const vista = t - pelotaVistaEn < 0.25;
+  // la pelota está quieta; no salta con cada medición. Antes de que quede lista
+  // va sólo a lo que se vio quieto varias veces en el mismo lugar (no a cualquier
+  // mancha de un cuadro: un reflejo, un puntito del piso).
+  const candidata = tracker.state === "idle" && !tracker.ready ? candidataQuieta(t) : null;
+  const vista = Boolean(candidata) || (tracker.state !== "idle" && t - pelotaVistaEn < 0.25);
   const lista = tracker.ready;
   const fija = tracker.expectedPosition(t) ?? (lista ? tracker.restPosition() : null);
   if (fija) marca.pos.set(fija.x, fija.y, fija.z);
-  else if (vista && ultimaPosicion) marca.pos.lerp(tmp.v.set(ultimaPosicion.x, ultimaPosicion.y, ultimaPosicion.z), 0.5);
+  else if (candidata) marca.pos.lerp(tmp.v.set(candidata.x, candidata.y, candidata.z), 0.5);
   marcaPelota.position.copy(marca.pos).applyMatrix4(arcoGrupo.matrixWorld);
   marcaPelota.visible = tracker.state === "flight" || (lista && t - pelotaVistaEn < 1.5) || vista;
   marcaPelota.material.color.set(tracker.state === "flight" ? 0xffd400 : lista ? 0xc6ff1a : 0xffffff);
@@ -573,10 +615,33 @@ function seguirPelota(info) {
       ? "● Pelota vista: dejala quieta"
       : "○ Buscando la pelota…";
   ui.estadoPelota.classList.toggle("ok", lista);
+  mostrarConsejo(lista ? tracker.restPosition() : null, info);
   if (tracker.state === "idle" && (lista || vista)) arquero.seguir(marca.pos.x);
   arquero.mirar(tracker.state === "flight" || lista || t - pelotaVistaEn < 0.6 ? { x: marca.pos.x, y: marca.pos.y, z: marca.pos.z } : null);
 
   if (mostrarDiag) dibujarDiagnostico(info.image, medida?.det ?? null, medida);
+}
+
+// Cómo pararse para que el remate se pueda seguir: si el celular está casi
+// encima de la pelota, la pierna la tapa al patear; si la pelota está muy cerca
+// del arco, llega en pocos cuadros. (Con la pelota lista y en coordenadas del arco.)
+function mostrarConsejo(reposo, info) {
+  let texto = "";
+  if (reposo && tracker.state === "idle") {
+    const cam = tmp.v.setFromMatrixPosition(info.camMatrix).applyMatrix4(tmp.m.copy(arcoGrupo.matrixWorld).invert());
+    if (Math.hypot(cam.x - reposo.x, cam.z - reposo.z) < 0.7)
+      texto = "Estás casi encima de la pelota: alejate 1 o 2 m (atrás o al costado) para que la pierna no la tape al patear.";
+    else if (reposo.z < 2.5) texto = "La pelota está muy cerca del arco: alejala a 3 m o más para que se pueda medir el tiro.";
+  }
+  if (ui.consejo.textContent !== texto) ui.consejo.textContent = texto;
+  ui.consejo.hidden = !texto;
+}
+
+// Lo que se viene viendo quieto en un mismo lugar (todavía sin estar lista).
+function candidataQuieta(t) {
+  let mejor = null;
+  for (const q of tracker.quietos) if (q.n >= 3 && t - q.tUlt < 0.3 && (!mejor || q.n > mejor.n)) mejor = q;
+  return mejor;
 }
 
 function manejarEvento(ev, t) {
@@ -770,10 +835,10 @@ function paso(info) {
     if (!quieto) quietoDesde = null;
     else quietoDesde ??= t;
   }
-  camaraAnterior = {
-    quat: new THREE.Quaternion().setFromRotationMatrix(info.camMatrix),
-    pos: new THREE.Vector3().setFromMatrixPosition(info.camMatrix),
-  };
+  // Se reusan los mismos objetos (crear dos por cuadro le da trabajo al recolector).
+  camaraAnterior ??= { quat: new THREE.Quaternion(), pos: new THREE.Vector3() };
+  camaraAnterior.quat.setFromRotationMatrix(info.camMatrix);
+  camaraAnterior.pos.setFromMatrixPosition(info.camMatrix);
   const estable = quietoDesde !== null && t - quietoDesde > 0.5;
   ui.estadoCelu.textContent = estable ? "Celular quieto ✓" : "Celular en movimiento";
   ui.estadoCelu.classList.toggle("ok", estable);

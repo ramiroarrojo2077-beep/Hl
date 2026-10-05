@@ -111,6 +111,9 @@ const S_TAMANO = 0.002; // rad en el radio angular
 // explicar lo medido (por ejemplo, rodando a 35 m/s cuando en realidad iba por
 // el aire, más cerca de la cámara) es poco creíble.
 const V_TIPICA = 30; // m/s
+// Error relativo del tamaño medido (además de S_TAMANO): borrosa por el
+// movimiento, la pelota se ve más chica o más grande de lo que es.
+const TAMANO_RELATIVO = Number(EXP.match(/tamRel=([\d.]+)/)?.[1] ?? 0);
 const S_V = 3; // m/s
 
 function base(d) {
@@ -167,7 +170,7 @@ function residuos(caso, p, out) {
     const [e1, e2] = bases[i];
     out[k++] = (qx * e1.x + qy * e1.y + qz * e1.z) / dist / S_DIRECCION;
     out[k++] = (qx * e2.x + qy * e2.y + qz * e2.z) / dist / S_DIRECCION;
-    out[k++] = (Math.asin(Math.min(1, R / dist)) - o.ang) / S_TAMANO;
+    out[k++] = (Math.asin(Math.min(1, R / dist)) - o.ang) / (TAMANO_RELATIVO ? Math.hypot(S_TAMANO, TAMANO_RELATIVO * o.ang) : S_TAMANO);
   }
   if (reposo) {
     const P = posicion(p, p[6] - tRef, R, piso);

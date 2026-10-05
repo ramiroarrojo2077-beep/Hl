@@ -122,7 +122,8 @@ export class BallTracking {
     // las formas redondas se buscan sólo en esas escalas (mucho más rápido).
     const EXP = globalThis.process?.env?.EXP ?? "";
     const escalas = enImagen ? (EXP.includes("escalasAnchas") ? { min: 0.35 * enImagen.r, max: 2.2 * enImagen.r } : { min: 0.5 * enImagen.r, max: 1.8 * enImagen.r }) : null;
-    const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo, escalas });
+    const etapa = enVuelo || tracker.state === "done" ? "vuelo" : soloSuelo ? "quieta" : "lista";
+    const candidatas = detector.detectAll(data, { camera: camara, near, foco, soloSuelo, escalas, radio: this.radio, etapa, proteger: enImagen });
     // La misma imagen que el cuadro anterior (la pantalla va más rápido que la
     // cámara): no es una medición nueva. Contarla haría parecer que la pelota se
     // quedó quieta un instante y arruinaría la velocidad y la trayectoria.

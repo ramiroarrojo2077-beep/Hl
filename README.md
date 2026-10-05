@@ -108,7 +108,8 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 - Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
 - En modo fijo dejá el celular quieto y horizontal, con el arco y el punto de remate a la vista, al costado de donde pateás (si está justo detrás, la pierna del que patea tapa la pelota en el momento del golpe).
 - El botón ⚙ muestra lo que ve el detector (en violeta) para revisar que reconozca la pelota.
-- Si un tiro sale mal, tocá ⚙ → **Guardar registro para Claude** y mandá ese archivo: tiene lo que midió la cámara cuadro a cuadro y fotos del remate, para ver qué falló.
+- Si un tiro sale mal, tocá ⚙ → **Guardar registro para Claude** y mandá ese archivo: tiene lo que midió la cámara cuadro a cuadro, fotos del remate y, cada 2 segundos, una foto con lo que el detector creyó que era la pelota (aunque no haya detectado el remate).
+- Pisos claros y moteados (granito, terrazo) con una pelota blanca: la app sube sola el corte de color hasta que el piso deje de parecer pelota y usa el tamaño que tendría la pelota apoyada en cada lugar para descartar los puntitos del piso.
 
 ## Banco de pruebas de precisión
 
@@ -116,7 +117,9 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 
     node arquero/sim/banco.mjs --escenario fijo-sol,mano --sesiones 6 --tiros 4
 
-Mide en cuántos remates detecta la patada, en cuántos da resultado y cuánto erra el punto de cruce. `node arquero/sim/traza.mjs escenario semilla tiro` muestra cuadro a cuadro qué vio y qué decidió.
+Mide en cuántos remates detecta la patada, en cuántos da resultado y cuánto erra el punto de cruce. `node arquero/sim/traza.mjs escenario semilla tiro` muestra cuadro a cuadro qué vio y qué decidió. El escenario `casa-encima` imita jugar adentro sobre granito con el celular en la mano casi encima de la pelota y el arco chico cerca.
+
+`node arquero/sim/repetir.mjs registro.txt [--fotos carpeta]` vuelve a correr el seguimiento sobre un registro real (lo que vio el detector en cada cuadro) y guarda sus fotos.
 
 ## Estructura
 

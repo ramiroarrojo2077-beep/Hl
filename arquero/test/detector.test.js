@@ -343,3 +343,68 @@ for (const pie of [false, true]) {
     assert.ok(err.borde.r < err.color.r, "el borde no mejoró el radio");
   });
 }
+
+// ---------- Piso de granito (gris claro moteado) y pelota blanca con parches ----------
+
+// Cámara a 1 m del piso mirando hacia abajo, en coordenadas del mundo (y arriba).
+const FY = 1 / Math.tan(Math.PI / 6); // 60° de campo vertical
+const PROY = [FY / (W / H), 0, 0, 0, 0, FY, 0, 0, 0, 0, -1, -1, 0, 0, -0.02, 0];
+const ABAJO = { K: matrizK(PROY, W, H), R: [1, 0, 0, 0, 0, 1, 0, -1, 0], p: [0, 1, 0], pisoY: 0 };
+const RADIO = 0.11;
+const RADIO_PX = ((H / 2) * FY * RADIO) / (1 - RADIO); // apoyada en el centro de la imagen
+
+function granito({ pelota = null, puntos = [], semilla = 1 }) {
+  const rnd = azar(semilla);
+  const img = new Uint8Array(W * H * 4);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const u = rnd();
+      // Moteado: gris claro con puntitos blancos y negros (del color de la pelota).
+      let c = u < 0.15 ? [236, 236, 233] : u < 0.3 ? [50, 50, 52] : [178 + (rnd() - 0.5) * 20, 176, 172];
+      for (const p of puntos) if ((x + 0.5 - p.x) ** 2 + (y + 0.5 - p.y) ** 2 <= p.r * p.r) c = [238, 238, 235];
+      if (pelota) {
+        const dx = x + 0.5 - pelota.x;
+        const dy = y + 0.5 - pelota.y;
+        if (dx * dx + dy * dy <= pelota.r * pelota.r) {
+          const parche = Math.sin((dx / pelota.r) * 5) * Math.sin((dy / pelota.r) * 5) > 0.5;
+          c = parche ? [30, 60, 170] : [245, 245, 242];
+        }
+      }
+      img[i] = c[0];
+      img[i + 1] = c[1];
+      img[i + 2] = c[2];
+      img[i + 3] = 255;
+    }
+  }
+  return img;
+}
+
+test("en un piso de granito encuentra la pelota del tamaño que corresponde, no los puntitos", () => {
+  const det = new BallDetector(W, H);
+  const res = det.learn(granito({ pelota: { x: 100, y: 60, r: 30 } }), 100, 60, 32, ABAJO);
+  assert.equal(res.ok, true, JSON.stringify(res));
+  // Unos puntos blancos grandes del piso (del color de la pelota), lejos de ella.
+  const puntos = [
+    { x: 30, y: 30, r: 3 },
+    { x: 170, y: 95, r: 2.5 },
+    { x: 160, y: 20, r: 3 },
+  ];
+  let c = [];
+  for (let k = 0; k < 8; k++) c = det.detectAll(granito({ pelota: { x: 100, y: 60, r: RADIO_PX }, puntos, semilla: 3 + k }), { camera: ABAJO, radio: RADIO, etapa: "quieta", soloSuelo: true });
+  assert.ok(c.length, "no encontró nada");
+  const [a] = c;
+  assert.ok(Math.hypot(a.x - 100, a.y - 60) < 0.3 * RADIO_PX, `la primera está en ${a.x.toFixed(1)},${a.y.toFixed(1)} r ${a.r.toFixed(1)}`);
+  assert.ok(Math.abs(Math.log(a.r / RADIO_PX)) < 0.35, `radio ${a.r.toFixed(1)} (se esperaba ${RADIO_PX.toFixed(1)})`);
+  // Ningún puntito de 3 px entre las candidatas: la pelota ahí mediría ~13 px.
+  assert.ok(!c.some((k) => k.r < 0.4 * RADIO_PX), `candidatas chicas: ${c.map((k) => k.r.toFixed(1)).join(", ")}`);
+});
+
+test("lista para patear no descarta la pelota más grande (recién pateada, en el aire)", () => {
+  const det = new BallDetector(W, H);
+  assert.equal(det.learn(granito({ pelota: { x: 100, y: 60, r: 30 } }), 100, 60, 32, ABAJO).ok, true);
+  // En el aire, más cerca de la cámara: el doble y medio de grande.
+  let c = [];
+  for (let k = 0; k < 4; k++) c = det.detectAll(granito({ pelota: { x: 100, y: 60, r: 2.6 * RADIO_PX }, semilla: 20 + k }), { camera: ABAJO, radio: RADIO, etapa: "lista" });
+  assert.ok(c.some((k) => Math.hypot(k.x - 100, k.y - 60) < 4 && k.r > 1.8 * RADIO_PX), `candidatas: ${c.map((k) => `${k.x.toFixed(0)},${k.y.toFixed(0)} r${k.r.toFixed(1)}`).join(" ")}`);
+});

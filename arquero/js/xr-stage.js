@@ -26,6 +26,9 @@ export class XRStage {
     this.projMatrix = new THREE.Matrix4();
     this.hitMatrix = new THREE.Matrix4();
     this.anchorMatrix = new THREE.Matrix4();
+    // Se reusan cada cuadro (menos trabajo para el recolector de basura).
+    this.hitPos = new THREE.Vector3();
+    this.anchorPos = new THREE.Vector3();
     this.camaraGrabacion = new THREE.PerspectiveCamera();
     this.camaraGrabacion.matrixAutoUpdate = false;
     this.texturaPropia = null;
@@ -114,7 +117,7 @@ export class XRStage {
         const p = resultados[0].getPose(ref);
         if (p) {
           this.hitMatrix.fromArray(p.transform.matrix);
-          hit = new THREE.Vector3().setFromMatrixPosition(this.hitMatrix);
+          hit = this.hitPos.setFromMatrixPosition(this.hitMatrix);
           this.ultimoHit = resultados[0];
         }
       }
@@ -123,7 +126,7 @@ export class XRStage {
     let anchor = null;
     if (this.anchor && xrFrame.trackedAnchors?.has(this.anchor)) {
       const p = xrFrame.getPose(this.anchor.anchorSpace, ref);
-      if (p) anchor = new THREE.Vector3().setFromMatrixPosition(this.anchorMatrix.fromArray(p.transform.matrix));
+      if (p) anchor = this.anchorPos.setFromMatrixPosition(this.anchorMatrix.fromArray(p.transform.matrix));
     }
 
     let image = null;

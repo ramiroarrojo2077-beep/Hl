@@ -25,6 +25,19 @@ const AREA_MINIMA = 5;
 const UMBRAL_FOCO = 0.35; // donde se espera la pelota en vuelo
 const CANDIDATAS = 8;
 const BRILLOS = [0.82, 0.91, 1, 1.1]; // la pelota de lejos o a la sombra cambia de brillo
+// Para los colores casi grises (el blanco de la pelota) el brillo es lo único que
+// los distingue de un piso gris claro: ahí se tolera menos (la sombra de la
+// pelota ya está en el escaneo).
+const BRILLOS_GRISES = [0.95, 0.98, 1, 1.04];
+// Interruptores para comparar variantes en el banco de pruebas (en la app, todos falsos).
+const EXP_DET = globalThis.process?.env?.EXP ?? "";
+const SIN_PISO = EXP_DET.includes("sinPiso");
+const PISO_SIEMPRE = EXP_DET.includes("pisoSiempre");
+const SIN_CORTE_ADAPTIVO = EXP_DET.includes("sinCorteAdaptivo");
+const SIN_TAMANO_PISO = EXP_DET.includes("sinTamanoPiso");
+const SIN_CONTRASTE_TAMANO = EXP_DET.includes("sinContrasteTamano");
+const SIN_BRILLO_GRIS = EXP_DET.includes("sinBrilloGris");
+const SIN_APERTURA = EXP_DET.includes("sinApertura");
 const CUADROS_POR_ACTUALIZACION = 6;
 
 const casillero = (r, g, b) => ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
@@ -129,7 +142,7 @@ export function homografiaEntre(actual, anterior) {
 // desde la cámara actual: X − p_ant ∝ (I + Δ·nᵀ / h)·d, con Δ = p_act − p_ant y
 // h = pisoY − p_act.y. null si no se conocen las posiciones.
 function homografiaPiso(actual, anterior) {
-  if (globalThis.process?.env?.EXP?.includes("sinPiso")) return null;
+  if (SIN_PISO) return null;
   if (!actual.p || !anterior.p || actual.pisoY == null) return null;
   const h = actual.pisoY - actual.p[1];
   if (!(h < -0.05)) return null;
@@ -139,7 +152,7 @@ function homografiaPiso(actual, anterior) {
   // Con el celular quieto (apoyado) el desplazamiento que informa ARCore es sólo
   // ruido de ~1 mm, y dividido por la altura movería el piso un píxel: ahí basta
   // con el giro.
-  if (Math.hypot(dx, dy, dz) < 0.004 && !globalThis.process?.env?.EXP?.includes("pisoSiempre")) return null;
+  if (Math.hypot(dx, dy, dz) < 0.004 && !PISO_SIEMPRE) return null;
   // I + Δ·nᵀ/h con n = (0, 1, 0): sólo cambia la segunda columna.
   const M = [1, dx / h, 0, 0, 1 + dy / h, 0, 0, dz / h, 1];
   return mul3(mul3(mul3(anterior.K, trasp3(anterior.R)), mul3(M, actual.R)), inv3(actual.K));
@@ -232,47 +245,64 @@ export class BallDetector {
   learn(rgba, cx, cy, radius, camera = null) {
     const { width: w, height: h } = this;
     const hz = horizonte(camera);
-    const pelota = new Float32Array(CASILLEROS);
-    const fondo = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
     const rIn2 = (radius * 0.6) ** 2;
     const rOut2 = (radius * 1.35) ** 2;
-    let nb = 0;
-    const nf = [0, 0];
-    const suma = [0, 0, 0, 0];
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const dx = x + 0.5 - cx;
-        const dy = y + 0.5 - cy;
-        const d2 = dx * dx + dy * dy;
-        const dentro = d2 <= rIn2;
-        if (!dentro && d2 < rOut2) continue;
-        const zona = alPiso(hz, x, y) ? 0 : 1;
-        const i = (y * w + x) * 4;
-        if (dentro) {
-          suma[0] += rgba[i];
-          suma[1] += rgba[i + 1];
-          suma[2] += rgba[i + 2];
-          suma[3]++;
-        }
-        for (const k of BRILLOS) {
-          const q = casillero(
-            Math.min(255, rgba[i] * k),
-            Math.min(255, rgba[i + 1] * k),
-            Math.min(255, rgba[i + 2] * k),
-          );
+    // grisesAngostos: para los colores casi grises de la pelota se tolera menos
+    // cambio de brillo (ver BRILLOS_GRISES); sólo si el fondo se le parece.
+    const acumular = (grisesAngostos) => {
+      const pelota = new Float32Array(CASILLEROS);
+      const fondo = [new Float32Array(CASILLEROS), new Float32Array(CASILLEROS)];
+      let nb = 0;
+      const nf = [0, 0];
+      const suma = [0, 0, 0, 0];
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const dx = x + 0.5 - cx;
+          const dy = y + 0.5 - cy;
+          const d2 = dx * dx + dy * dy;
+          const dentro = d2 <= rIn2;
+          if (!dentro && d2 < rOut2) continue;
+          const zona = alPiso(hz, x, y) ? 0 : 1;
+          const i = (y * w + x) * 4;
           if (dentro) {
-            pelota[q]++;
-            nb++;
-          } else {
-            fondo[zona][q]++;
-            nf[zona]++;
+            suma[0] += rgba[i];
+            suma[1] += rgba[i + 1];
+            suma[2] += rgba[i + 2];
+            suma[3]++;
+          }
+          const mx = Math.max(rgba[i], rgba[i + 1], rgba[i + 2]);
+          const gris = grisesAngostos && dentro && mx - Math.min(rgba[i], rgba[i + 1], rgba[i + 2]) < 0.15 * mx + 6;
+          for (const k of gris ? BRILLOS_GRISES : BRILLOS) {
+            const q = casillero(Math.min(255, rgba[i] * k), Math.min(255, rgba[i + 1] * k), Math.min(255, rgba[i + 2] * k));
+            if (dentro) {
+              pelota[q]++;
+              nb++;
+            } else {
+              fondo[zona][q]++;
+              nf[zona]++;
+            }
           }
         }
       }
-    }
+      return { pelota, fondo, nb, nf, suma };
+    };
+    // ¿El fondo de este escaneo se parece a la pelota? (con los colores tal cual)
+    const parecido = (a) => {
+      const z = a.nf[0] >= 50 * BRILLOS.length ? 0 : 1;
+      const pb = normalizar(suavizar(a.pelota.slice()));
+      const pf = normalizar(suavizar(a.fondo[z].slice()));
+      let confusos = 0;
+      for (let q = 0; q < CASILLEROS; q++) if (pb[q] >= pf[q]) confusos += a.fondo[z][q];
+      return confusos / Math.max(1, a.nf[z]);
+    };
+    let acum = acumular(false);
+    const fondoParecido = !SIN_BRILLO_GRIS && acum.nb > 0 && parecido(acum) > 0.13;
+    if (fondoParecido) acum = acumular(true);
+    const { pelota, fondo, nb, nf, suma } = acum;
     if (nb < 12 * BRILLOS.length || nf[0] + nf[1] < 50 * BRILLOS.length) return { ok: false, motivo: "imagen-chica" };
 
-    const anterior = [this.prob, this.probs, this.colorPelota, this.pelota, this.fondoEscaneo, this.fondo, this.colorMedio];
+    this.cortesPrevios = null; // la pelota (y el corte) se aprenden de nuevo
+    const anterior = [this.prob, this.probs, this.colorPelota, this.pelota, this.fondoEscaneo, this.fondo, this.colorMedio, this.cortes];
     this.pelota = normalizar(suavizar(pelota));
     // Color promedio de la pelota: borrosa por la velocidad, se mezcla con el fondo
     // en esa dirección (ver #estelas).
@@ -293,10 +323,19 @@ export class BallDetector {
     this.#armarTablas();
 
     // Qué parte del fondo (el piso, o lo que haya) se confundiría con la pelota.
+    // Con los colores tal cual (antes de subir el corte): es lo que hay que
+    // avisar, aunque el corte después lo compense en parte.
     const z = nf[0] >= 50 * BRILLOS.length ? 0 : 1;
     let confusos = 0;
-    for (let q = 0; q < CASILLEROS; q++) if (this.probs[z][q] >= UMBRAL) confusos += fondo[z][q];
+    let confusosAlFinal = 0;
+    for (let q = 0; q < CASILLEROS; q++) {
+      const pb = this.pelota[q];
+      if (pb / (pb + this.fondo[z][q] + 1e-9) >= UMBRAL) confusos += fondo[z][q];
+      if (this.probs[z][q] >= UMBRAL) confusosAlFinal += fondo[z][q];
+    }
     const fuga = confusos / nf[z];
+    // Lo que se confunde aun después de subir el corte: si es mucho, no se puede.
+    const fugaFinal = confusosAlFinal / nf[z];
 
     // ¿Aparece una pelota redonda en el círculo? Se mira sólo esa zona para que
     // una pared parecida (que el juego después aprende como fondo) no la tape.
@@ -306,15 +345,20 @@ export class BallDetector {
     this.cuadros = 0;
     const det = this.detect(rgba, { ventana: { x: cx, y: cy, r: radius * 1.7 }, aprender: false, camera });
     const encontrada = det !== null && Math.hypot(det.x - cx, det.y - cy) < radius * 0.6 && det.r > radius * 0.4;
-    if (!encontrada || fuga > 0.45) {
-      [this.prob, this.probs, this.colorPelota, this.pelota, this.fondoEscaneo, this.fondo, this.colorMedio] = anterior;
+    if (!encontrada || fugaFinal > 0.45) {
+      [this.prob, this.probs, this.colorPelota, this.pelota, this.fondoEscaneo, this.fondo, this.colorMedio, this.cortes] = anterior;
+      this.cortesPrevios = this.cortes;
       return { ok: false, motivo: encontrada ? "fondo-parecido" : "no-se-distingue", fuga };
     }
+    this.fondoParecido = fondoParecido;
     return { ok: true, fuga, det, aviso: fuga > 0.15 ? "fondo-parecido" : null };
   }
 
   forget() {
     this.prob = null;
+    this.fondoParecido = false;
+    this.cortes = null;
+    this.cortesPrevios = null;
     this.hasPrev = false;
     this.hasPrev2 = false;
     this.last = null;
@@ -333,6 +377,44 @@ export class BallDetector {
       // Qué tan típico es este color en la pelota (1 = de los más comunes).
       color[q] = Math.min(1, pb / (0.15 * max));
     }
+    // Con un fondo parecido a la pelota (un piso gris claro moteado y una pelota
+    // blanca) muchos colores del fondo pasan el 0,5. Se sube el corte hasta que
+    // pase como pelota a lo sumo un 3 % del fondo, sin perder más de un 40 % de
+    // la pelota (sus parches de color siguen pasando), y se reescala para que el
+    // corte nuevo quede en 0,5 (el resto del detector no cambia).
+    this.cortes = [UMBRAL, UMBRAL];
+    if (!SIN_CORTE_ADAPTIVO) {
+      this.cortes = [0, 1].map((z) => {
+        let corte = UMBRAL;
+        // Sólo si el fondo de verdad se confunde (más de un 13 % pasa como pelota):
+        // con un fondo apenas parecido, subir el corte achica la pelota borrosa.
+        let fp50 = 0;
+        for (let q = 0; q < CASILLEROS; q++) if (probs[z][q] >= UMBRAL) fp50 += this.fondo[z][q];
+        for (let k = fp50 > 0.13 ? 0 : 17; k <= 16; k++) {
+          const c = UMBRAL + k * 0.025;
+          let fp = 0;
+          let tp = 0;
+          for (let q = 0; q < CASILLEROS; q++) {
+            if (probs[z][q] < c) continue;
+            fp += this.fondo[z][q];
+            tp += this.pelota[q];
+          }
+          if (tp < 0.6) break;
+          corte = c;
+          if (fp <= 0.03) break;
+        }
+        // Sin saltos de una actualización a la otra (la máscara titilaría).
+        const antes = this.cortesPrevios?.[z];
+        if (antes) corte = 0.6 * antes + 0.4 * corte;
+        if (corte > UMBRAL) {
+          const t = probs[z];
+          for (let q = 0; q < CASILLEROS; q++)
+            t[q] = t[q] < corte ? (t[q] * UMBRAL) / corte : UMBRAL + ((t[q] - corte) * (1 - UMBRAL)) / (1 - corte);
+        }
+        return corte;
+      });
+    }
+    this.cortesPrevios = this.cortes;
     this.probs = probs;
     this.prob = probs[0];
     this.colorPelota = color;
@@ -344,12 +426,15 @@ export class BallDetector {
   }
 
   // Suma al fondo lo que se ve fuera de la pelota (en el piso), para adaptarse al lugar.
-  #aprenderFondo(rgba, best, hz) {
+  // excluir: zonas {x, y, r} que pueden ser la pelota (las mejores candidatas y
+  // dónde la sigue el seguimiento): si una mancha del piso le gana a la pelota,
+  // los colores de la pelota no tienen que pasar a ser "fondo".
+  #aprenderFondo(rgba, excluir, hz) {
     const { width: w, height: h, acumulado } = this;
-    const r2 = best ? (best.r * 2 + 3) ** 2 : -1;
+    const zonas = excluir.filter(Boolean).map((e) => ({ x: e.x, y: e.y, r2: (e.r * 2 + 3) ** 2 }));
     for (let y = 0; y < h; y += 2) {
       for (let x = (y >> 1) & 1; x < w; x += 2) {
-        if (best && (x + 0.5 - best.x) ** 2 + (y + 0.5 - best.y) ** 2 < r2) continue;
+        if (zonas.some((z) => (x + 0.5 - z.x) ** 2 + (y + 0.5 - z.y) ** 2 < z.r2)) continue;
         const i = (y * w + x) * 4;
         acumulado[alPiso(hz, x, y) ? 0 : 1][casillero(rgba[i], rgba[i + 1], rgba[i + 2])]++;
       }
@@ -382,7 +467,13 @@ export class BallDetector {
   //   menos probabilidad, porque a toda velocidad se ve borrosa y mezclada con el fondo.
   // soloSuelo: buscar sólo debajo del horizonte (la pelota quieta está en el piso).
   // escalas: {min, max} radios (en píxeles) que puede tener la pelota, si se sabe.
-  detectAll(rgba, { camera = null, near = null, ventana = null, foco = null, aprender = true, soloSuelo = false, escalas = null } = {}) {
+  // radio: radio real de la pelota (m). Con la cámara y el piso (camera.p,
+  //   camera.pisoY) se sabe de qué tamaño se vería apoyada en cada lugar.
+  // etapa: "quieta" (se busca la pelota apoyada), "lista" (apoyada, pero la
+  //   pueden patear: en el aire se ve más grande) o "vuelo".
+  // proteger: {x, y, r} dónde el seguimiento sabe que está la pelota (no se
+  //   aprende como fondo).
+  detectAll(rgba, { camera = null, near = null, ventana = null, foco = null, aprender = true, soloSuelo = false, escalas = null, radio = null, etapa = null, proteger = null } = {}) {
     if (!this.prob) return [];
     const { width: w, height: h, probs, colorPelota, score, mask, prev, prev2, moving, estela, alfa } = this;
     const n = w * h;
@@ -420,6 +511,9 @@ export class BallDetector {
     if (!ventana) this.hz = hz;
 
     let pixelesEstela = 0;
+    // Donde se espera la pelota en vuelo se acepta menos: el mismo color de
+    // antes de subir el corte (ver #armarTablas).
+    const umbralFoco = (this.cortes ?? [UMBRAL, UMBRAL]).map((c) => (UMBRAL_FOCO * UMBRAL) / Math.max(UMBRAL, c));
     for (let y = 0, i = 0; y < h; y++) {
       // Componente vertical del rayo, que cambia linealmente a lo largo de la fila.
       let hv = hz ? hz[0] * 0.5 + hz[1] * (y + 0.5) + hz[2] : -1;
@@ -517,7 +611,7 @@ export class BallDetector {
         }
         score[i] = s;
         const enFoco = foco && (x + 0.5 - foco.x) ** 2 + (y + 0.5 - foco.y) ** 2 < f2;
-        mask[i] = s >= (enFoco ? UMBRAL_FOCO : UMBRAL) ? 1 : 0;
+        mask[i] = s >= (enFoco ? (piso ? umbralFoco[0] : umbralFoco[1]) : UMBRAL) ? 1 : 0;
       }
     }
     this.conMovimiento = Boolean(h1);
@@ -530,17 +624,107 @@ export class BallDetector {
       this.camPrev = camera;
     }
 
-    dilatar(mask, this.tmp, w, h, 1);
+    // Si el piso se parece a la pelota (hubo que subir el corte de color: un
+    // granito o un terrazo claro), primero se borran los puntitos sueltos; si no,
+    // al unir los gajos de la pelota se unirían también entre ellos en una red.
+    // (Sólo buscando la pelota quieta: recién pateada se ve borrosa y finita, y
+    // esto la achicaría.)
+    let fuente = mask;
+    const etapaActual = etapa ?? (near ? "vuelo" : soloSuelo ? "quieta" : "lista");
+    if (!SIN_APERTURA && this.#pisoParecido && etapaActual === "quieta") {
+      dilatar(mask, this.tmp, w, h, 0);
+      dilatar(this.tmp, this.closed, w, h, 1);
+      fuente = this.closed;
+    }
+    dilatar(fuente, this.tmp, w, h, 1);
     dilatar(this.tmp, this.closed, w, h, 0);
 
+    this.#armarMapaRadio(ventana || SIN_TAMANO_PISO ? null : camera, radio, etapaActual);
     const manchas = this.#manchas(near);
     const formas = this.#picos(near, escalas);
     const estelas = h1 && cm && pixelesEstela >= 6 ? this.#estelas(near) : [];
     if (this.depurar) this.depuracion = { manchas, formas, estelas, todas: this.todasManchas };
     const candidatas = this.#combinar(manchas, [...formas, ...estelas]);
     this.last = { candidatas };
-    if (aprender && !ventana) this.#aprenderFondo(rgba, candidatas[0] ?? null, hz);
+    // Lo que no se aprende como fondo: la mejor candidata y, si el piso se parece
+    // a la pelota (ahí el corte de color se ajusta con el fondo), también dónde el
+    // seguimiento sabe que está la pelota, para que sus colores no pasen a "fondo".
+    // (Excluir más candidatas empeora: las piernas nunca pasarían a ser fondo.)
+    if (aprender && !ventana) this.#aprenderFondo(rgba, [candidatas[0], this.#pisoParecido ? proteger : null], hz);
     return candidatas;
+  }
+
+  // Radio en píxeles que tendría la pelota apoyada en el piso en cada zona de la
+  // imagen (cada 4 píxeles; 0 si ahí no se ve piso). Lo mucho más chico que eso
+  // no puede ser la pelota (los puntitos de un piso de granito, que tienen su
+  // color); buscándola apoyada, tampoco algo mucho más grande (una pierna cerca).
+  // En el aire la pelota está más cerca que el piso detrás: se ve más grande.
+  #armarMapaRadio(camera, radio, etapa) {
+    this.mapaRadio = null;
+    // Sólo con un piso que se parece a la pelota: en los demás no hace falta y,
+    // medido en el banco de pruebas, ahí descarta a veces la pelota borrosa.
+    if (!camera?.p || camera.pisoY == null || !radio || !this.#pisoParecido) return;
+    const { width: w, height: h } = this;
+    const mw = Math.ceil(w / 4);
+    const mh = Math.ceil(h / 4);
+    if (!this.mapaBuf || this.mapaBuf.length !== mw * mh) this.mapaBuf = new Float32Array(mw * mh);
+    const m = this.mapaBuf;
+    const Ki = inv3(camera.K);
+    const R = camera.R;
+    const f = Math.abs(camera.K[4]);
+    const alto = camera.pisoY + radio - camera.p[1];
+    if (!(alto < 0)) return;
+    for (let j = 0; j < mh; j++)
+      for (let i = 0; i < mw; i++) {
+        const x = i * 4 + 2;
+        const y = j * 4 + 2;
+        // Rayo del píxel (en la cámara, con z = -1) y su componente vertical.
+        const vx = Ki[0] * x + Ki[1] * y + Ki[2];
+        const vy = Ki[3] * x + Ki[4] * y + Ki[5];
+        const vz = Ki[6] * x + Ki[7] * y + Ki[8];
+        const dy = R[3] * vx + R[4] * vy + R[5] * vz;
+        // Profundidad (a lo largo del eje de la cámara) del piso en ese rayo:
+        // de eso depende el tamaño en la imagen, también en los bordes.
+        const prof = dy < -1e-4 ? alto / dy : 0;
+        m[j * mw + i] = prof > radio ? (f * radio) / prof : 0;
+      }
+    this.mapaRadio = { m, mw, mh, etapa };
+  }
+
+  // ¿El piso se parece a la pelota? (granito o terrazo claro con una pelota
+  // blanca): ahí se usan las ayudas más agresivas (ver #picos y detectAll).
+  get #pisoParecido() {
+    return Boolean(this.fondoParecido) || (this.cortes?.[0] ?? UMBRAL) > 0.55;
+  }
+
+  // Radio esperado (px) de la pelota apoyada en (x, y), o 0 si no se sabe.
+  #radioEsperado(x, y) {
+    const M = this.mapaRadio;
+    if (!M) return 0;
+    const i = Math.min(M.mw - 1, Math.max(0, Math.floor(x / 4)));
+    const j = Math.min(M.mh - 1, Math.max(0, Math.floor(y / 4)));
+    return M.m[j * M.mw + i];
+  }
+
+  // ¿Puede ser la pelota una mancha de radio r en (x, y)?
+  #tamanoPosible(x, y, r, minimo = 0.4) {
+    const re = this.#radioEsperado(x, y);
+    if (!re) return true;
+    // Lista para patear, recién pateada se ve borrosa y a veces más chica.
+    const min = this.mapaRadio.etapa === "quieta" ? minimo : 0.75 * minimo;
+    return r >= min * re && (this.mapaRadio.etapa !== "quieta" || r <= 2.5 * re);
+  }
+
+  // Qué tan creíble es el tamaño r en (x, y) (1 si no se sabe o en vuelo). Una
+  // pelota con parches de color también da "forma redonda" en cada parche, más
+  // chica: así gana la que tiene el tamaño de la pelota. Lista para patear, más
+  // grande no se penaliza (en el aire, recién pateada).
+  #pesoTamano(x, y, r) {
+    const re = this.#radioEsperado(x, y);
+    if (!re || this.mapaRadio.etapa === "vuelo") return 1;
+    const l = Math.log(r / re);
+    if (l > 0 && this.mapaRadio.etapa === "lista") return 1;
+    return Math.exp(-(l * l) / (2 * 0.3 * 0.3));
   }
 
   #manchas(near) {
@@ -605,6 +789,7 @@ export class BallDetector {
       const forma = ejes(sxx / cnt - mx * mx, syy / cnt - my * my, sxy / cnt - mx * my);
       if (this.depurar) (this.todasManchas ??= []).push({ x: mx, y: my, cnt, alargada: forma.alargada, rMenor: forma.rMenor, llenado: cnt / (Math.PI * forma.rMayor * forma.rMenor) });
       if (forma.alargada > 4 || cnt / (Math.PI * forma.rMayor * forma.rMenor) < 0.45 || forma.rMenor > rMax) continue;
+      if (!this.#tamanoPosible(mx + 0.5, my + 0.5, forma.alargada < 1.3 ? Math.sqrt(forma.rMenor * forma.rMayor) : forma.rMenor)) continue;
 
       let score = Math.min(cnt / (Math.PI * forma.rMayor * forma.rMenor), 1) * Math.min(1, cnt / 40) * (1 + (0.5 * mov) / cnt);
       if (forma.alargada > 1.6) score *= 0.8;
@@ -672,6 +857,7 @@ export class BallDetector {
           if (score[y * w + x] < 0.4) continue;
           const cx = x + 0.5;
           const cy = y + 0.5;
+          if (!this.#tamanoPosible(cx, cy, r)) continue;
           const C = caja(I, cx, cy, a);
           if (C < 0.55) continue;
           let validas = 0;
@@ -692,13 +878,17 @@ export class BallDetector {
           // Los 5 costados más "limpios".
           const bajos = (sur[0] + sur[1] + sur[2] + sur[3] + sur[4]) / 5;
           const resp = C - bajos;
-          if (resp < 0.45) continue;
-          picos.push({ x: cx, y: cy, r, resp, aisladas: aisladas / validas });
+          // Si tiene justo el tamaño de la pelota apoyada ahí, alcanza con menos
+          // contraste (un piso claro y moteado se parece a una pelota blanca).
+          if (resp < 0.28) continue;
+          const pesoT = this.#pisoParecido ? this.#pesoTamano(cx, cy, r) : 1;
+          if (resp < 0.45 && (SIN_CONTRASTE_TAMANO || !this.#pisoParecido || pesoT < 0.6 || this.mapaRadio?.etapa === "vuelo" || !this.#radioEsperado(cx, cy))) continue;
+          picos.push({ x: cx, y: cy, r, resp, aisladas: aisladas / validas, peso: resp * pesoT });
         }
       }
     }
     // Uno por lugar: el que mejor responde.
-    picos.sort((p, q) => q.resp - p.resp || q.aisladas - p.aisladas);
+    picos.sort((p, q) => q.peso - p.peso || q.aisladas - p.aisladas);
     const elegidos = [];
     for (const p of picos) {
       if (elegidos.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < 0.9 * Math.max(p.r, q.r))) continue;
@@ -737,6 +927,7 @@ export class BallDetector {
       const r = p.aisladas >= 0.75 ? Math.min(1.3 * p.r, Math.max(0.75 * p.r, rArea)) : p.r;
       const mov = (caja(IM, p.x, p.y, 0.7 * p.r) + 1e-9) * 1;
       let sc = p.resp * Math.min(1, (Math.PI * p.r * p.r) / 25) * (0.6 + 0.4 * p.aisladas) * (1 + 0.5 * Math.max(0, mov));
+      if (this.#pisoParecido) sc *= 0.25 + 0.75 * this.#pesoTamano(p.x, p.y, p.r);
       if (near) {
         const d = Math.hypot(p.x + mx - near.x, p.y + my - near.y) / (3 * near.r + 8);
         sc *= 1 / (1 + d * d);
@@ -781,12 +972,14 @@ export class BallDetector {
       let sxx = 0;
       let syy = 0;
       let sxy = 0;
+      let cobertura = 0;
       while (tope > 0) {
         const i = stack[--tope];
         const x = i % w;
         const y = (i - x) / w;
         if (estela[i]) {
           const a = 0.3 + alfa[i];
+          cobertura += Math.min(1, Math.max(0, alfa[i]));
           cnt++;
           sw += a;
           sx += a * x;
@@ -821,7 +1014,11 @@ export class BallDetector {
         const d = Math.hypot(mx + 0.5 - near.x, my + 0.5 - near.y) / (3 * near.r + 8);
         score *= 1 / (1 + d * d);
       }
-      if (score > 0.05) todas.push({ x: mx + 0.5, y: my + 0.5, r: forma.rMenor, alargada: forma.alargada, area: cnt, score, moving: 1, estela: true });
+      // Durante la exposición la pelota tapa siempre su área: sumando cuánto de
+      // pelota tiene cada píxel de la estela sale su radio aunque esté borrosa.
+      const rCobertura = Math.sqrt(cobertura / Math.PI);
+      if (!this.#tamanoPosible(mx + 0.5, my + 0.5, Math.max(forma.rMenor, rCobertura), 0.35)) continue;
+      if (score > 0.05) todas.push({ x: mx + 0.5, y: my + 0.5, r: forma.rMenor, rCobertura, alargada: forma.alargada, area: cnt, score, moving: 1, estela: true });
     }
     todas.sort((a, b) => b.score - a.score);
     return todas.slice(0, 4);

@@ -448,6 +448,23 @@
       .ficha.ok {
         color: var(--verde);
       }
+      /* Consejo de cómo pararse: aparece suave y no tapa el resto. */
+      .consejo {
+        white-space: normal;
+        font-weight: 600;
+        font-size: 14px;
+        line-height: 1.35;
+        border-radius: 14px;
+        color: #ffd400;
+        margin: 0 0 8px;
+        animation: aparece-consejo 200ms var(--ease-out);
+      }
+      @keyframes aparece-consejo {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+      }
       .barra .espacio {
         flex: 1;
       }
@@ -498,6 +515,7 @@
       }
       #hud:not([data-modo="fijo"]) #estado-celu,
       #hud:not([data-fase="jugar"]) #estado-pelota,
+      #hud:not([data-fase="jugar"]) #consejo,
       #hud:not([data-fase="jugar"]) #estado-celu {
         display: none;
       }
@@ -743,6 +761,7 @@
           <summary>Para que sea lo más preciso posible</summary>
           <ul class="tips">
             <li><b>Al costado, no detrás.</b> Si el celular está detrás del que patea, su pierna tapa la pelota en el golpe.</li>
+            <li><b>Si pateás vos con el celu en la mano,</b> no lo pongas encima de la pelota: parate 1 o 2 m atrás o al costado, y dejá la pelota a 3 m o más del arco (si no, llega en pocos cuadros).</li>
             <li><b>Apoyado y horizontal</b> entran mejor la pelota y el arco, y la imagen no tiembla.</li>
             <li><b>Buena luz.</b> Con poca luz la cámara expone más y un remate fuerte sale borroso (igual lo sigue, pero mide peor).</li>
             <li><b>Esperá «Pelota lista»</b> antes de patear (la pelota quieta medio segundo).</li>
@@ -784,6 +803,7 @@
       </div>
 
       <div class="abajo">
+        <p id="consejo" class="ficha consejo" hidden></p>
         <div class="barra">
           <span id="estado-pelota" class="ficha">○ Buscando la pelota…</span>
           <span id="estado-celu" class="ficha">Celular en movimiento</span>
