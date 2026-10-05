@@ -129,6 +129,70 @@ function texturaPared(rnd, n = 256, ladrillo = false) {
   return mipmaps(d, n);
 }
 
+function texturaMadera(rnd, n = 512) {
+  // Tablas de 15 cm a lo largo de x (la textura cubre 4 m).
+  const a = ruidoValor(rnd, n, 64);
+  const d = new Float32Array(n * n * 3);
+  const ancho = Math.round((0.15 / 4) * n);
+  const tonos = Array.from({ length: Math.ceil(n / ancho) + 1 }, () => 0.75 + 0.5 * rnd());
+  const base = rnd() < 0.5 ? [0.36, 0.22, 0.12] : [0.5, 0.36, 0.22];
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      const tabla = Math.floor(y / ancho);
+      const junta = y % ancho === 0 || (x + tabla * 97) % 192 === 0;
+      const veta = 0.9 + 0.2 * Math.sin(x * 0.11 + a[i] * 6) * a[i];
+      const k = junta ? 0.45 : tonos[tabla] * veta * (0.95 + 0.1 * rnd());
+      d[i * 3] = base[0] * k;
+      d[i * 3 + 1] = base[1] * k;
+      d[i * 3 + 2] = base[2] * k;
+    }
+  return mipmaps(d, n);
+}
+
+function texturaBaldosa(rnd, n = 512) {
+  // Baldosas de 50 cm con juntas.
+  const lado = Math.round((0.5 / 4) * n);
+  const base = rnd() < 0.5 ? [0.62, 0.6, 0.56] : [0.5, 0.45, 0.4];
+  const tonos = Array.from({ length: 64 }, () => 0.93 + 0.14 * rnd());
+  const d = new Float32Array(n * n * 3);
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      const junta = x % lado < 2 || y % lado < 2;
+      const k = junta ? 0.7 : tonos[(Math.floor(x / lado) * 7 + Math.floor(y / lado) * 3) % 64] * (0.96 + 0.08 * rnd());
+      d[i * 3] = base[0] * k;
+      d[i * 3 + 1] = base[1] * k;
+      d[i * 3 + 2] = base[2] * k;
+    }
+  return mipmaps(d, n);
+}
+
+// Rayo contra caja alineada con los ejes {min, max}: distancia y cara (eje 0..2), o null.
+function rayoCaja(ox, oy, oz, dx, dy, dz, c) {
+  let t0 = -Infinity;
+  let t1 = Infinity;
+  let eje = 0;
+  const o = [ox, oy, oz];
+  const d = [dx, dy, dz];
+  for (let k = 0; k < 3; k++) {
+    if (Math.abs(d[k]) < 1e-9) {
+      if (o[k] < c.min[k] || o[k] > c.max[k]) return null;
+      continue;
+    }
+    let a = (c.min[k] - o[k]) / d[k];
+    let b = (c.max[k] - o[k]) / d[k];
+    if (a > b) [a, b] = [b, a];
+    if (a > t0) {
+      t0 = a;
+      eje = k;
+    }
+    if (b < t1) t1 = b;
+    if (t0 > t1) return null;
+  }
+  return t0 > 1e-4 ? { t: t0, eje } : null;
+}
+
 // Lee una textura con mipmaps en (u, v) (en texeles del nivel 0, periódica) con
 // el nivel que corresponde a `huella` texeles por píxel.
 function leerTextura(t, u, v, huella, out) {
@@ -255,12 +319,17 @@ function hash(a, b) {
   return (h >>> 0) / 4294967296;
 }
 
-// Escena: piso, lugar, luz. opciones.lugar: 'cancha' | 'patio'.
+// Escena: piso, lugar, luz. opciones.lugar: 'cancha' | 'patio' | 'interior'.
 export function crearEscena({ semilla = 1, lugar = "cancha", arco = { ancho: 3, alto: 2 }, luz = "sol", pelota = "clasica", R = 0.11 }) {
   const rnd = azar(semilla);
   const azSol = rnd.entre(0, 2 * Math.PI);
   const elSol = luz === "sol" ? rnd.entre(0.45, 1.0) : rnd.entre(0.5, 1.2);
-  const L = [Math.cos(elSol) * Math.sin(azSol), Math.sin(elSol), Math.cos(elSol) * Math.cos(azSol)];
+  let L = [Math.cos(elSol) * Math.sin(azSol), Math.sin(elSol), Math.cos(elSol) * Math.cos(azSol)];
+  // Adentro: una lámpara arriba (casi vertical).
+  if (lugar === "interior") {
+    const n = Math.hypot(0.15, 1, 0.1);
+    L = [0.15 / n, 1 / n, 0.1 / n];
+  }
   const luces = {
     sol: { sol: 1.0, cielo: 0.45 },
     nublado: { sol: 0.12, cielo: 0.9 },
@@ -277,8 +346,11 @@ export function crearEscena({ semilla = 1, lugar = "cancha", arco = { ancho: 3, 
     cielo: luces.cielo,
     total,
     pelota: PELOTAS_SIM[pelota],
-    piso: lugar === "cancha" ? texturaPasto(rnd) : texturaCemento(rnd),
+    piso: lugar === "cancha" ? texturaPasto(rnd) : lugar === "interior" ? (rnd() < 0.5 ? texturaMadera(rnd) : texturaBaldosa(rnd)) : texturaCemento(rnd),
     pared: lugar === "patio" ? { z: -0.5, tex: texturaPared(rnd, 256, rnd() < 0.5) } : null,
+    habitacion: lugar === "interior" ? habitacion(rnd) : null,
+    // Luz de tubo o LED con red de 50 Hz: el brillo late a 100 Hz.
+    parpadeo: luz === "interior" ? { amplitud: 0.15, f: 100 } : null,
     palos:
       lugar === "cancha"
         ? [
@@ -294,6 +366,27 @@ export function crearEscena({ semilla = 1, lugar = "cancha", arco = { ancho: 3, 
       return 0.05 + 0.12 * (arboles[i] * (1 - f) + arboles[(i + 1) % 360] * f);
     },
   };
+}
+
+// Una habitación: paredes claras, techo y algunos muebles (distractores).
+function habitacion(rnd) {
+  const ancho = rnd.entre(2.6, 3.6); // de la línea del arco a cada pared lateral
+  const fondo = rnd.entre(7, 10); // hasta la pared de enfrente
+  const color = rnd.elegir([[0.72, 0.7, 0.64], [0.78, 0.76, 0.72], [0.62, 0.58, 0.48], [0.55, 0.6, 0.62]]);
+  const cajas = [];
+  const lado = rnd() < 0.5 ? -1 : 1;
+  // Sillón contra una pared lateral.
+  cajas.push({ min: [lado > 0 ? ancho - 0.9 : -ancho, 0, 2], max: [lado > 0 ? ancho : -ancho + 0.9, 0.85, 4], color: rnd.elegir([[0.12, 0.13, 0.16], [0.35, 0.3, 0.25], [0.2, 0.28, 0.4]]) });
+  // Mueble claro contra la otra pared (blanco como la pelota).
+  cajas.push({ min: [lado > 0 ? -ancho : ancho - 0.45, 0, 0.6], max: [lado > 0 ? -ancho + 0.45 : ancho, 1.0, 1.8], color: [0.78, 0.78, 0.75] });
+  // Mesa baja.
+  const mx = rnd.entre(-ancho + 1, ancho - 1);
+  cajas.push({ min: [mx - 0.4, 0.38, fondo - 2.6], max: [mx + 0.4, 0.45, fondo - 2] , color: [0.4, 0.27, 0.16] });
+  const patas = [];
+  for (const [px, pz] of [[mx - 0.36, fondo - 2.56], [mx + 0.36, fondo - 2.56], [mx - 0.36, fondo - 2.04], [mx + 0.36, fondo - 2.04]]) {
+    patas.push({ a: [px, 0, pz], b: [px, 0.38, pz], r: 0.025, color: [0.3, 0.2, 0.12] });
+  }
+  return { ancho, fondo, atras: -0.35, alto: 2.6, color, cajas, patas };
 }
 
 export class CamaraSimulada {
@@ -549,6 +642,48 @@ export class CamaraSimulada {
         obj = p;
       }
     }
+    let normalPared = null;
+    const H = E.habitacion;
+    if (H) {
+      // Paredes (atrás del arco, laterales, enfrente) y techo.
+      const planos = [
+        [2, H.atras, [0, 0, 1]],
+        [2, H.fondo, [0, 0, -1]],
+        [0, -H.ancho, [1, 0, 0]],
+        [0, H.ancho, [-1, 0, 0]],
+        [1, H.alto, [0, -1, 0]],
+      ];
+      const o = [ox, oy, oz];
+      const d = [dx, dy, dz];
+      for (const [eje, valor, nrm] of planos) {
+        if (Math.abs(d[eje]) < 1e-9) continue;
+        const tp = (valor - o[eje]) / d[eje];
+        if (tp > 1e-4 && tp < t) {
+          t = tp;
+          tipo = 6;
+          normalPared = nrm;
+          obj = null;
+        }
+      }
+      for (const c of H.cajas) {
+        const r = rayoCaja(ox, oy, oz, dx, dy, dz, c);
+        if (r && r.t < t) {
+          t = r.t;
+          tipo = 7;
+          obj = c;
+          normalPared = [0, 0, 0];
+          normalPared[r.eje] = -Math.sign([dx, dy, dz][r.eje]);
+        }
+      }
+      for (const p of H.patas) {
+        const tp = rayoCapsula(ox, oy, oz, dx, dy, dz, p);
+        if (tp < t) {
+          t = tp;
+          tipo = 3;
+          obj = p;
+        }
+      }
+    }
     if (estado) {
       const p = estado.pelota;
       if (p) {
@@ -603,6 +738,16 @@ export class CamaraSimulada {
       n[2] = 1;
       const huella = (t * this.pixAng) / Math.max(-dz, 0.03) / (2 / 256);
       leerTextura(E.pared.tex, (px / 2) * 256, (py / 2) * 256, huella, alb);
+    } else if (tipo === 6 || tipo === 7) {
+      n[0] = normalPared[0];
+      n[1] = normalPared[1];
+      n[2] = normalPared[2];
+      const c = tipo === 6 ? (normalPared[1] < 0 ? [0.85, 0.85, 0.85] : H.color) : obj.color;
+      // Un poco de textura (pintura, tela).
+      const g = 0.95 + 0.05 * hash(Math.floor(px * 40 + pz * 23), Math.floor(py * 40));
+      alb[0] = c[0] * g;
+      alb[1] = c[1] * g;
+      alb[2] = c[2] * g;
     } else if (tipo === 3 || tipo === 5) {
       normalCapsula(px, py, pz, obj, n);
       alb[0] = obj.color[0];
@@ -681,6 +826,18 @@ export class CamaraSimulada {
     return out;
   }
 
+  // Brillo de la luz artificial promediado durante la exposición de ese texel
+  // (cada fila se expone en otro momento: bandas que se mueven).
+  #parpadeo(i, j) {
+    const P = this.escena.parpadeo;
+    if (!P) return 1;
+    const corrimiento = this.ancho > this.alto ? this.obturador * (0.5 - j / this.alto) : this.obturador * (i / this.ancho - 0.5);
+    const t0 = this.t + corrimiento - this.exposicion / 2;
+    const w = 2 * Math.PI * P.f;
+    const e = Math.max(this.exposicion, 1e-4);
+    return 1 + (P.amplitud * (Math.cos(w * t0) - Math.cos(w * (t0 + e)))) / (w * e);
+  }
+
   // Calcula (si hace falta) el bloque de 2x2 texeles que contiene (i, j): sensor,
   // ruido, curva de tono y color submuestreado.
   #bloque(i, j) {
@@ -695,8 +852,9 @@ export class CamaraSimulada {
         const x = Math.min(i0 + a, W - 1);
         const y = Math.min(j0 + b, this.alto - 1);
         this.#texelRadiancia(x, y, rad);
+        const parpadeo = this.#parpadeo(x, y);
         for (let c = 0; c < 3; c++) {
-          const v = Math.max(0, rad[c] * this.ganancia);
+          const v = Math.max(0, rad[c] * this.ganancia * parpadeo);
           // Ruido de fotones y de lectura (gaussiano, determinístico por texel y cuadro).
           const z = RUIDO[((y * W + x) * 3 + c + this.desplazamientoRuido) & 0xfffff];
           const s = Math.sqrt(this.ruido.foton * v + this.ruido.lectura);

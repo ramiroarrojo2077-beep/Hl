@@ -13,9 +13,17 @@ import { ShotTracker, locateBall, radioApoyada } from "./tracker.js";
 // `arco` es la matriz (THREE.Matrix4) que lleva coordenadas del arco al mundo.
 
 // Cámara del cuadro para comparar con el anterior: K (proyección a píxeles) y R (giro).
-export function camaraDe(info, w, h) {
+// Si se pasa la matriz del arco, también la posición de la cámara (p) y la altura
+// del piso (pisoY): con eso se descuenta además cómo se desplazó el celular (ver
+// homografia en detector.js).
+export function camaraDe(info, w, h, arco = null) {
   const e = info.camMatrix.elements;
-  return { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
+  const c = { K: matrizK(info.projMatrix.elements, w, h), R: [e[0], e[4], e[8], e[1], e[5], e[9], e[2], e[6], e[10]] };
+  if (arco) {
+    c.p = [e[12], e[13], e[14]];
+    c.pisoY = arco.elements[13];
+  }
+  return c;
 }
 
 export class BallTracking {
@@ -92,7 +100,7 @@ export class BallTracking {
     const { detector, tracker, tmp } = this;
     const { data, width: w, height: h } = info.image;
     detector.resize(w, h);
-    const camara = camaraDe(info, w, h);
+    const camara = camaraDe(info, w, h, arco);
     const t = info.t;
     tmp.proyInv.copy(info.projMatrix).invert();
     tmp.inv.copy(arco).invert();

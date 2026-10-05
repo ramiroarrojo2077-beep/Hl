@@ -6,6 +6,8 @@
 
 export const GRAVEDAD = 9.81;
 
+// Interruptores para comparar variantes en el banco de pruebas (en la app, vacío).
+const EXP = globalThis.process?.env?.EXP ?? "";
 const VELOCIDAD_MINIMA = 5; // m/s: más lento es acomodar la pelota, no patear
 const ACERCAMIENTO_MINIMO = 3.5; // m/s hacia el arco
 const VUELO_MAXIMO = 3; // s
@@ -105,6 +107,11 @@ export function heightAt(y0, vy, tau, radius, g = GRAVEDAD) {
 
 const S_DIRECCION = 0.0015; // rad (~0,5 px)
 const S_TAMANO = 0.002; // rad en el radio angular
+// Casi nadie patea más fuerte que esto: una trayectoria que lo necesita para
+// explicar lo medido (por ejemplo, rodando a 35 m/s cuando en realidad iba por
+// el aire, más cerca de la cámara) es poco creíble.
+const V_TIPICA = 30; // m/s
+const S_V = 3; // m/s
 
 function base(d) {
   // Dos ejes perpendiculares al rayo.
@@ -168,6 +175,7 @@ function residuos(caso, p, out) {
     out[k++] = (P.y - reposo.y) / reposo.sigma;
     out[k++] = (P.z - reposo.z) / reposo.sigma;
   }
+  if (caso.prior) out[k++] = Math.max(0, Math.hypot(p[3], p[4], p[5]) - V_TIPICA) / S_V;
   return out;
 }
 
@@ -200,7 +208,7 @@ function minimizar(caso, inicial) {
   const { piso, reposo } = caso;
   const libres = [...(piso ? [0, 2, 3, 5] : [0, 1, 2, 3, 4, 5]), ...(reposo ? [6] : [])];
   const n = libres.length;
-  const m = caso.obs.length * 3 + (reposo ? 3 : 0);
+  const m = caso.obs.length * 3 + (reposo ? 3 : 0) + (caso.prior ? 1 : 0);
   const acotar = (q) => {
     if (piso) {
       q[1] = caso.R;
@@ -267,11 +275,13 @@ function minimizar(caso, inicial) {
 
 // Devuelve la trayectoria en tRef: {x0, y0, z0, vx, vy, vz, enPiso}.
 // reposo: {x, y, z, sigma, tMin, tMax} punto de la patada, o null.
-export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null) {
+// prior: penalizar velocidades poco creíbles (ver V_TIPICA).
+export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null, { prior = false } = {}) {
+  prior &&= !EXP.includes("sinPrior");
   const bases = obs.map((o) => base(o.d));
   const tPatada = reposo ? (reposo.tMin + reposo.tMax) / 2 : tRef;
   const p0 = [inicial.x0, inicial.y0, inicial.z0, inicial.vx, inicial.vy, inicial.vz, tPatada];
-  const comun = { obs, bases, tRef, R, reposo };
+  const comun = { obs, bases, tRef, R, reposo, prior };
   const piso = minimizar({ ...comun, piso: true }, p0);
   let aire = minimizar({ ...comun, piso: false }, p0);
 
@@ -284,7 +294,7 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null) {
     const despues = obs.filter((o) => o.t - tRef > tauPique + 0.02);
     const primera = obs[0].t - tRef;
     if (tauPique > primera && tauPique < 0 && despues.length >= 3 && despues.length < obs.length) {
-      const caso = { obs: despues, bases: despues.map((o) => base(o.d)), tRef, R, reposo: null, piso: false };
+      const caso = { obs: despues, bases: despues.map((o) => base(o.d)), tRef, R, reposo: null, piso: false, prior };
       const rebote = minimizar(caso, [...aire.p.slice(0, 4), Math.abs(vy) * 0.5, aire.p[5], tPatada]);
       aire = { p: rebote.p, costo: rebote.costo * (obs.length / despues.length) };
     }
@@ -293,7 +303,12 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null) {
   // La parábola tiene dos parámetros más: tiene que explicar bastante mejor.
   const alturaMax = Math.max(...obs.map((o) => posicion(aire.p, o.t - tRef, R, false).y));
   const datos = obs.length + (reposo ? 1 : 0);
-  const usarAire = datos >= 4 && aire.costo < 0.6 * piso.costo && alturaMax > R + 0.04;
+  // Con pocos datos la parábola explica cualquier cosa: se usa sólo si rodando
+  // haría falta una velocidad poco creíble (la pelota borrosa se ve más chica,
+  // o sea más lejos: en el piso, mucho más adelante de lo que está).
+  const rapidezPiso = Math.hypot(piso.p[3], piso.p[5]);
+  const increible = prior && !EXP.includes("sinIncreible") && rapidezPiso > V_TIPICA && Math.hypot(aire.p[3], aire.p[4], aire.p[5]) < 0.85 * rapidezPiso;
+  const usarAire = alturaMax > R + 0.04 && (datos >= 4 ? aire.costo < 0.6 * piso.costo : increible && aire.costo < piso.costo);
   const p = usarAire ? aire.p : piso.p;
   return {
     x0: p[0],
@@ -330,8 +345,6 @@ const VELOCIDAD_MAXIMA = 45; // m/s; más rápido que esto entre dos mediciones 
 const ALARGADA_MAXIMA = 3; // estela de movimiento de un remate; más que eso no es la pelota
 const ALARGADA_QUIETA = 1.6; // quieta, la pelota se ve redonda (una pierna o una media, no)
 const MOVIMIENTO_MINIMO = 0.15; // fracción de píxeles que cambiaron (si se sabe)
-// Interruptores para comparar variantes en el banco de pruebas (en la app, vacío).
-const EXP = globalThis.process?.env?.EXP ?? "";
 
 // Cuánto se apartó `o` del punto `r`, en unidades de la tolerancia (1 = en el borde).
 // De costado la medición es muy precisa; en profundidad depende de cómo se midió.
@@ -352,8 +365,9 @@ function apartamiento(o, r) {
 // pelota). En el aire está más cerca que el piso detrás, así que se ve más grande.
 function tamanoDePelota(c) {
   if (c.escala == null) return true;
-  // Borrosa, el ancho de la estela se ve más angosto (los bordes casi no cambian).
-  if (c.estela) return c.escala < 1.8;
+  // Borrosa, el ancho de la estela se ve más angosto (los bordes casi no cambian),
+  // pero no tanto: las estelas finitas son de una pierna o un brazo que se mueven.
+  if (c.estela) return c.escala < 1.8 && (EXP.includes("sinEstelaMin") || c.escala > 0.5);
   return c.onGround ? c.escala > 0.75 && c.escala < 1.35 : c.escala > 0.75;
 }
 
@@ -400,6 +414,8 @@ function velocidadDe(serie) {
 // ¿`c` continúa el recorrido que traía la pelota hasta `u`?
 function continuaDe(t, u, c) {
   const dt = Math.max(t - u.t, 1 / 60);
+  // Un remate se ve cuadro a cuadro: con un hueco tan largo, es otra cosa.
+  if (dt > 0.2 && !EXP.includes("sinHueco")) return false;
   if (distancia3(c, u) > VELOCIDAD_MAXIMA * dt + 0.25) return false;
   if (c.estela || u.estela) return true;
   return !(c.pr && u.pr && Math.abs(Math.log(c.pr / u.pr)) > Math.log(1.45) + 1.5 * dt);
@@ -655,7 +671,10 @@ export class ShotTracker {
       if (t - q.saliendo[0].t > 0.3 || q.saliendo.length > 5) {
         // Se fue despacio (la están acomodando): deja de estar lista. Si se fue
         // rápido pero las mediciones no cierran, se sigue probando con las últimas.
-        if (velocidadDe(q.saliendo) < VELOCIDAD_MINIMA) {
+        // Acomodándola se la ve redonda y nítida; si lo que "salió" son sólo
+        // estelas, es una pierna que pasa delante (la pelota sigue tapada ahí).
+        const nitidas = q.saliendo.filter((s) => !s.estela).length;
+        if (velocidadDe(q.saliendo) < VELOCIDAD_MINIMA && (nitidas >= 2 || EXP.includes("sinNitidas"))) {
           this.quietos = this.quietos.filter((k) => k !== q);
           return null;
         }
@@ -720,7 +739,7 @@ export class ShotTracker {
   // hacia el arco.
   #remateFisico(t, q, saliendo) {
     if (EXP.includes("sinFisico") || saliendo.length < 2 || !saliendo.every((o) => o.d)) return false;
-    const pred = this.#predecir(saliendo, this.#reposoDe(q, saliendo));
+    const pred = this.#predecir(saliendo, this.#reposoDe(q, saliendo), false);
     if (!pred || pred.calidad == null || pred.calidad > 30) return false;
     if (!(pred.vz < -ACERCAMIENTO_MINIMO) || Math.hypot(pred.vx, pred.vy, pred.vz) < VELOCIDAD_MINIMA) return false;
     if (Number.isFinite(pred.tCross) && Math.abs(pred.x) > this.goalWidth / 2 + 4) return false;
@@ -852,18 +871,27 @@ export class ShotTracker {
     for (const obs of opciones) {
       if (obs.length < 2 || !obs.every((o) => o.d)) continue;
       const reposo = this.#reposoDe(q, obs);
-      const pred = this.#predecir(obs, reposo);
+      const pred = this.#predecir(obs, reposo, false);
       if (!pred || pred.calidad == null || !(pred.vz < 0)) continue;
       // Más mediciones explicadas es mejor; con pocas, cualquier cosa ajusta.
-      const valor = pred.calidad + 4 / obs.length;
+      const valor = this.#valorHipotesis(pred, obs);
       if (!mejor || valor < mejor.valor) mejor = { obs, valor, actual: obs === actual };
     }
     if (!mejor) return actual;
     if (mejor.actual) return actual;
     // Para cambiar, la otra tiene que ser claramente mejor.
-    const actualPred = actual.length >= 2 && actual.every((o) => o.d) ? this.#predecir(actual, this.#reposoDe(q, actual)) : null;
-    const valorActual = actualPred?.calidad != null && actualPred.vz < 0 ? actualPred.calidad + 4 / actual.length : Infinity;
+    const actualPred = actual.length >= 2 && actual.every((o) => o.d) ? this.#predecir(actual, this.#reposoDe(q, actual), false) : null;
+    const valorActual = actualPred?.calidad != null && actualPred.vz < 0 ? this.#valorHipotesis(actualPred, actual) : Infinity;
     return mejor.valor < 0.6 * valorActual ? mejor.obs : actual;
+  }
+
+  // Qué tan creíble es una secuencia como el remate (menos es mejor). Además del
+  // ajuste: la pelota se ve salir de su lugar. Si para explicarla hay que suponer
+  // que salió mucho antes de la primera medición (y nadie la vio en el camino),
+  // es otra cosa que se movía lejos: una pierna, alguien que pasa.
+  #valorHipotesis(pred, obs) {
+    const hueco = pred.tPatada != null && !EXP.includes("sinPenaHueco") ? Math.max(0, obs[0].t - pred.tPatada - 0.12) : 0;
+    return pred.calidad + 4 / obs.length + 20 * hueco;
   }
 
   #reposoDe(q, obs) {
@@ -895,12 +923,15 @@ export class ShotTracker {
       vuelveAVerse: 0,
     };
     q.saliendo = [];
-    this.shot.pred = this.#predecir();
-    if (!this.shot.pred || !(this.shot.pred.vz < 0)) {
+    // Si hubo remate se decide sin suponer nada de la velocidad (ver #predecir).
+    const sinPrior = this.#predecir(this.shot.obs, this.shot.reposo, false);
+    if (!sinPrior || !(sinPrior.vz < 0)) {
       this.state = "idle";
       this.shot = null;
       return null;
     }
+    const pred = this.#predecir();
+    this.shot.pred = pred && pred.vz < 0 ? pred : sinPrior;
     return { type: "kick", t, prediction: this.shot.pred, n: this.shot.obs.length };
   }
 
@@ -966,7 +997,10 @@ export class ShotTracker {
 
 
 
-  #predecir(obs = this.shot.obs, reposo = this.shot.reposo) {
+  // prior: sólo para la trayectoria de un remate ya detectado. Para decidir si
+  // hubo remate (y cuál secuencia es) no: ahí haría pasar por buena una
+  // secuencia que no es la pelota.
+  #predecir(obs = this.shot.obs, reposo = this.shot.reposo, prior = true) {
     if (obs.length < 2) return null;
     const R = this.ballRadius;
     const tRef = obs[obs.length - 1].t;
@@ -986,14 +1020,16 @@ export class ShotTracker {
 
     // Con los rayos de la cámara se ajusta la trayectoria física completa.
     let calidad = null;
+    let tPatada = null;
     if (obs.length + (reposo ? 1 : 0) >= 3 && obs.every((o) => o.d)) {
-      const ajuste = ajustarTrayectoria(obs, tRef, { x0, y0: Math.max(y0, R), z0, vx, vy, vz }, R, reposo);
+      const ajuste = ajustarTrayectoria(obs, tRef, { x0, y0: Math.max(y0, R), z0, vx, vy, vz }, R, reposo, { prior });
       ({ x0, y0, z0, vx, vy, vz } = ajuste);
       enPiso = ajuste.enPiso;
       calidad = ajuste.costo / (3 * ajuste.datos);
+      if (reposo) tPatada = ajuste.tPatada;
     }
 
-    if (vz >= 0) return { tRef, x0, y0, z0, vx, vy, vz, tCross: Infinity, x: x0, y: y0, speed: 0, rolling: enPiso, calidad };
+    if (vz >= 0) return { tRef, x0, y0, z0, vx, vy, vz, tCross: Infinity, x: x0, y: y0, speed: 0, rolling: enPiso, calidad, tPatada };
 
     // Con arrastre: primero cuánto avanza a lo largo de la velocidad hasta la
     // línea, después cuánto tiempo le lleva.
@@ -1018,6 +1054,7 @@ export class ShotTracker {
       kickSpeed: reposo ? rapidez / Math.max(0.5, 1 - ARRASTRE * rapidez * Math.max(0, tRef - reposo.tMax)) : rapidez,
       rolling: enPiso,
       calidad,
+      tPatada,
     };
   }
 

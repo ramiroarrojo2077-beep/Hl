@@ -22,6 +22,9 @@
         --tenue: #a9b8ae;
         --rojo: #ff5a5f;
         --radio-mira: 22vmin; /* = RADIO_MIRA en app.js */
+        /* Curvas: respuesta inmediata al tocar; movimiento en pantalla parejo. */
+        --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
         color-scheme: dark;
       }
       * {
@@ -107,10 +110,14 @@
         font-size: 13px;
         color: var(--tenue);
         line-height: 1.35;
-        transition: border-color 0.15s, background 0.15s, transform 0.12s;
+        transition:
+          border-color 150ms ease,
+          background-color 150ms ease,
+          box-shadow 150ms ease,
+          transform 160ms var(--ease-out);
       }
       .modos label:active {
-        transform: scale(0.98);
+        transform: scale(0.97);
       }
       .modos .icono-modo {
         font-size: 26px;
@@ -188,12 +195,22 @@
         font: 700 15px Inter, system-ui, sans-serif;
         line-height: 1.15;
         cursor: pointer;
+        transition:
+          background-color 150ms ease,
+          border-color 150ms ease,
+          color 150ms ease,
+          transform 160ms var(--ease-out);
+      }
+      .chips button:active {
+        transform: scale(0.97);
       }
       .chips button small {
         display: block;
         font-weight: 500;
         font-size: 11px;
         color: var(--tenue);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
       }
       .chips button[aria-pressed="true"] {
         border-color: var(--verde);
@@ -221,14 +238,67 @@
       details.consejos summary::after {
         content: "+";
         color: var(--verde);
-        font-size: 22px;
+        font-size: 24px;
         line-height: 1;
+        transition: transform 200ms var(--ease-out);
+      }
+      details.consejos summary {
+        transition: transform 160ms var(--ease-out);
+      }
+      details.consejos summary:active {
+        transform: scale(0.98);
       }
       details.consejos[open] summary::after {
-        content: "–";
+        transform: rotate(45deg);
       }
       details.consejos > :not(summary) {
         margin: 0 14px 14px;
+      }
+      details.consejos[open] > :not(summary) {
+        animation: despliega 220ms var(--ease-out);
+      }
+      @keyframes despliega {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+      }
+      /* Al abrir la app el menú entra en cascada (se ve una vez: puede tener algo de gracia). */
+      #inicio:not([hidden]) .contenido > * {
+        animation: aparece 300ms var(--ease-out) backwards;
+      }
+      #inicio .contenido > :nth-child(1) {
+        animation-delay: 0ms;
+      }
+      #inicio .contenido > :nth-child(2) {
+        animation-delay: 40ms;
+      }
+      #inicio .contenido > :nth-child(3) {
+        animation-delay: 80ms;
+      }
+      #inicio .contenido > :nth-child(4) {
+        animation-delay: 120ms;
+      }
+      #inicio .contenido > :nth-child(5) {
+        animation-delay: 160ms;
+      }
+      #inicio .contenido > :nth-child(n + 6) {
+        animation-delay: 200ms;
+      }
+      @keyframes aparece {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .chips button:hover,
+        .modos label:hover {
+          border-color: rgba(198, 255, 26, 0.45);
+        }
+        .boton:hover {
+          filter: brightness(1.06);
+        }
       }
       ol.pasos {
         list-style: none;
@@ -292,10 +362,12 @@
         font: 800 17px Inter, system-ui, sans-serif;
         text-decoration: none;
         cursor: pointer;
-        transition: transform 0.12s, filter 0.12s;
+        transition:
+          transform 160ms var(--ease-out),
+          filter 150ms ease;
       }
       .boton:active {
-        transform: scale(0.98);
+        transform: scale(0.97);
       }
       .boton:disabled {
         filter: grayscale(1) brightness(0.6);
@@ -392,6 +464,10 @@
         cursor: pointer;
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+        transition: transform 160ms var(--ease-out);
+      }
+      .icono:active {
+        transform: scale(0.94);
       }
       #rec {
         color: #fff;
@@ -459,12 +535,43 @@
         font-size: 20px;
         text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
       }
+      /* Festejo: entra con un rebote suave (nada aparece de la nada). */
       #banner.entra #banner-texto {
-        animation: entra 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+        animation: entra 350ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+      #banner.entra #banner-sub {
+        animation: sube 260ms var(--ease-out) 80ms backwards;
       }
       @keyframes entra {
         from {
-          transform: scale(0.3);
+          transform: scale(0.85);
+          opacity: 0;
+        }
+      }
+      @keyframes sube {
+        from {
+          transform: translateY(6px);
+          opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #inicio:not([hidden]) .contenido > *,
+        details.consejos[open] > :not(summary),
+        #banner.entra #banner-sub {
+          animation-name: funde;
+        }
+        #banner.entra #banner-texto {
+          animation: funde 200ms ease;
+        }
+        .boton,
+        .chips button,
+        .modos label,
+        .icono {
+          transition-property: background-color, border-color, color, filter;
+        }
+      }
+      @keyframes funde {
+        from {
           opacity: 0;
         }
       }

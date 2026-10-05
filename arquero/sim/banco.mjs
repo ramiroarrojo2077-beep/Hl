@@ -14,6 +14,7 @@
 import * as THREE from "three";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import { availableParallelism } from "node:os";
+import { appendFileSync } from "node:fs";
 import { BallTracking, camaraDe } from "../js/seguimiento.js";
 import { PixelReader } from "../js/pixels.js";
 import { CamaraSimulada, crearEscena } from "./escena.js";
@@ -30,11 +31,35 @@ export const ESCENARIOS = {
   "patio": { modo: "fijo", lugar: "patio", luz: "nublado", exposicion: 0.012, ruido: { foton: 0.0008, lectura: 0.00005 } },
   // Alguien sostiene el celular mirando la jugada.
   "mano": { modo: "mano", luz: "sol", exposicion: 0.004, ruido: { foton: 0.0004, lectura: 0.00003 } },
+  // Adentro de una casa, con el celular en la mano: luz artificial (exposición
+  // larga, parpadeo), distancias cortas, la mano que se desplaza, muebles.
+  "casa-mano": {
+    modo: "mano",
+    lugar: "interior",
+    luz: "interior",
+    exposicion: 0.025,
+    ruido: { foton: 0.0015, lectura: 0.0002 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [3, 6],
+    rapidez: [6, 20],
+    traslacion: 3,
+  },
+  // Lo mismo con el celular apoyado.
+  "casa-fijo": {
+    modo: "fijo",
+    lugar: "interior",
+    luz: "interior",
+    exposicion: 0.025,
+    ruido: { foton: 0.0015, lectura: 0.0002 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [3, 6],
+    rapidez: [6, 20],
+  },
   // El que patea tiene el celular en la mano (se mueve mucho al patear).
   "pateando": { modo: "pateando", luz: "nublado", exposicion: 0.008, ruido: { foton: 0.0006, lectura: 0.00004 } },
 };
 
-const ARCO = { ancho: 3, alto: 2 };
+const ARCO_CANCHA = { ancho: 3, alto: 2 };
 const FPS = 30;
 
 function mirar(pos, objetivo) {
@@ -97,7 +122,8 @@ function temblor(rnd, amplitud) {
 const suave = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 // Una sesión: lugar, celular, escaneo y varios remates.
-export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = false, fotos = null }) {
+export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = false, fotos = null, soloVer = false }) {
+  const ARCO = cfg.arco ?? ARCO_CANCHA;
   const rnd = azar(semilla);
   const R = rnd.elegir([0.11, 0.11, 0.108, 0.105]);
   const escena = crearEscena({
@@ -124,15 +150,21 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   const proj = new THREE.Matrix4().fromArray(sim.proyeccion());
 
   // Dónde se patea y dónde está el celular (en coordenadas del arco).
-  const base = [rnd.entre(-1.2, 1.2), R, rnd.entre(5.5, 10)];
+  const [dMin, dMax] = cfg.distancia ?? [5.5, 10];
+  const base = [rnd.entre(-1.2, 1.2) * (dMin < 5 ? 0.5 : 1), R, rnd.entre(dMin, dMax)];
   let camBase;
   for (let intento = 0; intento < 400; intento++) {
     let pos;
     // Al costado: atrás del que patea, su cuerpo taparía la pelota.
     const costado = (a, b) => (rnd() < 0.5 ? -1 : 1) * rnd.entre(a, b);
-    if (cfg.modo === "fijo") pos = [base[0] + costado(1.2, 3), rnd.entre(0.5, 1.3), base[2] + rnd.entre(0.3, 2.5)];
+    if (cfg.modo === "fijo" && escena.habitacion) pos = [base[0] + costado(0.6, 2.2), rnd.entre(0.4, 1.2), base[2] + rnd.entre(0.5, 2.5)];
+    else if (cfg.modo === "fijo") pos = [base[0] + costado(1.2, 3), rnd.entre(0.5, 1.3), base[2] + rnd.entre(0.3, 2.5)];
+    else if (cfg.modo === "mano" && escena.habitacion) pos = [base[0] + costado(0.5, 2.2), rnd.entre(1.3, 1.6), base[2] + rnd.entre(0.5, 2.5)];
     else if (cfg.modo === "mano") pos = [base[0] + costado(1.5, 3.5), rnd.entre(1.35, 1.6), base[2] + rnd.entre(0.3, 3)];
     else pos = [base[0] + rnd.entre(-0.35, -0.2), rnd.entre(1.2, 1.35), base[2] + rnd.entre(0.45, 0.7)];
+    // Adentro, el celular tiene que estar dentro de la habitación.
+    const H = escena.habitacion;
+    if (H && (Math.abs(pos[0]) > H.ancho - 0.3 || pos[2] > H.fondo - 0.3)) continue;
     const mira = [base[0] * 0.5, 0.6, base[2] * (cfg.modo === "pateando" ? 0.4 : 0.45)];
     const cam = { pos, R: mirar(pos, mira) };
     const enImagen = (p, m) => {
@@ -150,6 +182,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     }
   }
   if (!camBase) return { omitida: true };
+  if (soloVer) return { omitida: false, resultados: [] };
 
   // El arco virtual quedó apoyado donde ARCore cree que está el piso (con error).
   const errorPiso = rnd.entre(-0.025, 0.025);
@@ -165,7 +198,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     let { pos, R } = camBase;
     if (cfg.modo === "fijo") return camBase;
     const a = tiembla(tau);
-    pos = [pos[0] + a[0] * 0.8, pos[1] + a[1] * 0.8, pos[2] + a[2] * 0.8];
+    const k = cfg.traslacion ?? 0.8;
+    pos = [pos[0] + a[0] * k, pos[1] + a[1] * k, pos[2] + a[2] * k];
     let [ax, ay, az] = a;
     if (cfg.modo === "pateando") {
       const s = suave((tau - tPatadaActual + 0.45) / 0.8);
@@ -249,7 +283,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
     if (!p0) continue;
     const rasante = rnd() < 0.3;
     const objetivo = [rnd.entre(-ARCO.ancho / 2 - 0.4, ARCO.ancho / 2 + 0.4), rasante ? R : rnd.entre(0.2, ARCO.alto + 0.3), 0];
-    const rapidez = rnd() < 0.5 ? rnd.entre(8, 18) : rnd.entre(18, 32);
+    const rapidez = cfg.rapidez ? rnd.entre(...cfg.rapidez) : rnd() < 0.5 ? rnd.entre(8, 18) : rnd.entre(18, 32);
     const k = rnd.entre(0.01, 0.016);
     let efecto = null;
     if (rnd() < 0.5) {
@@ -340,6 +374,13 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
         const verdad = proyectar(sim, info.camaraReal, tray.posicion(tau), w, h);
         if (verdad && verdad.x > 0 && verdad.x < w && verdad.y > 0 && verdad.y < h) {
           vuelo.cuadros++;
+          if (process.env.ESTELAS) {
+            // Para calibrar: tamaño (escala) de las estelas que son la pelota y de las que no.
+            const lineas = r.ubicadas
+              .filter((u) => u.estela)
+              .map((u) => `${Math.hypot(u.px - verdad.x, u.py - verdad.y) < Math.max(2.5, 0.6 * verdad.r) ? "bien" : "mal"} ${(u.escala ?? -1).toFixed(3)} ${(u.alargada ?? 1).toFixed(2)} ${u.onGround ? "p" : "a"}\n`);
+            if (lineas.length) appendFileSync(process.env.ESTELAS, lineas.join(""));
+          }
           const m = r.medida?.det;
           if (!m) vuelo.nada++;
           else {
@@ -457,9 +498,12 @@ export async function correr({ escenarios, sesiones, tiros, semilla, detalle }) 
   const tabla = {};
   for (const nombre of escenarios) {
     const t0 = Date.now();
+    // Se piden semillas de más: las sesiones donde el celular no ve la pelota y
+    // el arco a la vez se descartan enseguida (sin dibujar nada).
     const trabajos = [];
-    for (let k = 1; k <= sesiones; k++) trabajos.push({ nombre, semilla: semilla + k * 101, tiros, detalle });
-    const salidas = await enParalelo(trabajos);
+    for (let k = 1; k <= sesiones * 3; k++) trabajos.push({ nombre, semilla: semilla + k * 101, tiros, detalle, soloVer: true });
+    const validas = (await enParalelo(trabajos)).map((r, i) => (r.omitida ? null : trabajos[i])).filter(Boolean).slice(0, sesiones);
+    const salidas = await enParalelo(validas.map((t) => ({ ...t, soloVer: false })));
     const todos = [];
     for (const r of salidas) {
       if (r.omitida) {
@@ -483,8 +527,8 @@ export async function correr({ escenarios, sesiones, tiros, semilla, detalle }) 
 }
 
 if (!isMainThread) {
-  const { nombre, semilla, tiros, detalle } = workerData;
-  parentPort.postMessage(await sesion({ nombre, cfg: ESCENARIOS[nombre], semilla, tiros, detalle }));
+  const { nombre, semilla, tiros, detalle, soloVer } = workerData;
+  parentPort.postMessage(await sesion({ nombre, cfg: ESCENARIOS[nombre], semilla, tiros, detalle, soloVer }));
 } else if (import.meta.url === `file://${process.argv[1]}`) {
   const arg = (n, d) => {
     const i = process.argv.indexOf(`--${n}`);

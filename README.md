@@ -112,7 +112,7 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 
 ## Banco de pruebas de precisión
 
-`arquero/sim/` tiene un simulador de la cámara del celular (pasto o patio, arco, pelota con gajos y sombra, piernas del que patea, estela por la exposición, ruido del sensor, color submuestreado, celular apoyado o en mano) y corre el seguimiento real de la app sobre cientos de remates al azar (8 a 32 m/s, rasantes, al ángulo, con efecto):
+`arquero/sim/` tiene un simulador de la cámara del celular (pasto, patio o adentro de una casa con piso de madera o baldosas, paredes y muebles; arco, pelota con gajos y sombra, piernas del que patea, estela por la exposición, ruido del sensor, color submuestreado, celular apoyado o en mano) y corre el seguimiento real de la app sobre cientos de remates al azar (8 a 32 m/s, rasantes, al ángulo, con efecto):
 
     node arquero/sim/banco.mjs --escenario fijo-sol,mano --sesiones 6 --tiros 4
 
@@ -123,7 +123,7 @@ Mide en cuántos remates detecta la patada, en cuántos da resultado y cuánto e
 - `arquero/index.html`: interfaz (inicio, pasos y HUD sobre la cámara).
 - `arquero/js/app.js`: flujo del juego (ubicar → escanear → patear), resultados y videos.
 - `arquero/js/xr-stage.js`: sesión WebXR (hit-test, anchors, imagen de la cámara).
-- `arquero/js/detector.js`: reconocimiento de la pelota en la imagen (colores aprendidos, movimiento compensando el giro de la cámara, centro y radio subpíxel).
+- `arquero/js/detector.js`: reconocimiento de la pelota en la imagen (colores aprendidos, movimiento compensando el giro y el desplazamiento de la cámara sobre el piso, centro y radio subpíxel).
 - `arquero/js/tracker.js`: posición 3D, detección del remate y ajuste de la trayectoria a los rayos de la cámara.
 - `arquero/js/keeper-ai.js`: hasta dónde llega el arquero según la dificultad y el resultado del tiro.
 - `arquero/js/keeper.js`, `goal.js`: el arquero y el arco en 3D (sin archivos externos).

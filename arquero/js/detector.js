@@ -123,6 +123,28 @@ export function homografiaEntre(actual, anterior) {
   return mul3(mul3(anterior.K, rel), inv3(actual.K));
 }
 
+// Lo mismo para los puntos del piso, descontando además cuánto se desplazó el
+// celular (a 1 o 2 m, un centímetro de la mano corre el piso varios píxeles).
+// Un punto X del piso (n·X = pisoY, n hacia arriba) visto en la dirección d
+// desde la cámara actual: X − p_ant ∝ (I + Δ·nᵀ / h)·d, con Δ = p_act − p_ant y
+// h = pisoY − p_act.y. null si no se conocen las posiciones.
+function homografiaPiso(actual, anterior) {
+  if (globalThis.process?.env?.EXP?.includes("sinPiso")) return null;
+  if (!actual.p || !anterior.p || actual.pisoY == null) return null;
+  const h = actual.pisoY - actual.p[1];
+  if (!(h < -0.05)) return null;
+  const dx = actual.p[0] - anterior.p[0];
+  const dy = actual.p[1] - anterior.p[1];
+  const dz = actual.p[2] - anterior.p[2];
+  // Con el celular quieto (apoyado) el desplazamiento que informa ARCore es sólo
+  // ruido de ~1 mm, y dividido por la altura movería el piso un píxel: ahí basta
+  // con el giro.
+  if (Math.hypot(dx, dy, dz) < 0.004 && !globalThis.process?.env?.EXP?.includes("pisoSiempre")) return null;
+  // I + Δ·nᵀ/h con n = (0, 1, 0): sólo cambia la segunda columna.
+  const M = [1, dx / h, 0, 0, 1 + dy / h, 0, 0, dz / h, 1];
+  return mul3(mul3(mul3(anterior.K, trasp3(anterior.R)), mul3(M, actual.R)), inv3(actual.K));
+}
+
 // Horizonte en la imagen: coeficientes (a, b, c) tales que a·x + b·y + c es la
 // componente vertical (hacia arriba) del rayo del píxel (x, y). Negativa: el rayo
 // baja (piso). camera: {K, R} como en homografia; null si no se sabe.
@@ -388,6 +410,10 @@ export class BallDetector {
     // descontando cuánto giró la cámara (en mano se mueve todo el tiempo).
     const h1 = camera && this.hasPrev && this.camPrev ? homografia(camera, this.camPrev) : null;
     const h2 = h1 && this.hasPrev2 && this.camPrev2 ? homografia(camera, this.camPrev2) : null;
+    // Para lo que está debajo del horizonte (el piso y lo que está sobre él), la
+    // del piso: descuenta también el desplazamiento de la mano.
+    const hp1 = h1 ? (homografiaPiso(camera, this.camPrev) ?? h1) : null;
+    const hp2 = h2 ? (homografiaPiso(camera, this.camPrev2) ?? h2) : null;
     const v2 = ventana ? ventana.r * ventana.r : 0;
     const f2 = foco ? foco.r * foco.r : 0;
     const hz = horizonte(camera);
@@ -402,20 +428,30 @@ export class BallDetector {
       let hx = 0;
       let hy = 0;
       let hw = 1;
+      let gx = 0;
+      let gy = 0;
+      let gw = 1;
       if (h1) {
         hx = h1[0] * 0.5 + h1[1] * (y + 0.5) + h1[2];
         hy = h1[3] * 0.5 + h1[4] * (y + 0.5) + h1[5];
         hw = h1[6] * 0.5 + h1[7] * (y + 0.5) + h1[8];
+        gx = hp1[0] * 0.5 + hp1[1] * (y + 0.5) + hp1[2];
+        gy = hp1[3] * 0.5 + hp1[4] * (y + 0.5) + hp1[5];
+        gw = hp1[6] * 0.5 + hp1[7] * (y + 0.5) + hp1[8];
       }
       for (let x = 0; x < w; x++, i++, hv += dhv) {
         let k1 = -1;
+        const pisoPx = hv < MARGEN_HORIZONTE;
         if (h1) {
-          const px = Math.floor(hx / hw);
-          const py = Math.floor(hy / hw);
+          const px = Math.floor(pisoPx ? gx / gw : hx / hw);
+          const py = Math.floor(pisoPx ? gy / gw : hy / hw);
           if (px >= 0 && py >= 0 && px < w && py < h) k1 = (py * w + px) * 4;
           hx += h1[0];
           hy += h1[3];
           hw += h1[6];
+          gx += hp1[0];
+          gy += hp1[3];
+          gw += hp1[6];
         }
         moving[i] = 0;
         const piso = hv < MARGEN_HORIZONTE;
@@ -453,7 +489,7 @@ export class BallDetector {
               const eb = vb - a * ub;
               if (a > 0.1 && a < 1.4 && (er * er + eg * eg + eb * eb) / uu < 0.12) {
                 // Y no estaba ahí dos cuadros antes (es la posición de ahora).
-                const k2 = h2 ? muestra(h2, x, y, w, h) : -1;
+                const k2 = h2 ? muestra(pisoPx ? hp2 : h2, x, y, w, h) : -1;
                 const d2 = k2 >= 0 ? Math.abs(r - prev2[k2]) + Math.abs(g - prev2[k2 + 1]) + Math.abs(b - prev2[k2 + 2]) : 99;
                 if (d2 > 18) {
                   estela[i] = 1;
@@ -469,7 +505,7 @@ export class BallDetector {
             // si se volvió menos, es el hueco que dejó atrás.
             const antes = prob[casillero(prev[k1], prev[k1 + 1], prev[k1 + 2])];
             s += 0.6 * Math.max(0, s - antes);
-            const k2 = h2 ? muestra(h2, x, y, w, h) : -1;
+            const k2 = h2 ? muestra(pisoPx ? hp2 : h2, x, y, w, h) : -1;
             if (k2 >= 0) {
               const d2 = Math.abs(r - prev2[k2]) + Math.abs(g - prev2[k2 + 1]) + Math.abs(b - prev2[k2 + 2]);
               if (d2 > DIFERENCIA_MOVIMIENTO) s += 0.25 * colorPelota[q];
