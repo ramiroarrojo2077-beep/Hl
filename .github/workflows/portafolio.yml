@@ -1,0 +1,47 @@
+name: Portafolio en GitHub Pages
+
+on:
+  push:
+    paths:
+      - "portafolio/**"
+      - ".github/workflows/portafolio.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  armar:
+    # Publica sólo desde la rama principal y con Pages activado (Settings → Pages →
+    # Source: GitHub Actions); si no, se saltea en vez de fallar.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.repository.has_pages &&
+       github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Traer los juegos desde sus repositorios
+        run: ./portafolio/armar.sh
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: portafolio
+
+  publicar:
+    needs: armar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

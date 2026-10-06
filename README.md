@@ -40,6 +40,21 @@ Las búsquedas repetidas (mismo producto y país) se guardan en memoria 6 horas 
 
 `npm run check` corre el chequeo de tipos.
 
+## Portafolio de juegos
+
+`portafolio/` es una página aparte, estática, que muestra once juegos y los deja jugar ahí mismo en un reproductor a pantalla completa: Gran Premio, F19 Grand Prix, Gran Premio 3D, Pax GP, Rocket Arena, Doce Pasos, Cinco Noches en Bruno's, Cupi, Geometry Wave, Ecos del Vacío y el Lavarropas Qué Facha 3000.
+
+Los juegos no se copian a este repositorio: `portafolio/armar.sh` clona cada repo y deja su versión jugable en `portafolio/juegos/` (Cupi se compila con Vite, así que hace falta Node).
+
+```bash
+./portafolio/armar.sh          # trae los juegos
+npx serve portafolio           # http://localhost:3000
+```
+
+Para publicarla: **Settings → Pages → Source: GitHub Actions**. Desde ahí, cada push a la rama principal que toque `portafolio/` la arma y la sube con `.github/workflows/portafolio.yml` (también se puede correr a mano desde Actions).
+
+Para sumar un juego: agregarlo en `armar.sh`, poner una captura 16:9 en `portafolio/capturas/<id>.webp` y un objeto en la lista `JUEGOS` de `portafolio/index.html`.
+
 ## Aclaración
 
 Los resultados son estimaciones hechas con fuentes públicas, no cotizaciones formales. Antes de comprar o importar, confirmá con el proveedor y con un despachante de aduana.

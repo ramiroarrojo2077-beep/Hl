@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Juegos de ramiroarrojo2077</title>
+<meta name="description" content="Once juegos para el navegador: Fórmula 1, fútbol, terror, ritmo y una mascota en 3D. Se juegan en la página, sin instalar nada.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  /* Vitrina de juegos: encabezado compacto con un piano (kerb) celeste y rosa,
+     grilla de tres columnas donde el destacado ocupa dos, y ficha técnica al pie.
+     Cada tarjeta toma un tinte de su propio juego. */
+  :root {
+    --fondo: #e8ebee;
+    --superficie: #f7f8fa;
+    --hundido: #dde1e6;
+    --tinta: #12161b;
+    --suave: #56606c;
+    --linea: #cfd5dc;
+    --acento: #0a7fbf;
+    --acento-tinta: #ffffff;
+    --rosa: #d63a83;
+    --sombra: 0 1px 2px rgb(18 22 27 / 0.06), 0 8px 24px -12px rgb(18 22 27 / 0.18);
+    --velo: rgb(10 13 17 / 0.72);
+
+    --f-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
+    --f-texto: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --radio: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #0d1014;
+      --superficie: #151a20;
+      --hundido: #1c222a;
+      --tinta: #e8ecf0;
+      --suave: #919ba7;
+      --linea: #262d36;
+      --acento: #4cc2f7;
+      --acento-tinta: #04141d;
+      --rosa: #ff6fae;
+      --sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -14px rgb(0 0 0 / 0.7);
+      --velo: rgb(4 6 9 / 0.82);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fondo: #0d1014;
+    --superficie: #151a20;
+    --hundido: #1c222a;
+    --tinta: #e8ecf0;
+    --suave: #919ba7;
+    --linea: #262d36;
+    --acento: #4cc2f7;
+    --acento-tinta: #04141d;
+    --rosa: #ff6fae;
+    --sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -14px rgb(0 0 0 / 0.7);
+    --velo: rgb(4 6 9 / 0.82);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--tinta);
+    font: 400 16px/1.55 var(--f-texto);
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; display: block; }
+  [hidden] { display: none !important; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 6px; }
+
+  .piano {
+    height: 6px;
+    background: repeating-linear-gradient(90deg, var(--acento) 0 28px, var(--rosa) 28px 56px);
+  }
+  .envoltorio {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-inline: 24px;
+  }
+  @media (max-width: 520px) { .envoltorio { padding-inline: 16px; } }
+
+  /* Barra superior */
+  .barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 18px;
+  }
+  .marca {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 800 20px/1 var(--f-display);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .marca { min-width: 0; }
+  .marca span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .marca svg { flex: none; }
+  .barra nav { display: flex; flex: none; gap: 20px; font-size: 14px; color: var(--suave); }
+  .barra nav a { text-decoration: none; }
+  @media (hover: hover) and (pointer: fine) { .barra nav a:hover { color: var(--tinta); } }
+  @media (max-width: 480px) { .barra nav { gap: 16px; } .barra nav .opcional { display: none; } }
+
+  /* Portada */
+  .portada {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: end;
+    padding-block: 40px 48px;
+  }
+  .antetitulo {
+    margin: 0 0 14px;
+    font: 500 12px/1 var(--f-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--suave);
+  }
+  h1 {
+    margin: 0;
+    font: 900 clamp(52px, 8.4vw, 104px)/0.88 var(--f-display);
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--acento); }
+  .bajada {
+    max-width: 58ch;
+    margin: 22px 0 0;
+    font-size: 18px;
+    color: var(--suave);
+  }
+  .llamadas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--linea);
+  }
+  .tablero div {
+    padding: 16px 0 18px;
+    border-bottom: 1px solid var(--linea);
+  }
+  .tablero div:nth-child(odd) { padding-right: 16px; border-right: 1px solid var(--linea); }
+  .tablero div:nth-child(even) { padding-left: 20px; }
+  .tablero b {
+    display: block;
+    font: 800 44px/1 var(--f-display);
+    font-variant-numeric: tabular-nums;
+  }
+  .tablero span { font-size: 13px; color: var(--suave); }
+
+  @media (max-width: 860px) {
+    .portada { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 24px 36px; }
+  }
+
+  /* Botones */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid var(--linea);
+    border-radius: 999px;
+    background: var(--superficie);
+    color: var(--tinta);
+    font: 600 14px/1 var(--f-texto);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.primario { background: var(--acento); border-color: var(--acento); color: var(--acento-tinta); }
+  .btn svg { flex: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { border-color: var(--suave); }
+    .btn.primario:hover { filter: brightness(1.08); border-color: var(--acento); }
+  }
+
+  /* Filtros */
+  .seccion-cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px 24px;
+    padding-top: 8px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    margin: 0;
+    font: 800 36px/1 var(--f-display);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+  .filtros { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--linea);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--suave);
+    font: 500 14px/1 var(--f-texto);
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+  }
+  .filtro:active { transform: scale(0.97); }
+  .filtro small { font: 500 11px/1 var(--f-mono); opacity: 0.75; }
+  .filtro[aria-pressed="true"] { background: var(--tinta); border-color: var(--tinta); color: var(--fondo); }
+  @media (hover: hover) and (pointer: fine) {
+    .filtro:not([aria-pressed="true"]):hover { color: var(--tinta); border-color: var(--suave); }
+  }
+
+  /* Grilla de juegos */
+  .grilla {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+  @media (max-width: 1020px) { .grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .grilla { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+
+  .juego {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--superficie);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    overflow: hidden;
+    box-shadow: var(--sombra);
+  }
+  .captura {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: var(--hundido);
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .captura img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 400ms var(--ease-out);
+  }
+  .captura .boton-jugar {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px 9px 12px;
+    border-radius: 999px;
+    background: rgb(8 10 13 / 0.78);
+    color: #fff;
+    font: 600 13px/1 var(--f-texto);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .captura .boton-jugar i {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--tinte);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tinte) 35%, transparent);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .juego:hover .captura img { transform: scale(1.035); }
+  }
+
+  .cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    padding: 18px 20px 20px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin: 0;
+    font: 500 11.5px/1.3 var(--f-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--suave);
+  }
+  .tipo { display: inline-flex; align-items: center; gap: 7px; color: var(--tinta); }
+  .tipo::before {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 2px;
+    background: var(--tinte);
+  }
+  .juego h3 {
+    margin: 0;
+    font: 800 30px/0.98 var(--f-display);
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    text-wrap: balance;
+  }
+  .resumen { margin: 0; font-size: 15px; color: var(--suave); }
+  .teclas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--suave);
+  }
+  .teclas li { display: inline-flex; align-items: center; gap: 6px; }
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 7px;
+    justify-content: center;
+    border: 1px solid var(--linea);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: var(--fondo);
+    color: var(--tinta);
+    font: 500 11.5px/1 var(--f-mono);
+  }
+  .plataformas { margin: 0; font-size: 13px; color: var(--suave); }
+  .acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 6px;
+  }
+
+  /* Destacado: ocupa dos columnas con la captura al costado */
+  .grilla[data-filtro="todos"] .juego.destacado {
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  }
+  .grilla[data-filtro="todos"] .juego.destacado .captura { aspect-ratio: auto; height: 100%; min-height: 300px; }
+  .grilla[data-filtro="todos"] .juego.destacado h3 { font-size: 42px; }
+  .sello {
+    align-self: flex-start;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--tinte) 16%, transparent);
+    color: var(--tinta);
+    font: 500 11px/1 var(--f-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  @media (max-width: 640px) {
+    .grilla[data-filtro="todos"] .juego.destacado { grid-column: auto; display: flex; }
+    .grilla[data-filtro="todos"] .juego.destacado .captura { aspect-ratio: 16 / 9; height: auto; min-height: 0; }
+    .grilla[data-filtro="todos"] .juego.destacado h3 { font-size: 34px; }
+  }
+
+  /* Ficha técnica */
+  .ficha { padding-block: 72px 24px; }
+  .ficha p.nota { max-width: 62ch; margin: 12px 0 24px; color: var(--suave); }
+  .tabla-caja {
+    overflow-x: auto;
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    background: var(--superficie);
+  }
+  table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th {
+    font: 500 11px/1.2 var(--f-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--suave);
+    background: var(--hundido);
+  }
+  td.num { font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: 13px; white-space: nowrap; }
+  td .tipo { font-weight: 600; }
+  td a { color: var(--acento); text-underline-offset: 3px; }
+
+  .pie {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 24px;
+    padding-block: 40px 56px;
+    font-size: 14px;
+    color: var(--suave);
+  }
+
+  /* Reproductor */
+  .reproductor {
+    width: min(1280px, 100vw - 32px);
+    max-width: none;
+    height: min(820px, 100dvh - 32px);
+    max-height: none;
+    padding: 0;
+    border: 1px solid var(--linea);
+    border-radius: 16px;
+    background: #050608;
+    color: #e8ecf0;
+    overflow: hidden;
+    opacity: 1;
+    transform: none;
+    transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out), overlay 220ms allow-discrete, display 220ms allow-discrete;
+  }
+  .reproductor[open] { display: flex; flex-direction: column; }
+  @starting-style {
+    .reproductor[open] { opacity: 0; transform: scale(0.97); }
+  }
+  .reproductor::backdrop {
+    background: var(--velo);
+    transition: opacity 220ms ease, overlay 220ms allow-discrete, display 220ms allow-discrete;
+  }
+  @starting-style { .reproductor[open]::backdrop { opacity: 0; } }
+
+  .reproductor header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 10px 10px 18px;
+    border-bottom: 1px solid #1d232b;
+    background: #0d1014;
+  }
+  .reproductor header .titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    font: 800 22px/1 var(--f-display);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .reproductor header .titulo i { flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--tinte, #4cc2f7); }
+  .reproductor .ayuda {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+    font-size: 12.5px;
+    color: #919ba7;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .reproductor .ayuda kbd { background: #151a20; border-color: #2b333d; color: #e8ecf0; }
+  .reproductor .herramientas { display: flex; gap: 6px; flex: none; }
+  .icono {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid #2b333d;
+    border-radius: 10px;
+    background: #151a20;
+    color: #e8ecf0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+  .icono:active { transform: scale(0.95); }
+  @media (hover: hover) and (pointer: fine) { .icono:hover { background: #1f262f; } }
+  .reproductor iframe { flex: 1; width: 100%; border: 0; background: #050608; }
+  @media (max-width: 760px) {
+    .reproductor { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+    .reproductor .ayuda { display: none; }
+    .reproductor header .titulo { margin-right: auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .captura img, .btn, .filtro, .icono { transition: none; }
+    .reproductor { transition: opacity 150ms ease; }
+    @starting-style { .reproductor[open] { transform: none; } }
+  }
+</style>
+</head>
+<body>
+<div class="piano" aria-hidden="true"></div>
+
+<div class="envoltorio">
+  <header class="barra">
+    <a class="marca" href="#juegos" aria-label="Ir a los juegos">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+        <rect x="1" y="1" width="24" height="24" rx="6" fill="var(--tinta)"/>
+        <path d="M10 8.2v9.6l8-4.8z" fill="var(--fondo)"/>
+      </svg>
+      <span id="autor">ramiroarrojo2077</span>
+    </a>
+    <nav aria-label="Secciones">
+      <a href="#juegos">Juegos</a>
+      <a class="opcional" href="#ficha">Ficha técnica</a>
+      <a href="https://github.com/ramiroarrojo2077-beep" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="portada" aria-labelledby="titular">
+    <div>
+      <p class="antetitulo">Portafolio de juegos · navegador y Android</p>
+      <h1 id="titular">Once juegos, <em>listos para jugar</em></h1>
+      <p class="bajada">Fórmula 1, fútbol, terror, ritmo y una mascota en 3D. Todos corren en el navegador y se abren acá mismo, sin instalar nada. La mayoría genera sus modelos, texturas y sonido por código.</p>
+      <div class="llamadas">
+        <button class="btn primario" type="button" data-jugar="f19-grand-prix">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>
+          Jugar F19 Grand Prix
+        </button>
+        <a class="btn" href="#juegos">Ver los once</a>
+      </div>
+    </div>
+    <div class="tablero" aria-label="En números">
+      <div><b>11</b><span>juegos jugables</span></div>
+      <div><b>9</b><span>en 3D con WebGL</span></div>
+      <div><b>4</b><span>también para Android</span></div>
+      <div><b>1,4 MB</b><span>pesa el más grande</span></div>
+    </div>
+  </section>
+
+  <section id="juegos" aria-labelledby="titulo-juegos">
+    <div class="seccion-cabeza">
+      <h2 id="titulo-juegos">Juegos</h2>
+      <div class="filtros" role="group" aria-label="Filtrar por género" id="filtros"></div>
+    </div>
+    <div class="grilla" id="grilla" data-filtro="todos"></div>
+  </section>
+
+  <section class="ficha" id="ficha" aria-labelledby="titulo-ficha">
+    <h2 id="titulo-ficha">Ficha técnica</h2>
+    <p class="nota">Cada juego es un sitio estático: HTML, CSS y JavaScript, sin servidor propio. El peso es el de la versión que se carga en esta página.</p>
+    <div class="tabla-caja">
+      <table>
+        <thead>
+          <tr><th scope="col">Juego</th><th scope="col">Motor</th><th scope="col">Peso</th><th scope="col">Se juega con</th><th scope="col">Código</th></tr>
+        </thead>
+        <tbody id="tabla"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <span>Hecho por <a href="https://github.com/ramiroarrojo2077-beep" target="_blank" rel="noopener">@ramiroarrojo2077-beep</a>. El código de cada juego está en su repositorio.</span>
+    <span>Mejor con teclado o mando. En el celular, en horizontal.</span>
+  </footer>
+</div>
+
+<dialog class="reproductor" id="reproductor" aria-labelledby="reproductor-titulo">
+  <header>
+    <div class="titulo" id="reproductor-titulo"><i aria-hidden="true"></i><span></span></div>
+    <div class="ayuda" id="reproductor-ayuda"></div>
+    <div class="herramientas">
+      <button class="icono" type="button" id="pantalla-completa" aria-label="Pantalla completa" title="Pantalla completa">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+      </button>
+      <a class="icono" id="abrir-aparte" href="#" target="_blank" rel="noopener" aria-label="Abrir en una pestaña nueva" title="Abrir en una pestaña nueva">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 2h5v5M14 2 7 9M12 10v4H2V4h4"/></svg>
+      </a>
+      <button class="icono" type="button" id="cerrar" aria-label="Cerrar el juego" title="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13"/></svg>
+      </button>
+    </div>
+  </header>
+  <iframe id="pantalla" title="Juego" allow="fullscreen; gamepad; autoplay; pointer-lock" allowfullscreen></iframe>
+</dialog>
+
+<script>
+  // Para agregar un juego: copiar su versión jugable en juegos/<id>/ (ver armar.sh),
+  // una captura 16:9 en capturas/<id>.webp y un objeto en esta lista.
+  const USUARIO = "ramiroarrojo2077-beep";
+
+  const GRUPOS = [
+    ["todos", "Todos"],
+    ["carreras", "Carreras"],
+    ["deportes", "Deportes"],
+    ["accion", "Acción y terror"],
+    ["casual", "Casual"],
+  ];
+
+  const JUEGOS = [
+    {
+      id: "f19-grand-prix", repo: "F19", titulo: "F19 Grand Prix", grupo: "carreras", tipo: "Carreras", tinte: "#e3262f",
+      destacado: true,
+      resumen: "Fórmula en 3D con multijugador online: creás una sala, pasás el código y corrés contra hasta nueve amigos. Tres circuitos con desnivel, lluvia con pista mojada y garaje 3D.",
+      motor: "Three.js", peso: "1,3 MB", plataformas: ["Teclado", "Mando", "Táctil", "Online"],
+      teclas: [["W", "acelerar"], ["A D", "girar"], ["Espacio", "DRS"], ["C", "cámara"]],
+    },
+    {
+      id: "ecos-del-vacio", repo: "rpg", titulo: "Ecos del Vacío", grupo: "accion", tipo: "Acción · ciencia ficción", tinte: "#e38b2c",
+      resumen: "Primer encuentro de un action-RPG: subís a la cresta, plantás la antena y cazás a El Barrenador, un titán de 36 metros que se escala por sus anclajes.",
+      motor: "WebGL2 propio", peso: "308 KB", plataformas: ["Teclado y ratón"],
+      teclas: [["WASD", "moverse"], ["Clic", "disparar"], ["E", "gancho"]],
+    },
+    {
+      id: "cinco-noches", repo: "Plam", titulo: "Cinco Noches en Bruno's", grupo: "accion", tipo: "Terror", tinte: "#c4262e",
+      resumen: "Sobrevivís de 12 a 6 AM en una pizzería: mirás las cámaras, cerrás puertas y cuidás la energía mientras cuatro animatrónicos te buscan.",
+      motor: "Three.js", peso: "918 KB", plataformas: ["Teclado y ratón", "Táctil", "Android"],
+      apk: "apk/CincoNochesEnBrunos.apk",
+      teclas: [["Q E", "puertas"], ["Z C", "luces"], ["S", "monitor"]],
+    },
+    {
+      id: "rocket-arena", repo: "Rl", titulo: "Rocket Arena", grupo: "deportes", tipo: "Fútbol con autos", tinte: "#3a9bff",
+      resumen: "Fútbol con autos a cohete al estilo Rocket League: 1v1, 2v2 o 3v3 contra la IA, con saltos, flips, turbo y air roll.",
+      motor: "Three.js", peso: "852 KB", plataformas: ["Teclado", "Mando", "Táctil", "Android"],
+      apk: "dist/rocket-arena.apk",
+      teclas: [["W S", "acelerar"], ["Espacio", "saltar"], ["Shift", "turbo"]],
+    },
+    {
+      id: "doce-pasos", repo: "Fut", titulo: "Doce Pasos", grupo: "deportes", tipo: "Fútbol", tinte: "#f2a900",
+      resumen: "Tanda de penales y tiros libres con barrera. Apuntás con un trazo, le das efecto si querés y frenás la barra de potencia. Los remates usan captura de movimiento real.",
+      motor: "Three.js", peso: "1,4 MB", plataformas: ["Teclado", "Ratón", "Táctil", "Android"],
+      apk: "dist/DocePasos.apk",
+      teclas: [["← →", "apuntar"], ["A D", "efecto"], ["Espacio", "potencia"]],
+    },
+    {
+      id: "gran-premio", repo: "F1", titulo: "Gran Premio", grupo: "carreras", tipo: "Fórmula 1", tinte: "#e10600",
+      resumen: "Carrera rápida de hasta 16 autos, contrarreloj contra tu fantasma y un campeonato de tres carreras con puntaje oficial. ERS, DRS y torre de tiempos.",
+      motor: "Three.js", peso: "1,0 MB", plataformas: ["Teclado", "Mando", "Táctil"],
+      teclas: [["↑", "acelerar"], ["Espacio", "ERS"], ["E", "DRS"]],
+    },
+    {
+      id: "cupi", repo: "Plot", titulo: "Cupi", grupo: "casual", tipo: "Mascota virtual", tinte: "#ff6fae",
+      resumen: "Una mascota en 3D para cuidar: le das de comer, la bañás, jugás con ella y decorás su casa. Seis zonas y día o noche según la hora real.",
+      motor: "Three.js + cannon-es", peso: "997 KB", plataformas: ["Ratón", "Táctil"],
+      teclas: [["Clic", "cosquillas"], ["Arrastrar", "acariciar"]],
+    },
+    {
+      id: "geometry-wave", repo: "uuu", titulo: "Geometry Wave", grupo: "casual", tipo: "Ritmo", tinte: "#21d4b4",
+      resumen: "Plataformas al ritmo de la música: saltás pinchos con el cubo, volás con la nave y zigzagueás con la onda. Cinco niveles, editor y niveles de la comunidad.",
+      motor: "Canvas 2D", peso: "150 KB", plataformas: ["Teclado", "Ratón", "Táctil"],
+      teclas: [["Espacio", "saltar"], ["Z", "punto de control"], ["R", "reiniciar"]],
+    },
+    {
+      id: "gran-premio-3d", repo: "Ax", titulo: "Gran Premio 3D", grupo: "carreras", tipo: "Fórmula 1", tinte: "#38b6f0",
+      resumen: "Largás último con el monoplaza celeste y rosa y tenés que pasar a 19 rivales sin irte al pasto. Cordillera generada con ruido fractal y tribunas con público.",
+      motor: "Three.js", peso: "765 KB", plataformas: ["Teclado", "Mando", "Táctil", "Android"],
+      teclas: [["↑", "acelerar"], ["← →", "doblar"], ["P", "pausa"]],
+    },
+    {
+      id: "pax", repo: "Pax", titulo: "Pax GP", grupo: "carreras", tipo: "Fórmula 1", tinte: "#e5392b",
+      resumen: "Tres vueltas para recuperar cinco puestos en un trazado de 6,99 km con relieve. Es la versión web de un proyecto en Unreal Engine 5 con auto y circuito modelados por script en Blender.",
+      motor: "Three.js · UE5", peso: "42 KB", plataformas: ["Teclado", "Táctil"],
+      teclas: [["W", "acelerar"], ["A D", "girar"], ["C", "cámara"]],
+    },
+    {
+      id: "lavarropas", repo: "Pl", titulo: "Lavarropas Qué Facha 3000", grupo: "casual", tipo: "Simulador", tinte: "#25c99a",
+      resumen: "Cuatro programas, fases reales del ciclo y un centrifugado que hace temblar la máquina. Cuando termina, grita «¡Qué facha!».",
+      motor: "HTML y CSS", peso: "24 KB", plataformas: ["Ratón", "Táctil"],
+      teclas: [["Clic", "elegir programa"]],
+    },
+  ];
+
+  const $ = (sel) => document.querySelector(sel);
+  const repoUrl = (j) => `https://github.com/${USUARIO}/${j.repo}`;
+  const juegoUrl = (j) => `juegos/${j.id}/index.html`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const teclasHtml = (j) => j.teclas.map(([k, que]) => `<li><kbd>${esc(k)}</kbd>${esc(que)}</li>`).join("");
+
+  const iconoPlay = '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>';
+
+  function tarjeta(j) {
+    const apk = j.apk
+      ? `<a class="btn" href="${repoUrl(j)}/raw/HEAD/${j.apk}" target="_blank" rel="noopener">APK</a>`
+      : "";
+    return `
+      <article class="juego${j.destacado ? " destacado" : ""}" data-grupo="${j.grupo}" style="--tinte:${j.tinte}">
+        <button class="captura" type="button" data-jugar="${j.id}" aria-label="Jugar ${esc(j.titulo)}">
+          <img src="capturas/${j.id}.webp" width="960" height="540" alt="Captura de ${esc(j.titulo)}">
+          <span class="boton-jugar" aria-hidden="true"><i></i>Jugar</span>
+        </button>
+        <div class="cuerpo">
+          ${j.destacado ? '<span class="sello">Destacado · online</span>' : ""}
+          <p class="meta"><span class="tipo">${esc(j.tipo)}</span><span>${esc(j.motor)}</span><span>${esc(j.peso)}</span></p>
+          <h3>${esc(j.titulo)}</h3>
+          <p class="resumen">${esc(j.resumen)}</p>
+          <ul class="teclas" aria-label="Controles">${teclasHtml(j)}</ul>
+          <p class="plataformas">${j.plataformas.map(esc).join(" · ")}</p>
+          <div class="acciones">
+            <button class="btn primario" type="button" data-jugar="${j.id}">${iconoPlay}Jugar</button>
+            <a class="btn" href="${repoUrl(j)}" target="_blank" rel="noopener">Código</a>
+            ${apk}
+          </div>
+        </div>
+      </article>`;
+  }
+
+  $("#grilla").innerHTML = JUEGOS.map(tarjeta).join("");
+
+  $("#tabla").innerHTML = JUEGOS.map((j) => `
+    <tr style="--tinte:${j.tinte}">
+      <td><span class="tipo">${esc(j.titulo)}</span></td>
+      <td>${esc(j.motor)}</td>
+      <td class="num">${esc(j.peso)}</td>
+      <td>${j.plataformas.map(esc).join(", ")}</td>
+      <td><a href="${repoUrl(j)}" target="_blank" rel="noopener">${esc(USUARIO)}/${esc(j.repo)}</a></td>
+    </tr>`).join("");
+
+  // Filtros por género
+  const filtros = $("#filtros");
+  filtros.innerHTML = GRUPOS.map(([id, nombre]) => {
+    const n = id === "todos" ? JUEGOS.length : JUEGOS.filter((j) => j.grupo === id).length;
+    return `<button class="filtro" type="button" data-filtro="${id}" aria-pressed="${id === "todos"}">${nombre}<small>${n}</small></button>`;
+  }).join("");
+
+  function filtrar(id) {
+    $("#grilla").dataset.filtro = id;
+    filtros.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filtro === id)));
+    document.querySelectorAll(".juego").forEach((el) => { el.hidden = id !== "todos" && el.dataset.grupo !== id; });
+    try { localStorage.setItem("portafolio-filtro", id); } catch {}
+  }
+  filtros.addEventListener("click", (e) => {
+    const b = e.target.closest(".filtro");
+    if (b) filtrar(b.dataset.filtro);
+  });
+  try {
+    const guardado = localStorage.getItem("portafolio-filtro");
+    if (guardado && GRUPOS.some(([id]) => id === guardado)) filtrar(guardado);
+  } catch {}
+
+  // Reproductor
+  const dialogo = $("#reproductor");
+  const pantalla = $("#pantalla");
+  const botonCompleta = $("#pantalla-completa");
+  let origen = null;
+
+  function jugar(id) {
+    const j = JUEGOS.find((x) => x.id === id);
+    if (!j) return;
+    origen = document.activeElement;
+    dialogo.style.setProperty("--tinte", j.tinte);
+    $("#reproductor-titulo span").textContent = j.titulo;
+    $("#reproductor-ayuda").innerHTML = j.teclas.slice(0, 3).map(([k, que]) => `<span><kbd>${esc(k)}</kbd> ${esc(que)}</span>`).join("");
+    $("#abrir-aparte").href = juegoUrl(j);
+    pantalla.title = j.titulo;
+    pantalla.src = juegoUrl(j);
+    dialogo.showModal();
+    pantalla.focus();
+  }
+
+  function cerrar() {
+    if (dialogo.open) dialogo.close();
+  }
+
+  dialogo.addEventListener("close", () => {
+    // Descargar el juego corta el sonido y libera la GPU.
+    pantalla.src = "about:blank";
+    if (origen && document.contains(origen)) origen.focus();
+  });
+  pantalla.addEventListener("load", () => { if (dialogo.open) pantalla.focus(); });
+  $("#cerrar").addEventListener("click", cerrar);
+  dialogo.addEventListener("click", (e) => { if (e.target === dialogo) cerrar(); });
+
+  if (!document.fullscreenEnabled) botonCompleta.hidden = true;
+  botonCompleta.addEventListener("click", () => {
+    const pedido = pantalla.requestFullscreen?.();
+    if (pedido) pedido.then(() => pantalla.focus()).catch(() => { botonCompleta.hidden = true; });
+  });
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-jugar]");
+    if (b) jugar(b.dataset.jugar);
+  });
+
+  if (/^#jugar-[a-z0-9-]+$/.test(location.hash)) jugar(location.hash.slice(7));
+</script>
+</body>
+</html>
