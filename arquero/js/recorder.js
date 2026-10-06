@@ -29,8 +29,12 @@ export class ShotRecorder {
     this.canvas = document.createElement("canvas");
     this.ctx2d = this.canvas.getContext("2d");
     this.rt = null;
-    this.buffer = null;
-    this.leyendo = false;
+    // Hasta dos lecturas de la GPU a la vez (cada una con su memoria): si una
+    // tarda, el cuadro siguiente no se pierde.
+    this.lecturas = [];
+    this.enCurso = 0;
+    this.numero = 0;
+    this.dibujado = 0;
     this.grabando = false;
     this.activas = [];
     this.tiro = null;
@@ -102,15 +106,25 @@ export class ShotRecorder {
       // cuesta bastante en la GPU del celular.
       this.rt = new THREE.WebGLRenderTarget(w, h);
       this.rtSalida = new THREE.WebGLRenderTarget(w, h);
-      this.buffer = new Uint8Array(w * h * 4);
-      this.imagen = new ImageData(new Uint8ClampedArray(this.buffer.buffer), w, h);
+      this.lecturas = [0, 1].map(() => {
+        const buffer = new Uint8Array(w * h * 4);
+        return { buffer, imagen: new ImageData(new Uint8ClampedArray(buffer.buffer), w, h), libre: true };
+      });
     }
   }
 
   start() {
     if (this.grabando) return;
     this.grabando = true;
-    this.stream = this.canvas.captureStream(FPS);
+    // Cada cuadro se entrega al video cuando se termina de dibujar (requestFrame):
+    // sin cuadros repetidos ni saltos por el reloj del stream. Si no se puede, a FPS fijos.
+    this.stream = this.canvas.captureStream(0);
+    this.pista = this.stream.getVideoTracks()[0];
+    if (typeof this.pista?.requestFrame !== "function") {
+      this.stream.getTracks().forEach((t) => t.stop());
+      this.stream = this.canvas.captureStream(FPS);
+      this.pista = null;
+    }
     this.activas = [this.#nueva()];
   }
 
@@ -121,6 +135,7 @@ export class ShotRecorder {
     this.tiro = null;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
+    this.pista = null;
   }
 
   #nueva() {
@@ -184,18 +199,20 @@ export class ShotRecorder {
   // Compone un cuadro. fondo: textura de la cámara (AR) o escena del mundo (demo).
   // camara: PerspectiveCamera con la pose y proyección de la vista.
   capture({ texturaFondo = null, escenaFondo = null, escena, camara, ancho, alto }) {
-    if (!this.grabando || this.leyendo) return;
+    if (!this.grabando) return;
     // No más de FPS cuadros por segundo (la pantalla puede ir a 60) y, si el
-    // celular viene lento, menos: el seguimiento de la pelota tiene prioridad.
+    // celular viene lento, algo menos: el seguimiento de la pelota tiene prioridad.
     const ahora = performance.now();
     const intervalo = ahora - (this.ultimaLlamada ?? ahora);
     this.ultimaLlamada = ahora;
     this.intervaloMedio = 0.9 * (this.intervaloMedio ?? 33) + 0.1 * Math.min(intervalo, 200);
-    const minimo = this.intervaloMedio > 45 ? 1000 / 10 : this.intervaloMedio > 38 ? 1000 / 15 : 1000 / FPS - 4;
+    const minimo = this.intervaloMedio > 55 ? 1000 / 15 : this.intervaloMedio > 42 ? 1000 / 20 : 1000 / FPS - 4;
     if (ahora - (this.ultimoCuadro ?? 0) < minimo) return;
+    this.#tamano(ancho, alto);
+    const lectura = this.lecturas.find((l) => l.libre);
+    if (!lectura) return; // las dos lecturas siguen en curso: se saltea este cuadro
     this.ultimoCuadro = ahora;
     this.#relevar();
-    this.#tamano(ancho, alto);
     const r = this.renderer;
     const rtAnterior = r.getRenderTarget();
     const xrAnterior = r.xr.enabled;
@@ -231,21 +248,27 @@ export class ShotRecorder {
     r.autoClear = autoClear;
     r.xr.enabled = xrAnterior;
 
-    this.leyendo = true;
+    // La copia a la memoria se encarga ya (después se puede volver a dibujar en
+    // rtSalida); se espera sin frenar el cuadro.
+    lectura.libre = false;
+    const numero = ++this.numero;
     const { width: w, height: h } = this.canvas;
-    r.readRenderTargetPixelsAsync(this.rtSalida, 0, 0, w, h, this.buffer)
-      .then(() => this.#dibujar(w, h))
+    r.readRenderTargetPixelsAsync(this.rtSalida, 0, 0, w, h, lectura.buffer)
+      .then(() => this.#dibujar(lectura, numero, w, h))
       .catch(() => {})
       .finally(() => {
-        this.leyendo = false;
+        lectura.libre = true;
       });
   }
 
-  #dibujar(w, h) {
+  #dibujar(lectura, numero, w, h) {
     if (w !== this.canvas.width || h !== this.canvas.height) return;
+    // Uno más viejo que el último dibujado no va (quedaría para atrás).
+    if (numero <= this.dibujado) return;
+    this.dibujado = numero;
     // Ya viene en el orden del canvas (se compuso dado vuelta).
     const c = this.ctx2d;
-    c.putImageData(this.imagen, 0, 0);
+    c.putImageData(lectura.imagen, 0, 0);
 
     const u = w / 400;
     c.font = `700 ${14 * u}px system-ui, sans-serif`;
@@ -276,5 +299,6 @@ export class ShotRecorder {
       }
       c.textAlign = "left";
     }
+    this.pista?.requestFrame();
   }
 }

@@ -372,6 +372,8 @@ const ALARGADA_QUIETA = 1.6;
 const MAX_QUIETOS = 6; // objetos quietos que se vigilan a la vez
 const CERCA_ESCANEADA = 0.35; // m alrededor de donde se escaneó la pelota // quieta, la pelota se ve redonda (una pierna o una media, no)
 const MOVIMIENTO_MINIMO = 0.15;
+const PRORROGA_MAXIMA = 6; // cuadros que se sigue midiendo si la pelota todavía no llegó
+const SIN_PRORROGA = EXP.includes("sinProrroga");
 const RECORRIDO_LENTO = 0.5; // m que tiene que rodar derecho al arco un remate suave
 const SIN_LENTO = EXP.includes("sinLento"); // fracción de píxeles que cambiaron (si se sabe)
 
@@ -1041,7 +1043,10 @@ export class ShotTracker {
     const s = this.shot;
     // Ya llega al arco: queda lo previsto con lo medido hasta acá (lo que se vea
     // después, detrás de la línea o un palo, no tiene que cambiar el resultado).
-    if (s.pred && s.confirmadas >= 1 && t >= s.pred.tCross - 0.02) return this.#cruce();
+    // Salvo que con esta medición la trayectoria diga que todavía no llegó: con
+    // pocas mediciones la distancia (y la velocidad) se pueden sobreestimar, y
+    // cortar ahí desperdicia justo los cuadros que la corrigen.
+    if (s.pred && s.confirmadas >= 1 && t >= s.pred.tCross - 0.02 && !this.#todaviaNoLlega(t, o)) return this.#cruce();
     // La pelota sigue en el punto de reposo: no la patearon (se movió otra cosa).
     if (t - s.tKick < 0.6 && ocupa(o, s.origen, 1.2)) return this.#cancelar(true, o);
 
@@ -1086,6 +1091,17 @@ export class ShotTracker {
     }
     if (t >= s.pred.tCross) return this.#cruce();
     return { type: "update", t, prediction: s.pred };
+  }
+
+  // Con la medición `o`, ¿la trayectoria dice que la pelota todavía no llegó a
+  // la línea? (Como mucho PRORROGA_MAXIMA cuadros más.)
+  #todaviaNoLlega(t, o) {
+    const s = this.shot;
+    if (SIN_PRORROGA || (s.prorrogas ?? 0) >= PRORROGA_MAXIMA || !o.d) return false;
+    const pred = this.#predecir([...s.obs, o], s.reposo);
+    if (!pred || !(pred.vz < -0.8) || !(pred.tCross > t + 0.02) || (pred.calidad != null && pred.calidad > 10)) return false;
+    s.prorrogas = (s.prorrogas ?? 0) + 1;
+    return true;
   }
 
   // ¿La medición está lejos de donde la trayectoria dice que debería estar?
