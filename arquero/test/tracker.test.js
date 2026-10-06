@@ -227,14 +227,32 @@ function quieta(x, z, t0, t1, extra = {}) {
 }
 
 test("acomodar la pelota con el pie no es un remate", () => {
-  // Quieta, después la llevan despacio (1,5 m/s) hacia el arco y queda quieta otra vez.
+  // Quieta, después la llevan despacio (1,5 m/s) unos 35 cm hacia el arco y queda quieta otra vez.
   const obs = quieta(0, 6, 0, 0.8);
-  for (let k = 1; k <= 20; k++) {
+  for (let k = 1; k <= 7; k++) {
     const z = 6 - 1.5 * (k / 30);
     obs.push({ t: 0.8 + k / 30, x: 0.05 * k * 0.03, y: R, z, onGround: true, px: 100, py: 40 - z * 3, pr: 8 });
   }
-  obs.push(...quieta(0.03, 5, 0.8 + 21 / 30, 2));
+  obs.push(...quieta(0.01, 6 - 1.5 * (7 / 30), 0.8 + 8 / 30, 2.5));
   assert.deepEqual(correr(obs), []);
+});
+
+test("un remate suave que rueda derecho al arco es un remate", () => {
+  // Quieta y después rueda a 0,9 m/s hacia el arco (como en casa, con el arco cerca).
+  const obs = quieta(0.1, 1.6, 0, 0.8);
+  for (let k = 1; k <= 60; k++) {
+    const z = 1.6 - 0.9 * (k / 30);
+    if (z < -0.05) break;
+    obs.push({ t: 0.8 + k / 30, x: 0.1 - 0.1 * (k / 30), y: R, z, onGround: true, px: 100, py: 40 + (1.6 - z) * 20, pr: 18 - (1.6 - z) * 4 });
+  }
+  const eventos = correr(obs);
+  const tipos = eventos.map((e) => e.type);
+  assert.equal(tipos[0], "kick", JSON.stringify(tipos));
+  assert.ok(!tipos.includes("cancel"), JSON.stringify(tipos));
+  const cruce = eventos.find((e) => e.type === "cross");
+  assert.ok(cruce, JSON.stringify(tipos));
+  // Cruza en x ≈ 0,1 − 0,1·(1,6/0,9) ≈ −0,08
+  assert.ok(Math.abs(cruce.prediction.x + 0.08) < 0.1, `x ${cruce.prediction.x}`);
 });
 
 test("un salto de la detección a otra cosa no es un remate", () => {

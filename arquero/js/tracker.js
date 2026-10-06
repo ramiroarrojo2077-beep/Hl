@@ -116,8 +116,9 @@ const V_TIPICA = 30; // m/s
 const TAMANO_RELATIVO = Number(EXP.match(/tamRel=([\d.]+)/)?.[1] ?? 0);
 const S_V = 3; // m/s
 // Error relativo del ancho de una estela (la pelota borrosa por la velocidad).
+// (Probado: en remates comunes empeora más de lo que ayuda; queda apagado.)
 const S_TAMANO_ESTELA = Number(EXP.match(/sEstela=([\d.]+)/)?.[1] ?? 0.35);
-const SIN_ESTELA_TAMANO = EXP.includes("sinEstelaTam");
+const SIN_ESTELA_TAMANO = !EXP.includes("conEstelaTam");
 // Una pelota pateada sale con una inclinación limitada: los remates fuertes van
 // bajos o a media altura, y aun una vaselina lenta no sale vertical. Más que
 // esto (velocidad vertical al salir del pie, según la horizontal) es una
@@ -305,7 +306,9 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null, { prior
   const p0 = [inicial.x0, inicial.y0, inicial.z0, inicial.vx, inicial.vy, inicial.vz, tPatada];
   const comun = { obs, bases, tRef, R, reposo, prior };
   const piso = minimizar({ ...comun, piso: true }, p0);
-  let aire = minimizar({ ...comun, piso: false, subida: !SIN_SUBIDA }, p0);
+  // (El límite de subida, como el de rapidez, sólo para la trayectoria de un
+  // remate ya detectado: para decidir si hubo remate no se supone nada.)
+  let aire = minimizar({ ...comun, piso: false, subida: prior && !SIN_SUBIDA }, p0);
 
   // Si la parábola pica dentro del tramo medido, se ajusta sólo después del pique.
   const [, y0, , , vy] = aire.p;
@@ -316,7 +319,7 @@ export function ajustarTrayectoria(obs, tRef, inicial, R, reposo = null, { prior
     const despues = obs.filter((o) => o.t - tRef > tauPique + 0.02);
     const primera = obs[0].t - tRef;
     if (tauPique > primera && tauPique < 0 && despues.length >= 3 && despues.length < obs.length) {
-      const caso = { obs: despues, bases: despues.map((o) => base(o.d)), tRef, R, reposo: null, piso: false, prior, subida: !SIN_SUBIDA };
+      const caso = { obs: despues, bases: despues.map((o) => base(o.d)), tRef, R, reposo: null, piso: false, prior, subida: prior && !SIN_SUBIDA };
       const rebote = minimizar(caso, [...aire.p.slice(0, 4), Math.abs(vy) * 0.5, aire.p[5], tPatada]);
       aire = { p: rebote.p, costo: rebote.costo * (obs.length / despues.length) };
     }
@@ -366,9 +369,11 @@ const TOLERANCIA_PROFUNDIDAD = 0.12; // m, más un 10 % de la distancia si se mi
 const VELOCIDAD_MAXIMA = 45; // m/s; más rápido que esto entre dos mediciones no es la pelota
 const ALARGADA_MAXIMA = 3; // estela de movimiento de un remate; más que eso no es la pelota
 const ALARGADA_QUIETA = 1.6;
-const MAX_QUIETOS = 10; // objetos quietos que se vigilan a la vez
+const MAX_QUIETOS = 6; // objetos quietos que se vigilan a la vez
 const CERCA_ESCANEADA = 0.35; // m alrededor de donde se escaneó la pelota // quieta, la pelota se ve redonda (una pierna o una media, no)
-const MOVIMIENTO_MINIMO = 0.15; // fracción de píxeles que cambiaron (si se sabe)
+const MOVIMIENTO_MINIMO = 0.15;
+const RECORRIDO_LENTO = 0.5; // m que tiene que rodar derecho al arco un remate suave
+const SIN_LENTO = EXP.includes("sinLento"); // fracción de píxeles que cambiaron (si se sabe)
 
 // Cuánto se apartó `o` del punto `r`, en unidades de la tolerancia (1 = en el borde).
 // De costado la medición es muy precisa; en profundidad depende de cómo se midió.
@@ -495,6 +500,15 @@ export class ShotTracker {
     return mejor?.q ?? null;
   }
 
+  // Las pelotas listas de las que puede salir un remate. Después del escaneo,
+  // sólo la escaneada (si está lista): otras cosas quietas parecidas (una pata
+  // de silla, un zapato) no patean.
+  #listas() {
+    const armados = this.quietos.filter((q) => q.armado);
+    const escaneadas = armados.filter((q) => this.esEscaneada(q));
+    return escaneadas.length ? escaneadas : armados;
+  }
+
   // Dónde estaba la pelota cuando se la escaneó (en el piso): lo que está quieto
   // ahí es la pelota, aunque haya otras cosas parecidas a la vista. Vale hasta el
   // primer remate (después puede quedar en cualquier lado).
@@ -556,12 +570,12 @@ export class ShotTracker {
         q.onGround = c.onGround;
         if (!q.armado && t - q.t0 >= QUIETA_TIEMPO && q.n >= 5) q.armado = true;
       } else {
-        // Si ya hay muchos (motas del piso, otras cosas), se reemplaza el que
-        // menos se vio; la pelota escaneada siempre entra.
-        if (this.quietos.length >= MAX_QUIETOS) {
+        // Si ya hay muchos (motas del piso, otras cosas), la pelota escaneada
+        // igual entra: sale el que menos se vio.
+        if (this.quietos.length >= MAX_QUIETOS && this.esEscaneada(c)) {
           let peor = null;
-          for (const k of this.quietos) if (!k.armado && !this.esEscaneada(k) && (!peor || k.n < peor.n)) peor = k;
-          if (peor && (this.esEscaneada(c) || peor.n <= 2)) this.quietos.splice(this.quietos.indexOf(peor), 1);
+          for (const k of this.quietos) if (!k.armado && (!peor || k.n < peor.n)) peor = k;
+          if (peor) this.quietos.splice(this.quietos.indexOf(peor), 1);
         }
         if (this.quietos.length < MAX_QUIETOS) {
           this.quietos.push({ ...posicionDe(c), t0: t, tUlt: t, n: 1, score: c.score ?? 0.5, armado: false, saliendo: [], saltos: 0 });
@@ -621,7 +635,7 @@ export class ShotTracker {
       return mejor;
     }
 
-    const armados = this.quietos.filter((q) => q.armado);
+    const armados = this.#listas();
     if (armados.length) {
       // Si una pelota ya venía saliendo de su lugar, se sigue con la que continúa.
       const enCurso = armados.find((q) => q.saliendo.length);
@@ -697,7 +711,7 @@ export class ShotTracker {
     // Si no se llamó a observe en este cuadro, la medición elegida cuenta como la única.
     if (this.observadoEn !== t) this.observe(t, [p]);
 
-    const armados = this.quietos.filter((q) => q.armado);
+    const armados = this.#listas();
     if (!armados.length) return null;
     // Sigue (o volvió) a su lugar: si algo venía "saliendo", era otra cosa.
     const enLugar = armados.find((q) => ocupa(o, q));
@@ -722,6 +736,15 @@ export class ShotTracker {
         // estelas, es una pierna que pasa delante (la pelota sigue tapada ahí).
         const nitidas = q.saliendo.filter((s) => !s.estela).length;
         if (velocidadDe(q.saliendo) < VELOCIDAD_MINIMA && (nitidas >= 2 || EXP.includes("sinNitidas"))) {
+          // ¿Un remate suave? Rueda derecho hacia el arco: se la sigue hasta que
+          // recorre lo suficiente para no confundirlo con acomodarla.
+          const lento = SIN_LENTO ? "no" : this.#rodandoAlArco(q, q.saliendo);
+          if (lento === "remate") {
+            const ev = this.#arrancarVuelo(t, q);
+            if (this.shot) this.shot.lento = true;
+            return ev;
+          }
+          if (lento === "quizas") return null;
           this.quietos = this.quietos.filter((k) => k !== q);
           return null;
         }
@@ -770,6 +793,27 @@ export class ShotTracker {
       }
     }
     return false;
+  }
+
+  // Remate suave: la pelota sale rodando despacio (menos de VELOCIDAD_MINIMA),
+  // derecho y hacia el arco. "remate" si ya recorrió RECORRIDO_LENTO y sigue
+  // rodando; "quizas" mientras puede serlo; "no" si no (la acomodan con el pie:
+  // se mueve un poco y se queda, o va para cualquier lado).
+  #rodandoAlArco(q, saliendo) {
+    if (saliendo.some((o) => !o.onGround)) return "no";
+    const pts = [{ ...q, t: q.tUlt }, ...saliendo];
+    const ts = pts.map((m) => m.t - pts[0].t);
+    const [, vx, ex] = ajusteLineal(ts, pts.map((m) => m.x));
+    const [, vz, ez] = ajusteLineal(ts, pts.map((m) => m.z));
+    const v = Math.hypot(vx, vz);
+    const ultimo = saliendo[saliendo.length - 1];
+    if (!(v >= 0.4 && -vz >= 0.3 && -vz >= 0.6 * v && Math.hypot(ex, ez) < 0.08)) return "no";
+    if (Math.abs(ultimo.x + vx * (ultimo.z / -vz)) > this.goalWidth / 2 + 1.5) return "no";
+    const fin = saliendo.slice(-4);
+    const dtFin = fin[fin.length - 1].t - fin[0].t;
+    const vFin = dtFin > 0.05 ? Math.hypot(fin[fin.length - 1].x - fin[0].x, fin[fin.length - 1].z - fin[0].z) / dtFin : 0;
+    if (Math.hypot(ultimo.x - q.x, ultimo.z - q.z) >= RECORRIDO_LENTO && vFin >= 0.3) return "remate";
+    return ultimo.t - saliendo[0].t < 1.2 ? "quizas" : "no";
   }
 
   // Con 2 mediciones y el punto de reposo, la física ajusta casi cualquier cosa:
@@ -1020,7 +1064,7 @@ export class ShotTracker {
     const anterior = s.pred;
     s.pred = this.#predecir();
 
-    if (!s.pred || s.pred.vz > -0.8) {
+    if (!s.pred || s.pred.vz > (s.lento ? -0.25 : -0.8)) {
       // Un remate que se viene siguiendo bien no se descarta por un ajuste malo.
       if (anterior && anterior.vz <= -0.8 && s.confirmadas >= 4) {
         s.pred = anterior;

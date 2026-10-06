@@ -69,27 +69,30 @@ export class BallTracking {
     this.reiniciarRadio();
   }
 
-  // Dónde está (en el piso, en coordenadas del arco) y qué radio real tiene la
-  // pelota escaneada. El radio sale de su tamaño en la imagen y la altura de la
-  // cámara sobre el piso (ver radioApoyada), sólo si su borde se distingue bien
-  // y da un número de pelota parecido al elegido (si no, null: manda el elegido).
+  // La pelota escaneada (apoyada en el piso): dónde está (en coordenadas del
+  // arco) y de qué tamaño la ve el detector. El tamaño, comparado con el que
+  // tendría a esa distancia del piso del arco (ver radioApoyada), da:
+  //  - escala ≈ 1: todo bien;
+  //  - algo distinta (0,6 a 1,7): el detector la ve más chica o más grande (una
+  //    pelota oscura sobre un piso oscuro: sólo se marcan sus dibujos) o el
+  //    número elegido no es el de la pelota; se calibra con el radio aparente;
+  //  - muy distinta: el arco no está apoyado en el mismo piso que la pelota
+  //    (quedó sobre otra cosa), y con eso nada se puede medir bien.
   // det: la que encontró el escaneo. null si no se puede ubicar.
   medirEscaneada(info, arco, det) {
     if (!det || !arco) return null;
-    const { data, width: w, height: h } = info.image;
+    const { width: w, height: h } = info.image;
     this.tmp.proyInv.copy(info.projMatrix).invert();
     this.tmp.inv.copy(arco).invert();
     const lugar = this.ubicar(info, det, w, h);
     if (!lugar) return null;
-    const pos = { x: lugar.x, y: lugar.y, z: lugar.z };
-    // Sólo por el borde: la mancha de color puede no cubrir toda la pelota o
-    // (con un piso parecido) pasarse.
-    const fino = this.detector.refine(data, w, h, det);
-    if (!fino || (fino.borde ?? 0) < 0.5 || Math.abs(Math.log(fino.r / det.r)) > 0.35) return { pos, radio: null };
-    const m = this.ubicar(info, { ...det, x: fino.x, y: fino.y, r: fino.r }, w, h);
-    const r = m ? radioApoyada(m.o, m.d, m.ang) : null;
-    const creible = r && Math.abs(Math.log(r / this.radioNominal)) < 0.2;
-    return { pos, radio: creible ? r : null };
+    const aparente = radioApoyada(lugar.o, lugar.d, lugar.ang);
+    if (!aparente) return null;
+    const escala = aparente / this.radioNominal;
+    // Dónde está: el rayo al centro cortando el piso (a la altura de su radio).
+    const enPiso = this.ubicar(info, { ...det, r: det.r / Math.max(escala, 0.2) }, w, h);
+    const pos = enPiso?.onGround ? { x: enPiso.x, y: enPiso.y, z: enPiso.z } : null;
+    return { pos, escala, radio: aparente, pisoDistinto: escala < 0.6 || escala > 1.7 };
   }
 
   reiniciarRadio() {

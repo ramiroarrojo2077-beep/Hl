@@ -31,8 +31,10 @@ if (iFotos > 0) {
   reg.tiros?.forEach((tiro, k) => tiro.fotos.forEach((f, j) => guardar(`tiro${k}-${j}-${(f.t - t00).toFixed(2)}`, f.jpeg)));
 }
 
-const seg = new BallTracking({ radio: reg.radioPelota?.calibrado ?? 0.11 });
-seg.radio = reg.radioPelota?.calibrado ?? seg.radio;
+// RADIO=…: el radio con que se sigue (p. ej. el que daría el escaneo calibrado).
+const radio = Number(process.env.RADIO) || (reg.radioPelota?.calibrado ?? 0.11);
+const seg = new BallTracking({ radio });
+seg.radio = radio;
 seg.tracker.ballRadius = seg.radio;
 const ARCOS = { mini: 2, futbol5: 3, cancha: 7.32 };
 seg.setAnchoArco(ARCOS[reg.ajustes?.arco] ?? 3);

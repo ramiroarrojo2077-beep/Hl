@@ -32,6 +32,8 @@ export const PELOTAS_SIM = {
   azul: { base: [0.8, 0.8, 0.8], parche: [0.03, 0.08, 0.5] },
   amarilla: { base: [0.75, 0.62, 0.06], parche: [0.04, 0.04, 0.04] },
   naranja: { base: [0.85, 0.3, 0.04], parche: [0.85, 0.85, 0.85] },
+  // Negra con algún dibujo gris oscuro.
+  negra: { base: [0.03, 0.03, 0.032], parche: [0.22, 0.22, 0.23] },
   // Blanca con parches de colores (como muchas pelotas actuales).
   multicolor: {
     base: [0.82, 0.82, 0.8],

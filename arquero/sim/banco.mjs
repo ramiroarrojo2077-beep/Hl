@@ -72,6 +72,37 @@ export const ESCENARIOS = {
     distancia: [1.2, 2.5],
     rapidez: [5, 15],
   },
+  // Lo mismo con una pelota negra N.º 3 (las motas oscuras del granito, las
+  // sombras y las zapatillas se le parecen).
+  "casa-negra": {
+    modo: "mano",
+    encima: true,
+    lugar: "interior",
+    piso: "granito",
+    pelota: "negra",
+    pelotaN: 3,
+    luz: "interior",
+    exposicion: 0.012,
+    ruido: { foton: 0.0012, lectura: 0.00015 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [1.2, 2.5],
+    rapidez: [5, 15],
+  },
+  // Pelota negra, celular en la mano más atrás (1,5 a 3,5 m del arco).
+  "casa-negra-mano": {
+    modo: "mano",
+    lugar: "interior",
+    piso: "granito",
+    pelota: "negra",
+    pelotaN: 3,
+    luz: "interior",
+    exposicion: 0.025,
+    ruido: { foton: 0.0015, lectura: 0.0002 },
+    arco: { ancho: 2, alto: 1.3 },
+    distancia: [2, 4.5],
+    rapidez: [6, 20],
+    traslacion: 3,
+  },
   // Lo mismo, con remates muy fuertes (la pelota sale como una estela).
   "casa-encima-rapido": {
     modo: "mano",
@@ -311,12 +342,13 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   const aprendio = seg.detector.learn(infoEscaneo.image.data, w / 2, h / 2, radioMira, camEsc);
   if (!aprendio.ok) return { omitida: true, motivo: `escaneo: ${aprendio.motivo}` };
   // Como en la app: el radio real de la pelota sale del escaneo.
-  const medidaEscaneo = seg.medirEscaneada(infoEscaneo, arcoApp, aprendio.det);
+  const medidaEscaneo = seg.medirEscaneada?.(infoEscaneo, arcoApp, aprendio.det) ?? null;
+  if (medidaEscaneo?.pisoDistinto) return { omitida: true, motivo: "escaneo: piso distinto" };
   const radioEscaneo = medidaEscaneo?.radio ?? null;
   if (radioEscaneo && !(process.env.EXP ?? "").includes("sinRadioEscaneo")) seg.setRadioNominal(radioEscaneo);
   seg.reiniciarRadio();
   seg.reset();
-  if (!(process.env.EXP ?? "").includes("sinEscaneada")) seg.tracker.marcarEscaneada(medidaEscaneo?.pos ?? null);
+  if (!(process.env.EXP ?? "").includes("sinEscaneada")) seg.tracker.marcarEscaneada?.(medidaEscaneo?.pos ?? null);
 
   const resultados = [];
   let msTotal = 0;

@@ -403,12 +403,20 @@ function escanear(info) {
   detector.resize(width, height);
   const res = detector.learn(data, width / 2, height / 2, RADIO_MIRA * Math.min(width, height), camaraDe(info, width, height));
   // El tamaño real de la pelota (apoyada en el piso): así no importa el número elegido.
-  // También dónde quedó: lo que está quieto ahí es la pelota (no otra cosa parecida).
+  // Dónde quedó (lo que está quieto ahí es la pelota, no otra cosa parecida) y
+  // de qué tamaño la ve el detector (ver medirEscaneada).
   const medida = res.ok ? seg.medirEscaneada(info, arcoGrupo.matrixWorld, res.det) : null;
-  const radio = medida?.radio ?? null;
-  bitacora.escaneo = { foto: copiaImagen(info.image, info.t), res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null, radio, lugar: medida?.pos ?? null } };
+  bitacora.escaneo = {
+    foto: copiaImagen(info.image, info.t),
+    res: { ok: res.ok, motivo: res.motivo ?? null, fuga: res.fuga ?? null, escala: medida?.escala ?? null, radio: medida?.radio ?? null, lugar: medida?.pos ?? null },
+  };
+  if (res.ok && medida?.pisoDistinto) {
+    ui.pasoTexto.textContent =
+      "El arco no quedó en el mismo piso que la pelota (parece apoyado sobre otra cosa). Tocá «Reubicar arco», apuntá al piso cerca de la pelota y volvé a escanear.";
+    return;
+  }
   if (res.ok) {
-    if (radio) seg.setRadioNominal(radio);
+    if (medida) seg.setRadioNominal(medida.radio);
     else seg.reiniciarRadio();
     sonidos.whistle();
     irA("jugar");
