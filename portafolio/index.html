@@ -5,785 +5,1436 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Juegos de ramiroarrojo2077</title>
 <meta name="description" content="Once juegos para el navegador: Fórmula 1, fútbol, terror, ritmo y una mascota en 3D. Se juegan en la página, sin instalar nada.">
+<script>
+(function(){var d=document.documentElement;d.classList.add('js');
+try{if(matchMedia('(prefers-reduced-motion: no-preference)').matches&&'IntersectionObserver' in window)d.classList.add('mov')}catch(e){}
+addEventListener('load',function(){setTimeout(function(){if(!d.classList.contains('listo')){d.classList.remove('mov','js')}},1500)});})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="preload" as="image" imagesrcset="capturas/f19-grand-prix-hero-640.webp 640w, capturas/f19-grand-prix-hero.webp 1280w, capturas/f19-grand-prix-hero-1920.webp 1920w" imagesizes="100vw" fetchpriority="high">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Inter+Tight:wght@500..800&family=Instrument+Serif:ital@1&display=swap">
 <style>
-  /* Vitrina de juegos: encabezado compacto con un piano (kerb) celeste y rosa,
-     grilla de tres columnas donde el destacado ocupa dos, y ficha técnica al pie.
-     Cada tarjeta toma un tinte de su propio juego. */
-  :root {
-    --fondo: #e8ebee;
-    --superficie: #f7f8fa;
-    --hundido: #dde1e6;
-    --tinta: #12161b;
-    --suave: #56606c;
-    --linea: #cfd5dc;
-    --acento: #0a7fbf;
-    --acento-tinta: #ffffff;
-    --rosa: #d63a83;
-    --sombra: 0 1px 2px rgb(18 22 27 / 0.06), 0 8px 24px -12px rgb(18 22 27 / 0.18);
-    --velo: rgb(10 13 17 / 0.72);
-
-    --f-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
-    --f-texto: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-
-    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-    --radio: 14px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --fondo: #0d1014;
-      --superficie: #151a20;
-      --hundido: #1c222a;
-      --tinta: #e8ecf0;
-      --suave: #919ba7;
-      --linea: #262d36;
-      --acento: #4cc2f7;
-      --acento-tinta: #04141d;
-      --rosa: #ff6fae;
-      --sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -14px rgb(0 0 0 / 0.7);
-      --velo: rgb(4 6 9 / 0.82);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --fondo: #0d1014;
-    --superficie: #151a20;
-    --hundido: #1c222a;
-    --tinta: #e8ecf0;
-    --suave: #919ba7;
-    --linea: #262d36;
-    --acento: #4cc2f7;
-    --acento-tinta: #04141d;
-    --rosa: #ff6fae;
-    --sombra: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -14px rgb(0 0 0 / 0.7);
-    --velo: rgb(4 6 9 / 0.82);
-    color-scheme: dark;
-  }
-
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    background: var(--fondo);
-    color: var(--tinta);
-    font: 400 16px/1.55 var(--f-texto);
-    -webkit-font-smoothing: antialiased;
-  }
-  img { max-width: 100%; display: block; }
-  [hidden] { display: none !important; }
-  a { color: inherit; }
-  :focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; border-radius: 6px; }
-
-  .piano {
-    height: 6px;
-    background: repeating-linear-gradient(90deg, var(--acento) 0 28px, var(--rosa) 28px 56px);
-  }
-  .envoltorio {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding-inline: 24px;
-  }
-  @media (max-width: 520px) { .envoltorio { padding-inline: 16px; } }
-
-  /* Barra superior */
-  .barra {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding-block: 18px;
-  }
-  .marca {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font: 800 20px/1 var(--f-display);
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    text-decoration: none;
-  }
-  .marca { min-width: 0; }
-  .marca span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .marca svg { flex: none; }
-  .barra nav { display: flex; flex: none; gap: 20px; font-size: 14px; color: var(--suave); }
-  .barra nav a { text-decoration: none; }
-  @media (hover: hover) and (pointer: fine) { .barra nav a:hover { color: var(--tinta); } }
-  @media (max-width: 480px) { .barra nav { gap: 16px; } .barra nav .opcional { display: none; } }
-
-  /* Portada */
-  .portada {
-    display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    gap: 48px;
-    align-items: end;
-    padding-block: 40px 48px;
-  }
-  .antetitulo {
-    margin: 0 0 14px;
-    font: 500 12px/1 var(--f-mono);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--suave);
-  }
-  h1 {
-    margin: 0;
-    font: 900 clamp(52px, 8.4vw, 104px)/0.88 var(--f-display);
-    letter-spacing: -0.005em;
-    text-transform: uppercase;
-    text-wrap: balance;
-  }
-  h1 em { font-style: normal; color: var(--acento); }
-  .bajada {
-    max-width: 58ch;
-    margin: 22px 0 0;
-    font-size: 18px;
-    color: var(--suave);
-  }
-  .llamadas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
-
-  .tablero {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-top: 1px solid var(--linea);
-  }
-  .tablero div {
-    padding: 16px 0 18px;
-    border-bottom: 1px solid var(--linea);
-  }
-  .tablero div:nth-child(odd) { padding-right: 16px; border-right: 1px solid var(--linea); }
-  .tablero div:nth-child(even) { padding-left: 20px; }
-  .tablero b {
-    display: block;
-    font: 800 44px/1 var(--f-display);
-    font-variant-numeric: tabular-nums;
-  }
-  .tablero span { font-size: 13px; color: var(--suave); }
-
-  @media (max-width: 860px) {
-    .portada { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 24px 36px; }
-  }
-
-  /* Botones */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 42px;
-    padding: 0 18px;
-    border: 1px solid var(--linea);
-    border-radius: 999px;
-    background: var(--superficie);
-    color: var(--tinta);
-    font: 600 14px/1 var(--f-texto);
-    text-decoration: none;
-    cursor: pointer;
-    transition: transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn.primario { background: var(--acento); border-color: var(--acento); color: var(--acento-tinta); }
-  .btn svg { flex: none; }
-  @media (hover: hover) and (pointer: fine) {
-    .btn:hover { border-color: var(--suave); }
-    .btn.primario:hover { filter: brightness(1.08); border-color: var(--acento); }
-  }
-
-  /* Filtros */
-  .seccion-cabeza {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 16px 24px;
-    padding-top: 8px;
-    margin-bottom: 20px;
-  }
-  h2 {
-    margin: 0;
-    font: 800 36px/1 var(--f-display);
-    text-transform: uppercase;
-    letter-spacing: 0.01em;
-  }
-  .filtros { display: flex; flex-wrap: wrap; gap: 6px; }
-  .filtro {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 36px;
-    padding: 0 14px;
-    border: 1px solid var(--linea);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--suave);
-    font: 500 14px/1 var(--f-texto);
-    cursor: pointer;
-    transition: transform 160ms var(--ease-out), background-color 160ms ease, color 160ms ease;
-  }
-  .filtro:active { transform: scale(0.97); }
-  .filtro small { font: 500 11px/1 var(--f-mono); opacity: 0.75; }
-  .filtro[aria-pressed="true"] { background: var(--tinta); border-color: var(--tinta); color: var(--fondo); }
-  @media (hover: hover) and (pointer: fine) {
-    .filtro:not([aria-pressed="true"]):hover { color: var(--tinta); border-color: var(--suave); }
-  }
-
-  /* Grilla de juegos */
-  .grilla {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 20px;
-  }
-  @media (max-width: 1020px) { .grilla { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .grilla { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
-
-  .juego {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    background: var(--superficie);
-    border: 1px solid var(--linea);
-    border-radius: var(--radio);
-    overflow: hidden;
-    box-shadow: var(--sombra);
-  }
-  .captura {
-    position: relative;
-    display: block;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    max-width: 100%;
-    padding: 0;
-    border: 0;
-    background: var(--hundido);
-    overflow: hidden;
-    cursor: pointer;
-  }
-  .captura img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 400ms var(--ease-out);
-  }
-  .captura .boton-jugar {
-    position: absolute;
-    left: 14px;
-    bottom: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 14px 9px 12px;
-    border-radius: 999px;
-    background: rgb(8 10 13 / 0.78);
-    color: #fff;
-    font: 600 13px/1 var(--f-texto);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-  .captura .boton-jugar i {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--tinte);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tinte) 35%, transparent);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .juego:hover .captura img { transform: scale(1.035); }
-  }
-
-  .cuerpo {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-    padding: 18px 20px 20px;
-  }
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 12px;
-    margin: 0;
-    font: 500 11.5px/1.3 var(--f-mono);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--suave);
-  }
-  .tipo { display: inline-flex; align-items: center; gap: 7px; color: var(--tinta); }
-  .tipo::before {
-    content: "";
-    width: 9px; height: 9px;
-    border-radius: 2px;
-    background: var(--tinte);
-  }
-  .juego h3 {
-    margin: 0;
-    font: 800 30px/0.98 var(--f-display);
-    text-transform: uppercase;
-    letter-spacing: 0.005em;
-    text-wrap: balance;
-  }
-  .resumen { margin: 0; font-size: 15px; color: var(--suave); }
-  .teclas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-size: 13px;
-    color: var(--suave);
-  }
-  .teclas li { display: inline-flex; align-items: center; gap: 6px; }
-  kbd {
-    display: inline-flex;
-    align-items: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 7px;
-    justify-content: center;
-    border: 1px solid var(--linea);
-    border-bottom-width: 2px;
-    border-radius: 6px;
-    background: var(--fondo);
-    color: var(--tinta);
-    font: 500 11.5px/1 var(--f-mono);
-  }
-  .plataformas { margin: 0; font-size: 13px; color: var(--suave); }
-  .acciones {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: auto;
-    padding-top: 6px;
-  }
-
-  /* Destacado: ocupa dos columnas con la captura al costado */
-  .grilla[data-filtro="todos"] .juego.destacado {
-    grid-column: span 2;
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  }
-  .grilla[data-filtro="todos"] .juego.destacado .captura { aspect-ratio: auto; height: 100%; min-height: 300px; }
-  .grilla[data-filtro="todos"] .juego.destacado h3 { font-size: 42px; }
-  .sello {
-    align-self: flex-start;
-    padding: 5px 9px;
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--tinte) 16%, transparent);
-    color: var(--tinta);
-    font: 500 11px/1 var(--f-mono);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  @media (max-width: 640px) {
-    .grilla[data-filtro="todos"] .juego.destacado { grid-column: auto; display: flex; }
-    .grilla[data-filtro="todos"] .juego.destacado .captura { aspect-ratio: 16 / 9; height: auto; min-height: 0; }
-    .grilla[data-filtro="todos"] .juego.destacado h3 { font-size: 34px; }
-  }
-
-  /* Ficha técnica */
-  .ficha { padding-block: 72px 24px; }
-  .ficha p.nota { max-width: 62ch; margin: 12px 0 24px; color: var(--suave); }
-  .tabla-caja {
-    overflow-x: auto;
-    border: 1px solid var(--linea);
-    border-radius: var(--radio);
-    background: var(--superficie);
-  }
-  table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--linea); vertical-align: top; }
-  tr:last-child td { border-bottom: 0; }
-  th {
-    font: 500 11px/1.2 var(--f-mono);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--suave);
-    background: var(--hundido);
-  }
-  td.num { font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: 13px; white-space: nowrap; }
-  td .tipo { font-weight: 600; }
-  td a { color: var(--acento); text-underline-offset: 3px; }
-
-  .pie {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 12px 24px;
-    padding-block: 40px 56px;
-    font-size: 14px;
-    color: var(--suave);
-  }
-
-  /* Reproductor */
-  .reproductor {
-    width: min(1280px, 100vw - 32px);
-    max-width: none;
-    height: min(820px, 100dvh - 32px);
-    max-height: none;
-    padding: 0;
-    border: 1px solid var(--linea);
-    border-radius: 16px;
-    background: #050608;
-    color: #e8ecf0;
-    overflow: hidden;
-    opacity: 1;
-    transform: none;
-    transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out), overlay 220ms allow-discrete, display 220ms allow-discrete;
-  }
-  .reproductor[open] { display: flex; flex-direction: column; }
-  @starting-style {
-    .reproductor[open] { opacity: 0; transform: scale(0.97); }
-  }
-  .reproductor::backdrop {
-    background: var(--velo);
-    transition: opacity 220ms ease, overlay 220ms allow-discrete, display 220ms allow-discrete;
-  }
-  @starting-style { .reproductor[open]::backdrop { opacity: 0; } }
-
-  .reproductor header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 10px 10px 18px;
-    border-bottom: 1px solid #1d232b;
-    background: #0d1014;
-  }
-  .reproductor header .titulo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    font: 800 22px/1 var(--f-display);
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .reproductor header .titulo i { flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--tinte, #4cc2f7); }
-  .reproductor .ayuda {
-    display: flex;
-    gap: 12px;
-    margin-left: auto;
-    font-size: 12.5px;
-    color: #919ba7;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  .reproductor .ayuda kbd { background: #151a20; border-color: #2b333d; color: #e8ecf0; }
-  .reproductor .herramientas { display: flex; gap: 6px; flex: none; }
-  .icono {
-    display: inline-grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    border: 1px solid #2b333d;
-    border-radius: 10px;
-    background: #151a20;
-    color: #e8ecf0;
-    cursor: pointer;
-    text-decoration: none;
-    transition: transform 160ms var(--ease-out), background-color 160ms ease;
-  }
-  .icono:active { transform: scale(0.95); }
-  @media (hover: hover) and (pointer: fine) { .icono:hover { background: #1f262f; } }
-  .reproductor iframe { flex: 1; width: 100%; border: 0; background: #050608; }
-  @media (max-width: 760px) {
-    .reproductor { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
-    .reproductor .ayuda { display: none; }
-    .reproductor header .titulo { margin-right: auto; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .captura img, .btn, .filtro, .icono { transition: none; }
-    .reproductor { transition: opacity 150ms ease; }
-    @starting-style { .reproductor[open] { transform: none; } }
-  }
+@font-face{font-family:"Inter Respaldo";font-weight:100 549;src:local("Arial"),local("ArialMT"),local("Helvetica"),local("Liberation Sans");size-adjust:104.65%;ascent-override:92.57%;descent-override:23.14%;line-gap-override:0%}
+@font-face{font-family:"Inter Respaldo";font-weight:550 900;src:local("Arial Bold"),local("Arial-BoldMT"),local("Helvetica Bold"),local("Liberation Sans Bold");size-adjust:100.2%;ascent-override:96.68%;descent-override:24.17%;line-gap-override:0%}
+@font-face{font-family:"Inter Tight Respaldo";font-weight:100 549;src:local("Arial"),local("ArialMT"),local("Helvetica"),local("Liberation Sans");size-adjust:93.13%;ascent-override:104.02%;descent-override:26.01%;line-gap-override:0%}
+@font-face{font-family:"Inter Tight Respaldo";font-weight:550 900;src:local("Arial Bold"),local("Arial-BoldMT"),local("Helvetica Bold"),local("Liberation Sans Bold");size-adjust:95.33%;ascent-override:101.62%;descent-override:25.41%;line-gap-override:0%}
+@font-face{font-family:"Instrument Serif Respaldo";font-style:italic;src:local("Times New Roman Italic"),local("TimesNewRomanPS-ItalicMT"),local("Times Italic"),local("Liberation Serif Italic");size-adjust:86.32%;ascent-override:114.68%;descent-override:35.91%;line-gap-override:0%}
+:root{color-scheme:light dark;--fondo:#ffffff;--fondo-2:#f5f5f7;--tile:#f5f5f7;--tarjeta:#ffffff;--tinta:#1d1d1f;--suave:#6e6e73;--linea:#d2d2d7;--boton:#0071e3;--boton-hover:#0077ed;--boton-tinta:#ffffff;--enlace:#0066cc;--nav-fondo:rgb(251 251 253 / .8);--nav-tinta:#1d1d1f;--nav-linea:rgb(0 0 0 / .08);--velo:rgb(0 0 0 / .72);--foco:#0071e3;--trazo:rgb(29 29 31 / .14);--foto-velo:rgb(0 0 0 / .06);--f-titulo:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter Tight","Inter Tight Respaldo","Helvetica Neue",Arial,sans-serif;--f-texto:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Inter Respaldo","Helvetica Neue",Arial,sans-serif;--f-serif:"Instrument Serif","Instrument Serif Respaldo","Iowan Old Style",Georgia,serif;--f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--ease:cubic-bezier(.23,1,.32,1);--margen:40px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fondo:#000000;--fondo-2:#161617;--tile:#161617;--tarjeta:#1d1d1f;--tinta:#f5f5f7;--suave:#a1a1a6;--linea:#424245;--enlace:#2997ff;--nav-fondo:rgb(22 22 23 / .8);--nav-tinta:#f5f5f7;--nav-linea:rgb(255 255 255 / .08);--velo:rgb(0 0 0 / .82);--foco:#2997ff;--trazo:rgb(245 245 247 / .32);--foto-velo:rgb(255 255 255 / .24);color-scheme:dark}
+}
+:root[data-theme="dark"]{--fondo:#000000;--fondo-2:#161617;--tile:#161617;--tarjeta:#1d1d1f;--tinta:#f5f5f7;--suave:#a1a1a6;--linea:#424245;--enlace:#2997ff;--nav-fondo:rgb(22 22 23 / .8);--nav-tinta:#f5f5f7;--nav-linea:rgb(255 255 255 / .08);--velo:rgb(0 0 0 / .82);--foco:#2997ff;--trazo:rgb(245 245 247 / .32);--foto-velo:rgb(255 255 255 / .24);color-scheme:dark}
+@media (max-width:734px){:root{--margen:20px}
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:48px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html.jugando{overflow:hidden}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:400 17px/1.47 var(--f-texto);letter-spacing:-0.01em;font-optical-sizing:auto;font-feature-settings:"kern","calt","cv05";-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;overflow-x:clip}
+h1,h2,h3,p,figure,ul,ol{margin:0}
+h1,h2,h3{text-wrap:balance;font-family:var(--f-titulo)}
+p{text-wrap:pretty}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--foco);outline-offset:3px;border-radius:8px}
+.vh{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+#sonda-svh{position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none}
+.titular-hero{font:700 clamp(44px,min(7vw,11vh),96px)/1.04 var(--f-titulo);font-size:clamp(44px,min(7vw,11svh),96px);letter-spacing:-0.02em}
+.gigante{font:700 clamp(40px,6.6vw,96px)/1.05 var(--f-titulo);letter-spacing:-0.02em}
+.titular{font:700 clamp(40px,5.6vw,80px)/1.05 var(--f-titulo);letter-spacing:-0.015em}
+.titular-final{font:700 clamp(32px,3.9vw,56px)/1.06 var(--f-titulo);letter-spacing:-0.015em}
+.subtitular{font:600 clamp(28px,3vw,40px)/1.1 var(--f-titulo);letter-spacing:-0.01em}
+.ante{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-bottom:12px;font:600 clamp(17px,1.5vw,21px)/1.2 var(--f-texto);letter-spacing:-0.005em}
+.ante .punto,.meta .punto{flex:none;width:8px;height:8px;border-radius:50%;background:var(--tinte)}
+.bajada{margin-top:24px;font:500 clamp(19px,1.6vw,21px)/1.38 var(--f-texto);color:var(--suave);letter-spacing:-0.01em}
+.cuerpo-texto{margin-top:16px;color:var(--suave)}
+.meta{display:flex;align-items:center;gap:8px;margin-top:16px;font:500 12px/1.33 var(--f-texto);color:var(--suave);letter-spacing:0;font-feature-settings:"kern","tnum"}
+.serif{font-family:var(--f-serif);font-style:italic;font-weight:400;letter-spacing:-0.01em;font-size:1.1em;line-height:1}
+kbd{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border:1px solid var(--linea);border-bottom-width:2px;border-radius:6px;font:500 12px/1 var(--f-mono);font-feature-settings:"case";background:var(--fondo);color:var(--tinta)}
+.botones{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:32px;justify-content:flex-start}
+.cabecera .ante,.cabecera .botones,.cierre .botones{justify-content:center}
+.boton{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 22px;border-radius:980px;background:var(--boton);color:var(--boton-tinta);font:500 17px/1 var(--f-texto);letter-spacing:-0.01em;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:transform 160ms var(--ease),background-color 160ms ease}
+.boton:active{transform:scale(.97)}
+.boton.sec{background:transparent;color:var(--enlace);border-color:var(--enlace)}
+.boton.chico{padding:0 16px;font-size:15px}
+@media (hover:hover){.boton:hover{background:var(--boton-hover)}
+.boton.sec:hover{background:transparent;text-decoration:underline}
+}
+.enlace{display:inline-flex;align-items:center;min-height:44px;color:var(--enlace);font-size:17px;text-decoration:none}
+.enlace::after{content:"\00a0›";content:"\00a0›" / ""}
+@media (hover:hover){.enlace:hover{text-decoration:underline}
+}
+.nav{position:fixed;inset:0 0 auto;height:48px;z-index:100;background:var(--nav-fondo);color:var(--nav-tinta);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--nav-linea);transition:background-color 300ms ease,color 300ms ease}
+.nav[data-tono="oscuro"]{--nav-fondo:rgb(22 22 23 / .8);--nav-tinta:#f5f5f7;--nav-linea:rgb(255 255 255 / .08)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.nav{background:rgb(251 251 253 / .96)}
+.nav[data-tono="oscuro"]{background:rgb(22 22 23 / .96)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .nav{background:rgb(22 22 23 / .96)}
+}
+:root[data-theme="dark"] .nav{background:rgb(22 22 23 / .96)}
+}
+.nav-caja{max-width:1024px;height:100%;margin:0 auto;padding-inline:var(--margen);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav a{display:inline-flex;align-items:center;min-height:44px;text-decoration:none;color:inherit}
+.marca{gap:8px;font:600 14px/1 var(--f-texto);letter-spacing:-0.01em}
+.nav nav{display:flex;gap:28px}
+.nav nav a{font-size:12px;opacity:.9;letter-spacing:0}
+@media (hover:hover){.nav nav a:hover{opacity:1;text-decoration:underline}
+}
+.nav-jugar span{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:980px;background:var(--boton);color:#fff;font:500 12px/1 var(--f-texto);letter-spacing:0}
+@media (max-width:1068px){.nav nav{gap:22px}
+.nav nav .opc-tablet{display:none}
+}
+@media (max-width:734px){.nav{-webkit-backdrop-filter:saturate(180%) blur(12px);backdrop-filter:saturate(180%) blur(12px)}
+.nav nav .opc-celu{display:none}
+}
+.sec-clara{background:var(--fondo);color:var(--tinta)}
+.sec-gris{background:var(--fondo-2);color:var(--tinta)}
+.sec-gris .tarjeta{background:var(--tarjeta)}
+.sec-oscura{--fondo:#000000;--fondo-2:#161617;--tile:#1d1d1f;--tarjeta:#1d1d1f;--tinta:#f5f5f7;--suave:#86868b;--linea:#424245;--enlace:#2997ff;--foco:#2997ff;background:#000;color:#f5f5f7;color-scheme:dark}
+.cabecera{max-width:980px;margin-inline:auto;padding:160px var(--margen) 64px;text-align:center}
+.centro{text-align:center;justify-content:center}
+@media (max-width:1068px){.cabecera{padding-top:120px}
+}
+@media (max-width:734px){.cabecera{padding-top:96px;padding-bottom:48px}
+.botones{gap:12px}
+}
+.revelar{transition:opacity 700ms var(--ease),transform 700ms var(--ease);transition-delay:calc(var(--i,0) * 70ms)}
+html.js .revelar:not(.visto){opacity:0}
+html.mov .revelar:not(.visto){transform:translateY(40px)}
+.viva [data-anima]{will-change:transform,opacity}
+.hero .pin{display:flex;flex-direction:column;background:#000;padding:calc(48px + 64px) var(--margen) 96px}
+.hero-inicial{order:-1}
+.hero-inicial{max-width:980px;margin-inline:auto;text-align:center}
+.hero-inicial .ante{color:var(--suave);justify-content:center}
+.hero-inicial .bajada{max-width:720px;margin-inline:auto}
+.botones.centro{justify-content:center;gap:24px}
+.hero-marco{position:relative;width:min(1200px,100%);margin:48px auto 0;aspect-ratio:16 / 9;border-radius:28px;overflow:hidden;background:#111}
+.hero-marco img{width:100%;height:100%;object-fit:cover;object-position:45% 55%}
+.hero-bisel,.hero-velo{display:none}
+.hero-final{max-width:640px;margin:40px auto 0}
+.hero-final .ante{color:#f5f5f7}
+.hero-final .bajada{color:#d2d2d7}
+.hero-final .botones{margin-top:28px}
+@media (max-width:734px){.hero-marco{border-radius:18px}
+.solo-ancho{display:none}
+}
+html.mov .hero{height:300vh;height:300svh}
+html.mov .hero .pin{display:block;position:sticky;top:0;height:100vh;height:100svh;padding:0;overflow:hidden;overflow:clip}
+html.mov .hero-marco{position:absolute;top:-40px;left:-40px;width:calc(100% + 80px);height:calc(100vh + 80px);height:calc(100svh + 80px);margin:0;aspect-ratio:auto;border-radius:40px;transform-origin:50% 50%;opacity:0;transition:opacity 700ms ease}
+html.mov.listo .hero-marco{opacity:1}
+html.mov .hero-marco img{object-position:72% 55%}
+@media (max-width:734px){html.mov .hero-marco img{object-position:45% 55%}
+}
+html.mov .hero-bisel{display:block;position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 14px #1d1d1f,inset 0 0 0 15px rgb(255 255 255 / .16)}
+html.mov .hero-velo{display:block;position:absolute;inset:auto 0 0 0;height:75vh;height:75svh;background:radial-gradient(ellipse 60% 85% at 90% 100%,rgb(0 0 0 / .85),rgb(0 0 0 / 0) 100%),linear-gradient(to top,rgb(0 0 0 / .8),rgb(0 0 0 / 0) 80%);opacity:0}
+html.mov .hero-inicial{position:absolute;top:calc(48px + 7vh);top:calc(48px + 7svh);left:0;right:0;margin-inline:auto;padding-inline:var(--margen);z-index:2}
+html.mov .hero-final{position:absolute;bottom:7vh;bottom:7svh;right:max(var(--margen),calc((100vw - 1280px) / 2));width:min(480px,calc(100% - 2 * var(--margen)));margin:0;opacity:0;z-index:2}
+@media (max-width:734px){html.mov .hero{height:240vh;height:240svh}
+html.mov .hero-marco{top:64px;left:-24px;width:calc(100% + 48px);height:auto;aspect-ratio:16 / 9;border-radius:24px}
+html.mov .hero-velo{display:none}
+html.mov .hero-inicial{top:calc(48px + 5vh);top:calc(48px + 5svh)}
+html.mov .hero-final{top:calc(64px + (100vw + 48px) * .5625 + 20px);left:20px;right:20px;bottom:auto;width:auto}
+}
+.inerte{pointer-events:none}
+.partes .w{display:inline-block}
+html.mov .subir .w{animation:subir 1100ms var(--ease) both;animation-delay:calc(150ms + var(--i) * 80ms)}
+html.mov .hero-inicial .aparecer{animation:aparecer 900ms ease both;animation-delay:var(--d,0ms)}
+@keyframes subir{from{opacity:0;transform:translate3d(0,.5em,0)}
+}
+@keyframes aparecer{from{opacity:0}
+}
+.afirmacion{padding:max(96px,22vh) var(--margen);padding-block:max(96px,22svh)}
+.afirmacion .contenedor{max-width:980px;margin-inline:auto;text-align:center}
+.afirmacion .bajada{max-width:760px;margin:40px auto 0}
+html.mov .encender .palabra{opacity:.15}
+@media (max-width:734px){.afirmacion{padding-block:max(96px,18vh);padding-block:max(96px,18svh)}
+}
+.carreras-visual{display:none}
+.carreras-pasos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:72px 48px;max-width:1280px;margin-inline:auto;padding:0 var(--margen) 160px}
+.paso-figura{margin:0 0 24px;aspect-ratio:16 / 9;border-radius:22px;overflow:hidden;background:#000}
+.paso-figura img{width:100%;height:100%;object-fit:cover}
+.paso .ante{color:var(--tinta)}
+.paso .botones{margin-top:28px}
+@media (max-width:734px){.carreras-pasos{grid-template-columns:minmax(0,1fr);gap:56px;padding-bottom:96px}
+}
+.escenario{position:relative;aspect-ratio:16 / 9;border-radius:28px;overflow:hidden;background:#000}
+.esc-img{position:absolute;inset:-3%;width:106%;height:106%;max-width:none;object-fit:cover}
+.esc-img:nth-child(1){z-index:1}
+.esc-img:nth-child(2){z-index:2}
+.esc-img:nth-child(3){z-index:3}
+.esc-img:nth-child(4){z-index:4}
+.puntos{display:flex;justify-content:center;gap:10px;list-style:none;padding:0}
+.puntos li{width:8px;height:8px;border-radius:50%;background:var(--suave);opacity:.35;transition:opacity 300ms ease}
+.puntos li.activo{opacity:1}
+html.mov .carreras-cuerpo{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);column-gap:64px;max-width:1440px;margin-inline:auto;padding-inline:var(--margen)}
+html.mov .carreras-visual{display:block;grid-column:2;grid-row:1}
+html.mov .carreras-pasos{grid-column:1;grid-row:1;display:block;max-width:none;padding:0}
+html.mov .escenario-pin{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;gap:20px;padding-top:48px}
+html.mov .esc-img + .esc-img{opacity:0}
+html.mov .paso{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;justify-content:center;max-width:440px}
+html.mov .paso-figura{display:none}
+@media (max-width:734px){html.mov .carreras-cuerpo{display:block}
+html.mov .carreras-visual{display:contents}
+html.mov .escenario-pin{top:48px;z-index:2;height:auto;gap:12px;padding:0 0 12px;margin-inline:calc(-1 * var(--margen));background:var(--fondo-2)}
+html.mov .escenario{border-radius:0}
+html.mov .paso{min-height:70vh;min-height:70svh;padding-block:24px;max-width:none}
+}
+.tiles{display:grid;gap:24px;max-width:1280px;margin-inline:auto;padding:0 var(--margen) 160px}
+.tiles-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tile{display:flex;flex-direction:column;background:var(--tile);border-radius:28px;overflow:hidden}
+.tile-foto{position:relative;aspect-ratio:16 / 9;overflow:hidden;background:#000}
+.tile-foto img{position:absolute;inset:-6% 0;width:100%;height:112%;max-width:none;object-fit:cover}
+.tile-texto{display:flex;flex-direction:column;flex:1;padding:32px}
+.tile-texto .ante{color:var(--tinta)}
+.tile-texto .botones{margin-top:auto;padding-top:28px}
+.tiles-3 .subtitular{font-size:clamp(26px,2.4vw,32px)}
+@media (max-width:1068px){.tiles{padding-bottom:120px}
+.tiles-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tiles-3 .tile:first-child{grid-column:span 2}
+}
+@media (max-width:734px){.tiles{padding-bottom:96px;gap:16px}
+.tiles-2,.tiles-3{grid-template-columns:minmax(0,1fr)}
+.tiles-3 .tile:first-child{grid-column:auto}
+.tile{border-radius:22px}
+.tile-texto{padding:24px}
+}
+.apagon .pin{display:grid;grid-template-areas:"a1" "t1" "a2" "t2";row-gap:32px;max-width:1080px;margin-inline:auto;padding:160px var(--margen)}
+.apagon-caja{display:contents}
+.apagon-foto{overflow:hidden;aspect-ratio:16 / 9;border-radius:28px;background:#111}
+.apagon-foto img{width:100%;height:100%;max-width:none;object-fit:cover}
+.a1{grid-area:a1}
+.a2{grid-area:a2;margin-top:64px}
+.t1{grid-area:t1}
+.t2{grid-area:t2}
+.apagon-vineta,.apagon-velo{display:none}
+.apagon-texto .bajada{color:#d2d2d7}
+.ante.rojo{color:#ff453a}
+.ante.naranja{color:#e38b2c}
+@media (max-width:734px){.apagon .pin{padding-block:96px}
+.apagon-foto{border-radius:18px}
+}
+html.mov .apagon{height:260vh;height:260svh}
+html.mov .apagon .pin{display:block;position:sticky;top:0;height:100vh;height:100svh;max-width:none;padding:0;overflow:hidden;overflow:clip;background:#000}
+html.mov .apagon-caja{display:block;position:absolute;inset:0;overflow:hidden}
+html.mov .apagon-foto{position:absolute;inset:-6%;margin:0;aspect-ratio:auto;border-radius:0}
+html.mov .a2{inset:-5%;opacity:0}
+html.mov .apagon-vineta{display:block;position:absolute;inset:0;opacity:.85;background:radial-gradient(ellipse 70% 70% at 60% 45%,rgb(0 0 0 / 0) 25%,#000 90%),rgb(0 0 0 / .35)}
+html.mov .apagon-velo{display:block;position:absolute;inset:0;background:linear-gradient(to right,rgb(0 0 0 / .75) 0,rgb(0 0 0 / 0) 60%),linear-gradient(to top,rgb(0 0 0 / .6),rgb(0 0 0 / 0) 50%)}
+html.mov .apagon-texto{position:absolute;left:max(var(--margen),calc((100vw - 1280px) / 2));bottom:12vh;bottom:12svh;width:min(560px,calc(100% - 2 * var(--margen)));opacity:0}
+@media (max-width:734px){html.mov .apagon{height:220vh;height:220svh}
+html.mov .apagon-caja{top:calc(48px + 4vh);top:calc(48px + 4svh);left:0;right:0;bottom:auto;aspect-ratio:16 / 9}
+html.mov .apagon-velo{display:none}
+html.mov .apagon-texto{top:calc(48px + 4vh + 56.25vw + 24px);top:calc(48px + 4svh + 56.25vw + 24px);left:20px;right:20px;bottom:auto;width:auto}
+}
+.contorno{position:relative}
+.contorno-ventana{position:absolute;inset:0;overflow:hidden}
+.contorno-lleno{display:block;color:#f5f5f7}
+@supports (-webkit-text-stroke:1px #000){html.mov .contorno-base{color:transparent;-webkit-text-stroke:1.5px rgb(245 245 247 / .85)}
+html.mov .contorno-ventana{transform:translate3d(-100%,0,0)}
+html.mov .contorno-lleno{transform:translate3d(100%,0,0)}
+}
+.numeros{padding:160px var(--margen)}
+.numeros h2{text-align:center}
+.cifras{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:56px 48px;max-width:1024px;margin:80px auto 0;padding:0;list-style:none}
+.cifras li{display:flex;flex-direction:column;gap:10px;padding-top:20px;border-top:1px solid #424245}
+.cifra{font:700 clamp(56px,7vw,96px)/1 var(--f-titulo);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;font-feature-settings:"kern","tnum";white-space:nowrap}
+.cifra small{font-size:.42em;font-weight:600;letter-spacing:-0.01em;margin-left:.14em}
+.cifras .etq{font-size:17px;line-height:1.35;color:var(--suave)}
+@media (max-width:1068px){.numeros{padding-block:120px}
+}
+@media (max-width:734px){.numeros{padding-block:96px}
+.cifras{grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 24px;margin-top:56px}
+.cifra{font-size:52px}
+}
+.metal{color:#e8e8ed}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){.metal{background-image:linear-gradient(100deg,#6e6e73 0%,#d2d2d7 12%,#ffffff 20%,#a1a1a6 32%,#5e5e63 44%,#c7c7cc 54%,#ffffff 62%,#8e8e93 74%,#f5f5f7 86%,#6e6e73 100%);background-size:300% 100%;background-position:40% 50%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+}
+.galeria{padding:160px 0}
+.galeria-cabeza{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px;max-width:1440px;margin:0 auto 48px;padding-inline:var(--margen)}
+.filtros{display:flex;flex-wrap:wrap;gap:8px}
+.filtro{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--linea);border-radius:980px;background:transparent;color:var(--tinta);font:500 14px/1 var(--f-texto);letter-spacing:-0.005em;cursor:pointer;transition:background-color 200ms ease,color 200ms ease,transform 160ms var(--ease)}
+.filtro:active{transform:scale(.97)}
+.filtro small{font-size:12px;color:var(--suave);font-variant-numeric:tabular-nums}
+.filtro[aria-pressed="true"]{background:var(--tinta);color:var(--fondo);border-color:var(--tinta)}
+.filtro[aria-pressed="true"] small{color:inherit}
+.carril{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;max-width:1440px;margin:0 auto;padding:0 var(--margen)}
+.tarjeta{display:flex;flex-direction:column;border-radius:22px;overflow:hidden;background:var(--tarjeta)}
+.tarjeta[hidden]{display:none}
+.tarjeta-foto{position:relative;display:block;aspect-ratio:16 / 9;overflow:hidden;background:#000}
+.tarjeta-foto img{width:100%;height:100%;object-fit:cover}
+.pastilla{position:absolute;left:14px;bottom:14px;display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px 0 10px;border-radius:980px;background:rgb(0 0 0 / .72);color:#fff;font:600 13px/1 var(--f-texto);letter-spacing:0;transition:background-color 200ms ease}
+.pastilla i{width:8px;height:8px;border-radius:50%;background:var(--tinte)}
+@media (hover:hover){.tarjeta-foto:hover .pastilla{background:rgb(0 0 0 / .9)}
+}
+.tarjeta-cuerpo{display:flex;flex-direction:column;flex:1;gap:10px;padding:24px}
+.sello{align-self:flex-start;padding:6px 10px;border-radius:980px;background:rgb(227 38 47 / .14);font:600 12px/1 var(--f-texto);letter-spacing:0}
+.tarjeta .meta{margin-top:0}
+.tarjeta h3{font:600 24px/1.15 var(--f-titulo);letter-spacing:-0.015em}
+.resumen{font-size:15px;line-height:1.45;color:var(--suave);letter-spacing:-0.005em}
+.acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:10px}
+.galeria-progreso{display:none}
+.galeria-progreso i{display:block;height:100%;background:var(--tinta);transform-origin:left center;transform:scaleX(0)}
+@media (max-width:1068px){.galeria{padding-block:120px}
+.carril{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:734px){.galeria{padding-block:96px}
+.galeria-cabeza{margin-bottom:32px}
+.carril-ventana{overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:20px;overscroll-behavior-x:contain;scrollbar-width:none}
+.carril-ventana::-webkit-scrollbar{display:none}
+.carril{display:flex;gap:12px;width:max-content;max-width:none;padding-inline:20px}
+.tarjeta{flex:none;width:84vw;scroll-snap-align:start;border-radius:18px}
+}
+html.mov.galeria-fija .galeria{padding:0}
+html.mov.galeria-fija .galeria .pin{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;gap:28px;padding-top:48px;overflow:hidden;overflow:clip}
+html.mov.galeria-fija .galeria-cabeza{margin-bottom:0;width:100%}
+html.mov.galeria-fija .galeria .titular{font-size:clamp(40px,4.4vw,64px)}
+html.mov.galeria-fija .carril-ventana{overflow:hidden;overflow:clip}
+html.mov.galeria-fija .carril{display:flex;gap:20px;width:max-content;max-width:none;margin:0;padding-inline:max(var(--margen),calc((100vw - 1440px) / 2 + var(--margen)))}
+html.mov.galeria-fija .tarjeta{flex:none;width:clamp(320px,30vw,440px)}
+html.mov.galeria-fija .galeria-progreso{display:block;flex:none;width:200px;height:2px;margin:0 auto;border-radius:2px;background:var(--linea);overflow:hidden}
+.comparar{padding:0 var(--margen) 160px}
+.comparar .cabecera{padding-inline:0}
+.comparador{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(9,auto);column-gap:32px;max-width:1024px;margin:0 auto;text-align:center}
+.comp-col{display:grid;grid-row:span 9;grid-template-rows:subgrid;row-gap:24px;align-content:start;transition:opacity 150ms ease}
+.comp-col.cambiando > :not(.comp-sel){opacity:0}
+.comp-col > *{transition:opacity 150ms ease;min-width:0}
+.comp-sel{width:100%;min-height:44px;padding:0 40px 0 16px;border:1px solid var(--linea);border-radius:12px;background:var(--fondo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2386868b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;color:var(--tinta);font:500 17px/1.2 var(--f-texto);letter-spacing:-0.01em;-webkit-appearance:none;appearance:none;cursor:pointer}
+html:not(.js) .comp-col .comp-sel{display:none}
+.comp-foto{display:block;aspect-ratio:16 / 9;border-radius:18px;overflow:hidden;background:#000}
+.comp-foto img{width:100%;height:100%;object-fit:cover}
+.comp-tit h3{font:600 24px/1.15 var(--f-titulo);letter-spacing:-0.015em}
+.comp-tit p{margin-top:6px;color:var(--suave)}
+.comp-acc{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 16px}
+.comp-dato{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:24px;border-top:1px solid var(--linea)}
+.rotulo{font-size:12px;line-height:1.33;color:var(--suave);letter-spacing:0}
+.valor{font-size:17px}
+.valor.suave{color:var(--suave)}
+.cifra-chica{font:700 40px/1 var(--f-titulo);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;font-feature-settings:"kern","tnum"}
+.usos,.teclas{list-style:none;padding:0;display:flex;flex-direction:column;gap:8px}
+.usos li{display:flex;align-items:center;justify-content:center;gap:8px}
+.usos li.no{color:var(--suave)}
+.usos li span[aria-hidden]{width:1em;font-weight:600}
+.teclas li{display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px}
+@supports not (grid-template-rows:subgrid){.comp-col{grid-template-rows:none}
+.comp-tit{min-height:92px}
+.comp-acc{min-height:44px}
+.comp-dato:nth-of-type(6){min-height:300px}
+.comp-dato:nth-of-type(7){min-height:190px}
+}
+@media (max-width:734px){.comparar{padding-bottom:96px}
+.comparador{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}
+.comp-col:nth-child(3){display:none}
+.comp-sel{font-size:15px;padding-left:12px;padding-right:32px;background-position:right 12px center}
+.comp-tit h3{font-size:20px}
+.cifra-chica{font-size:32px}
+.comp-acc .boton.chico{padding:0 14px}
+.teclas li{flex-direction:column;gap:4px;font-size:14px}
+}
+.ficha{padding:160px var(--margen)}
+.ficha-caja{max-width:1024px;margin:0 auto}
+.ficha .nota{max-width:680px;margin-top:20px;color:var(--suave)}
+.tabla-caja{margin-top:48px;overflow-x:auto}
+.ficha table{width:100%;min-width:720px;border-collapse:collapse;font-size:15px;letter-spacing:-0.005em}
+.ficha th{padding:0 16px 12px 0;text-align:left;font:600 12px/1.33 var(--f-texto);color:var(--suave);letter-spacing:0;border-bottom:1px solid var(--linea)}
+.ficha td{padding:4px 16px 4px 0;border-bottom:1px solid var(--linea);vertical-align:middle}
+.ficha td:first-child{font-weight:600;white-space:nowrap}
+.ficha td:first-child .punto{display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:50%;background:var(--tinte);vertical-align:1px}
+.ficha td.num{font-variant-numeric:tabular-nums;font-feature-settings:"kern","tnum";white-space:nowrap}
+.ficha td a{display:inline-flex;align-items:center;min-height:44px;color:var(--enlace);text-decoration:none}
+@media (hover:hover){.ficha td a:hover{text-decoration:underline}
+}
+@media (max-width:1068px){.ficha{padding-block:120px}
+}
+@media (max-width:734px){.ficha{padding-block:96px}
+}
+.cierre{padding:160px var(--margen) 96px;text-align:center}
+.cierre .bajada{max-width:640px;margin-inline:auto}
+.foto-texto{display:block;margin-top:.02em;padding-bottom:.04em;font-size:clamp(76px,16vw,232px);font-weight:800;line-height:.95;letter-spacing:-0.045em}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){.foto-texto{background:linear-gradient(var(--foto-velo),var(--foto-velo)) 0 0 / 100% 100% no-repeat,url("capturas/texto-jugalo.webp") 0% 50% / auto 100% repeat-x;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;-webkit-text-stroke:1px var(--trazo)}
+}
+@media (max-width:734px){.cierre{padding:96px var(--margen) 64px}
+.foto-texto{font-size:23vw}
+}
+.pie{max-width:1024px;margin:0 auto;padding:20px var(--margen) 40px;border-top:1px solid var(--linea);font-size:12px;line-height:1.33;color:var(--suave);letter-spacing:0;display:flex;flex-direction:column;gap:4px}
+.pie p{margin:0}
+.pie a{display:inline-flex;align-items:center;min-height:44px;color:var(--enlace);text-decoration:none}
+@media (hover:hover){.pie a:hover{text-decoration:underline}
+}
+.pie-caja{background:var(--fondo)}
+.reproductor{width:min(1280px,100vw - 48px);max-width:none;height:min(820px,100dvh - 48px);max-height:none;padding:0;border:0;border-radius:18px;background:#000;color:#f5f5f7;overflow:hidden;color-scheme:dark;opacity:1;transform:none;transition:opacity 220ms var(--ease),transform 220ms var(--ease),overlay 220ms allow-discrete,display 220ms allow-discrete}
+.reproductor[open]{display:flex;flex-direction:column}
+@starting-style{.reproductor[open]{opacity:0;transform:scale(.97)}
+}
+.reproductor::backdrop{background:rgb(0 0 0 / .72);transition:opacity 220ms ease,overlay 220ms allow-discrete,display 220ms allow-discrete}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .reproductor::backdrop{background:rgb(0 0 0 / .82)}
+}
+:root[data-theme="dark"] .reproductor::backdrop{background:rgb(0 0 0 / .82)}
+@starting-style{.reproductor[open]::backdrop{opacity:0}
+}
+.reproductor header{display:flex;align-items:center;gap:12px;min-height:52px;padding:4px 4px 4px 18px;background:#161617;border-bottom:1px solid #2a2a2c}
+.reproductor .titulo{display:flex;align-items:center;gap:10px;min-width:0;font:600 17px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Inter Tight","Inter Tight Respaldo",Arial,sans-serif;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reproductor .titulo i{flex:none;width:10px;height:10px;border-radius:3px;background:var(--tinte,#2997ff)}
+.reproductor .ayuda{display:flex;gap:14px;margin-left:auto;font-size:12px;color:#86868b;white-space:nowrap;overflow:hidden;letter-spacing:0}
+.reproductor .ayuda kbd{background:#1d1d1f;border-color:#424245;color:#f5f5f7}
+.reproductor .herramientas{display:flex;gap:6px;flex:none}
+.icono{display:inline-grid;place-items:center;width:44px;height:44px;border:1px solid #2a2a2c;border-radius:12px;background:#1d1d1f;color:#f5f5f7;cursor:pointer;text-decoration:none;transition:transform 160ms var(--ease),background-color 160ms ease}
+.icono:active{transform:scale(.95)}
+@media (hover:hover){.icono:hover{background:#2a2a2c}
+}
+.reproductor iframe{flex:1;width:100%;border:0;background:#000}
+@media (max-width:734px){.reproductor{width:100vw;height:100dvh;border-radius:0}
+.reproductor .ayuda{display:none}
+.reproductor .titulo{margin-right:auto}
+}
+@media (prefers-reduced-motion:reduce){.revelar{transition:opacity 400ms ease;transform:none !important}
+.boton,.filtro,.icono,.puntos li{transition:none}
+.boton:active,.filtro:active,.icono:active{transform:none}
+.reproductor{transition:opacity 150ms ease}
+@starting-style{.reproductor[open]{transform:none}
+}
+}
 </style>
 </head>
 <body>
-<div class="piano" aria-hidden="true"></div>
-
-<div class="envoltorio">
-  <header class="barra">
-    <a class="marca" href="#juegos" aria-label="Ir a los juegos">
-      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-        <rect x="1" y="1" width="24" height="24" rx="6" fill="var(--tinta)"/>
-        <path d="M10 8.2v9.6l8-4.8z" fill="var(--fondo)"/>
-      </svg>
-      <span id="autor">ramiroarrojo2077</span>
-    </a>
-    <nav aria-label="Secciones">
-      <a href="#juegos">Juegos</a>
-      <a class="opcional" href="#ficha">Ficha técnica</a>
-      <a href="https://github.com/ramiroarrojo2077-beep" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-  </header>
-
-  <section class="portada" aria-labelledby="titular">
-    <div>
-      <p class="antetitulo">Portafolio de juegos · navegador y Android</p>
-      <h1 id="titular">Once juegos, <em>listos para jugar</em></h1>
-      <p class="bajada">Fórmula 1, fútbol, terror, ritmo y una mascota en 3D. Todos corren en el navegador y se abren acá mismo, sin instalar nada. La mayoría genera sus modelos, texturas y sonido por código.</p>
-      <div class="llamadas">
-        <button class="btn primario" type="button" data-jugar="f19-grand-prix">
-          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>
-          Jugar F19 Grand Prix
-        </button>
-        <a class="btn" href="#juegos">Ver los once</a>
-      </div>
-    </div>
-    <div class="tablero" aria-label="En números">
-      <div><b>11</b><span>juegos jugables</span></div>
-      <div><b>9</b><span>en 3D con WebGL</span></div>
-      <div><b>4</b><span>también para Android</span></div>
-      <div><b>1,4 MB</b><span>pesa el más grande</span></div>
-    </div>
-  </section>
-
-  <section id="juegos" aria-labelledby="titulo-juegos">
-    <div class="seccion-cabeza">
-      <h2 id="titulo-juegos">Juegos</h2>
-      <div class="filtros" role="group" aria-label="Filtrar por género" id="filtros"></div>
-    </div>
-    <div class="grilla" id="grilla" data-filtro="todos"></div>
-  </section>
-
-  <section class="ficha" id="ficha" aria-labelledby="titulo-ficha">
-    <h2 id="titulo-ficha">Ficha técnica</h2>
-    <p class="nota">Cada juego es un sitio estático: HTML, CSS y JavaScript, sin servidor propio. El peso es el de la versión que se carga en esta página.</p>
-    <div class="tabla-caja">
-      <table>
-        <thead>
-          <tr><th scope="col">Juego</th><th scope="col">Motor</th><th scope="col">Peso</th><th scope="col">Se juega con</th><th scope="col">Código</th></tr>
-        </thead>
-        <tbody id="tabla"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <footer class="pie">
-    <span>Hecho por <a href="https://github.com/ramiroarrojo2077-beep" target="_blank" rel="noopener">@ramiroarrojo2077-beep</a>. El código de cada juego está en su repositorio.</span>
-    <span>Mejor con teclado o mando. En el celular, en horizontal.</span>
-  </footer>
+<div id="sonda-svh" aria-hidden="true"></div>
+<header class="nav" data-tono="oscuro">
+<div class="nav-caja">
+<a class="marca" href="#inicio"><svg width="24" height="24" viewBox="0 0 26 26" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M7 1h12a6 6 0 0 1 6 6v12a6 6 0 0 1-6 6H7a6 6 0 0 1-6-6V7a6 6 0 0 1 6-6zM10 8.2v9.6l8-4.8z"/></svg><span>ramiroarrojo2077</span></a>
+<nav aria-label="Secciones">
+<a class="opc-celu" href="#carreras">Carreras</a>
+<a class="opc-tablet opc-celu" href="#deportes">Deportes</a>
+<a class="opc-celu" href="#terror">Terror</a>
+<a class="opc-tablet opc-celu" href="#casual">Casual</a>
+<a href="#los-once">Los once</a>
+<a class="opc-celu" href="#comparar">Compará</a>
+<a class="opc-tablet opc-celu" href="#ficha">Ficha</a>
+</nav>
+<a class="nav-jugar" href="#los-once"><span>Jugar</span></a>
+</div>
+</header>
+<main>
+<section id="inicio" class="sec-oscura hero" data-escena="hero" data-tono="oscuro" aria-labelledby="titular">
+<div class="pin">
+<div class="hero-marco" data-anima>
+<img src="capturas/f19-grand-prix-hero.webp" srcset="capturas/f19-grand-prix-hero-640.webp 640w, capturas/f19-grand-prix-hero.webp 1280w, capturas/f19-grand-prix-hero-1920.webp 1920w" sizes="100vw" width="1920" height="1080" fetchpriority="high" decoding="async" alt="Monoplaza de F19 Grand Prix en la grilla de Valle Verde">
+<div class="hero-bisel" data-anima aria-hidden="true"></div>
+</div>
+<div class="hero-velo" data-anima aria-hidden="true"></div>
+<div class="hero-inicial" data-anima>
+<p class="ante aparecer">Portafolio de juegos · navegador y Android</p>
+<h1 id="titular" class="titular-hero subir"><span class="vh">Once juegos. Cero instalación.</span><span class="partes" aria-hidden="true"><span class="w" style="--i:0">Once</span> <span class="w" style="--i:1">juegos.</span> <span class="w" style="--i:2">Cero</span> <span class="w" style="--i:3">instalación.</span></span></h1>
+<p class="bajada aparecer" style="--d:450ms">Fórmula 1, fútbol, terror, ritmo y una mascota en 3D. Se abren acá mismo, en el navegador.</p>
+<div class="botones centro aparecer" style="--d:600ms"><a class="boton" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar F19 Grand Prix</a><a class="enlace" href="#los-once">Ver los once</a></div>
+</div>
+<div class="hero-final" data-anima data-p-visible="0.95">
+<p class="ante" style="--tinte:#ff453a"><span class="punto" aria-hidden="true"></span>F19 Grand Prix</p>
+<h2 class="titular-final">Corré contra tus amigos.</h2>
+<p class="bajada">Creás una sala, pasás el código o el link y largan hasta diez pilotos.<span class="solo-ancho"> Si alguien se desconecta, la IA toma su auto.</span></p>
+<div class="botones"><a class="boton" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix" aria-label="Jugar F19 Grand Prix"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/F19" target="_blank" rel="noopener">Código</a></div>
+</div>
+</div>
+</section>
+<section id="codigo" class="sec-clara afirmacion" data-escena="codigo" data-tono="claro">
+<div class="contenedor">
+<h2 class="gigante encender"><span class="vh">Modelos, texturas y sonido, hechos con código.</span><span aria-hidden="true"><span class="palabra" data-anima>Modelos,</span> <span class="palabra" data-anima>texturas</span> <span class="palabra" data-anima>y</span> <span class="palabra" data-anima>sonido,</span> <span class="palabra" data-anima>hechos</span> <span class="palabra" data-anima>con</span> <span class="palabra" data-anima><span class="serif">código.</span></span></span></h2>
+<p class="bajada revelar">En seis de los once no hay ni una imagen ni un audio para descargar: Gran Premio, F19 Grand Prix, Rocket Arena, Cinco Noches, Cupi y Ecos del Vacío generan todo en el navegador.</p>
+</div>
+</section>
+<section id="carreras" class="sec-gris" data-tono="claro" aria-labelledby="t-carreras">
+<div class="cabecera revelar">
+<p class="ante">Carreras</p>
+<h2 class="titular" id="t-carreras">Cuatro formas de largar.</h2>
+<p class="bajada">Online con amigos, un campeonato, desde el fondo de la grilla o tres vueltas en un circuito que viene de Unreal.</p>
+</div>
+<div class="carreras-cuerpo" data-escena="carreras">
+<div class="carreras-visual" aria-hidden="true">
+<div class="escenario-pin" aria-hidden="true">
+<div class="escenario">
+<img src="capturas/f19-grand-prix-carrera.webp" srcset="capturas/f19-grand-prix-carrera-640.webp 640w, capturas/f19-grand-prix-carrera.webp 1280w" sizes="(max-width:734px) 100vw, 58vw" width="1280" height="720" loading="lazy" decoding="async" alt="" class="esc-img" data-anima>
+<img src="capturas/gran-premio.webp" srcset="capturas/gran-premio-640.webp 640w, capturas/gran-premio.webp 1280w" sizes="(max-width:734px) 100vw, 58vw" width="1280" height="720" loading="lazy" decoding="async" alt="" class="esc-img" data-anima>
+<img src="capturas/gran-premio-3d.webp" srcset="capturas/gran-premio-3d-640.webp 640w, capturas/gran-premio-3d.webp 1280w" sizes="(max-width:734px) 100vw, 58vw" width="1280" height="720" loading="lazy" decoding="async" alt="" class="esc-img" data-anima>
+<img src="capturas/pax.webp" srcset="capturas/pax-640.webp 640w, capturas/pax.webp 1280w" sizes="(max-width:734px) 100vw, 58vw" width="1280" height="720" loading="lazy" decoding="async" alt="" class="esc-img" data-anima>
+</div>
+<ol class="puntos"><li class="activo"></li><li></li><li></li><li></li></ol>
+</div>
+</div>
+<div class="carreras-pasos">
+<article class="paso" data-anima>
+<figure class="paso-figura"><img src="capturas/f19-grand-prix-carrera.webp" srcset="capturas/f19-grand-prix-carrera-640.webp 640w, capturas/f19-grand-prix-carrera.webp 1280w" sizes="(max-width:734px) 100vw, 50vw" width="1280" height="720" loading="lazy" decoding="async" alt="Grilla de largada de F19 Grand Prix"></figure>
+<p class="ante" style="--tinte:#e3262f"><span class="punto" aria-hidden="true"></span>F19 Grand Prix</p>
+<h3 class="subtitular">Tres circuitos. Y lluvia de verdad.</h3>
+<p class="cuerpo-texto">Valle Verde de día, Costa Azul al atardecer y Desierto Nocturno con torres de reflectores. Con lluvia, la pista se moja, refleja y agarra menos.</p>
+<p class="meta">Three.js · 1,3 MB</p>
+<div class="botones"><a class="boton" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix" aria-label="Jugar F19 Grand Prix"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/F19" target="_blank" rel="noopener">Código</a></div>
+</article>
+<article class="paso" data-anima>
+<figure class="paso-figura"><img src="capturas/gran-premio.webp" srcset="capturas/gran-premio-640.webp 640w, capturas/gran-premio.webp 1280w" sizes="(max-width:734px) 100vw, 50vw" width="1280" height="720" loading="lazy" decoding="async" alt="Carrera de Gran Premio"></figure>
+<p class="ante" style="--tinte:#e10600"><span class="punto" aria-hidden="true"></span>Gran Premio</p>
+<h3 class="subtitular">Un campeonato con puntaje oficial.</h3>
+<p class="cuerpo-texto">Tres carreras que suman 25-18-15 y una clasificación que queda guardada. También hay carrera rápida de hasta 16 autos y contrarreloj contra tu fantasma.</p>
+<p class="meta">Three.js · 1,0 MB</p>
+<div class="botones"><a class="boton" href="juegos/gran-premio/index.html" data-jugar="gran-premio" aria-label="Jugar Gran Premio"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/F1" target="_blank" rel="noopener">Código</a></div>
+</article>
+<article class="paso" data-anima>
+<figure class="paso-figura"><img src="capturas/gran-premio-3d.webp" srcset="capturas/gran-premio-3d-640.webp 640w, capturas/gran-premio-3d.webp 1280w" sizes="(max-width:734px) 100vw, 50vw" width="1280" height="720" loading="lazy" decoding="async" alt="Monoplaza celeste y rosa largando último en Gran Premio 3D"></figure>
+<p class="ante" style="--tinte:#38b6f0"><span class="punto" aria-hidden="true"></span>Gran Premio 3D</p>
+<h3 class="subtitular">Largás último. P20.</h3>
+<p class="cuerpo-texto">Diecinueve rivales adelante, pasto que te frena y peralte en las curvas. La cordillera del fondo se genera con ruido fractal.</p>
+<p class="meta">Three.js · 765 KB</p>
+<div class="botones"><a class="boton" href="juegos/gran-premio-3d/index.html" data-jugar="gran-premio-3d" aria-label="Jugar Gran Premio 3D"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Ax" target="_blank" rel="noopener">Código</a></div>
+</article>
+<article class="paso" data-anima>
+<figure class="paso-figura"><img src="capturas/pax.webp" srcset="capturas/pax-640.webp 640w, capturas/pax.webp 1280w" sizes="(max-width:734px) 100vw, 50vw" width="1280" height="720" loading="lazy" decoding="async" alt="Pax GP en el trazado de 6,99 km"></figure>
+<p class="ante" style="--tinte:#e5392b"><span class="punto" aria-hidden="true"></span>Pax GP</p>
+<h3 class="subtitular">6,99 km con relieve.</h3>
+<p class="cuerpo-texto">Tres vueltas para recuperar cinco puestos. Es la versión web de un proyecto en Unreal Engine 5, con el auto y el circuito modelados por script en Blender.</p>
+<p class="meta">Three.js · UE5 · 42 KB</p>
+<div class="botones"><a class="boton" href="juegos/pax/index.html" data-jugar="pax" aria-label="Jugar Pax GP"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Pax" target="_blank" rel="noopener">Código</a></div>
+</article>
+</div>
+</div>
+</section>
+<section id="deportes" class="sec-clara" data-tono="claro" aria-labelledby="t-deportes">
+<div class="cabecera revelar">
+<p class="ante">Deportes</p>
+<h2 class="titular" id="t-deportes">Fútbol. Con autos, o sin.</h2>
+</div>
+<div class="tiles tiles-2" data-escena="deportes">
+<article class="tile revelar" style="--i:0">
+<div class="tile-foto"><img src="capturas/rocket-arena-estadio.webp" srcset="capturas/rocket-arena-estadio-640.webp 640w, capturas/rocket-arena-estadio.webp 1100w" sizes="(max-width:734px) 100vw, 50vw" width="1100" height="620" loading="lazy" decoding="async" alt="El estadio de Rocket Arena antes del saque" data-anima></div>
+<div class="tile-texto">
+<p class="ante" style="--tinte:#3a9bff"><span class="punto" aria-hidden="true"></span>Rocket Arena</p>
+<h3 class="subtitular">1v1, 2v2 o 3v3 contra la IA.</h3>
+<p class="cuerpo-texto">Saltos, flips, turbo y air roll en una arena con las medidas del estadio original. El APK funciona entero sin conexión.</p>
+<p class="meta">Three.js · 852 KB</p>
+<div class="botones"><a class="boton" href="juegos/rocket-arena/index.html" data-jugar="rocket-arena" aria-label="Jugar Rocket Arena"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Rl" target="_blank" rel="noopener">Código</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Rl/raw/HEAD/dist/rocket-arena.apk" target="_blank" rel="noopener">APK</a></div>
+</div>
+</article>
+<article class="tile revelar" style="--i:1">
+<div class="tile-foto"><img src="capturas/doce-pasos.webp" srcset="capturas/doce-pasos-640.webp 640w, capturas/doce-pasos.webp 1280w" sizes="(max-width:734px) 100vw, 50vw" width="1280" height="720" loading="lazy" decoding="async" alt="Tanda de penales en Doce Pasos" data-anima></div>
+<div class="tile-texto">
+<p class="ante" style="--tinte:#f2a900"><span class="punto" aria-hidden="true"></span>Doce Pasos</p>
+<h3 class="subtitular">Cinco penales por lado. Y tiros libres.</h3>
+<p class="cuerpo-texto">Apuntás con un trazo, le das efecto y frenás la barra de potencia. Los tiros libres van de 25 a 34 metros, y los remates usan captura de movimiento real.</p>
+<p class="meta">Three.js · 1,4 MB</p>
+<div class="botones"><a class="boton" href="juegos/doce-pasos/index.html" data-jugar="doce-pasos" aria-label="Jugar Doce Pasos"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Fut" target="_blank" rel="noopener">Código</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Fut/raw/HEAD/dist/DocePasos.apk" target="_blank" rel="noopener">APK</a></div>
+</div>
+</article>
+</div>
+</section>
+<section id="terror" class="sec-oscura apagon" data-escena="apagon" data-tono="oscuro" aria-label="Terror y acción">
+<div class="pin">
+<div class="apagon-caja">
+<div class="apagon-foto a1" data-anima><img src="capturas/cinco-noches-cara.webp" srcset="capturas/cinco-noches-cara-640.webp 640w, capturas/cinco-noches-cara.webp 1280w" sizes="100vw" width="1280" height="720" loading="lazy" decoding="async" alt="Bruno, el oso animatrónico, en el escenario"></div>
+<div class="apagon-vineta" data-anima aria-hidden="true"></div>
+<div class="apagon-foto a2" data-anima><img src="capturas/ecos-del-vacio.webp" srcset="capturas/ecos-del-vacio-640.webp 640w, capturas/ecos-del-vacio.webp 1280w" sizes="100vw" width="1280" height="720" loading="lazy" decoding="async" alt="El desierto de Kether-3 en Ecos del Vacío"></div>
+<div class="apagon-velo" aria-hidden="true"></div>
+</div>
+<div class="apagon-texto t1" data-anima data-p-visible="0.30">
+<p class="ante rojo">Terror · Cinco Noches en Bruno's</p>
+<h2 class="gigante contorno"><span class="contorno-base">De 12 a 6 AM.</span><span class="contorno-ventana" aria-hidden="true" data-anima><span class="contorno-lleno" data-anima>De 12 a 6 AM.</span></span></h2>
+<p class="bajada">Mirás las cámaras, cerrás puertas y cuidás la energía. Cuatro animatrónicos te buscan, y caminan de verdad por el local.</p>
+<p class="meta">Three.js · 918 KB</p>
+<div class="botones"><a class="boton" href="juegos/cinco-noches/index.html" data-jugar="cinco-noches" aria-label="Jugar Cinco Noches en Bruno's"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Plam" target="_blank" rel="noopener">Código</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Plam/raw/HEAD/apk/CincoNochesEnBrunos.apk" target="_blank" rel="noopener">APK</a></div>
+</div>
+<div class="apagon-texto t2" data-anima data-p-visible="0.85">
+<p class="ante naranja">Acción · Ecos del Vacío</p>
+<h2 class="gigante">Un titán de 36 metros.</h2>
+<p class="bajada">Subís a la cresta, plantás la antena y cazás a El Barrenador. Se escala por sus anclajes.</p>
+<p class="meta">Motor WebGL2 propio · 308 KB · Solo teclado y ratón.</p>
+<div class="botones"><a class="boton" href="juegos/ecos-del-vacio/index.html" data-jugar="ecos-del-vacio" aria-label="Jugar Ecos del Vacío"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/rpg" target="_blank" rel="noopener">Código</a></div>
+</div>
+</div>
+</section>
+<section id="casual" class="sec-clara" data-tono="claro" aria-labelledby="t-casual">
+<div class="cabecera revelar">
+<p class="ante">Casual</p>
+<h2 class="titular" id="t-casual">Y para bajar un cambio.</h2>
+</div>
+<div class="tiles tiles-3">
+<article class="tile revelar" style="--i:0">
+<div class="tile-foto"><img src="capturas/cupi.webp" srcset="capturas/cupi-640.webp 640w, capturas/cupi.webp 1280w" sizes="(max-width:734px) 100vw, (max-width:1068px) 100vw, 33vw" width="1280" height="720" loading="lazy" decoding="async" alt="Cupi en su dormitorio" data-anima></div>
+<div class="tile-texto">
+<p class="ante" style="--tinte:#ff6fae"><span class="punto" aria-hidden="true"></span>Cupi</p>
+<h3 class="subtitular">Una mascota para cuidar.</h3>
+<p class="cuerpo-texto">Le das de comer, la bañás y decorás su casa. Seis zonas, y es de día o de noche según la hora real.</p>
+<p class="meta">Three.js + cannon-es · 997 KB</p>
+<div class="botones"><a class="boton" href="juegos/cupi/index.html" data-jugar="cupi" aria-label="Jugar Cupi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Plot" target="_blank" rel="noopener">Código</a></div>
+</div>
+</article>
+<article class="tile revelar" style="--i:1">
+<div class="tile-foto"><img src="capturas/geometry-wave-menu.webp" srcset="capturas/geometry-wave-menu-640.webp 640w, capturas/geometry-wave-menu.webp 1280w" sizes="(max-width:734px) 100vw, (max-width:1068px) 50vw, 33vw" width="1280" height="720" loading="lazy" decoding="async" alt="Menú de Geometry Wave" data-anima></div>
+<div class="tile-texto">
+<p class="ante" style="--tinte:#21d4b4"><span class="punto" aria-hidden="true"></span>Geometry Wave</p>
+<h3 class="subtitular">Saltá al ritmo.</h3>
+<p class="cuerpo-texto">Cubo, nave y onda. Cinco niveles, editor y niveles de la comunidad.</p>
+<p class="meta">Canvas 2D · 150 KB</p>
+<div class="botones"><a class="boton" href="juegos/geometry-wave/index.html" data-jugar="geometry-wave" aria-label="Jugar Geometry Wave"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/uuu" target="_blank" rel="noopener">Código</a></div>
+</div>
+</article>
+<article class="tile revelar" style="--i:2">
+<div class="tile-foto"><img src="capturas/lavarropas.webp" srcset="capturas/lavarropas-640.webp 640w, capturas/lavarropas.webp 1280w" sizes="(max-width:734px) 100vw, (max-width:1068px) 50vw, 33vw" width="1280" height="720" loading="lazy" decoding="async" alt="El Lavarropas Qué Facha 3000 lavando" data-anima></div>
+<div class="tile-texto">
+<p class="ante" style="--tinte:#25c99a"><span class="punto" aria-hidden="true"></span>Lavarropas Qué Facha 3000</p>
+<h3 class="subtitular">Cuatro programas. Un grito.</h3>
+<p class="cuerpo-texto">Fases reales del ciclo y un centrifugado que hace temblar la máquina. Cuando termina, grita «¡Qué facha!».</p>
+<p class="meta">HTML y CSS · 24 KB</p>
+<div class="botones"><a class="boton" href="juegos/lavarropas/index.html" data-jugar="lavarropas" aria-label="Jugar Lavarropas Qué Facha 3000"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Pl" target="_blank" rel="noopener">Código</a></div>
+</div>
+</article>
+</div>
+</section>
+<section id="numeros" class="sec-oscura numeros" data-tono="oscuro" aria-labelledby="t-numeros">
+<h2 class="titular metal" id="t-numeros">En números.</h2>
+<ul class="cifras">
+<li class="revelar" style="--i:0"><b class="cifra"><span class="vh">11</span><span aria-hidden="true"><span data-contar="11">11</span></span></b><span class="etq">juegos que se juegan acá</span></li>
+<li class="revelar" style="--i:1"><b class="cifra"><span class="vh">9</span><span aria-hidden="true"><span data-contar="9">9</span></span></b><span class="etq">en 3D con WebGL</span></li>
+<li class="revelar" style="--i:2"><b class="cifra"><span class="vh">10</span><span aria-hidden="true"><span data-contar="10">10</span></span></b><span class="etq">pilotos por sala en F19 Grand Prix</span></li>
+<li class="revelar" style="--i:3"><b class="cifra"><span class="vh">4</span><span aria-hidden="true"><span data-contar="4">4</span></span></b><span class="etq">también para Android</span></li>
+<li class="revelar" style="--i:4"><b class="cifra"><span class="vh">1,4 MB</span><span aria-hidden="true"><span data-contar="1.4" data-decimales="1">1,4</span><small>MB</small></span></b><span class="etq">pesa el más grande</span></li>
+<li class="revelar" style="--i:5"><b class="cifra"><span class="vh">24 KB</span><span aria-hidden="true"><span data-contar="24">24</span><small>KB</small></span></b><span class="etq">pesa el más liviano</span></li>
+</ul>
+</section>
+<section id="los-once" class="sec-gris galeria" data-escena="galeria" data-tono="claro" aria-labelledby="t-once">
+<div class="pin">
+<div class="galeria-cabeza">
+<h2 class="titular" id="t-once">Conocé los once.</h2>
+<div class="filtros" role="group" aria-label="Filtrar por género"></div>
+</div>
+<div class="carril-ventana">
+<ul class="carril" data-anima>
+<li class="tarjeta" data-grupo="carreras" data-juego="f19-grand-prix" style="--tinte:#e3262f">
+<a class="tarjeta-foto" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix" aria-label="Jugar F19 Grand Prix"><img src="capturas/f19-grand-prix.webp" srcset="capturas/f19-grand-prix-640.webp 640w, capturas/f19-grand-prix.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+<span class="sello">Destacado · online</span>
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Carreras · Three.js · 1,3 MB</span></p>
+<h3>F19 Grand Prix</h3>
+<p class="resumen">Fórmula en 3D con multijugador online: creás una sala, pasás el código y corrés contra hasta nueve amigos. Tres circuitos con desnivel, lluvia con pista mojada y garaje 3D.</p>
+<div class="acciones"><a class="boton chico" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix" aria-label="Jugar F19 Grand Prix"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/F19" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="carreras" data-juego="gran-premio" style="--tinte:#e10600">
+<a class="tarjeta-foto" href="juegos/gran-premio/index.html" data-jugar="gran-premio" aria-label="Jugar Gran Premio"><img src="capturas/gran-premio.webp" srcset="capturas/gran-premio-640.webp 640w, capturas/gran-premio.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Fórmula 1 · Three.js · 1,0 MB</span></p>
+<h3>Gran Premio</h3>
+<p class="resumen">Carrera rápida de hasta 16 autos, contrarreloj contra tu fantasma y un campeonato de tres carreras con puntaje oficial. ERS, DRS y torre de tiempos.</p>
+<div class="acciones"><a class="boton chico" href="juegos/gran-premio/index.html" data-jugar="gran-premio" aria-label="Jugar Gran Premio"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/F1" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="carreras" data-juego="gran-premio-3d" style="--tinte:#38b6f0">
+<a class="tarjeta-foto" href="juegos/gran-premio-3d/index.html" data-jugar="gran-premio-3d" aria-label="Jugar Gran Premio 3D"><img src="capturas/gran-premio-3d.webp" srcset="capturas/gran-premio-3d-640.webp 640w, capturas/gran-premio-3d.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Fórmula 1 · Three.js · 765 KB</span></p>
+<h3>Gran Premio 3D</h3>
+<p class="resumen">Largás último con el monoplaza celeste y rosa y tenés que pasar a 19 rivales sin irte al pasto. Cordillera generada con ruido fractal y tribunas con público.</p>
+<div class="acciones"><a class="boton chico" href="juegos/gran-premio-3d/index.html" data-jugar="gran-premio-3d" aria-label="Jugar Gran Premio 3D"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Ax" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="carreras" data-juego="pax" style="--tinte:#e5392b">
+<a class="tarjeta-foto" href="juegos/pax/index.html" data-jugar="pax" aria-label="Jugar Pax GP"><img src="capturas/pax.webp" srcset="capturas/pax-640.webp 640w, capturas/pax.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Fórmula 1 · Three.js · UE5 · 42 KB</span></p>
+<h3>Pax GP</h3>
+<p class="resumen">Tres vueltas para recuperar cinco puestos en un trazado de 6,99 km con relieve. Es la versión web de un proyecto en Unreal Engine 5 con auto y circuito modelados por script en Blender.</p>
+<div class="acciones"><a class="boton chico" href="juegos/pax/index.html" data-jugar="pax" aria-label="Jugar Pax GP"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Pax" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="deportes" data-juego="rocket-arena" style="--tinte:#3a9bff">
+<a class="tarjeta-foto" href="juegos/rocket-arena/index.html" data-jugar="rocket-arena" aria-label="Jugar Rocket Arena"><img src="capturas/rocket-arena.webp" srcset="capturas/rocket-arena-640.webp 640w, capturas/rocket-arena.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Fútbol con autos · Three.js · 852 KB</span></p>
+<h3>Rocket Arena</h3>
+<p class="resumen">Fútbol con autos a cohete al estilo Rocket League: 1v1, 2v2 o 3v3 contra la IA, con saltos, flips, turbo y air roll.</p>
+<div class="acciones"><a class="boton chico" href="juegos/rocket-arena/index.html" data-jugar="rocket-arena" aria-label="Jugar Rocket Arena"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Rl" target="_blank" rel="noopener">Código</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Rl/raw/HEAD/dist/rocket-arena.apk" target="_blank" rel="noopener">APK</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="deportes" data-juego="doce-pasos" style="--tinte:#f2a900">
+<a class="tarjeta-foto" href="juegos/doce-pasos/index.html" data-jugar="doce-pasos" aria-label="Jugar Doce Pasos"><img src="capturas/doce-pasos.webp" srcset="capturas/doce-pasos-640.webp 640w, capturas/doce-pasos.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Fútbol · Three.js · 1,4 MB</span></p>
+<h3>Doce Pasos</h3>
+<p class="resumen">Tanda de penales y tiros libres con barrera. Apuntás con un trazo, le das efecto si querés y frenás la barra de potencia. Los remates usan captura de movimiento real.</p>
+<div class="acciones"><a class="boton chico" href="juegos/doce-pasos/index.html" data-jugar="doce-pasos" aria-label="Jugar Doce Pasos"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Fut" target="_blank" rel="noopener">Código</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Fut/raw/HEAD/dist/DocePasos.apk" target="_blank" rel="noopener">APK</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="accion" data-juego="cinco-noches" style="--tinte:#c4262e">
+<a class="tarjeta-foto" href="juegos/cinco-noches/index.html" data-jugar="cinco-noches" aria-label="Jugar Cinco Noches en Bruno's"><img src="capturas/cinco-noches.webp" srcset="capturas/cinco-noches-640.webp 640w, capturas/cinco-noches.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Terror · Three.js · 918 KB</span></p>
+<h3>Cinco Noches en Bruno's</h3>
+<p class="resumen">Sobrevivís de 12 a 6 AM en una pizzería: mirás las cámaras, cerrás puertas y cuidás la energía mientras cuatro animatrónicos te buscan.</p>
+<div class="acciones"><a class="boton chico" href="juegos/cinco-noches/index.html" data-jugar="cinco-noches" aria-label="Jugar Cinco Noches en Bruno's"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Plam" target="_blank" rel="noopener">Código</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Plam/raw/HEAD/apk/CincoNochesEnBrunos.apk" target="_blank" rel="noopener">APK</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="accion" data-juego="ecos-del-vacio" style="--tinte:#e38b2c">
+<a class="tarjeta-foto" href="juegos/ecos-del-vacio/index.html" data-jugar="ecos-del-vacio" aria-label="Jugar Ecos del Vacío"><img src="capturas/ecos-del-vacio.webp" srcset="capturas/ecos-del-vacio-640.webp 640w, capturas/ecos-del-vacio.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Acción · ciencia ficción · WebGL2 propio · 308 KB</span></p>
+<h3>Ecos del Vacío</h3>
+<p class="resumen">Primer encuentro de un action-RPG: subís a la cresta, plantás la antena y cazás a El Barrenador, un titán de 36 metros que se escala por sus anclajes.</p>
+<div class="acciones"><a class="boton chico" href="juegos/ecos-del-vacio/index.html" data-jugar="ecos-del-vacio" aria-label="Jugar Ecos del Vacío"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/rpg" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="casual" data-juego="cupi" style="--tinte:#ff6fae">
+<a class="tarjeta-foto" href="juegos/cupi/index.html" data-jugar="cupi" aria-label="Jugar Cupi"><img src="capturas/cupi.webp" srcset="capturas/cupi-640.webp 640w, capturas/cupi.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Mascota virtual · Three.js + cannon-es · 997 KB</span></p>
+<h3>Cupi</h3>
+<p class="resumen">Una mascota en 3D para cuidar: le das de comer, la bañás, jugás con ella y decorás su casa. Seis zonas y día o noche según la hora real.</p>
+<div class="acciones"><a class="boton chico" href="juegos/cupi/index.html" data-jugar="cupi" aria-label="Jugar Cupi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Plot" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="casual" data-juego="geometry-wave" style="--tinte:#21d4b4">
+<a class="tarjeta-foto" href="juegos/geometry-wave/index.html" data-jugar="geometry-wave" aria-label="Jugar Geometry Wave"><img src="capturas/geometry-wave.webp" srcset="capturas/geometry-wave-640.webp 640w, capturas/geometry-wave.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Ritmo · Canvas 2D · 150 KB</span></p>
+<h3>Geometry Wave</h3>
+<p class="resumen">Plataformas al ritmo de la música: saltás pinchos con el cubo, volás con la nave y zigzagueás con la onda. Cinco niveles, editor y niveles de la comunidad.</p>
+<div class="acciones"><a class="boton chico" href="juegos/geometry-wave/index.html" data-jugar="geometry-wave" aria-label="Jugar Geometry Wave"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/uuu" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+<li class="tarjeta" data-grupo="casual" data-juego="lavarropas" style="--tinte:#25c99a">
+<a class="tarjeta-foto" href="juegos/lavarropas/index.html" data-jugar="lavarropas" aria-label="Jugar Lavarropas Qué Facha 3000"><img src="capturas/lavarropas.webp" srcset="capturas/lavarropas-640.webp 640w, capturas/lavarropas.webp 1280w" sizes="(max-width:734px) 84vw, 440px" width="1280" height="720" loading="lazy" decoding="async" alt=""><span class="pastilla" aria-hidden="true"><i></i>Jugar</span></a>
+<div class="tarjeta-cuerpo">
+            
+<p class="meta"><span class="punto" aria-hidden="true"></span><span>Simulador · HTML y CSS · 24 KB</span></p>
+<h3>Lavarropas Qué Facha 3000</h3>
+<p class="resumen">Cuatro programas, fases reales del ciclo y un centrifugado que hace temblar la máquina. Cuando termina, grita «¡Qué facha!».</p>
+<div class="acciones"><a class="boton chico" href="juegos/lavarropas/index.html" data-jugar="lavarropas" aria-label="Jugar Lavarropas Qué Facha 3000"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="boton sec chico" href="https://github.com/ramiroarrojo2077-beep/Pl" target="_blank" rel="noopener">Código</a></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="galeria-progreso" aria-hidden="true"><i data-anima></i></div>
+</div>
+</section>
+<section id="comparar" class="sec-clara comparar" data-tono="claro" aria-labelledby="t-comparar">
+<div class="cabecera revelar">
+<h2 class="titular" id="t-comparar">Compará los juegos.</h2>
+<p class="bajada">Motor, peso y con qué se juega, lado a lado.</p>
+</div>
+<div class="comparador">
+<div class="comp-col revelar" style="--i:0" data-juego="f19-grand-prix">
+<select class="comp-sel" aria-label="Juego 1"></select>
+<a class="comp-foto" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix" aria-label="Jugar F19 Grand Prix"><img src="capturas/f19-grand-prix.webp" srcset="capturas/f19-grand-prix-640.webp 640w, capturas/f19-grand-prix.webp 1280w" sizes="(max-width:734px) 45vw, 320px" width="1280" height="720" loading="lazy" decoding="async" alt=""></a>
+<div class="comp-tit" style="--tinte:#e3262f"><h3>F19 Grand Prix</h3><p>Carreras</p></div>
+<div class="comp-acc"><a class="boton chico" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix" aria-label="Jugar F19 Grand Prix"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/F19" target="_blank" rel="noopener">Código</a></div>
+<div class="comp-dato"><span class="rotulo">Motor</span><span class="valor">Three.js</span></div>
+<div class="comp-dato"><span class="rotulo">Peso</span><span class="cifra-chica">1,3 MB</span></div>
+<div class="comp-dato"><span class="rotulo">Se juega con</span><ul class="usos"><li class="si"><span aria-hidden="true">✓</span>Teclado<span class="vh">: sí</span></li><li class="no"><span aria-hidden="true">—</span>Ratón<span class="vh">: no</span></li><li class="si"><span aria-hidden="true">✓</span>Mando<span class="vh">: sí</span></li><li class="si"><span aria-hidden="true">✓</span>Táctil<span class="vh">: sí</span></li><li class="si"><span aria-hidden="true">✓</span>Online<span class="vh">: sí</span></li><li class="no"><span aria-hidden="true">—</span>Android<span class="vh">: no</span></li></ul></div>
+<div class="comp-dato"><span class="rotulo">Controles</span><ul class="teclas"><li><kbd>W</kbd>acelerar</li><li><kbd>A D</kbd>girar</li><li><kbd>Espacio</kbd>DRS</li><li><kbd>C</kbd>cámara</li></ul></div>
+<div class="comp-dato"><span class="rotulo">Android</span><span class="valor suave">—</span></div>
+</div>
+<div class="comp-col revelar" style="--i:1" data-juego="rocket-arena">
+<select class="comp-sel" aria-label="Juego 2"></select>
+<a class="comp-foto" href="juegos/rocket-arena/index.html" data-jugar="rocket-arena" aria-label="Jugar Rocket Arena"><img src="capturas/rocket-arena.webp" srcset="capturas/rocket-arena-640.webp 640w, capturas/rocket-arena.webp 1280w" sizes="(max-width:734px) 45vw, 320px" width="1280" height="720" loading="lazy" decoding="async" alt=""></a>
+<div class="comp-tit" style="--tinte:#3a9bff"><h3>Rocket Arena</h3><p>Fútbol con autos</p></div>
+<div class="comp-acc"><a class="boton chico" href="juegos/rocket-arena/index.html" data-jugar="rocket-arena" aria-label="Jugar Rocket Arena"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Rl" target="_blank" rel="noopener">Código</a></div>
+<div class="comp-dato"><span class="rotulo">Motor</span><span class="valor">Three.js</span></div>
+<div class="comp-dato"><span class="rotulo">Peso</span><span class="cifra-chica">852 KB</span></div>
+<div class="comp-dato"><span class="rotulo">Se juega con</span><ul class="usos"><li class="si"><span aria-hidden="true">✓</span>Teclado<span class="vh">: sí</span></li><li class="no"><span aria-hidden="true">—</span>Ratón<span class="vh">: no</span></li><li class="si"><span aria-hidden="true">✓</span>Mando<span class="vh">: sí</span></li><li class="si"><span aria-hidden="true">✓</span>Táctil<span class="vh">: sí</span></li><li class="no"><span aria-hidden="true">—</span>Online<span class="vh">: no</span></li><li class="si"><span aria-hidden="true">✓</span>Android<span class="vh">: sí</span></li></ul></div>
+<div class="comp-dato"><span class="rotulo">Controles</span><ul class="teclas"><li><kbd>W S</kbd>acelerar</li><li><kbd>Espacio</kbd>saltar</li><li><kbd>Shift</kbd>turbo</li></ul></div>
+<div class="comp-dato"><span class="rotulo">Android</span><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Rl/raw/HEAD/dist/rocket-arena.apk" target="_blank" rel="noopener">Bajar APK</a></div>
+</div>
+<div class="comp-col revelar" style="--i:2" data-juego="cupi">
+<select class="comp-sel" aria-label="Juego 3"></select>
+<a class="comp-foto" href="juegos/cupi/index.html" data-jugar="cupi" aria-label="Jugar Cupi"><img src="capturas/cupi.webp" srcset="capturas/cupi-640.webp 640w, capturas/cupi.webp 1280w" sizes="(max-width:734px) 45vw, 320px" width="1280" height="720" loading="lazy" decoding="async" alt=""></a>
+<div class="comp-tit" style="--tinte:#ff6fae"><h3>Cupi</h3><p>Mascota virtual</p></div>
+<div class="comp-acc"><a class="boton chico" href="juegos/cupi/index.html" data-jugar="cupi" aria-label="Jugar Cupi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar</a><a class="enlace" href="https://github.com/ramiroarrojo2077-beep/Plot" target="_blank" rel="noopener">Código</a></div>
+<div class="comp-dato"><span class="rotulo">Motor</span><span class="valor">Three.js + cannon-es</span></div>
+<div class="comp-dato"><span class="rotulo">Peso</span><span class="cifra-chica">997 KB</span></div>
+<div class="comp-dato"><span class="rotulo">Se juega con</span><ul class="usos"><li class="no"><span aria-hidden="true">—</span>Teclado<span class="vh">: no</span></li><li class="si"><span aria-hidden="true">✓</span>Ratón<span class="vh">: sí</span></li><li class="no"><span aria-hidden="true">—</span>Mando<span class="vh">: no</span></li><li class="si"><span aria-hidden="true">✓</span>Táctil<span class="vh">: sí</span></li><li class="no"><span aria-hidden="true">—</span>Online<span class="vh">: no</span></li><li class="no"><span aria-hidden="true">—</span>Android<span class="vh">: no</span></li></ul></div>
+<div class="comp-dato"><span class="rotulo">Controles</span><ul class="teclas"><li><kbd>Clic</kbd>cosquillas</li><li><kbd>Arrastrar</kbd>acariciar</li></ul></div>
+<div class="comp-dato"><span class="rotulo">Android</span><span class="valor suave">—</span></div>
+</div>
+</div>
+</section>
+<section id="ficha" class="sec-gris ficha" data-tono="claro" aria-labelledby="t-ficha">
+<div class="ficha-caja">
+<h2 class="titular" id="t-ficha">Ficha técnica.</h2>
+<p class="nota">Cada juego es un sitio estático: HTML, CSS y JavaScript, sin servidor propio. El peso es el de la versión que se carga en esta página.</p>
+<div class="tabla-caja">
+<table>
+<thead><tr><th scope="col">Juego</th><th scope="col">Motor</th><th scope="col">Peso</th><th scope="col">Se juega con</th><th scope="col">Código</th></tr></thead>
+<tbody>
+<tr data-juego="f19-grand-prix" style="--tinte:#e3262f"><td><span class="punto" aria-hidden="true"></span>F19 Grand Prix</td><td>Three.js</td><td class="num">1,3 MB</td><td>Teclado, Mando, Táctil, Online</td><td><a href="https://github.com/ramiroarrojo2077-beep/F19" target="_blank" rel="noopener">ramiroarrojo2077-beep/F19</a></td></tr>
+<tr data-juego="gran-premio" style="--tinte:#e10600"><td><span class="punto" aria-hidden="true"></span>Gran Premio</td><td>Three.js</td><td class="num">1,0 MB</td><td>Teclado, Mando, Táctil</td><td><a href="https://github.com/ramiroarrojo2077-beep/F1" target="_blank" rel="noopener">ramiroarrojo2077-beep/F1</a></td></tr>
+<tr data-juego="gran-premio-3d" style="--tinte:#38b6f0"><td><span class="punto" aria-hidden="true"></span>Gran Premio 3D</td><td>Three.js</td><td class="num">765 KB</td><td>Teclado, Mando, Táctil, Android</td><td><a href="https://github.com/ramiroarrojo2077-beep/Ax" target="_blank" rel="noopener">ramiroarrojo2077-beep/Ax</a></td></tr>
+<tr data-juego="pax" style="--tinte:#e5392b"><td><span class="punto" aria-hidden="true"></span>Pax GP</td><td>Three.js · UE5</td><td class="num">42 KB</td><td>Teclado, Táctil</td><td><a href="https://github.com/ramiroarrojo2077-beep/Pax" target="_blank" rel="noopener">ramiroarrojo2077-beep/Pax</a></td></tr>
+<tr data-juego="rocket-arena" style="--tinte:#3a9bff"><td><span class="punto" aria-hidden="true"></span>Rocket Arena</td><td>Three.js</td><td class="num">852 KB</td><td>Teclado, Mando, Táctil, Android</td><td><a href="https://github.com/ramiroarrojo2077-beep/Rl" target="_blank" rel="noopener">ramiroarrojo2077-beep/Rl</a></td></tr>
+<tr data-juego="doce-pasos" style="--tinte:#f2a900"><td><span class="punto" aria-hidden="true"></span>Doce Pasos</td><td>Three.js</td><td class="num">1,4 MB</td><td>Teclado, Ratón, Táctil, Android</td><td><a href="https://github.com/ramiroarrojo2077-beep/Fut" target="_blank" rel="noopener">ramiroarrojo2077-beep/Fut</a></td></tr>
+<tr data-juego="cinco-noches" style="--tinte:#c4262e"><td><span class="punto" aria-hidden="true"></span>Cinco Noches en Bruno's</td><td>Three.js</td><td class="num">918 KB</td><td>Teclado y ratón, Táctil, Android</td><td><a href="https://github.com/ramiroarrojo2077-beep/Plam" target="_blank" rel="noopener">ramiroarrojo2077-beep/Plam</a></td></tr>
+<tr data-juego="ecos-del-vacio" style="--tinte:#e38b2c"><td><span class="punto" aria-hidden="true"></span>Ecos del Vacío</td><td>WebGL2 propio</td><td class="num">308 KB</td><td>Teclado y ratón</td><td><a href="https://github.com/ramiroarrojo2077-beep/rpg" target="_blank" rel="noopener">ramiroarrojo2077-beep/rpg</a></td></tr>
+<tr data-juego="cupi" style="--tinte:#ff6fae"><td><span class="punto" aria-hidden="true"></span>Cupi</td><td>Three.js + cannon-es</td><td class="num">997 KB</td><td>Ratón, Táctil</td><td><a href="https://github.com/ramiroarrojo2077-beep/Plot" target="_blank" rel="noopener">ramiroarrojo2077-beep/Plot</a></td></tr>
+<tr data-juego="geometry-wave" style="--tinte:#21d4b4"><td><span class="punto" aria-hidden="true"></span>Geometry Wave</td><td>Canvas 2D</td><td class="num">150 KB</td><td>Teclado, Ratón, Táctil</td><td><a href="https://github.com/ramiroarrojo2077-beep/uuu" target="_blank" rel="noopener">ramiroarrojo2077-beep/uuu</a></td></tr>
+<tr data-juego="lavarropas" style="--tinte:#25c99a"><td><span class="punto" aria-hidden="true"></span>Lavarropas Qué Facha 3000</td><td>HTML y CSS</td><td class="num">24 KB</td><td>Ratón, Táctil</td><td><a href="https://github.com/ramiroarrojo2077-beep/Pl" target="_blank" rel="noopener">ramiroarrojo2077-beep/Pl</a></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="cierre" class="sec-clara cierre" data-tono="claro" aria-labelledby="t-cierre">
+<h2 class="titular" id="t-cierre">Elegí uno y <span class="foto-texto">jugalo.</span></h2>
+<p class="bajada revelar">Todos corren en el navegador. Cuatro también vienen para Android.</p>
+<div class="botones centro revelar" style="--i:1"><a class="boton" href="juegos/f19-grand-prix/index.html" data-jugar="f19-grand-prix"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>Jugar F19 Grand Prix</a><a class="enlace" href="#los-once">Ver los once</a></div>
+</section>
+</main>
+<div class="pie-caja">
+<footer class="pie">
+<p>Hecho por <a href="https://github.com/ramiroarrojo2077-beep" target="_blank" rel="noopener">@ramiroarrojo2077-beep</a>. El código de cada juego está en su repositorio.</p>
+<p>Mejor con teclado o mando. En el celular, en horizontal.</p>
+</footer>
 </div>
 
 <dialog class="reproductor" id="reproductor" aria-labelledby="reproductor-titulo">
-  <header>
-    <div class="titulo" id="reproductor-titulo"><i aria-hidden="true"></i><span></span></div>
-    <div class="ayuda" id="reproductor-ayuda"></div>
-    <div class="herramientas">
-      <button class="icono" type="button" id="pantalla-completa" aria-label="Pantalla completa" title="Pantalla completa">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
-      </button>
-      <a class="icono" id="abrir-aparte" href="#" target="_blank" rel="noopener" aria-label="Abrir en una pestaña nueva" title="Abrir en una pestaña nueva">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 2h5v5M14 2 7 9M12 10v4H2V4h4"/></svg>
-      </a>
-      <button class="icono" type="button" id="cerrar" aria-label="Cerrar el juego" title="Cerrar">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13"/></svg>
-      </button>
-    </div>
-  </header>
-  <iframe id="pantalla" title="Juego" allow="fullscreen; gamepad; autoplay; pointer-lock" allowfullscreen></iframe>
+<header>
+<div class="titulo" id="reproductor-titulo"><i aria-hidden="true"></i><span></span></div>
+<div class="ayuda" id="reproductor-ayuda"></div>
+<div class="herramientas">
+<button class="icono" type="button" id="pantalla-completa" aria-label="Pantalla completa" title="Pantalla completa">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+</button>
+<a class="icono" id="abrir-aparte" href="#" target="_blank" rel="noopener" aria-label="Abrir en una pestaña nueva" title="Abrir en una pestaña nueva">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 2h5v5M14 2 7 9M12 10v4H2V4h4"/></svg>
+</a>
+<button class="icono" type="button" id="cerrar" aria-label="Cerrar el juego" title="Cerrar">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13"/></svg>
+</button>
+</div>
+</header>
+<iframe id="pantalla" title="Juego" allow="fullscreen; gamepad; autoplay; pointer-lock" allowfullscreen></iframe>
 </dialog>
 
 <script>
-  // Para agregar un juego: copiar su versión jugable en juegos/<id>/ (ver armar.sh),
-  // una captura 16:9 en capturas/<id>.webp y un objeto en esta lista.
-  const USUARIO = "ramiroarrojo2077-beep";
-
-  const GRUPOS = [
-    ["todos", "Todos"],
-    ["carreras", "Carreras"],
-    ["deportes", "Deportes"],
-    ["accion", "Acción y terror"],
-    ["casual", "Casual"],
-  ];
-
-  const JUEGOS = [
-    {
-      id: "f19-grand-prix", repo: "F19", titulo: "F19 Grand Prix", grupo: "carreras", tipo: "Carreras", tinte: "#e3262f",
-      destacado: true,
-      resumen: "Fórmula en 3D con multijugador online: creás una sala, pasás el código y corrés contra hasta nueve amigos. Tres circuitos con desnivel, lluvia con pista mojada y garaje 3D.",
-      motor: "Three.js", peso: "1,3 MB", plataformas: ["Teclado", "Mando", "Táctil", "Online"],
-      teclas: [["W", "acelerar"], ["A D", "girar"], ["Espacio", "DRS"], ["C", "cámara"]],
-    },
-    {
-      id: "ecos-del-vacio", repo: "rpg", titulo: "Ecos del Vacío", grupo: "accion", tipo: "Acción · ciencia ficción", tinte: "#e38b2c",
-      resumen: "Primer encuentro de un action-RPG: subís a la cresta, plantás la antena y cazás a El Barrenador, un titán de 36 metros que se escala por sus anclajes.",
-      motor: "WebGL2 propio", peso: "308 KB", plataformas: ["Teclado y ratón"],
-      teclas: [["WASD", "moverse"], ["Clic", "disparar"], ["E", "gancho"]],
-    },
-    {
-      id: "cinco-noches", repo: "Plam", titulo: "Cinco Noches en Bruno's", grupo: "accion", tipo: "Terror", tinte: "#c4262e",
-      resumen: "Sobrevivís de 12 a 6 AM en una pizzería: mirás las cámaras, cerrás puertas y cuidás la energía mientras cuatro animatrónicos te buscan.",
-      motor: "Three.js", peso: "918 KB", plataformas: ["Teclado y ratón", "Táctil", "Android"],
-      apk: "apk/CincoNochesEnBrunos.apk",
-      teclas: [["Q E", "puertas"], ["Z C", "luces"], ["S", "monitor"]],
-    },
-    {
-      id: "rocket-arena", repo: "Rl", titulo: "Rocket Arena", grupo: "deportes", tipo: "Fútbol con autos", tinte: "#3a9bff",
-      resumen: "Fútbol con autos a cohete al estilo Rocket League: 1v1, 2v2 o 3v3 contra la IA, con saltos, flips, turbo y air roll.",
-      motor: "Three.js", peso: "852 KB", plataformas: ["Teclado", "Mando", "Táctil", "Android"],
-      apk: "dist/rocket-arena.apk",
-      teclas: [["W S", "acelerar"], ["Espacio", "saltar"], ["Shift", "turbo"]],
-    },
-    {
-      id: "doce-pasos", repo: "Fut", titulo: "Doce Pasos", grupo: "deportes", tipo: "Fútbol", tinte: "#f2a900",
-      resumen: "Tanda de penales y tiros libres con barrera. Apuntás con un trazo, le das efecto si querés y frenás la barra de potencia. Los remates usan captura de movimiento real.",
-      motor: "Three.js", peso: "1,4 MB", plataformas: ["Teclado", "Ratón", "Táctil", "Android"],
-      apk: "dist/DocePasos.apk",
-      teclas: [["← →", "apuntar"], ["A D", "efecto"], ["Espacio", "potencia"]],
-    },
-    {
-      id: "gran-premio", repo: "F1", titulo: "Gran Premio", grupo: "carreras", tipo: "Fórmula 1", tinte: "#e10600",
-      resumen: "Carrera rápida de hasta 16 autos, contrarreloj contra tu fantasma y un campeonato de tres carreras con puntaje oficial. ERS, DRS y torre de tiempos.",
-      motor: "Three.js", peso: "1,0 MB", plataformas: ["Teclado", "Mando", "Táctil"],
-      teclas: [["↑", "acelerar"], ["Espacio", "ERS"], ["E", "DRS"]],
-    },
-    {
-      id: "cupi", repo: "Plot", titulo: "Cupi", grupo: "casual", tipo: "Mascota virtual", tinte: "#ff6fae",
-      resumen: "Una mascota en 3D para cuidar: le das de comer, la bañás, jugás con ella y decorás su casa. Seis zonas y día o noche según la hora real.",
-      motor: "Three.js + cannon-es", peso: "997 KB", plataformas: ["Ratón", "Táctil"],
-      teclas: [["Clic", "cosquillas"], ["Arrastrar", "acariciar"]],
-    },
-    {
-      id: "geometry-wave", repo: "uuu", titulo: "Geometry Wave", grupo: "casual", tipo: "Ritmo", tinte: "#21d4b4",
-      resumen: "Plataformas al ritmo de la música: saltás pinchos con el cubo, volás con la nave y zigzagueás con la onda. Cinco niveles, editor y niveles de la comunidad.",
-      motor: "Canvas 2D", peso: "150 KB", plataformas: ["Teclado", "Ratón", "Táctil"],
-      teclas: [["Espacio", "saltar"], ["Z", "punto de control"], ["R", "reiniciar"]],
-    },
-    {
-      id: "gran-premio-3d", repo: "Ax", titulo: "Gran Premio 3D", grupo: "carreras", tipo: "Fórmula 1", tinte: "#38b6f0",
-      resumen: "Largás último con el monoplaza celeste y rosa y tenés que pasar a 19 rivales sin irte al pasto. Cordillera generada con ruido fractal y tribunas con público.",
-      motor: "Three.js", peso: "765 KB", plataformas: ["Teclado", "Mando", "Táctil", "Android"],
-      teclas: [["↑", "acelerar"], ["← →", "doblar"], ["P", "pausa"]],
-    },
-    {
-      id: "pax", repo: "Pax", titulo: "Pax GP", grupo: "carreras", tipo: "Fórmula 1", tinte: "#e5392b",
-      resumen: "Tres vueltas para recuperar cinco puestos en un trazado de 6,99 km con relieve. Es la versión web de un proyecto en Unreal Engine 5 con auto y circuito modelados por script en Blender.",
-      motor: "Three.js · UE5", peso: "42 KB", plataformas: ["Teclado", "Táctil"],
-      teclas: [["W", "acelerar"], ["A D", "girar"], ["C", "cámara"]],
-    },
-    {
-      id: "lavarropas", repo: "Pl", titulo: "Lavarropas Qué Facha 3000", grupo: "casual", tipo: "Simulador", tinte: "#25c99a",
-      resumen: "Cuatro programas, fases reales del ciclo y un centrifugado que hace temblar la máquina. Cuando termina, grita «¡Qué facha!».",
-      motor: "HTML y CSS", peso: "24 KB", plataformas: ["Ratón", "Táctil"],
-      teclas: [["Clic", "elegir programa"]],
-    },
-  ];
-
-  const $ = (sel) => document.querySelector(sel);
-  const repoUrl = (j) => `https://github.com/${USUARIO}/${j.repo}`;
-  const juegoUrl = (j) => `juegos/${j.id}/index.html`;
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  const teclasHtml = (j) => j.teclas.map(([k, que]) => `<li><kbd>${esc(k)}</kbd>${esc(que)}</li>`).join("");
-
-  const iconoPlay = '<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>';
-
-  function tarjeta(j) {
-    const apk = j.apk
-      ? `<a class="btn" href="${repoUrl(j)}/raw/HEAD/${j.apk}" target="_blank" rel="noopener">APK</a>`
-      : "";
-    return `
-      <article class="juego${j.destacado ? " destacado" : ""}" data-grupo="${j.grupo}" style="--tinte:${j.tinte}">
-        <button class="captura" type="button" data-jugar="${j.id}" aria-label="Jugar ${esc(j.titulo)}">
-          <img src="capturas/${j.id}.webp" width="960" height="540" alt="Captura de ${esc(j.titulo)}">
-          <span class="boton-jugar" aria-hidden="true"><i></i>Jugar</span>
-        </button>
-        <div class="cuerpo">
-          ${j.destacado ? '<span class="sello">Destacado · online</span>' : ""}
-          <p class="meta"><span class="tipo">${esc(j.tipo)}</span><span>${esc(j.motor)}</span><span>${esc(j.peso)}</span></p>
-          <h3>${esc(j.titulo)}</h3>
-          <p class="resumen">${esc(j.resumen)}</p>
-          <ul class="teclas" aria-label="Controles">${teclasHtml(j)}</ul>
-          <p class="plataformas">${j.plataformas.map(esc).join(" · ")}</p>
-          <div class="acciones">
-            <button class="btn primario" type="button" data-jugar="${j.id}">${iconoPlay}Jugar</button>
-            <a class="btn" href="${repoUrl(j)}" target="_blank" rel="noopener">Código</a>
-            ${apk}
-          </div>
-        </div>
-      </article>`;
-  }
-
-  $("#grilla").innerHTML = JUEGOS.map(tarjeta).join("");
-
-  $("#tabla").innerHTML = JUEGOS.map((j) => `
-    <tr style="--tinte:${j.tinte}">
-      <td><span class="tipo">${esc(j.titulo)}</span></td>
-      <td>${esc(j.motor)}</td>
-      <td class="num">${esc(j.peso)}</td>
-      <td>${j.plataformas.map(esc).join(", ")}</td>
-      <td><a href="${repoUrl(j)}" target="_blank" rel="noopener">${esc(USUARIO)}/${esc(j.repo)}</a></td>
-    </tr>`).join("");
-
-  // Filtros por género
-  const filtros = $("#filtros");
-  filtros.innerHTML = GRUPOS.map(([id, nombre]) => {
-    const n = id === "todos" ? JUEGOS.length : JUEGOS.filter((j) => j.grupo === id).length;
-    return `<button class="filtro" type="button" data-filtro="${id}" aria-pressed="${id === "todos"}">${nombre}<small>${n}</small></button>`;
-  }).join("");
-
-  function filtrar(id) {
-    $("#grilla").dataset.filtro = id;
-    filtros.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filtro === id)));
-    document.querySelectorAll(".juego").forEach((el) => { el.hidden = id !== "todos" && el.dataset.grupo !== id; });
-    try { localStorage.setItem("portafolio-filtro", id); } catch {}
-  }
-  filtros.addEventListener("click", (e) => {
-    const b = e.target.closest(".filtro");
-    if (b) filtrar(b.dataset.filtro);
-  });
-  try {
-    const guardado = localStorage.getItem("portafolio-filtro");
-    if (guardado && GRUPOS.some(([id]) => id === guardado)) filtrar(guardado);
-  } catch {}
-
-  // Reproductor
-  const dialogo = $("#reproductor");
-  const pantalla = $("#pantalla");
-  const botonCompleta = $("#pantalla-completa");
-  let origen = null;
-
-  function jugar(id) {
-    const j = JUEGOS.find((x) => x.id === id);
-    if (!j) return;
-    origen = document.activeElement;
-    dialogo.style.setProperty("--tinte", j.tinte);
-    $("#reproductor-titulo span").textContent = j.titulo;
-    $("#reproductor-ayuda").innerHTML = j.teclas.slice(0, 3).map(([k, que]) => `<span><kbd>${esc(k)}</kbd> ${esc(que)}</span>`).join("");
-    $("#abrir-aparte").href = juegoUrl(j);
-    pantalla.title = j.titulo;
-    pantalla.src = juegoUrl(j);
-    dialogo.showModal();
-    pantalla.focus();
-  }
-
-  function cerrar() {
-    if (dialogo.open) dialogo.close();
-  }
-
-  dialogo.addEventListener("close", () => {
-    // Descargar el juego corta el sonido y libera la GPU.
-    pantalla.src = "about:blank";
-    if (origen && document.contains(origen)) origen.focus();
-  });
-  pantalla.addEventListener("load", () => { if (dialogo.open) pantalla.focus(); });
-  $("#cerrar").addEventListener("click", cerrar);
-  dialogo.addEventListener("click", (e) => { if (e.target === dialogo) cerrar(); });
-
-  if (!document.fullscreenEnabled) botonCompleta.hidden = true;
-  botonCompleta.addEventListener("click", () => {
-    const pedido = pantalla.requestFullscreen?.();
-    if (pedido) pedido.then(() => pantalla.focus()).catch(() => { botonCompleta.hidden = true; });
-  });
-
-  document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-jugar]");
-    if (b) jugar(b.dataset.jugar);
-  });
-
-  if (/^#jugar-[a-z0-9-]+$/.test(location.hash)) jugar(location.hash.slice(7));
+// Para agregar un juego: copiar su versión jugable en juegos/<id>/ (ver armar.sh),
+// una captura 16:9 en capturas/<id>.webp (1280x720) y capturas/<id>-640.webp, y un objeto en esta lista.
+const USUARIO = "ramiroarrojo2077-beep";
+const GRUPOS = [
+["todos", "Todos"],
+["carreras", "Carreras"],
+["deportes", "Deportes"],
+["accion", "Acción y terror"],
+["casual", "Casual"],
+];
+const JUEGOS = [
+{
+id: "f19-grand-prix", repo: "F19", titulo: "F19 Grand Prix", grupo: "carreras", tipo: "Carreras", tinte: "#e3262f",
+destacado: true,
+resumen: "Fórmula en 3D con multijugador online: creás una sala, pasás el código y corrés contra hasta nueve amigos. Tres circuitos con desnivel, lluvia con pista mojada y garaje 3D.",
+motor: "Three.js", peso: "1,3 MB", plataformas: ["Teclado", "Mando", "Táctil", "Online"],
+teclas: [["W", "acelerar"], ["A D", "girar"], ["Espacio", "DRS"], ["C", "cámara"]],
+},
+{
+id: "gran-premio", repo: "F1", titulo: "Gran Premio", grupo: "carreras", tipo: "Fórmula 1", tinte: "#e10600",
+resumen: "Carrera rápida de hasta 16 autos, contrarreloj contra tu fantasma y un campeonato de tres carreras con puntaje oficial. ERS, DRS y torre de tiempos.",
+motor: "Three.js", peso: "1,0 MB", plataformas: ["Teclado", "Mando", "Táctil"],
+teclas: [["↑", "acelerar"], ["Espacio", "ERS"], ["E", "DRS"]],
+},
+{
+id: "gran-premio-3d", repo: "Ax", titulo: "Gran Premio 3D", grupo: "carreras", tipo: "Fórmula 1", tinte: "#38b6f0",
+resumen: "Largás último con el monoplaza celeste y rosa y tenés que pasar a 19 rivales sin irte al pasto. Cordillera generada con ruido fractal y tribunas con público.",
+motor: "Three.js", peso: "765 KB", plataformas: ["Teclado", "Mando", "Táctil", "Android"],
+teclas: [["↑", "acelerar"], ["← →", "doblar"], ["P", "pausa"]],
+},
+{
+id: "pax", repo: "Pax", titulo: "Pax GP", grupo: "carreras", tipo: "Fórmula 1", tinte: "#e5392b",
+resumen: "Tres vueltas para recuperar cinco puestos en un trazado de 6,99 km con relieve. Es la versión web de un proyecto en Unreal Engine 5 con auto y circuito modelados por script en Blender.",
+motor: "Three.js · UE5", peso: "42 KB", plataformas: ["Teclado", "Táctil"],
+teclas: [["W", "acelerar"], ["A D", "girar"], ["C", "cámara"]],
+},
+{
+id: "rocket-arena", repo: "Rl", titulo: "Rocket Arena", grupo: "deportes", tipo: "Fútbol con autos", tinte: "#3a9bff",
+resumen: "Fútbol con autos a cohete al estilo Rocket League: 1v1, 2v2 o 3v3 contra la IA, con saltos, flips, turbo y air roll.",
+motor: "Three.js", peso: "852 KB", plataformas: ["Teclado", "Mando", "Táctil", "Android"],
+apk: "dist/rocket-arena.apk",
+teclas: [["W S", "acelerar"], ["Espacio", "saltar"], ["Shift", "turbo"]],
+},
+{
+id: "doce-pasos", repo: "Fut", titulo: "Doce Pasos", grupo: "deportes", tipo: "Fútbol", tinte: "#f2a900",
+resumen: "Tanda de penales y tiros libres con barrera. Apuntás con un trazo, le das efecto si querés y frenás la barra de potencia. Los remates usan captura de movimiento real.",
+motor: "Three.js", peso: "1,4 MB", plataformas: ["Teclado", "Ratón", "Táctil", "Android"],
+apk: "dist/DocePasos.apk",
+teclas: [["← →", "apuntar"], ["A D", "efecto"], ["Espacio", "potencia"]],
+},
+{
+id: "cinco-noches", repo: "Plam", titulo: "Cinco Noches en Bruno's", grupo: "accion", tipo: "Terror", tinte: "#c4262e",
+resumen: "Sobrevivís de 12 a 6 AM en una pizzería: mirás las cámaras, cerrás puertas y cuidás la energía mientras cuatro animatrónicos te buscan.",
+motor: "Three.js", peso: "918 KB", plataformas: ["Teclado y ratón", "Táctil", "Android"],
+apk: "apk/CincoNochesEnBrunos.apk",
+teclas: [["Q E", "puertas"], ["Z C", "luces"], ["S", "monitor"]],
+},
+{
+id: "ecos-del-vacio", repo: "rpg", titulo: "Ecos del Vacío", grupo: "accion", tipo: "Acción · ciencia ficción", tinte: "#e38b2c",
+resumen: "Primer encuentro de un action-RPG: subís a la cresta, plantás la antena y cazás a El Barrenador, un titán de 36 metros que se escala por sus anclajes.",
+motor: "WebGL2 propio", peso: "308 KB", plataformas: ["Teclado y ratón"],
+teclas: [["WASD", "moverse"], ["Clic", "disparar"], ["E", "gancho"]],
+},
+{
+id: "cupi", repo: "Plot", titulo: "Cupi", grupo: "casual", tipo: "Mascota virtual", tinte: "#ff6fae",
+resumen: "Una mascota en 3D para cuidar: le das de comer, la bañás, jugás con ella y decorás su casa. Seis zonas y día o noche según la hora real.",
+motor: "Three.js + cannon-es", peso: "997 KB", plataformas: ["Ratón", "Táctil"],
+teclas: [["Clic", "cosquillas"], ["Arrastrar", "acariciar"]],
+},
+{
+id: "geometry-wave", repo: "uuu", titulo: "Geometry Wave", grupo: "casual", tipo: "Ritmo", tinte: "#21d4b4",
+resumen: "Plataformas al ritmo de la música: saltás pinchos con el cubo, volás con la nave y zigzagueás con la onda. Cinco niveles, editor y niveles de la comunidad.",
+motor: "Canvas 2D", peso: "150 KB", plataformas: ["Teclado", "Ratón", "Táctil"],
+teclas: [["Espacio", "saltar"], ["Z", "punto de control"], ["R", "reiniciar"]],
+},
+{
+id: "lavarropas", repo: "Pl", titulo: "Lavarropas Qué Facha 3000", grupo: "casual", tipo: "Simulador", tinte: "#25c99a",
+resumen: "Cuatro programas, fases reales del ciclo y un centrifugado que hace temblar la máquina. Cuando termina, grita «¡Qué facha!».",
+motor: "HTML y CSS", peso: "24 KB", plataformas: ["Ratón", "Táctil"],
+teclas: [["Clic", "elegir programa"]],
+},
+];
+const repoUrl = (j) => `https://github.com/${USUARIO}/${j.repo}`;
+const juegoUrl = (j) => `juegos/${j.id}/index.html`;
+const apkUrl = (j) => `${repoUrl(j)}/raw/HEAD/${j.apk}`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const PLAY = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1v10l9-5z" fill="currentColor"/></svg>';
+const imgSet = (n) => `capturas/${n}-640.webp 640w, capturas/${n}.webp 1280w`;
+const botonJugar = (j, texto, extra) => `<a class="boton${extra ? " " + extra : ""}" href="${juegoUrl(j)}" data-jugar="${j.id}"${texto === "Jugar" ? ` aria-label="Jugar ${esc(j.titulo)}"` : ""}>${PLAY}${esc(texto)}</a>`;
+function columnaComparador(j) {
+const p = j.plataformas;
+const tiene = (n) => p.includes(n) || ((n === "Teclado" || n === "Ratón") && p.includes("Teclado y ratón"));
+const usos = ["Teclado", "Ratón", "Mando", "Táctil", "Online", "Android"].map((n) => {
+const si = tiene(n);
+return `<li class="${si ? "si" : "no"}"><span aria-hidden="true">${si ? "✓" : "—"}</span>${n}<span class="vh">: ${si ? "sí" : "no"}</span></li>`;
+}).join("");
+return `
+<a class="comp-foto" href="${juegoUrl(j)}" data-jugar="${j.id}" aria-label="Jugar ${esc(j.titulo)}"><img src="capturas/${j.id}.webp" srcset="${imgSet(j.id)}" sizes="(max-width:734px) 45vw, 320px" width="1280" height="720" loading="lazy" decoding="async" alt=""></a>
+<div class="comp-tit" style="--tinte:${j.tinte}"><h3>${esc(j.titulo)}</h3><p>${esc(j.tipo)}</p></div>
+<div class="comp-acc">${botonJugar(j, "Jugar", "chico")}<a class="enlace" href="${repoUrl(j)}" target="_blank" rel="noopener">Código</a></div>
+<div class="comp-dato"><span class="rotulo">Motor</span><span class="valor">${esc(j.motor)}</span></div>
+<div class="comp-dato"><span class="rotulo">Peso</span><span class="cifra-chica">${esc(j.peso)}</span></div>
+<div class="comp-dato"><span class="rotulo">Se juega con</span><ul class="usos">${usos}</ul></div>
+<div class="comp-dato"><span class="rotulo">Controles</span><ul class="teclas">${j.teclas.map(([k, q]) => `<li><kbd>${esc(k)}</kbd>${esc(q)}</li>`).join("")}</ul></div>
+<div class="comp-dato"><span class="rotulo">Android</span>${j.apk ? `<a class="enlace" href="${apkUrl(j)}" target="_blank" rel="noopener">Bajar APK</a>` : '<span class="valor suave">—</span>'}</div>`;
+}
+const d = document.documentElement;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const porId = (id) => JUEGOS.find((j) => j.id === id);
+/* ================= Reproductor ================= */
+const dialogo = $("#reproductor");
+const pantalla = $("#pantalla");
+const botonCompleta = $("#pantalla-completa");
+let origen = null;
+function jugar(id, desde) {
+const j = porId(id);
+if (!j) return;
+origen = desde || document.activeElement;
+dialogo.style.setProperty("--tinte", j.tinte);
+$("#reproductor-titulo span").textContent = j.titulo;
+$("#reproductor-ayuda").innerHTML = j.teclas.slice(0, 3).map(([k, q]) => `<span><kbd>${esc(k)}</kbd> ${esc(q)}</span>`).join("");
+$("#abrir-aparte").href = juegoUrl(j);
+pantalla.title = j.titulo;
+pantalla.src = juegoUrl(j);
+const y = scrollY;
+Motor.pausar();
+if (!dialogo.open) dialogo.showModal();
+d.classList.add("jugando");
+pantalla.focus({ preventScroll: true });
+if (scrollY !== y) scrollTo(0, y);
+}
+function alCerrar() {
+if (!d.classList.contains("jugando")) return;
+pantalla.src = "about:blank";
+d.classList.remove("jugando");
+Motor.reanudar();
+if (/^#jugar-/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+if (origen && document.contains(origen)) origen.focus({ preventScroll: true });
+}
+function cerrar() { if (dialogo.open) dialogo.close(); alCerrar(); }
+dialogo.addEventListener("cancel", () => setTimeout(alCerrar, 0));
+dialogo.addEventListener("close", alCerrar);
+pantalla.addEventListener("load", () => {
+if (dialogo.open) pantalla.focus({ preventScroll: true });
+else if (document.activeElement === pantalla && origen && document.contains(origen)) origen.focus({ preventScroll: true });
+});
+$("#cerrar").addEventListener("click", cerrar);
+dialogo.addEventListener("click", (e) => { if (e.target === dialogo) cerrar(); });
+if (!document.fullscreenEnabled) botonCompleta.hidden = true;
+botonCompleta.addEventListener("click", () => {
+const pedido = pantalla.requestFullscreen && pantalla.requestFullscreen();
+if (pedido) pedido.then(() => pantalla.focus()).catch(() => { botonCompleta.hidden = true; });
+});
+document.addEventListener("click", (e) => {
+const b = e.target.closest("[data-jugar]");
+if (!b) return;
+if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+e.preventDefault();
+jugar(b.dataset.jugar, b);
+});
+function hashJugar() {
+const m = /^#jugar-([a-z0-9-]+)$/.exec(location.hash);
+if (m) jugar(m[1]);
+}
+addEventListener("hashchange", hashJugar);
+/* ================= Motor de scroll ================= */
+const Motor = (() => {
+const curvas = {
+lin: (t) => t,
+sal: (t) => 1 - Math.pow(1 - t, 3),
+sua: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+};
+const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+const tramo = (v, a, b) => clamp((v - a) / (b - a));
+const mezclar = (a, b, t) => a + (b - a) * t;
+const M = (window.__motor = { escenas: [], cuadros: 0, msMax: 0 });
+const escenas = M.escenas;
+let vhS = 0, ancho = 0, altoVentana = 0, esAncho = false, galeriaFija = false, esCelu = false;
+let pedido = 0, pausado = false, encendido = false;
+const sonda = $("#sonda-svh");
+const mqCelu = matchMedia("(max-width: 734px)");
+const mqAncho = matchMedia("(min-width: 735px)");
+const mqGaleria = matchMedia("(min-width: 735px) and (min-height: 700px)");
+const mqQuieto = matchMedia("(prefers-reduced-motion: reduce)");
+function escena(def) {
+const e = Object.assign({ top: 0, alto: 0, recorrido: 0, activa: false, p: -1, m: {}, pistas: [], soloSi: () => true }, def);
+escenas.push(e);
+return e;
+}
+function pista(el, canales) {
+if (!el) return null;
+const t = { el, canales: [], ultT: "", ultO: "", trans: false, opac: false };
+for (const prop in canales) {
+const def = canales[prop].slice();
+const curva = typeof def[def.length - 1] === "string" ? def.pop() : "lin";
+t.canales.push({ prop, fuente: def, claves: [], curva: curvas[curva] });
+if (prop === "o") t.opac = true; else t.trans = true;
+}
+return t;
+}
+function resolver(e) {
+for (const t of e.pistas) for (const c of t.canales) c.claves = c.fuente.map(([p, v]) => [p, typeof v === "function" ? v(e.m) : v]);
+}
+function valor(c, p) {
+const k = c.claves, n = k.length;
+if (p <= k[0][0]) return k[0][1];
+if (p >= k[n - 1][0]) return k[n - 1][1];
+for (let i = 0; i < n - 1; i++) {
+if (p < k[i + 1][0]) return mezclar(k[i][1], k[i + 1][1], c.curva((p - k[i][0]) / (k[i + 1][0] - k[i][0])));
+}
+return k[n - 1][1];
+}
+function escribir(t, p) {
+let o = 1, x = 0, y = 0, s = 1, sx = null;
+for (const c of t.canales) {
+const v = valor(c, p);
+if (c.prop === "o") o = v; else if (c.prop === "x") x = v; else if (c.prop === "y") y = v; else if (c.prop === "s") s = v; else sx = v;
+}
+if (t.trans) {
+const T = sx === null ? `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) scale(${s.toFixed(4)})` : `scaleX(${sx.toFixed(4)})`;
+if (T !== t.ultT) { t.el.style.transform = T; t.ultT = T; }
+}
+if (t.opac) {
+const O = o.toFixed(3);
+if (O !== t.ultO) { t.el.style.opacity = O; t.ultO = O; }
+}
+}
+function progreso(e, y) {
+return e.tipo === "fija" ? clamp((y - e.top) / Math.max(1, e.alto - vhS)) : clamp((y + vhS - e.top) / (e.alto + vhS));
+}
+function pintar(e, y, forzar) {
+const p = progreso(e, y);
+if (!forzar && e.p >= 0 && Math.abs(p - e.p) < 0.0005) return;
+e.p = p;
+for (const t of e.pistas) escribir(t, p);
+if (e.pintarExtra) e.pintarExtra(p, y);
+}
+function cuadro() {
+pedido = 0;
+const t0 = performance.now();
+M.cuadros++;
+const y = yActual;
+for (const e of escenas) if (e.activa && e.soloSi()) pintar(e, y);
+const dt = performance.now() - t0;
+if (dt > M.msMax) M.msMax = dt;
+}
+let yActual = 0;
+function pedir() { yActual = scrollY; if (encendido && !pedido && !pausado) pedido = requestAnimationFrame(cuadro); }
+function pintarTodo() { const y = scrollY; for (const e of escenas) if (e.soloSi()) pintar(e, y, true); }
+function clase(el, nombre, si) { if (el.classList.contains(nombre) !== si) el.classList.toggle(nombre, si); }
+let galeriaEsc = null, ultimoMain = -1;
+function medir() {
+if (!encendido) return;
+vhS = sonda.offsetHeight || innerHeight;
+esAncho = mqAncho.matches; galeriaFija = mqGaleria.matches; esCelu = mqCelu.matches;
+ancho = innerWidth; altoVentana = innerHeight;
+clase(d, "galeria-fija", galeriaFija);
+if (galeriaEsc) {
+const g = galeriaEsc;
+if (galeriaFija) {
+g.el.style.height = "";
+const rec = Math.max(0, g.m.carril.offsetWidth - g.m.ventana.clientWidth);
+g.el.style.height = vhS + rec + "px";
+} else g.el.style.height = "";
+}
+for (const e of escenas) {
+e.top = e.el.getBoundingClientRect().top + scrollY;
+e.alto = e.el.offsetHeight;
+e.recorrido = e.tipo === "fija" ? Math.max(1, e.alto - vhS) : e.alto + vhS;
+if (e.medirExtra) e.medirExtra(e.m);
+resolver(e);
+e.p = -1;
+}
+ultimoMain = $("main").offsetHeight;
+pintarTodo();
+}
+function limpiarEstilos() {
+for (const e of escenas) {
+for (const t of e.pistas) { t.el.style.transform = ""; t.el.style.opacity = ""; t.ultT = t.ultO = ""; }
+if (e.limpiar) e.limpiar();
+e.p = -1;
+}
+$$(".inerte").forEach((el) => el.classList.remove("inerte"));
+if (galeriaEsc) galeriaEsc.el.style.height = "";
+d.classList.remove("galeria-fija");
+}
+/* ---------- Escenas ---------- */
+function crearEscenas() {
+const hero = $("#inicio");
+const marco = $(".hero-marco", hero), inicial = $(".hero-inicial", hero), final = $(".hero-final", hero), pin = $(".pin", hero);
+escena({
+el: hero, nombre: "hero", tipo: "fija",
+pistas: [
+pista(inicial, { o: [[0, 1], [0.22, 0], "sal"], y: [[0, 0], [0.22, -48], "sal"] }),
+pista(marco, { s: [[0, (m) => m.s0], [0.65, 1], "sua"], y: [[0, (m) => m.y0], [0.65, 0], "sua"] }),
+pista($(".hero-bisel", hero), { o: [[0.45, 1], [0.62, 0]] }),
+pista($(".hero-velo", hero), { o: [[0.62, 0], [0.8, 1]] }),
+pista(final, { o: [[0.72, 0], [0.9, 1], "sal"], y: [[0.72, 24], [0.9, 0], "sal"] }),
+],
+medirExtra(m) {
+const W = marco.offsetWidth, H = marco.offsetHeight, vw = pin.clientWidth;
+m.s0 = esCelu ? 0.86 : Math.min((0.66 * vw) / W, (0.6 * vhS) / H);
+const textoAbajo = inicial.offsetTop + inicial.offsetHeight;
+const cF = marco.offsetTop + H / 2;
+m.y0 = textoAbajo + 40 - cF + (m.s0 * H) / 2;
+},
+pintarExtra(p) { clase(inicial, "inerte", p > 0.22); clase(final, "inerte", p < 0.72); },
+});
+const palabras = $$("#codigo .palabra");
+const N = palabras.length, ultO = new Array(N).fill("");
+escena({
+el: $("#codigo"), nombre: "codigo", tipo: "paso",
+pintarExtra(p) {
+for (let k = 0; k < N; k++) {
+const a = 0.2 + k * (0.2 / (N - 1));
+const O = (0.15 + 0.85 * tramo(p, a, a + 0.1)).toFixed(3);
+if (O !== ultO[k]) { palabras[k].style.opacity = O; ultO[k] = O; }
+}
+},
+limpiar() { palabras.forEach((w, k) => { w.style.opacity = ""; ultO[k] = ""; }); },
+});
+const cuerpo = $(".carreras-cuerpo");
+const imgs = $$(".esc-img", cuerpo), pasos = $$(".paso", cuerpo), puntos = $$(".puntos li", cuerpo);
+const escenario = $(".escenario", cuerpo);
+const ultI = imgs.map(() => ({ T: "", O: "" })), ultP = pasos.map(() => "");
+let puntoActivo = -1;
+escena({
+el: cuerpo, nombre: "carreras", tipo: "paso",
+medirExtra(m) {
+m.c = pasos.map((el) => el.getBoundingClientRect().top + scrollY + el.offsetHeight / 2);
+m.h = pasos.map((el) => el.offsetHeight);
+if (esCelu) {
+const altoEsc = escenario.offsetHeight;
+m.banda = 48 + altoEsc + 12 + (vhS - 48 - altoEsc - 12) / 2;
+} else m.banda = vhS / 2 + 24;
+},
+pintarExtra(p, y) {
+const m = this.m, c = m.c, n = c.length, a = y + m.banda;
+let f;
+if (a <= c[0]) f = (a - c[0]) / m.h[0];
+else if (a >= c[n - 1]) f = n - 1 + (a - c[n - 1]) / m.h[n - 1];
+else { let i = 0; while (a > c[i + 1]) i++; f = i + (a - c[i]) / (c[i + 1] - c[i]); }
+for (let i = 0; i < imgs.length; i++) {
+const s = mezclar(1, 0.9434, curvas.sal(tramo(f, i - 0.65, i + 0.5)));
+const T = `scale(${s.toFixed(4)})`;
+if (T !== ultI[i].T) { imgs[i].style.transform = T; ultI[i].T = T; }
+if (i > 0) {
+const O = tramo(f, i - 0.65, i - 0.35).toFixed(3);
+if (O !== ultI[i].O) { imgs[i].style.opacity = O; ultI[i].O = O; }
+}
+}
+for (let i = 0; i < pasos.length; i++) {
+const O = (0.3 + 0.7 * (1 - tramo(Math.abs(f - i), 0.25, 0.75))).toFixed(3);
+if (O !== ultP[i]) { pasos[i].style.opacity = O; ultP[i] = O; }
+}
+const act = Math.round(clamp(f, 0, n - 1));
+if (act !== puntoActivo) { puntos.forEach((li, i) => li.classList.toggle("activo", i === act)); puntoActivo = act; }
+},
+limpiar() {
+imgs.forEach((im, i) => { im.style.transform = im.style.opacity = ""; ultI[i] = { T: "", O: "" }; });
+pasos.forEach((el, i) => { el.style.opacity = ""; ultP[i] = ""; });
+},
+});
+const deportes = $("#deportes .tiles-2");
+const fotosDep = $$(".tile-foto img", deportes);
+escena({
+el: deportes, nombre: "deportes", tipo: "paso",
+pistas: fotosDep.map((img) => pista(img, { y: [[0, (m) => -0.05 * m.altoFoto], [1, (m) => 0.05 * m.altoFoto]] })),
+medirExtra(m) { m.altoFoto = fotosDep[0] ? fotosDep[0].parentNode.offsetHeight : 0; },
+soloSi: () => esAncho,
+});
+const apagon = $("#terror");
+const t1 = $(".t1", apagon), t2 = $(".t2", apagon);
+const ventana = $(".contorno-ventana", apagon), lleno = $(".contorno-lleno", apagon);
+let ultC = "";
+escena({
+el: apagon, nombre: "apagon", tipo: "fija",
+pistas: [
+pista($(".a1", apagon), { s: [[0, 1], [0.45, 0.8929], "sal"] }),
+pista($(".apagon-vineta", apagon), { o: [[0, 0.85], [0.45, 0.35]] }),
+pista(t1, { o: [[0.08, 0], [0.22, 1], [0.4, 1], [0.5, 0], "sal"], y: [[0.08, 30], [0.22, 0], [0.4, 0], [0.5, -30], "sal"] }),
+pista($(".a2", apagon), { o: [[0.48, 0], [0.62, 1]], s: [[0.48, 1], [0.8, 0.9091], "sal"] }),
+pista(t2, { o: [[0.6, 0], [0.76, 1], "sal"], y: [[0.6, 30], [0.76, 0], "sal"] }),
+],
+pintarExtra(p) {
+clase(t1, "inerte", p < 0.06 || p > 0.5);
+clase(t2, "inerte", p < 0.6);
+const q = 1 - tramo(p, 0.1, 0.32);
+const C = (q * 100).toFixed(2);
+if (C !== ultC && ventana) {
+ventana.style.transform = `translate3d(-${C}%,0,0)`;
+lleno.style.transform = `translate3d(${C}%,0,0)`;
+ultC = C;
+}
+},
+limpiar() { if (ventana) { ventana.style.transform = lleno.style.transform = ""; } ultC = ""; },
+});
+const metal = $("#numeros .metal");
+let ultM = "";
+escena({
+el: $("#numeros"), nombre: "numeros", tipo: "paso",
+pintarExtra(p) {
+const B = `${(100 - p * 100).toFixed(1)}% 50%`;
+if (B !== ultM) { metal.style.backgroundPosition = B; ultM = B; }
+},
+limpiar() { metal.style.backgroundPosition = ""; ultM = ""; },
+});
+const gal = $("#los-once");
+const carril = $(".carril", gal), ventanaG = $(".carril-ventana", gal);
+galeriaEsc = escena({
+el: gal, nombre: "galeria", tipo: "fija",
+m: { carril, ventana: ventanaG },
+pistas: [
+pista(carril, { x: [[0, 0], [1, (m) => -m.rec]] }),
+pista($(".galeria-progreso i", gal), { sx: [[0, 0], [1, 1]] }),
+],
+medirExtra(m) {
+m.rec = Math.max(0, carril.offsetWidth - ventanaG.clientWidth);
+m.ancho = ventanaG.clientWidth;
+m.tarjetas = $$(".tarjeta", carril).map((t) => ({ el: t, x: t.offsetLeft, w: t.offsetWidth }));
+},
+soloSi: () => galeriaFija,
+});
+const foto = $("#cierre .foto-texto");
+let ultF = "";
+escena({
+el: $("#cierre"), nombre: "cierre", tipo: "paso",
+pintarExtra(p) {
+const B = `0 0, ${(p * 160).toFixed(1)}% 50%`;
+if (B !== ultF) { foto.style.backgroundPosition = B; ultF = B; }
+},
+limpiar() { foto.style.backgroundPosition = ""; ultF = ""; },
+});
+for (const e of escenas) e.pistas = e.pistas.filter(Boolean);
+}
+/* ---------- Foco dentro de escenas fijadas ---------- */
+function enfoques() {
+$$("[data-p-visible]").forEach((el) => {
+el.addEventListener("focusin", () => {
+if (!encendido) return;
+const e = escenas.find((x) => x.el.contains(el));
+if (!e) return;
+const pv = parseFloat(el.dataset.pVisible);
+const destino = Math.round(e.top + pv * (e.alto - vhS));
+if (Math.abs(scrollY - destino) > 2 && Math.abs(progreso(e, scrollY) - pv) > 0.04) scrollTo(0, destino);
+});
+});
+$("#los-once .carril").addEventListener("focusin", (ev) => {
+if (!encendido || !galeriaFija || !galeriaEsc) return;
+const g = galeriaEsc, t = ev.target.closest(".tarjeta");
+if (!t || !g.m.rec) return;
+const dato = g.m.tarjetas.find((x) => x.el === t);
+if (!dato) return;
+const corr = g.p * g.m.rec;
+if (g.p >= 0 && dato.x - corr >= 0 && dato.x + dato.w - corr <= g.m.ancho) return; // ya se ve entera
+const objetivo = clamp((dato.x - (g.m.ancho - dato.w) / 2) / g.m.rec);
+scrollTo(0, Math.round(g.top + objetivo * (g.alto - vhS)));
+});
+}
+/* ---------- Activación por proximidad ---------- */
+let ioActivas = null;
+function vigilar() {
+ioActivas = new IntersectionObserver((entradas) => {
+for (const en of entradas) {
+const e = escenas.find((x) => x.el === en.target);
+if (!e) continue;
+e.activa = en.isIntersecting;
+e.el.classList.toggle("viva", en.isIntersecting);
+if (!en.isIntersecting && encendido && e.soloSi()) pintar(e, scrollY, true);
+}
+pedir();
+}, { rootMargin: "50% 0px 50% 0px" });
+for (const e of escenas) ioActivas.observe(e.el);
+}
+let tRes = 0;
+function alRedimensionar() {
+clearTimeout(tRes);
+tRes = setTimeout(() => {
+if (innerWidth !== ancho || Math.abs(innerHeight - altoVentana) > 160) medir();
+}, 150);
+}
+function cambioModo() {
+const quiere = !mqQuieto.matches;
+if (quiere && !encendido) { d.classList.add("mov"); encendido = true; medir(); pedir(); }
+else if (!quiere && encendido) { encendido = false; d.classList.remove("mov"); limpiarEstilos(); }
+else if (encendido) medir();
+}
+function iniciar() {
+crearEscenas();
+enfoques();
+encendido = d.classList.contains("mov");
+vigilar();
+if (encendido) medir();
+addEventListener("scroll", pedir, { passive: true });
+addEventListener("resize", alRedimensionar, { passive: true });
+addEventListener("load", () => medir());
+addEventListener("pageshow", () => medir());
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => medir());
+if ("ResizeObserver" in window) {
+let tRO = 0;
+const main = $("main");
+new ResizeObserver(() => {
+clearTimeout(tRO);
+tRO = setTimeout(() => { if (encendido && main.offsetHeight !== ultimoMain) medir(); }, 150);
+}).observe(main);
+}
+const escuchar = (mq, fn) => (mq.addEventListener ? mq.addEventListener("change", fn) : mq.addListener(fn));
+escuchar(mqQuieto, cambioModo);
+escuchar(mqCelu, () => medir());
+escuchar(mqGaleria, () => medir());
+}
+return {
+iniciar, medir, limpiarEstilos,
+pausar() { pausado = true; if (pedido) { cancelAnimationFrame(pedido); pedido = 0; } },
+reanudar() { pausado = false; pedir(); },
+get fijada() { return encendido; },
+galeria: () => galeriaEsc,
+clamp,
+};
+})();
+/* ================= Revelados, nav, cifras ================= */
+function contar(el) {
+const fin = parseFloat(el.dataset.contar), dec = parseInt(el.dataset.decimales || "0", 10);
+const t0 = performance.now(), dur = 1200;
+const fmt = (v) => v.toFixed(dec).replace(".", ",");
+(function paso(t) {
+const u = Math.min(1, (t - t0) / dur), v = fin * (1 - Math.pow(1 - u, 3));
+el.textContent = fmt(u < 1 ? v : fin);
+if (u < 1) requestAnimationFrame(paso);
+})(t0);
+}
+function revelados() {
+const els = $$(".revelar");
+const ver = (el) => {
+el.classList.add("visto");
+if (d.classList.contains("mov")) $$("[data-contar]", el).forEach((c) => setTimeout(() => contar(c), (parseInt(el.style.getPropertyValue("--i"), 10) || 0) * 70));
+};
+if (!("IntersectionObserver" in window)) { els.forEach((el) => el.classList.add("visto")); return; }
+const io = new IntersectionObserver((entradas) => {
+for (const en of entradas) if (en.isIntersecting) { ver(en.target); io.unobserve(en.target); }
+}, { rootMargin: "0px 0px -12% 0px", threshold: 0 });
+els.forEach((el) => io.observe(el));
+}
+function tonoNav() {
+const nav = $(".nav");
+if (!("IntersectionObserver" in window)) return;
+const io = new IntersectionObserver((entradas) => {
+for (const en of entradas) if (en.isIntersecting && nav.dataset.tono !== en.target.dataset.tono) nav.dataset.tono = en.target.dataset.tono;
+}, { rootMargin: "0px 0px -95% 0px" });
+$$("section[data-tono]").forEach((s) => io.observe(s));
+}
+/* ================= Filtros de la galería ================= */
+function filtros() {
+const caja = $("#los-once .filtros");
+caja.innerHTML = GRUPOS.map(([id, nombre]) => {
+const n = id === "todos" ? JUEGOS.length : JUEGOS.filter((j) => j.grupo === id).length;
+return `<button class="filtro" type="button" data-filtro="${id}" aria-pressed="${id === "todos"}">${nombre}<small>${n}</small></button>`;
+}).join("");
+function filtrar(id, guardar) {
+caja.querySelectorAll(".filtro").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filtro === id)));
+$$("#los-once .tarjeta").forEach((t) => { t.hidden = id !== "todos" && t.dataset.grupo !== id; });
+if (guardar) { try { localStorage.setItem("portafolio-filtro", id); } catch (e) {} }
+$("#los-once .carril-ventana").scrollLeft = 0;
+Motor.medir();
+const g = Motor.galeria();
+if (g && Motor.fijada && d.classList.contains("galeria-fija") && scrollY > g.top) scrollTo(0, Math.round(g.top));
+}
+caja.addEventListener("click", (e) => { const b = e.target.closest(".filtro"); if (b) filtrar(b.dataset.filtro, true); });
+try {
+const guardado = localStorage.getItem("portafolio-filtro");
+if (guardado && guardado !== "todos" && GRUPOS.some(([id]) => id === guardado)) filtrar(guardado, false);
+} catch (e) {}
+}
+/* ================= Comparador ================= */
+function comparador() {
+$$(".comp-col").forEach((col) => {
+const sel = $(".comp-sel", col);
+sel.innerHTML = GRUPOS.filter(([g]) => g !== "todos").map(([g, n]) =>
+`<optgroup label="${n}">${JUEGOS.filter((j) => j.grupo === g).map((j) => `<option value="${j.id}">${esc(j.titulo)}</option>`).join("")}</optgroup>`).join("");
+sel.value = col.dataset.juego;
+sel.addEventListener("change", () => {
+const j = porId(sel.value);
+if (!j) return;
+col.classList.add("cambiando");
+setTimeout(() => {
+while (sel.nextSibling) sel.nextSibling.remove();
+sel.insertAdjacentHTML("afterend", columnaComparador(j));
+col.dataset.juego = j.id;
+requestAnimationFrame(() => col.classList.remove("cambiando"));
+Motor.medir();
+}, 150);
+});
+});
+}
+/* ================= Verificación de datos ================= */
+function verificar() {
+const ids = $$("#los-once .tarjeta").map((t) => t.dataset.juego);
+if (ids.join() !== JUEGOS.map((j) => j.id).join()) console.warn("Las tarjetas no coinciden con JUEGOS", ids);
+$$("#ficha tbody tr").forEach((tr, i) => {
+const j = JUEGOS[i];
+if (!j || tr.dataset.juego !== j.id || tr.querySelector(".num").textContent !== j.peso) console.warn("La ficha no coincide con JUEGOS en la fila", i + 1);
+});
+}
+/* ================= Arranque ================= */
+for (const [nombre, fn] of [["filtros", filtros], ["comparador", comparador], ["revelados", revelados], ["nav", tonoNav]]) {
+try { fn(); } catch (err) { console.error(nombre, err); }
+}
+try {
+if (/[?&]romper\b/.test(location.search)) throw new Error("Falla forzada del motor (?romper)");
+Motor.iniciar();
+} catch (err) {
+console.error(err);
+d.classList.remove("mov");
+try { Motor.limpiarEstilos(); } catch (e) {}
+$$(".revelar").forEach((el) => el.classList.add("visto"));
+}
+d.classList.add("listo");
+try { verificar(); } catch (e) {}
+requestAnimationFrame(() => requestAnimationFrame(hashJugar));
 </script>
 </body>
 </html>
