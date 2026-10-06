@@ -450,6 +450,12 @@ function continuaDe(t, u, c) {
   return !(c.pr && u.pr && Math.abs(Math.log(c.pr / u.pr)) > Math.log(1.45) + 1.5 * dt);
 }
 
+// Rapidez al salir del pie, a partir de la de tRef (m/s), con el arrastre del aire.
+function velocidadDePatada(rapidez, tRef, tSalida) {
+  if (tSalida == null) return rapidez;
+  return rapidez / Math.max(0.5, 1 - ARRASTRE * rapidez * Math.max(0, tRef - tSalida));
+}
+
 const mediana = (vs) => {
   const o = [...vs].sort((a, b) => a - b);
   return o[o.length >> 1];
@@ -545,7 +551,10 @@ export class ShotTracker {
     if (this.state !== "idle") return;
     for (const c of candidatas) {
       if ((c.alargada ?? 1) > ALARGADA_QUIETA) continue;
-      if (!c.onGround || !tamanoDePelota(c)) continue; // quieta, está en el piso
+      // Quieta, está en el piso y tiene su tamaño (la escaneada, con más margen:
+      // hasta que se calibra, el detector puede verla más chica o más grande).
+      const tamano = tamanoDePelota(c) || (this.esEscaneada(c) && c.escala > 0.5 && c.escala < 1.8);
+      if (!c.onGround || !tamano) continue;
       let q = null;
       let menor = 1.2;
       for (const k of this.quietos) {
@@ -807,7 +816,7 @@ export class ShotTracker {
     const [, vz, ez] = ajusteLineal(ts, pts.map((m) => m.z));
     const v = Math.hypot(vx, vz);
     const ultimo = saliendo[saliendo.length - 1];
-    if (!(v >= 0.4 && -vz >= 0.3 && -vz >= 0.6 * v && Math.hypot(ex, ez) < 0.08)) return "no";
+    if (!(v >= 0.4 && v < VELOCIDAD_MINIMA && -vz >= 0.3 && -vz >= 0.6 * v && Math.hypot(ex, ez) < 0.08)) return "no";
     if (Math.abs(ultimo.x + vx * (ultimo.z / -vz)) > this.goalWidth / 2 + 1.5) return "no";
     const fin = saliendo.slice(-4);
     const dtFin = fin[fin.length - 1].t - fin[0].t;
@@ -1023,6 +1032,7 @@ export class ShotTracker {
     }
     const pred = this.#predecir();
     this.shot.pred = pred && pred.vz < 0 ? pred : sinPrior;
+    this.shot.tPatada = this.shot.pred.tPatada ?? null;
     this.escaneada = null;
     return { type: "kick", t, prediction: this.shot.pred, n: this.shot.obs.length };
   }
@@ -1063,6 +1073,7 @@ export class ShotTracker {
     s.confirmadas++;
     const anterior = s.pred;
     s.pred = this.#predecir();
+    if (s.pred?.tPatada != null) s.tPatada = s.pred.tPatada;
 
     if (!s.pred || s.pred.vz > (s.lento ? -0.25 : -0.8)) {
       // Un remate que se viene siguiendo bien no se descarta por un ajuste malo.
@@ -1142,8 +1153,11 @@ export class ShotTracker {
       x: x0 + vx * f,
       y,
       speed: rapidez / (1 + ARRASTRE * rapidez * tauCruce),
-      // Velocidad con la que salió del pie (hacia atrás desde tRef, con el arrastre).
-      kickSpeed: reposo ? rapidez / Math.max(0.5, 1 - ARRASTRE * rapidez * Math.max(0, tRef - reposo.tMax)) : rapidez,
+      // Velocidad con la que salió del pie: la de tRef llevada hacia atrás (con el
+      // arrastre) hasta el instante de la patada que dio el ajuste (o, si no se
+      // sabe, el primer cuadro en movimiento). Con muchas mediciones el punto de
+      // la patada ya no entra en el ajuste, pero el instante sigue sirviendo.
+      kickSpeed: velocidadDePatada(rapidez, tRef, tPatada ?? this.shot?.tPatada ?? reposo?.tMax ?? null),
       rolling: enPiso,
       calidad,
       tPatada,

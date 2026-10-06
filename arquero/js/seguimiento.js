@@ -72,10 +72,9 @@ export class BallTracking {
   // La pelota escaneada (apoyada en el piso): dónde está (en coordenadas del
   // arco) y de qué tamaño la ve el detector. El tamaño, comparado con el que
   // tendría a esa distancia del piso del arco (ver radioApoyada), da:
-  //  - escala ≈ 1: todo bien;
-  //  - algo distinta (0,6 a 1,7): el detector la ve más chica o más grande (una
-  //    pelota oscura sobre un piso oscuro: sólo se marcan sus dibujos) o el
-  //    número elegido no es el de la pelota; se calibra con el radio aparente;
+  //  - entre 0,6 y 1,7: normal (el detector la ve algo más chica o más grande:
+  //    una pelota oscura sobre un piso oscuro se marca sólo por sus dibujos; y
+  //    una sola foto es ruidosa, así que no se corrige nada con esto);
   //  - muy distinta: el arco no está apoyado en el mismo piso que la pelota
   //    (quedó sobre otra cosa), y con eso nada se puede medir bien.
   // det: la que encontró el escaneo. null si no se puede ubicar.
@@ -100,6 +99,8 @@ export class BallTracking {
     this.muestrasRadio = [];
     this.tracker.setBallRadius(this.radio);
   }
+
+
 
   #calibrarRadio(medida) {
     const { tracker } = this;

@@ -416,8 +416,7 @@ function escanear(info) {
     return;
   }
   if (res.ok) {
-    if (medida) seg.setRadioNominal(medida.radio);
-    else seg.reiniciarRadio();
+    seg.reiniciarRadio();
     sonidos.whistle();
     irA("jugar");
     tracker.marcarEscaneada(medida?.pos ?? null);

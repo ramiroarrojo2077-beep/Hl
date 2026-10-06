@@ -103,7 +103,9 @@ Para compilarlo en tu compu (con el SDK de Android instalado): `npm ci`, `npm ru
 
 ## Consejos para que detecte mejor
 
-- Escaneá la pelota con buena luz, llenando el círculo.
+- Escaneá la pelota con buena luz, llenando el círculo. Al escanear, la app mide de qué tamaño ve la pelota: si no coincide con el piso del arco, avisa que el arco quedó sobre otra cosa (reubicalo en el mismo piso que la pelota).
+- Después del escaneo el remate sólo puede salir de la pelota escaneada (no de un zapato o una pata de silla quietos cerca).
+- Un tiro suave también cuenta: si la pelota rueda derecho hacia el arco más de medio metro.
 - Antes de patear esperá a que diga **«Pelota lista»** (la pelota quieta medio segundo).
 - Mejor si la pelota contrasta con el piso y la pared (si no, la app igual aprende el fondo, pero tarda un poco más).
 - En modo fijo dejá el celular quieto y horizontal, con el arco y el punto de remate a la vista, al costado de donde pateás (si está justo detrás, la pierna del que patea tapa la pelota en el momento del golpe).

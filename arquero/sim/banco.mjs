@@ -345,7 +345,6 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
   const medidaEscaneo = seg.medirEscaneada?.(infoEscaneo, arcoApp, aprendio.det) ?? null;
   if (medidaEscaneo?.pisoDistinto) return { omitida: true, motivo: "escaneo: piso distinto" };
   const radioEscaneo = medidaEscaneo?.radio ?? null;
-  if (radioEscaneo && !(process.env.EXP ?? "").includes("sinRadioEscaneo")) seg.setRadioNominal(radioEscaneo);
   seg.reiniciarRadio();
   seg.reset();
   if (!(process.env.EXP ?? "").includes("sinEscaneada")) seg.tracker.marcarEscaneada?.(medidaEscaneo?.pos ?? null);
@@ -530,6 +529,8 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
       error: cruce ? err(cruce.prediction) : null,
       errorX: cruce ? Math.abs(cruce.prediction.x - verdad.x) * 100 : null,
       errorY: cruce ? Math.abs(cruce.prediction.y - verdad.y) * 100 : null,
+      // Velocidad que muestra la app (km/h) y la real.
+      kmh: cruce && Number.isFinite(cruce.prediction.kickSpeed) ? cruce.prediction.kickSpeed * 3.6 : null,
       errorAntes: antes ? err(antes.prediction) : null,
       vuelo,
       filas: traza ? filas : undefined,
@@ -540,6 +541,7 @@ export async function sesion({ nombre, cfg, semilla, tiros, detalle, traza = fal
       res.texto = (
         `  [${nombre} s${semilla} #${n}] ${res.rapidez} m/s ${rasante ? "rasante" : "aire"}${efecto ? " efecto" : ""} a ${res.distancia} m · ` +
           `${res.lista ? "" : "NO LISTA · "}remate ${res.remate ? "sí" : "NO"}${falso ? " (FALSO antes)" : ""} · ${res.resultado ? `error ${res.error.toFixed(1)} cm (x ${res.errorX.toFixed(1)}, y ${res.errorY.toFixed(1)})` : "sin resultado"}` +
+          (res.kmh != null ? ` · ${res.kmh.toFixed(0)}/${(rapidez * 3.6).toFixed(0)} km/h` : "") +
           ` · vuelo ${vuelo.bien}/${vuelo.cuadros} bien, ${vuelo.mal} mal, ${vuelo.nada} nada · eventos ${eventos.map((e) => e.type[0]).join("")}` +
           ` · kicks ${eventos.filter((e) => e.type === "kick").map((e) => `${(e.t - tPatada).toFixed(2)}s/cal${e.prediction?.calidad?.toFixed(1)}/n${e.n ?? "?"}`).join(",")}` +
           (n === 0 ? ` · fuga ${aprendio.fuga?.toFixed(2)} · radio ${radioEscaneo ? (radioEscaneo * 100).toFixed(1) : "-"}/${(R * 100).toFixed(1)} cm` : "") +
@@ -578,6 +580,8 @@ export function resumir(rs) {
     resultado: pct(conRes.length, n),
     resultadoRapidos: pct(rapidos.filter((r) => r.resultado).length, rapidos.length),
     errorMediana: cuantil(errores, 0.5),
+    // Error de la velocidad mostrada (%), mediana.
+    errorVelocidad: cuantil(rs.filter((r) => r.kmh != null).map((r) => Math.abs(r.kmh / (r.rapidez * 3.6) - 1) * 100), 0.5),
     error90: cuantil(errores, 0.9),
     errorAntesMediana: cuantil(antes, 0.5),
     vueloBien: pct(v.b, v.c),
@@ -642,6 +646,7 @@ export async function correr({ escenarios, sesiones, tiros, semilla, detalle }) 
     console.log(
       `${nombre.padEnd(14)} tiros ${f.tiros} · lista ${f.lista} · remate ${f.remate} · falsos ${f.falsos} · resultado ${f.resultado} (≥20 m/s: ${f.resultadoRapidos})` +
         ` · error cm mediana ${cm(f.errorMediana)} / 90% ${cm(f.error90)} · 0,2 s antes ${cm(f.errorAntesMediana)}` +
+        ` · velocidad error ${f.errorVelocidad == null ? "-" : `${f.errorVelocidad.toFixed(0)} %`}` +
         ` · vuelo bien ${f.vueloBien} mal ${f.vueloMal} (detectada ${f.vueloPresente}, ya en vuelo ${f.vueloSiguiendo}) · px ${f.pxMediana?.toFixed(2) ?? "-"} · ${f.ms.toFixed(1)} ms/cuadro · ${f.segundos} s`,
     );
   }

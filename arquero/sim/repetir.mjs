@@ -35,6 +35,11 @@ if (iFotos > 0) {
 const radio = Number(process.env.RADIO) || (reg.radioPelota?.calibrado ?? 0.11);
 const seg = new BallTracking({ radio });
 seg.radio = radio;
+// ESCANEADA=x,z: dónde se escaneó la pelota (en el arco), como hace la app.
+if (process.env.ESCANEADA) {
+  const [x, z] = process.env.ESCANEADA.split(",").map(Number);
+  seg.tracker.marcarEscaneada({ x, z });
+}
 seg.tracker.ballRadius = seg.radio;
 const ARCOS = { mini: 2, futbol5: 3, cancha: 7.32 };
 seg.setAnchoArco(ARCOS[reg.ajustes?.arco] ?? 3);
