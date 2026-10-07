@@ -25,8 +25,10 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -102,13 +104,13 @@ final class Web {
                 JSONObject x = lista.optJSONObject(i);
                 if (x == null) continue;
                 resultados.put(new JSONObject()
-                        .put("titulo", x.optString("title"))
-                        .put("url", x.optString("url"))
-                        .put("resumen", recortar(x.optString("content"), 500)));
+                        .put("titulo", campo(x, "title"))
+                        .put("url", campo(x, "url"))
+                        .put("resumen", recortar(campo(x, "content"), 500)));
             }
         }
         JSONObject salida = new JSONObject();
-        String respuesta = r.isNull("answer") ? "" : r.optString("answer", "").trim();
+        String respuesta = campo(r, "answer").trim();
         if (!respuesta.isEmpty()) salida.put("respuesta", respuesta);
         return salida.put("resultados", resultados);
     }
@@ -119,7 +121,10 @@ final class Web {
     private static final Pattern UDDG = Pattern.compile("[?&]uddg=([^&]+)");
 
     private static JSONArray duckDuckGo(String consulta) throws IOException {
-        String html = obtener("https://html.duckduckgo.com/html/?kl=ar-es&q=" + codificar(consulta), AGENTE_NAVEGADOR, 15_000);
+        return parsearDuckDuckGo(obtener("https://html.duckduckgo.com/html/?kl=ar-es&q=" + codificar(consulta), AGENTE_NAVEGADOR, 15_000));
+    }
+
+    static JSONArray parsearDuckDuckGo(String html) {
         JSONArray resultados = new JSONArray();
         JSONObject actual = null;
         Matcher m = ENLACE.matcher(html);
@@ -171,11 +176,11 @@ final class Web {
         for (int i = 0; i < lista.length(); i++) {
             JSONObject s = lista.optJSONObject(i);
             if (s == null) continue;
-            String titulo = s.optString("title");
+            String titulo = campo(s, "title");
             resultados.put(new JSONObject()
                     .put("titulo", titulo)
                     .put("url", "https://es.wikipedia.org/wiki/" + codificar(titulo.replace(' ', '_')))
-                    .put("resumen", aTexto(s.optString("snippet"), false)));
+                    .put("resumen", aTexto(campo(s, "snippet"), false)));
         }
         return resultados;
     }
@@ -284,7 +289,7 @@ final class Web {
     }
 
     private static String titulo(String html) {
-        String minusculas = html.toLowerCase(Locale.ROOT);
+        String minusculas = minusculasAscii(html);
         int inicio = minusculas.indexOf("<title");
         while (inicio >= 0 && inicio + 6 < minusculas.length() && Character.isLetterOrDigit(minusculas.charAt(inicio + 6))) {
             inicio = minusculas.indexOf("<title", inicio + 6);
@@ -573,9 +578,12 @@ final class Web {
      */
     static String aTexto(String html, boolean renglones) {
         if (html == null || html.isEmpty()) return "";
-        String minusculas = html.toLowerCase(Locale.ROOT);
+        String minusculas = minusculasAscii(html);
         int n = html.length();
         StringBuilder sb = new StringBuilder(Math.min(n, 1 << 16));
+        // Lo que ya se sabe que no aparece más adelante, para no recorrer la página una y otra vez (tiempo lineal).
+        Set<String> sinCierre = new HashSet<>();
+        boolean[] sinComilla = new boolean[2];
         int i = 0;
         while (i < n) {
             char ch = html.charAt(i);
@@ -616,11 +624,12 @@ final class Web {
                 continue;
             }
             String nombre = minusculas.substring(inicioNombre, j);
-            int finEtiqueta = finDeEtiqueta(html, j);
+            int finEtiqueta = finDeEtiqueta(html, j, sinComilla);
             if (finEtiqueta < 0) break; // etiqueta cortada al final
             i = finEtiqueta + 1;
             if (!cierre && contiene(OMITIR, nombre)) {
-                int fin = buscarCierre(minusculas, nombre, i);
+                int fin = sinCierre.contains(nombre) ? -1 : buscarCierre(minusculas, nombre, i);
+                if (fin < 0) sinCierre.add(nombre);
                 if (fin >= 0) {
                     i = fin;
                 } else if (contiene(SIN_CERRAR_HASTA_EL_FINAL, nombre)) {
@@ -635,23 +644,47 @@ final class Web {
         return ordenarEspacios(sb.toString(), renglones);
     }
 
-    /** Posición del '>' que cierra la etiqueta, salteando los valores entre comillas (title="a > b"). */
-    private static int finDeEtiqueta(String html, int desde) {
+    /**
+     * Posición del '>' que cierra la etiqueta, salteando los valores entre comillas (title="a > b"). Como en un navegador,
+     * la comilla solo abre un valor después de un '=' (en alt=Juan's es parte del texto).
+     * @param sinComilla [doble, simple]: ya se sabe que esa comilla no vuelve a aparecer.
+     */
+    private static int finDeEtiqueta(String html, int desde, boolean[] sinComilla) {
         int n = html.length();
+        char anterior = ' ';
         int i = desde;
         while (i < n) {
             char ch = html.charAt(i);
             if (ch == '>') return i;
-            if (ch == '"' || ch == '\'') {
-                int cierre = html.indexOf(ch, i + 1);
-                // Comilla sin cerrar: como fallback, el primer '>' que haya.
-                if (cierre < 0) return html.indexOf('>', i);
+            if ((ch == '"' || ch == '\'') && anterior == '=') {
+                int cual = ch == '"' ? 0 : 1;
+                int cierre = sinComilla[cual] ? -1 : html.indexOf(ch, i + 1);
+                if (cierre < 0) {
+                    // Comilla sin cerrar: como fallback, el primer '>' que haya.
+                    sinComilla[cual] = true;
+                    return html.indexOf('>', i);
+                }
                 i = cierre + 1;
+                anterior = ch;
                 continue;
             }
+            if (!Character.isWhitespace(ch)) anterior = ch;
             i++;
         }
         return -1;
+    }
+
+    /**
+     * Minúsculas solo en ASCII: mismo largo que el original, así las posiciones sirven para los dos
+     * (toLowerCase puede cambiar el largo, por ejemplo con "İ").
+     */
+    private static String minusculasAscii(String s) {
+        char[] letras = s.toCharArray();
+        for (int i = 0; i < letras.length; i++) {
+            char ch = letras[i];
+            if (ch >= 'A' && ch <= 'Z') letras[i] = (char) (ch + 32);
+        }
+        return new String(letras);
     }
 
     private static boolean esLetraDeEtiqueta(char ch) {
@@ -700,8 +733,17 @@ final class Web {
 
     /** Decodifica la entidad que empieza en {@code i} (o deja el '&' tal cual) y devuelve dónde seguir. */
     private static int entidad(String s, int i, StringBuilder sb) {
-        int fin = s.indexOf(';', i + 1);
-        if (fin < 0 || fin - i > 12) {
+        // Se mira solo un poco hacia adelante: una página llena de '&' sin ';' no puede volver lento esto.
+        int fin = -1;
+        for (int k = i + 1; k < s.length() && k <= i + 12; k++) {
+            char ch = s.charAt(k);
+            if (ch == ';') {
+                fin = k;
+                break;
+            }
+            if (!Character.isLetterOrDigit(ch) && ch != '#') break;
+        }
+        if (fin < 0) {
             sb.append('&');
             return i + 1;
         }
@@ -776,6 +818,11 @@ final class Web {
             }
         }
         return sb.toString();
+    }
+
+    /** Texto de un campo JSON externo: "" si falta o es null (optString devolvería "null"). */
+    static String campo(JSONObject o, String clave) {
+        return o == null || o.isNull(clave) ? "" : o.optString(clave, "");
     }
 
     static String recortar(String s, int maximo) {
