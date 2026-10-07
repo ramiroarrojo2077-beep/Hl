@@ -63,7 +63,7 @@ Todo va en el archivo `.env`. Lo que dice **gratis** no pide tarjeta.
 
 ## 3. App para el celular (Android)
 
-1. Descargá el APK desde **<https://github.com/ramiroarrojo2077-beep/Hl/releases/download/jarvis-android/jarvis.apk>** (se actualiza solo con cada cambio) e instalalo (Android pide permitir "instalar apps desconocidas").
+1. Descargá el APK desde **<https://github.com/ramiroarrojo2077-beep/Hl/releases/download/jarvis-android/jarvis.apk>** (se actualiza solo con cada cambio; como tu repositorio es privado, abrilo con tu cuenta de GitHub iniciada en el navegador del celular) e instalalo (Android pide permitir "instalar apps desconocidas").
 2. En la PC, en el `.env`: `JARVIS_HOST=0.0.0.0` y `JARVIS_TOKEN=un-token-largo-inventado`. Reiniciá Jarvis.
 3. Abrí la app y completá:
    - **Dirección de tu PC**: `http://IP-DE-TU-PC:3700` (la IP aparece en el panel *Sistema → IP local*). Tiene que estar en el mismo Wi-Fi. Para usarla **fuera de casa**, instalá [Tailscale](https://tailscale.com) (gratis) en la PC y en el celular y usá la IP de Tailscale.
