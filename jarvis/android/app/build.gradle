@@ -1,0 +1,46 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.jarvis.asistente"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.jarvis.asistente"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Misma firma en todas las compilaciones, para poder actualizar la app sin desinstalarla.
+    signingConfigs {
+        jarvis {
+            storeFile file("jarvis.keystore")
+            storePassword "jarvis-android"
+            keyAlias "jarvis"
+            keyPassword "jarvis-android"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.jarvis
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.jarvis
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Detecta la palabra "Jarvis" en el celular, sin internet (opcional: necesita una AccessKey gratis de Picovoice).
+    implementation "ai.picovoice:porcupine-android:4.0.2"
+}

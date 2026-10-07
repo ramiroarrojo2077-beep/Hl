@@ -845,6 +845,9 @@ async function alternarContinuo() {
 
 // Puente con la app de Android: el celular escucha y habla con su propio motor.
 window.jarvisMovil = {
+  mostrar(texto) {
+    agregarLinea("jarvis", texto);
+  },
   oido(texto) {
     if (texto) void preguntar(texto, "voz");
     else ponerEstado(null);
@@ -1199,6 +1202,7 @@ function iniciar() {
   conectarEventos();
   dibujarBotonVoz();
   actualizarPista();
+  if (movil) window.Android.escuchaContinua(oido.continuo);
   requestAnimationFrame(ubicarAccesos);
   window.addEventListener("resize", () => {
     aplicarModo();
