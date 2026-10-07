@@ -22,7 +22,11 @@ function aplicarModo() {
 
 const LOCALE = "es-AR";
 const HORA = { hour: "2-digit", minute: "2-digit", hourCycle: "h23" };
-const ICONOS_CANAL = { email: "i-mail", whatsapp: "i-whatsapp", telegram: "i-telegram", recordatorio: "i-campana", jarvis: "i-jarvis" };
+const ICONOS_CANAL = {
+  sms: "i-chat",
+  instagram: "i-chat",
+  messenger: "i-chat",
+  app: "i-chat", email: "i-mail", whatsapp: "i-whatsapp", telegram: "i-telegram", recordatorio: "i-campana", jarvis: "i-jarvis" };
 const NOMBRES_HERRAMIENTA = {
   clima: "consultando el clima",
   noticias: "leyendo noticias",
@@ -203,9 +207,15 @@ async function actualizarSistema() {
   try {
     const s = await api("/api/sistema");
     const ram = Math.round(((s.ram.total - s.ram.libre) / s.ram.total) * 100);
-    arco("arco-cpu", s.cpu);
+    // En el celular Android no deja leer la CPU (llega -1).
+    const conCpu = s.cpu >= 0;
+    arco("arco-cpu", conCpu ? s.cpu : 0);
     arco("arco-ram", ram);
-    $("#valor-cpu").textContent = `${s.cpu}%`;
+    $("#valor-cpu").textContent = conCpu ? `${s.cpu}%` : "--";
+    if (s.bateria) {
+      arco("arco-bateria", s.bateria.nivel);
+      $("#valor-bateria").textContent = `${s.bateria.nivel}%${s.bateria.cargando ? "⚡" : ""}`;
+    }
     $("#valor-ram").textContent = `${ram}%`;
     $("#grafico-cpu-valor").textContent = `${s.cpu}% · ${s.nucleos} núcleos`;
     $("#grafico-ram-valor").textContent = `${gigas(s.ram.total - s.ram.libre)} / ${gigas(s.ram.total)}`;
@@ -218,7 +228,7 @@ async function actualizarSistema() {
     $("#encendida").textContent = duracion(s.encendidoSeg);
     $("#equipo").textContent = s.equipo;
     $("#ip").textContent = s.ip;
-    historiaCpu.push(s.cpu);
+    if (conCpu) historiaCpu.push(s.cpu);
     historiaRam.push(ram);
     if (historiaCpu.length > PUNTOS) historiaCpu.shift();
     if (historiaRam.length > PUNTOS) historiaRam.shift();
@@ -228,6 +238,7 @@ async function actualizarSistema() {
 }
 
 async function iniciarBateria() {
+  if (movil) return;
   const mostrar = (nivel, cargando) => {
     arco("arco-bateria", nivel);
     $("#valor-bateria").textContent = `${nivel}%${cargando ? "⚡" : ""}`;
@@ -266,7 +277,7 @@ function dibujarEstado(e) {
     filaConexion(
       "i-jarvis",
       "Inteligencia",
-      ia ? `${ia.nombre} · ${ia.modelo}${e.ia.length > 1 ? ` (+${e.ia.length - 1} de respaldo)` : ""}` : "Falta configurar una IA",
+      ia ? `${ia.nombre} · ${ia.modelo}${e.ia.length > 1 ? ` (+${e.ia.length - 1} de respaldo)` : ""}` : e.movil ? "Falta configurar: tocá ⚙ Ajustes" : "Falta configurar una IA",
       ia ? (ia.disponible ? "ok" : "espera") : "mal",
     ),
   );
@@ -282,28 +293,44 @@ function dibujarEstado(e) {
       ),
     );
   }
+  if (e.movil) {
+    const activar = (cual) => el("button", { type: "button", class: "enlace-boton", onclick: () => window.Android?.abrirPermiso(cual) }, "ACTIVAR");
+    if (e.email.length === 0) filas.push(filaConexion("i-mail", "Correo", "Opcional: agregalo en ⚙ Ajustes", ""));
+    filas.push(filaConexion("i-chat", "Tus apps", e.notificaciones ? "Conectada a WhatsApp, Gmail, Telegram…" : "Tocá ACTIVAR para leer tus notificaciones",
+      e.notificaciones ? "ok" : "mal", e.notificaciones ? undefined : activar("notificaciones")));
+    filas.push(filaConexion("i-jarvis", "Abrirse sola", e.superponer ? "Se abre cuando la llamás o hay un aviso" : "Tocá ACTIVAR para que aparezca sola",
+      e.superponer ? "ok" : "mal", e.superponer ? undefined : activar("superponer")));
+    filas.push(filaConexion("i-parlante", "Voz", e.vozNatural ? "ElevenLabs" : "Voz del celular", "ok"));
+    $("#conexiones").replaceChildren(...filas);
+    $("#ajustes").hidden = !e.ajustes;
+    if (e.ajustes && e.ia.length === 0 && !ajustesMostrados) {
+      ajustesMostrados = true;
+      void abrirAjustes(true);
+    }
+  } else {
   if (e.email.length === 0) filas.push(filaConexion("i-mail", "Correo", "Sin configurar (EMAIL_CUENTAS)", ""));
-  const wa = e.whatsapp.estado;
-  filas.push(
-    filaConexion(
-      "i-whatsapp",
-      "WhatsApp",
-      { apagado: "Desactivado (WHATSAPP_ACTIVO)", esperando_qr: "Esperando que escanees el QR", conectando: "Conectando…", conectado: "Conectado", error: "Error" }[wa],
-      wa === "conectado" ? "ok" : wa === "apagado" ? "" : wa === "error" ? "mal" : "espera",
-      wa === "esperando_qr" ? el("button", { type: "button", class: "enlace-boton", onclick: () => mostrarQr(e.whatsapp.qr) }, "VER QR") : undefined,
-    ),
-  );
-  const tg = e.telegram.estado;
-  filas.push(
-    filaConexion(
-      "i-telegram",
-      "Telegram",
-      { apagado: "Sin configurar", conectado: "Conectado", sin_chat: "Escribile al bot para vincularlo", error: "Sin conexión" }[tg],
-      tg === "conectado" ? "ok" : tg === "apagado" ? "" : tg === "error" ? "mal" : "espera",
-    ),
-  );
-  filas.push(filaConexion("i-mic", "Voz", e.voz ? "Te escucho" : "Falta GROQ_API_KEY o GEMINI_API_KEY", e.voz ? "ok" : "mal"));
+    const wa = e.whatsapp.estado;
+    filas.push(
+      filaConexion(
+        "i-whatsapp",
+        "WhatsApp",
+        { apagado: "Desactivado (WHATSAPP_ACTIVO)", esperando_qr: "Esperando que escanees el QR", conectando: "Conectando…", conectado: "Conectado", error: "Error" }[wa],
+        wa === "conectado" ? "ok" : wa === "apagado" ? "" : wa === "error" ? "mal" : "espera",
+        wa === "esperando_qr" ? el("button", { type: "button", class: "enlace-boton", onclick: () => mostrarQr(e.whatsapp.qr) }, "VER QR") : undefined,
+      ),
+    );
+    const tg = e.telegram.estado;
+    filas.push(
+      filaConexion(
+        "i-telegram",
+        "Telegram",
+        { apagado: "Sin configurar", conectado: "Conectado", sin_chat: "Escribile al bot para vincularlo", error: "Sin conexión" }[tg],
+        tg === "conectado" ? "ok" : tg === "apagado" ? "" : tg === "error" ? "mal" : "espera",
+      ),
+    );
+    filas.push(filaConexion("i-mic", "Voz", e.voz ? "Te escucho" : "Falta GROQ_API_KEY o GEMINI_API_KEY", e.voz ? "ok" : "mal"));
   $("#conexiones").replaceChildren(...filas);
+  }
 
   $("#marca-estado").textContent = !e.activa ? "DESACTIVADA" : ia ? "EN LÍNEA" : "SIN IA";
   const boton = $("#interruptor");
@@ -323,6 +350,73 @@ function mostrarQr(qr) {
   $("#imagen-qr").src = qr;
   $("#modal-qr").hidden = false;
   escritorio?.mostrar();
+}
+
+// ---------- Ajustes (app del celular) ----------
+
+let ajustesMostrados = false;
+const CAMPOS_AJUSTES = [
+  ["usuario", "Tu nombre", "text", "Cómo te llama Jarvis"],
+  ["ciudad", "Ciudad", "text", "Para el clima, ej: Buenos Aires"],
+  ["pais", "País", "text", "Código de 2 letras para las noticias, ej: AR"],
+  ["gemini", "Clave de Gemini (gratis)", "password", "https://aistudio.google.com/apikey"],
+  ["groq", "Clave de Groq (gratis, respaldo y oído)", "password", "https://console.groq.com/keys"],
+  ["elevenlabs", "Clave de ElevenLabs (voz natural)", "password", "https://elevenlabs.io"],
+  ["elevenlabsVoz", "ID de voz de ElevenLabs", "text", "Vacío = elige sola una voz femenina en español"],
+  ["picovoice", "AccessKey de Picovoice", "password", "https://console.picovoice.ai · detecta «Jarvis» sin internet"],
+  ["emailCuentas", "Cuentas de correo (opcional)", "password", "vos@gmail.com:contraseñadeaplicación · https://myaccount.google.com/apppasswords"],
+  ["tavily", "Clave de Tavily (opcional)", "password", "https://tavily.com · búsqueda web más precisa"],
+  ["openrouter", "Clave de OpenRouter (opcional)", "password", "https://openrouter.ai"],
+  ["openrouterModelo", "Modelo de OpenRouter", "text", "Ej: un modelo :free con herramientas"],
+  ["resumenDiario", "Resumen de buenos días", "time", "Vacío = apagado"],
+  ["avisarDesde", "Avisarme en voz alta desde", "select:baja,media,alta", "Importancia mínima"],
+  ["razonamiento", "Razonamiento de la IA", "select:low,medium,high", "low = más rápido"],
+];
+
+function enlazar(texto) {
+  const partes = texto.split(/(https:\/\/\S+)/);
+  return partes.map((p) => (p.startsWith("https://") ? el("a", { href: p, target: "_blank", rel: "noopener" }, p.replace("https://", "")) : p));
+}
+
+async function abrirAjustes(bienvenida = false) {
+  const formulario = $("#formulario-ajustes");
+  let valores = {};
+  try {
+    valores = await api("/api/ajustes");
+  } catch (err) {
+    agregarLinea("jarvis error", err.message);
+    return;
+  }
+  $("#ajustes-intro").textContent = bienvenida
+    ? "Para empezar pegá tu clave gratis de Gemini o de Groq. Lo demás es opcional."
+    : "Todo queda guardado solo en tu celular.";
+  formulario.replaceChildren(
+    ...CAMPOS_AJUSTES.map(([clave, rotulo, tipo, ayuda]) => {
+      let campo;
+      if (tipo.startsWith("select:")) {
+        campo = el("select", { name: clave }, ...tipo.slice(7).split(",").map((v) => el("option", { value: v }, v)));
+      } else {
+        campo = el("input", { name: clave, type: tipo === "password" ? "text" : tipo, autocomplete: "off", spellcheck: "false" });
+      }
+      campo.value = valores[clave] ?? "";
+      return el("label", { class: "campo" }, el("span", {}, rotulo), campo, el("small", {}, ...enlazar(ayuda)));
+    }),
+  );
+  $("#ajustes-estado").textContent = "";
+  $("#modal-ajustes").hidden = false;
+}
+
+async function guardarAjustes(e) {
+  e.preventDefault();
+  const datos = Object.fromEntries(new FormData($("#formulario-ajustes-caja")).entries());
+  $("#ajustes-estado").textContent = "Guardando…";
+  try {
+    await api("/api/ajustes", { metodo: "POST", json: datos });
+    $("#ajustes-estado").textContent = "Guardado.";
+    setTimeout(() => ($("#modal-ajustes").hidden = true), 600);
+  } catch (err) {
+    $("#ajustes-estado").textContent = err.message;
+  }
 }
 
 // ---------- Reactor y conversación ----------
@@ -877,7 +971,7 @@ const editando = new Set();
 const textosEditados = new Map();
 
 function crearBorrador(p) {
-  const canal = p.canal === "email" ? "Mail" : "WhatsApp";
+  const canal = p.app || (p.canal === "email" ? "Mail" : "WhatsApp");
   const caja = el(
     "div",
     { class: "borrador" },
@@ -1239,6 +1333,9 @@ function iniciar() {
     }
   });
   $("#cerrar-qr").addEventListener("click", () => ($("#modal-qr").hidden = true));
+  $("#ajustes").addEventListener("click", () => void abrirAjustes());
+  $("#cerrar-ajustes").addEventListener("click", () => ($("#modal-ajustes").hidden = true));
+  $("#formulario-ajustes-caja").addEventListener("submit", guardarAjustes);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       callar();

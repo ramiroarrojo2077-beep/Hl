@@ -340,6 +340,7 @@ final class Herramientas {
     }
 
     private static String mensajeDeError(String nombre, Throwable e) {
+        if (e instanceof NumberFormatException) return "Uno de los números no tiene un formato válido.";
         if (e instanceof Falla || e instanceof IllegalArgumentException) {
             String m = e.getMessage();
             if (m != null && !m.trim().isEmpty()) return m.trim();
@@ -402,8 +403,9 @@ final class Herramientas {
 
     /** Entero exacto (acepta "7" o 7.0); null si no vino o no es entero. */
     private static Integer entero(Object v) {
+        if (v == null || v == JSONObject.NULL || v instanceof Boolean) return null;
         double d = comoNumero(v);
-        if (v == null || v == JSONObject.NULL || Double.isNaN(d) || Double.isInfinite(d)) return null;
+        if (Double.isNaN(d) || Double.isInfinite(d)) return null;
         if (v instanceof String && ((String) v).trim().isEmpty()) return null;
         if (d != Math.rint(d) || Math.abs(d) > Integer.MAX_VALUE) return null;
         return (int) d;
@@ -631,7 +633,8 @@ final class Herramientas {
     // ---------- Mensajes y mails ----------
 
     private static Object leerMensajes(String filtro, int cantidad) throws JSONException {
-        JSONArray mensajes = Escucha.recientes(filtro.isEmpty() ? null : filtro, cantidad);
+        // Sin filtro va "" (no null): así cualquier forma de filtrar ("contiene", isEmpty) lo toma como "todos".
+        JSONArray mensajes = Escucha.recientes(filtro, cantidad);
         if (mensajes != null && mensajes.length() > 0) return mensajes;
         // Sin esto, la IA tiende a decir que "no tenés mensajes" cuando en realidad Jarvis recién empezó a escuchar.
         String nota = filtro.isEmpty()
@@ -671,7 +674,8 @@ final class Herramientas {
         JSONObject origen = aviso.optJSONObject("origen");
         if (origen == null) throw new Falla("Ese aviso no se puede responder desde Jarvis.");
         String de = aviso.optString("de");
-        String motivo = aviso.optString("resumen", aviso.optString("titulo"));
+        String motivo = aviso.optString("resumen").trim();
+        if (motivo.isEmpty()) motivo = aviso.optString("titulo");
         JSONObject datos;
         switch (origen.optString("canal")) {
             case "notificacion": {
@@ -832,6 +836,14 @@ final class Herramientas {
      */
     private static String abrirActividad(Context c, Intent i, String sinApp) throws Falla {
         Context app = aplicacion(c);
+        // Se mira antes de abrir: apenas se abre la otra app, la pantalla de Jarvis deja de estar a la vista.
+        boolean puede = Principal.visible;
+        if (!puede) {
+            try {
+                puede = Settings.canDrawOverlays(app);
+            } catch (RuntimeException ignorada) {
+            }
+        }
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             app.startActivity(i);
@@ -840,13 +852,6 @@ final class Herramientas {
         } catch (SecurityException e) {
             Log.w(TAG, "No me dejaron abrir " + i, e);
             throw new Falla("Android no me dejó abrir eso.");
-        }
-        boolean puede = Principal.visible;
-        if (!puede) {
-            try {
-                puede = Settings.canDrawOverlays(app);
-            } catch (RuntimeException ignorada) {
-            }
         }
         return puede ? null : "Jarvis estaba en segundo plano y sin el permiso «Mostrar sobre otras apps»: puede que "
                 + "Android no lo haya dejado abrir.";
@@ -858,14 +863,27 @@ final class Herramientas {
 
     private static JSONObject abrir(Context c, String destino) throws Exception {
         if (destino.isEmpty()) throw new Falla("Falta qué abrir.");
-        if (CON_ESQUEMA.matcher(destino).find() || DOMINIO.matcher(destino).matches()) {
+        boolean esUrl = CON_ESQUEMA.matcher(destino).find();
+        List<App> apps = esUrl ? null : appsInstaladas(aplicacion(c));
+        // "Booking.com" o "Maps.me" pueden ser el nombre de una app: si hay una que se llama exactamente así, gana la app.
+        if (!esUrl && DOMINIO.matcher(destino).matches()) {
+            String clave = compacto(destino);
+            esUrl = true;
+            for (App a : apps) {
+                if (a.clave.equals(clave)) {
+                    esUrl = false;
+                    break;
+                }
+            }
+        }
+        if (esUrl) {
             // Igual que en la PC: solo http/https y nunca la red local (Web.validarUrl tira el motivo en español).
             String url = Web.validarUrl(destino);
             Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE);
             String advertencia = abrirActividad(c, i, "No hay ninguna app para abrir esa dirección.");
             return conAdvertencia(new JSONObject().put("abierto", url), advertencia);
         }
-        App app = buscarApp(appsInstaladas(aplicacion(c)), destino);
+        App app = buscarApp(apps, destino);
         if (app == null) throw new Falla("No encontré ninguna app que se llame «" + destino + "» en el celular.");
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER)
@@ -1000,9 +1018,10 @@ final class Herramientas {
 
     private static JSONObject ponerTemporizador(Context c, Object segundosCrudos, String mensaje) throws Exception {
         double valor = comoNumero(segundosCrudos);
-        if (segundosCrudos == null || Double.isNaN(valor) || Double.isInfinite(valor) || valor < 0.5) {
+        if (segundosCrudos == null || segundosCrudos instanceof Boolean || Double.isNaN(valor) || Double.isInfinite(valor)) {
             throw new Falla("Falta la duración en segundos.");
         }
+        if (valor < 0.5) throw new Falla("El temporizador tiene que durar al menos un segundo.");
         long segundos = Math.round(valor);
         // Es el máximo que acepta AlarmClock.EXTRA_LENGTH.
         if (segundos > 86_400) throw new Falla("El temporizador puede durar hasta 24 horas.");

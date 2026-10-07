@@ -493,6 +493,26 @@ body.vertical .dia-corto, body.completo .clima.compacto .dia-corto { display: in
 .modal-caja { width: min(360px, 92vw); text-align: center; background: rgba(20, 0, 3, 0.92); }
 .modal-caja p { color: var(--texto-suave); margin: 0 0 12px; }
 .modal-caja img { width: 260px; max-width: 100%; background: #fff; padding: 8px; }
+#ajustes[hidden] { display: none; }
+.ajustes-caja { width: min(480px, 94vw); max-height: 90vh; display: flex; flex-direction: column; text-align: left; }
+.ajustes-caja .campos { overflow-y: auto; display: grid; gap: 12px; padding-right: 4px; min-height: 0; }
+.campo { display: grid; gap: 4px; }
+.campo span { font: 600 11px var(--fuente-hud); letter-spacing: 0.12em; text-transform: uppercase; color: var(--rojo-claro); }
+.campo input, .campo select {
+  font-size: 16px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--linea-fuerte);
+  border-radius: 2px;
+  outline: none;
+  user-select: text;
+  color-scheme: dark;
+}
+.campo input:focus, .campo select:focus { border-color: var(--rojo); box-shadow: 0 0 10px var(--brillo); }
+.campo small { color: var(--texto-tenue); font-size: 12px; overflow-wrap: anywhere; }
+.campo small a { color: var(--rojo-claro); text-decoration: underline; }
+.ajustes-pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
+#ajustes-estado { color: var(--texto-suave); font-size: 13px; }
 .modal-cerrar { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; }
 
 /* ==========================================================

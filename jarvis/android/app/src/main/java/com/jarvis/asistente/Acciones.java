@@ -1,7 +1,11 @@
 package com.jarvis.asistente;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -18,49 +22,155 @@ final class Acciones {
     private Acciones() {}
 
     static boolean activa(Context c) {
-        throw new UnsupportedOperationException("pendiente");
+        return Almacen.de(c).activa();
     }
 
-    /** Guarda, emite "activa" y "estado", y avisa al servicio (Servicio.alCambiarAjustes) para prender/apagar el oído. */
+    /** Guarda, emite "activa" y "estado", y avisa al servicio para prender/apagar el oído. */
     static void cambiarActiva(Context c, boolean activa) {
-        throw new UnsupportedOperationException("pendiente");
+        Almacen.de(c).activa(activa);
+        try {
+            Eventos.emitir("activa", new JSONObject().put("activa", activa));
+        } catch (JSONException ignorada) {
+        }
+        Eventos.emitir("estado", null);
+        Servicio.alCambiarAjustes(c);
     }
 
     /** Completa id/estado/fecha, guarda, emite "propuesta" y la devuelve. */
     static JSONObject crearPropuesta(Context c, JSONObject datos) {
-        throw new UnsupportedOperationException("pendiente");
+        Almacen almacen = Almacen.de(c);
+        try {
+            datos.put("id", Almacen.nuevoId()).put("estado", "pendiente").put("fecha", Almacen.ahora());
+        } catch (JSONException ignorada) {
+        }
+        synchronized (almacen) {
+            almacen.propuestas().put(datos);
+        }
+        almacen.guardar();
+        Eventos.emitir("propuesta", datos);
+        return datos;
     }
 
-    /**
-     * Guarda el aviso (completa id/fecha/propuestaId), emite "aviso" {aviso, propuesta, hablar}. hablar = activa &&
-     * (forzarVoz || Ajustes.superaUmbral). Si hablar y la pantalla de Jarvis no está a la vista (Principal.visible), llama a
-     * Servicio.darAviso(c, texto + lectura del borrador, hayPropuesta, de) para que se abra sola y te lo diga.
-     * La lectura del borrador es igual que en la PC: si mide ≤280 " Te propongo responderle: {texto} ¿Se la mando?",
-     * si no " Te dejé una respuesta preparada. ¿Se la mando?".
-     */
     static JSONObject registrarAviso(Context c, JSONObject aviso, JSONObject propuesta, boolean forzarVoz) {
-        throw new UnsupportedOperationException("pendiente");
+        Almacen almacen = Almacen.de(c);
+        try {
+            aviso.put("id", Almacen.nuevoId()).put("fecha", Almacen.ahora());
+            if (propuesta != null) aviso.put("propuestaId", propuesta.optString("id"));
+        } catch (JSONException ignorada) {
+        }
+        synchronized (almacen) {
+            almacen.avisos().put(aviso);
+        }
+        almacen.guardar();
+        // Con Jarvis desactivada, el aviso queda anotado pero no te interrumpe.
+        boolean hablar = almacen.activa() && (forzarVoz || Ajustes.superaUmbral(c, aviso.optString("importancia", "media")));
+        try {
+            Eventos.emitir("aviso", new JSONObject().put("aviso", aviso).put("propuesta", propuesta == null ? JSONObject.NULL : propuesta).put("hablar", hablar));
+        } catch (JSONException ignorada) {
+        }
+        if (hablar && !Principal.visible) {
+            String texto = aviso.optString("texto");
+            if (propuesta != null) {
+                String borrador = propuesta.optString("texto");
+                texto += borrador.length() <= 280
+                        ? " Te propongo responderle: " + borrador + " ¿Se la mando?"
+                        : " Te dejé una respuesta preparada. ¿Se la mando?";
+            }
+            Servicio.darAviso(c, texto, propuesta != null, aviso.optString("de"));
+        }
+        return aviso;
+    }
+
+    private static JSONObject pendiente(Context c, String id) throws Exception {
+        Almacen almacen = Almacen.de(c);
+        JSONObject p;
+        synchronized (almacen) {
+            p = almacen.buscar(almacen.propuestas(), id);
+        }
+        if (p == null) throw new Exception("No existe esa propuesta.");
+        String estado = p.optString("estado");
+        if (!"pendiente".equals(estado) && !"error".equals(estado)) throw new Exception("Esa propuesta ya fue " + estado + ".");
+        return p;
     }
 
     static JSONObject editarPropuesta(Context c, String id, String texto, String asunto) throws Exception {
-        throw new UnsupportedOperationException("pendiente");
+        JSONObject p = pendiente(c, id);
+        Almacen almacen = Almacen.de(c);
+        synchronized (almacen) {
+            if (texto != null && !texto.trim().isEmpty()) p.put("texto", texto.trim());
+            if (asunto != null && !asunto.trim().isEmpty()) p.put("asunto", asunto.trim());
+        }
+        almacen.guardar();
+        Eventos.emitir("propuesta", p);
+        return p;
     }
 
-    /**
-     * Envía: "notificacion" → Respuestas.responder; "email" → Correo.enviar; "whatsapp_nuevo" → abre el chat de WhatsApp
-     * con el texto escrito (https://wa.me/NUMERO?text=…) para que toques enviar. Si falla, emite la propuesta con
-     * estado "error" y la deja "pendiente" para reintentar, y lanza la excepción con el motivo.
-     */
     static JSONObject enviarPropuesta(Context c, String id, String texto, String asunto) throws Exception {
-        throw new UnsupportedOperationException("pendiente");
+        JSONObject p = editarPropuesta(c, id, texto, asunto);
+        Almacen almacen = Almacen.de(c);
+        try {
+            switch (p.optString("canal")) {
+                case "notificacion":
+                    Respuestas.responder(c, p.optString("claveRespuesta", p.optString("para")), p.optString("texto"));
+                    break;
+                case "email": {
+                    JSONObject respuesta = p.optJSONObject("enRespuestaA");
+                    String[] refs = new String[0];
+                    if (respuesta != null) {
+                        JSONArray arreglo = respuesta.optJSONArray("references");
+                        refs = new String[arreglo == null ? 0 : arreglo.length()];
+                        for (int i = 0; i < refs.length; i++) refs[i] = arreglo.optString(i);
+                    }
+                    Correo.enviar(c, p.optString("cuenta"), p.optString("para"), p.optString("asunto"), p.optString("texto"),
+                            respuesta == null ? null : respuesta.optString("messageId"), refs);
+                    break;
+                }
+                case "whatsapp_nuevo": {
+                    Uri chat = Uri.parse("https://wa.me/" + p.optString("para").replaceAll("\\D", "") + "?text=" + Uri.encode(p.optString("texto")));
+                    c.startActivity(new Intent(Intent.ACTION_VIEW, chat).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    break;
+                }
+                default:
+                    throw new Exception("No sé cómo enviar esa propuesta.");
+            }
+            synchronized (almacen) {
+                p.put("estado", "enviada");
+                p.remove("error");
+            }
+        } catch (Exception e) {
+            synchronized (almacen) {
+                p.put("estado", "error");
+                p.put("error", e.getMessage());
+            }
+            almacen.guardar();
+            Eventos.emitir("propuesta", p);
+            // Queda pendiente para poder reintentar.
+            synchronized (almacen) {
+                p.put("estado", "pendiente");
+            }
+            almacen.guardar();
+            throw new Exception("No se pudo enviar: " + e.getMessage());
+        }
+        almacen.guardar();
+        Eventos.emitir("propuesta", p);
+        return p;
     }
 
     static JSONObject descartarPropuesta(Context c, String id) throws Exception {
-        throw new UnsupportedOperationException("pendiente");
+        JSONObject p = pendiente(c, id);
+        Almacen almacen = Almacen.de(c);
+        synchronized (almacen) {
+            p.put("estado", "descartada");
+        }
+        almacen.guardar();
+        Eventos.emitir("propuesta", p);
+        return p;
     }
 
     /** "Borrador de {mail|WhatsApp|app} para X listo. Esperando que {usuario} lo apruebe." */
     static String describirPropuesta(Context c, JSONObject propuesta) {
-        throw new UnsupportedOperationException("pendiente");
+        String canal = "email".equals(propuesta.optString("canal")) ? "mail" : propuesta.optString("app", "mensaje");
+        return "Borrador de " + canal + " para " + propuesta.optString("paraNombre") + " listo. Esperando que "
+                + Ajustes.texto(c, Ajustes.USUARIO) + " lo apruebe.";
     }
 }

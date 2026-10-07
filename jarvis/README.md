@@ -61,17 +61,15 @@ Todo va en el archivo `.env`. Lo que dice **gratis** no pide tarjeta.
 - Para ver las voces de tu cuenta: `http://localhost:3700/api/voces`.
 - Con un plan pago podés usar voces de la biblioteca en español latino (buscá «Latin American Spanish female» en <https://elevenlabs.io/voice-library>).
 
-## 3. App para el celular (Android)
+## 3. App para el celular (Android) — funciona sola, sin la PC
 
-1. Descargá el APK desde **<https://github.com/ramiroarrojo2077-beep/Hl/releases/download/jarvis-android/jarvis.apk>** (se actualiza solo con cada cambio; como tu repositorio es privado, abrilo con tu cuenta de GitHub iniciada en el navegador del celular) e instalalo (Android pide permitir "instalar apps desconocidas").
-2. En la PC, en el `.env`: `JARVIS_HOST=0.0.0.0` y `JARVIS_TOKEN=un-token-largo-inventado`. Reiniciá Jarvis.
-3. Abrí la app y completá:
-   - **Dirección de tu PC**: `http://IP-DE-TU-PC:3700` (la IP aparece en el panel *Sistema → IP local*). Tiene que estar en el mismo Wi-Fi. Para usarla **fuera de casa**, instalá [Tailscale](https://tailscale.com) (gratis) en la PC y en el celular y usá la IP de Tailscale.
-   - **Token**: el mismo de `JARVIS_TOKEN`.
-   - **AccessKey de Picovoice** (opcional, recomendado).
-4. Aceptá los permisos: micrófono, notificaciones, **«Mostrar sobre otras apps»** (para que se abra sola) y **sin restricciones de batería** (para que siga en segundo plano).
+Todo el cerebro de Jarvis (IA, memoria, recordatorios, avisos y herramientas) vive dentro de la app.
 
-La app es transparente (se ve lo que tenías atrás), queda escuchando «Jarvis» en segundo plano y se abre sola cuando la llamás o cuando tu PC le manda un aviso. Después de reiniciar el celular, los avisos siguen funcionando, pero Android exige que abras la app una vez para volver a escuchar «Jarvis».
+1. Instalá `jarvis.apk` (Android pide permitir "instalar apps desconocidas").
+2. Al abrirla se abre **⚙ Ajustes**: pegá tu clave gratis de Gemini y/o Groq. Opcionales: ElevenLabs (voz), Picovoice (detectar «Jarvis» sin internet), cuentas de correo, Tavily.
+3. Aceptá los permisos: micrófono, notificaciones, **Acceso a notificaciones** (así lee tus WhatsApp, Gmail, Telegram, Instagram, SMS… y responde desde la notificación cuando vos lo aprobás), **Mostrar sobre otras apps** (para abrirse sola) y **sin restricción de batería**.
+
+Decís «Jarvis» y se abre escuchando. Cuando te llega algo importante, se abre sola, te lo lee, te propone una respuesta y la manda solo si decís «mandala». También pone alarmas y temporizadores, abre apps, busca en internet y te da el clima y las noticias.
 
 ## 4. API
 

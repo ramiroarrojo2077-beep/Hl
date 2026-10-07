@@ -35,6 +35,8 @@
     <symbol id="i-jarvis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
     <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
+    <symbol id="i-engranaje" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
     <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
     <symbol id="i-parlante" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
     <symbol id="i-mudo" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
@@ -56,6 +58,7 @@
         <span class="interruptor-luz"></span>
         <span class="interruptor-texto" id="interruptor-texto">ACTIVA</span>
       </button>
+      <button type="button" class="boton-icono" id="ajustes" title="Ajustes" hidden><svg><use href="#i-engranaje"/></svg></button>
       <button type="button" class="boton-icono" id="boton-voz" title="Voz de Jarvis">
         <svg><use href="#i-parlante"/></svg>
       </button>
@@ -219,6 +222,16 @@
 </div>
 
 <!-- QR de WhatsApp -->
+<div class="modal" id="modal-ajustes" hidden>
+  <form class="panel modal-caja ajustes-caja" id="formulario-ajustes-caja">
+    <button type="button" class="boton-icono modal-cerrar" id="cerrar-ajustes" title="Cerrar"><svg><use href="#i-cerrar"/></svg></button>
+    <h2>Ajustes</h2>
+    <p id="ajustes-intro"></p>
+    <div class="campos" id="formulario-ajustes"></div>
+    <div class="ajustes-pie"><span id="ajustes-estado"></span><button type="submit" class="interruptor">GUARDAR</button></div>
+  </form>
+</div>
+
 <div class="modal" id="modal-qr" hidden>
   <div class="panel modal-caja">
     <button type="button" class="boton-icono modal-cerrar" id="cerrar-qr" title="Cerrar"><svg><use href="#i-cerrar"/></svg></button>
