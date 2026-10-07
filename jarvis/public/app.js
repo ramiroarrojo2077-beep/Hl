@@ -313,7 +313,9 @@ function dibujarEstado(e) {
   $("#reactor").classList.toggle("apagada", !e.activa);
   ponerEstado(estadoReactor);
   // Con escucha continua, el micrófono queda abierto esperando que digas "Jarvis".
-  if (!movil && oido.continuo && e.voz && !oido.activo) void abrirMicrofono();
+  // Desactivada no escucha; activa y con escucha continua, el micrófono espera que digas "Jarvis".
+  if (!movil && !e.activa) cerrarMicrofono();
+  else if (!movil && oido.continuo && e.voz && !oido.activo) void abrirMicrofono();
 }
 
 function mostrarQr(qr) {
