@@ -9,13 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -35,8 +29,8 @@ import ai.picovoice.porcupine.PorcupineManager;
  * Escucha en segundo plano hasta que digas "Jarvis".
  *
  * Con una AccessKey de Picovoice (gratis para uso personal) usa Porcupine: detecta la palabra en el
- * celular, sin internet y gastando muy poca batería. Sin clave, detecta cuándo hablás y le pide a tu
- * servidor que transcriba ese pedacito para buscar la palabra (usa el cupo gratis de Groq).
+ * celular, sin internet y gastando muy poca batería. Sin clave, detecta cuándo hablás y transcribe ese pedacito
+ * (Whisper en Groq, gratis) para buscar la palabra.
  */
 final class Oido {
     interface Oyente {
@@ -76,7 +70,7 @@ final class Oido {
     void iniciar() {
         if (activo) return;
         activo = true;
-        String clave = Ajustes.clavePicovoice(contexto);
+        String clave = Ajustes.texto(contexto, Ajustes.PICOVOICE);
         if (!clave.isEmpty() && iniciarPorcupine(clave)) return;
         iniciarDetectorDeVoz();
     }
@@ -196,7 +190,7 @@ final class Oido {
                         // Para la palabra clave alcanza con frases cortas.
                         if (silencio > 0.8 || segmento.size() * duracion > 8) {
                             if (hablado >= 0.3) {
-                                if (puedeTranscribir()) enviar(segmento);
+                                if (Transcriptor.disponible(contexto) && puedeTranscribir()) enviar(segmento);
                                 else ruido *= 1.5;
                             }
                             segmento = null;
@@ -226,7 +220,7 @@ final class Oido {
         byte[] wav = wav(segmento);
         red.execute(() -> {
             try {
-                String texto = transcribir(wav);
+                String texto = Transcriptor.transcribir(contexto, wav, "audio/wav");
                 Matcher m = PALABRA_CLAVE.matcher(texto);
                 // Solo si te dirigís a ella al principio ("Jarvis…", "Che Jarvis…"), no si la nombrás de pasada.
                 if (!ALUCINACIONES.matcher(texto).find() && m.find() && m.start() <= 15) {
@@ -244,30 +238,6 @@ final class Oido {
 
     private void avisar(String orden) {
         if (activo && !Voz.de(contexto).estaHablando()) oyente.palabraClave(orden);
-    }
-
-    private String transcribir(byte[] wav) throws Exception {
-        HttpURLConnection con = (HttpURLConnection) new URL(Ajustes.url(contexto, "/api/transcribir")).openConnection();
-        try {
-            con.setRequestMethod("POST");
-            con.setConnectTimeout(5000);
-            con.setReadTimeout(20000);
-            con.setDoOutput(true);
-            con.setRequestProperty("Content-Type", "audio/wav");
-            try (OutputStream salida = con.getOutputStream()) {
-                salida.write(wav);
-            }
-            if (con.getResponseCode() != 200) return "";
-            try (InputStream entrada = con.getInputStream()) {
-                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-                byte[] buffer = new byte[4096];
-                int leidos;
-                while ((leidos = entrada.read(buffer)) > 0) bytes.write(buffer, 0, leidos);
-                return new JSONObject(bytes.toString(StandardCharsets.UTF_8.name())).optString("texto", "");
-            }
-        } finally {
-            con.disconnect();
-        }
     }
 
     private static byte[] wav(List<short[]> segmento) {

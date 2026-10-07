@@ -10,6 +10,11 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Recordatorios y resumen diario a la hora exacta. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- "Poneme una alarma a las 7" usa la app de reloj del celular. -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
 
     <!-- Para usar el reconocimiento de voz del sistema (Google). -->
     <queries>
@@ -18,6 +23,15 @@
         </intent>
         <intent>
             <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <!-- Para "abrí Spotify": ver qué apps tenés instaladas. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 
@@ -47,8 +61,23 @@
             android:foregroundServiceType="specialUse|microphone">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Asistente personal: recibe en tiempo real los avisos de tu servidor de Jarvis y escucha la palabra Jarvis" />
+                android:value="Asistente personal: mantiene el servidor interno de Jarvis, sus avisos y la escucha de la palabra Jarvis" />
         </service>
+
+        <!-- Lee las notificaciones de tus apps (WhatsApp, Gmail, Telegram…) cuando le das "Acceso a notificaciones". -->
+        <service
+            android:name=".Escucha"
+            android:exported="true"
+            android:label="Jarvis"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".Alarma"
+            android:exported="false" />
 
         <receiver
             android:name=".Arranque"

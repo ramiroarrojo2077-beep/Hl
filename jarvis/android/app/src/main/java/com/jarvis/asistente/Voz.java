@@ -9,27 +9,18 @@ import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.util.Log;
 
-import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * La voz de Jarvis en el celular: usa ElevenLabs a través de tu servidor y, si no está
- * configurado o se terminó el cupo, la voz del sistema.
+ * La voz de Jarvis en el celular: usa ElevenLabs y, si no está configurado o se terminó el cupo,
+ * la voz del sistema.
  */
 final class Voz {
-    private static final String TAG = "JarvisVoz";
     private static Voz instancia;
 
     private final Context contexto;
@@ -85,7 +76,7 @@ final class Voz {
         hablando = true;
         audio.requestAudioFocus(foco);
         hilo.execute(() -> {
-            File mp3 = descargarElevenLabs(texto);
+            File mp3 = ElevenLabs.sintetizar(contexto, texto);
             principal.post(() -> {
                 if (miTurno != turno) return;
                 if (mp3 != null) reproducir(mp3, texto, miTurno, alTerminar);
@@ -114,36 +105,6 @@ final class Voz {
         }
         audio.abandonAudioFocusRequest(foco);
         if (alTerminar != null) alTerminar.run();
-    }
-
-    private File descargarElevenLabs(String texto) {
-        if (!Ajustes.configurado(contexto)) return null;
-        HttpURLConnection con = null;
-        try {
-            con = (HttpURLConnection) new URL(Ajustes.url(contexto, "/api/hablar")).openConnection();
-            con.setRequestMethod("POST");
-            con.setConnectTimeout(5000);
-            con.setReadTimeout(20000);
-            con.setDoOutput(true);
-            con.setRequestProperty("Content-Type", "application/json");
-            byte[] cuerpo = new JSONObject().put("texto", texto).toString().getBytes(StandardCharsets.UTF_8);
-            try (OutputStream salida = con.getOutputStream()) {
-                salida.write(cuerpo);
-            }
-            if (con.getResponseCode() != 200) return null;
-            File archivo = new File(contexto.getCacheDir(), "voz.mp3");
-            try (InputStream entrada = con.getInputStream(); OutputStream salida = new FileOutputStream(archivo)) {
-                byte[] buffer = new byte[16384];
-                int leidos;
-                while ((leidos = entrada.read(buffer)) > 0) salida.write(buffer, 0, leidos);
-            }
-            return archivo;
-        } catch (Exception e) {
-            Log.w(TAG, "ElevenLabs no disponible: " + e.getMessage());
-            return null;
-        } finally {
-            if (con != null) con.disconnect();
-        }
     }
 
     private void reproducir(File mp3, String texto, int miTurno, Runnable alTerminar) {

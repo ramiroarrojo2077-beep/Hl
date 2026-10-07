@@ -3,7 +3,9 @@ package com.jarvis.asistente;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -15,7 +17,6 @@ import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.text.InputType;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -24,9 +25,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import org.json.JSONObject;
 
@@ -34,8 +32,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * La pantalla de Jarvis: transparente, muestra el HUD de tu servidor encima de tu fondo o de la app
- * que estabas usando. Escucha con el reconocimiento de voz del sistema y habla con {@link Voz}.
+ * La pantalla de Jarvis: transparente, muestra el HUD (que sirve el servidor interno) encima de tu fondo o de la app
+ * que estabas usando. Escucha con el reconocimiento de voz del sistema y habla con {@link Voz}. Todo en el celular.
  */
 public class Principal extends Activity {
     static final String EXTRA_ESCUCHAR = "escuchar";
@@ -60,13 +58,12 @@ public class Principal extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) getWindow().setDecorFitsSystemWindows(false);
         else getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
+        ServidorLocal.iniciar(this);
         web = new WebView(this);
         web.setBackgroundColor(Color.TRANSPARENT);
         prepararWeb();
         setContentView(web);
-
-        if (!Ajustes.configurado(this)) mostrarConfiguracion();
-        else cargar();
+        cargar();
         pedirPermisos();
         procesar(getIntent());
     }
@@ -83,6 +80,8 @@ public class Principal extends Activity {
         super.onResume();
         visible = true;
         web.onResume();
+        // Al volver de los ajustes del sistema, la interfaz se entera de los permisos nuevos.
+        Eventos.emitir("estado", null);
     }
 
     @Override
@@ -119,11 +118,11 @@ public class Principal extends Activity {
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView vista, WebResourceRequest pedido) {
-                String url = pedido.getUrl().toString();
-                if (url.startsWith(Ajustes.servidor(Principal.this))) return false;
-                // Los links (noticias, accesos) se abren en el navegador.
+                Uri url = pedido.getUrl();
+                if ("127.0.0.1".equals(url.getHost()) && url.getPort() == ServidorLocal.puerto()) return false;
+                // Los links (noticias, accesos) se abren en su app o en el navegador.
                 try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+                    startActivity(new Intent(Intent.ACTION_VIEW, url));
                 } catch (Exception ignorada) {
                 }
                 return true;
@@ -138,25 +137,24 @@ public class Principal extends Activity {
 
             @Override
             public void onReceivedError(WebView vista, WebResourceRequest pedido, WebResourceError error) {
-                if (pedido.isForMainFrame()) mostrarSinConexion(String.valueOf(error.getDescription()));
+                if (pedido.isForMainFrame()) mostrarError(String.valueOf(error.getDescription()));
             }
         });
     }
 
     private void cargar() {
         paginaLista = false;
-        web.loadUrl(Ajustes.url(this, "/?modo=vertical&movil=1"));
+        web.loadUrl(ServidorLocal.url(this));
     }
 
-    private void mostrarSinConexion(String detalle) {
+    private void mostrarError(String detalle) {
         paginaLista = false;
         String html = "<html><body style=\"margin:0;height:100vh;display:grid;place-items:center;background:rgba(8,0,2,.8);"
                 + "color:#ffd6d6;font:16px sans-serif;text-align:center\"><div style=\"padding:24px\">"
                 + "<div style=\"font:700 22px sans-serif;color:#ff4d4d;letter-spacing:.3em\">J.A.R.V.I.S.</div>"
-                + "<p>No me puedo conectar con tu PC.<br>¿Está prendida y con Jarvis andando?</p>"
+                + "<p>No pude abrir la interfaz.</p>"
                 + "<p style=\"opacity:.6;font-size:13px\">" + android.text.Html.escapeHtml(detalle) + "</p>"
-                + "<p><button onclick=\"Android.reintentar()\" style=\"padding:10px 18px;margin:6px;background:#ff2b2b;color:#fff;border:0\">REINTENTAR</button>"
-                + "<button onclick=\"Android.configurar()\" style=\"padding:10px 18px;margin:6px;background:none;color:#ff8f8f;border:1px solid #ff2b2b\">CONFIGURAR</button></p>"
+                + "<p><button onclick=\"Android.reintentar()\" style=\"padding:10px 18px;background:#ff2b2b;color:#fff;border:0\">REINTENTAR</button></p>"
                 + "</div></body></html>";
         web.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
     }
@@ -314,24 +312,20 @@ public class Principal extends Activity {
             runOnUiThread(Principal.this::cargar);
         }
 
+        /** "notificaciones" | "superponer" | "bateria" | "alarmas" | "app". */
         @JavascriptInterface
-        public void configurar() {
-            runOnUiThread(Principal.this::mostrarConfiguracion);
+        public void abrirPermiso(String cual) {
+            runOnUiThread(() -> abrirAjusteDelSistema(cual));
         }
     }
 
-    // ---------- Servicio, permisos y configuración ----------
+    // ---------- Servicio y permisos ----------
 
     private void ordenAlServicio(String accion) {
-        if (!Ajustes.configurado(this)) return;
         try {
             startService(new Intent(this, Servicio.class).setAction(accion));
         } catch (RuntimeException ignorada) {
         }
-    }
-
-    private void iniciarServicio() {
-        if (Ajustes.configurado(this)) startForegroundService(new Intent(this, Servicio.class));
     }
 
     private void pedirPermisos() {
@@ -353,72 +347,70 @@ public class Principal extends Activity {
     }
 
     private void despuesDePermisos() {
-        iniciarServicio();
-        pedirAbrirseSola();
+        Servicio.iniciar(this);
+        pedirPermisosEspeciales();
     }
 
-    // Sin estos dos permisos especiales, Android no la deja abrirse sola ni seguir en segundo plano.
-    private void pedirAbrirseSola() {
-        if (!Ajustes.configurado(this)) return;
-        if (!Settings.canDrawOverlays(this) && !Ajustes.yaPregunto(this, "superponer")) {
-            new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                    .setTitle("Que se abra sola")
-                    .setMessage("Para que Jarvis aparezca cuando la llamás o tiene algo para decirte, activá «Mostrar sobre otras apps» en la próxima pantalla.")
-                    .setPositiveButton("Activar", (d, w) -> startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()))))
-                    .setNegativeButton("Ahora no", null)
-                    .setOnDismissListener(d -> pedirBateria())
-                    .show();
-            return;
+    // Lo que Android no deja pedir con un cartel común: se explica y se abre la pantalla de ajustes, una sola vez cada uno.
+    private void pedirPermisosEspeciales() {
+        if (!Escucha.permisoConcedido(this) && !Ajustes.yaPregunto(this, "notificaciones")) {
+            explicar("Conectarse a tus apps",
+                    "Para leerte lo que te llega por WhatsApp, Gmail, Telegram, Instagram y demás, y responder cuando vos lo aprobás, activá a Jarvis en «Acceso a notificaciones».",
+                    "notificaciones");
+        } else if (!Settings.canDrawOverlays(this) && !Ajustes.yaPregunto(this, "superponer")) {
+            explicar("Que se abra sola",
+                    "Para que Jarvis aparezca cuando la llamás o tiene algo para decirte, activá «Mostrar sobre otras apps».",
+                    "superponer");
+        } else if (!getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(getPackageName())
+                && !Ajustes.yaPregunto(this, "bateria")) {
+            abrirAjusteDelSistema("bateria");
         }
-        pedirBateria();
+    }
+
+    private void explicar(String titulo, String mensaje, String permiso) {
+        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+                .setTitle(titulo)
+                .setMessage(mensaje)
+                .setPositiveButton("Activar", (d, w) -> abrirAjusteDelSistema(permiso))
+                .setNegativeButton("Ahora no", (d, w) -> pedirPermisosEspeciales())
+                .show();
     }
 
     @SuppressLint("BatteryLife")
-    private void pedirBateria() {
-        PowerManager energia = getSystemService(PowerManager.class);
-        if (energia.isIgnoringBatteryOptimizations(getPackageName()) || Ajustes.yaPregunto(this, "bateria")) return;
-        try {
-            startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + getPackageName())));
-        } catch (RuntimeException ignorada) {
+    private void abrirAjusteDelSistema(String cual) {
+        Intent i;
+        switch (cual) {
+            case "notificaciones":
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+                            .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                                    new ComponentName(this, Escucha.class).flattenToString());
+                } else {
+                    i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+                }
+                break;
+            case "superponer":
+                i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+                break;
+            case "bateria":
+                i = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + getPackageName()));
+                break;
+            case "alarmas":
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S
+                        || getSystemService(AlarmManager.class).canScheduleExactAlarms()) return;
+                i = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:" + getPackageName()));
+                break;
+            default:
+                i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
         }
-    }
-
-    private EditText campo(LinearLayout caja, String titulo, String valor, String ayuda) {
-        TextView rotulo = new TextView(this);
-        rotulo.setText(titulo);
-        rotulo.setTextColor(0xFFFF8F8F);
-        rotulo.setPadding(0, 24, 0, 4);
-        EditText entrada = new EditText(this);
-        entrada.setText(valor);
-        entrada.setHint(ayuda);
-        entrada.setSingleLine(true);
-        entrada.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        caja.addView(rotulo);
-        caja.addView(entrada);
-        return entrada;
-    }
-
-    private void mostrarConfiguracion() {
-        LinearLayout caja = new LinearLayout(this);
-        caja.setOrientation(LinearLayout.VERTICAL);
-        caja.setPadding(48, 16, 48, 0);
-        EditText servidor = campo(caja, "Dirección de tu PC con Jarvis", Ajustes.servidor(this), "http://192.168.0.10:3700");
-        EditText token = campo(caja, "Token (JARVIS_TOKEN del .env)", Ajustes.token(this), "el mismo que en la PC");
-        EditText picovoice = campo(caja, "AccessKey de Picovoice (opcional)", Ajustes.clavePicovoice(this), "para detectar «Jarvis» sin internet");
-        new AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-                .setTitle("Conectar con tu Jarvis")
-                .setView(caja)
-                .setCancelable(Ajustes.configurado(this))
-                .setPositiveButton("Guardar", (d, w) -> {
-                    Ajustes.guardar(this, servidor.getText().toString(), token.getText().toString(), picovoice.getText().toString());
-                    if (!Ajustes.configurado(this)) {
-                        mostrarConfiguracion();
-                        return;
-                    }
-                    startForegroundService(new Intent(this, Servicio.class).setAction(Servicio.ACCION_REINICIAR));
-                    cargar();
-                    pedirAbrirseSola();
-                })
-                .show();
+        try {
+            startActivity(i);
+        } catch (RuntimeException e) {
+            // Algunos celulares no tienen la pantalla específica: se abre la de la app.
+            try {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())));
+            } catch (RuntimeException ignorada) {
+            }
+        }
     }
 }

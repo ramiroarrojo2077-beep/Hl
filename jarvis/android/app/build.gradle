@@ -10,8 +10,8 @@ android {
         applicationId "com.jarvis.asistente"
         minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
     }
 
     // Misma firma en todas las compilaciones, para poder actualizar la app sin desinstalarla.
@@ -34,6 +34,19 @@ android {
         }
     }
 
+    // La interfaz HUD es la misma que la de la PC: se empaqueta tal cual desde jarvis/public.
+    sourceSets {
+        main {
+            assets.srcDirs += ["../../public"]
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += ["META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.md"]
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -43,4 +56,7 @@ android {
 dependencies {
     // Detecta la palabra "Jarvis" en el celular, sin internet (opcional: necesita una AccessKey gratis de Picovoice).
     implementation "ai.picovoice:porcupine-android:4.0.2"
+    // Correo por IMAP/SMTP (opcional, con contraseña de aplicación).
+    implementation "com.sun.mail:android-mail:1.6.7"
+    implementation "com.sun.mail:android-activation:1.6.7"
 }

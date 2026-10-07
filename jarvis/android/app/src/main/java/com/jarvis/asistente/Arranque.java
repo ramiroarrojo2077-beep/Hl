@@ -8,9 +8,9 @@ import android.content.Intent;
 public class Arranque extends BroadcastReceiver {
     @Override
     public void onReceive(Context contexto, Intent intent) {
-        if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) || !Ajustes.configurado(contexto)) return;
+        if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) return;
         // Android no deja usar el micrófono desde el arranque: la palabra "Jarvis" se activa
-        // la próxima vez que abras la app. Los avisos funcionan desde ya.
+        // la próxima vez que abras la app. Los avisos y recordatorios funcionan desde ya.
         Intent servicio = new Intent(contexto, Servicio.class).putExtra(Servicio.EXTRA_SIN_MICROFONO, true);
         contexto.startForegroundService(servicio);
     }
