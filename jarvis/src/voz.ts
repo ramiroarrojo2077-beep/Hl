@@ -22,28 +22,44 @@ function extension(tipo: string): string {
   return "webm";
 }
 
-export async function transcribir(audio: Buffer, tipo: string): Promise<string> {
+/**
+ * @param pasivo true para buscar la palabra "Jarvis" en segundo plano: sin pistas (Whisper tiende a devolver la pista
+ *   cuando el audio no es claro) y descartando los pedazos que Whisper mismo marcaría como sin voz.
+ */
+export async function transcribir(audio: Buffer, tipo: string, pasivo = false): Promise<string> {
   const mime = tipo.split(";")[0].trim() || "audio/webm";
   if (GROQ_API_KEY) {
     try {
-      return await conGroq(audio, mime);
+      return await conGroq(audio, mime, pasivo);
     } catch (err) {
       if (!GEMINI_API_KEY) throw err;
       console.warn(`[voz] Groq falló, pruebo con Gemini: ${(err as Error).message}`);
     }
   }
-  if (GEMINI_API_KEY) return conGemini(audio, mime);
+  if (GEMINI_API_KEY) return conGemini(audio, mime, pasivo);
   throw new Error("Para entender audio hace falta GROQ_API_KEY o GEMINI_API_KEY.");
 }
 
-async function conGroq(audio: Buffer, mime: string): Promise<string> {
+interface SegmentoWhisper {
+  text?: string;
+  no_speech_prob?: number;
+  avg_logprob?: number;
+  compression_ratio?: number;
+}
+
+// La regla de openai/whisper: probablemente sin voz y con poca confianza, o texto repetitivo.
+function dudoso(s: SegmentoWhisper): boolean {
+  return ((s.no_speech_prob ?? 0) > 0.6 && (s.avg_logprob ?? 0) < -1) || (s.compression_ratio ?? 1) > 2.4;
+}
+
+async function conGroq(audio: Buffer, mime: string, pasivo: boolean): Promise<string> {
   const formulario = new FormData();
   formulario.append("file", new Blob([new Uint8Array(audio)], { type: mime }), `audio.${extension(mime)}`);
   formulario.append("model", "whisper-large-v3-turbo");
   formulario.append("language", "es");
-  formulario.append("response_format", "json");
-  // Ayuda a que escriba bien la palabra clave.
-  formulario.append("prompt", "Jarvis.");
+  // Sin "prompt": con la pista "Jarvis." Whisper la devolvía tal cual con audio poco claro y se abría con cualquier frase.
+  formulario.append("response_format", pasivo ? "verbose_json" : "json");
+  formulario.append("temperature", "0");
   const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
     method: "POST",
     headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
@@ -51,10 +67,18 @@ async function conGroq(audio: Buffer, mime: string): Promise<string> {
     signal: AbortSignal.timeout(60_000),
   });
   if (!res.ok) throw new Error(`Groq HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  return ((await res.json()) as { text?: string }).text?.trim() ?? "";
+  const json = (await res.json()) as { text?: string; segments?: SegmentoWhisper[] };
+  if (pasivo && Array.isArray(json.segments)) {
+    return json.segments
+      .filter((seg) => !dudoso(seg))
+      .map((seg) => seg.text ?? "")
+      .join("")
+      .trim();
+  }
+  return json.text?.trim() ?? "";
 }
 
-async function conGemini(audio: Buffer, mime: string): Promise<string> {
+async function conGemini(audio: Buffer, mime: string, pasivo: boolean): Promise<string> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODELO}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
@@ -64,7 +88,8 @@ async function conGemini(audio: Buffer, mime: string): Promise<string> {
           parts: [
             { inline_data: { mime_type: mime, data: audio.toString("base64") } },
             {
-              text: 'Transcribí exactamente lo que se dice en este audio, en el idioma original. La asistente se llama "Jarvis". Respondé solo con la transcripción, sin comillas ni comentarios. Si no se entiende nada o no habla nadie, respondé vacío.',
+              // Para la palabra clave no se nombra a Jarvis: así no la "oye" donde no está.
+              text: `Transcribí exactamente lo que se dice en este audio, en el idioma original.${pasivo ? "" : ' La asistente se llama "Jarvis".'} Respondé solo con la transcripción, sin comillas ni comentarios. Si no se entiende nada o no habla nadie, respondé vacío.`,
             },
           ],
         },

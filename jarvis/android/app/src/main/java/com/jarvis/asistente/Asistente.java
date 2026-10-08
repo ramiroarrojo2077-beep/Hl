@@ -118,6 +118,13 @@ final class Asistente {
 
     static String chat(Context c, String texto, String canal, IA.AlTexto alTexto, AlHerramienta alHerramienta)
             throws Exception {
+        // Órdenes simples (alarma, linterna, música, llamar…): al instante y sin internet.
+        String rapido = Comandos.resolver(c, texto, alHerramienta);
+        if (rapido != null) {
+            if (alTexto != null) alTexto.delta(rapido);
+            guardarCharla(c, canal, texto, rapido);
+            return rapido;
+        }
         turno.lock();
         try {
             Almacen almacen = Almacen.de(c);
@@ -161,16 +168,25 @@ final class Asistente {
                 }
             }
             String final_ = respuesta.length() == 0 ? "Perdón, no me salió una respuesta. ¿Me lo repetís?" : respuesta.toString();
-            synchronized (almacen) {
-                almacen.historial().put(new JSONObject().put("rol", "user").put("texto", texto).put("fecha", Almacen.ahora()));
-                almacen.historial().put(new JSONObject().put("rol", "assistant").put("texto", final_).put("fecha", Almacen.ahora()));
-            }
-            almacen.guardar();
-            Eventos.emitir("historial", new JSONObject().put("canal", canal).put("pregunta", texto).put("respuesta", final_));
+            guardarCharla(c, canal, texto, final_);
             return final_;
         } finally {
             turno.unlock();
         }
+    }
+
+    static boolean conversando() {
+        return turno.isLocked();
+    }
+
+    private static void guardarCharla(Context c, String canal, String pregunta, String respuesta) throws Exception {
+        Almacen almacen = Almacen.de(c);
+        synchronized (almacen) {
+            almacen.historial().put(new JSONObject().put("rol", "user").put("texto", pregunta).put("fecha", Almacen.ahora()));
+            almacen.historial().put(new JSONObject().put("rol", "assistant").put("texto", respuesta).put("fecha", Almacen.ahora()));
+        }
+        almacen.guardar();
+        Eventos.emitir("historial", new JSONObject().put("canal", canal).put("pregunta", pregunta).put("respuesta", respuesta));
     }
 
     // ---------- Lo que llega solo ----------

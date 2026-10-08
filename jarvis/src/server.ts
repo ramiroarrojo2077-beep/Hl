@@ -178,11 +178,12 @@ const RUTAS: [string, RegExp, Ruta][] = [
   [
     "POST",
     /^\/api\/transcribir$/,
-    async (req, res) => {
+    async (req, res, url) => {
       const audio = await leerCuerpo(req);
       if (audio.length < 1000) throw new ErrorHttp(400, "El audio está vacío.");
+      const pasivo = url.searchParams.get("pasivo") === "1";
       try {
-        responderJson(res, 200, { texto: await transcribir(audio, req.headers["content-type"] ?? "audio/webm") });
+        responderJson(res, 200, { texto: await transcribir(audio, req.headers["content-type"] ?? "audio/webm", pasivo) });
       } catch (err) {
         console.warn(`[voz] ${(err as Error).message}`);
         throw new ErrorHttp(502, "No pude entender el audio. Revisá GROQ_API_KEY o GEMINI_API_KEY.");

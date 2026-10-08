@@ -658,7 +658,15 @@ function sonarAtencion() {
 // ---------- Oído: escucha continua con la palabra "Jarvis" ----------
 
 // Whisper a veces escribe "Jarvis" de otras formas.
-const PALABRA_CLAVE = /\b(jarvis|yarvis|jarbis|yarbis|charvis|jervis|harvis|jarvi|yarvi)\b/i;
+// Solo si una oración EMPIEZA con "Jarvis" (o "che/hola/ey Jarvis"): nombrarla de pasada no la abre. Igual que en el celular.
+const NOMBRES = "jarvis|yarvis|jarbis|yarbis|charvis|sharvis|llarvis|jervis|yervis|harvis|garvis|jarviz|yarviz|javis|jarvi|yarvi|charvi|jarbi|jervi";
+const SEPARA = "[\\s\\p{P}¡¿…«»\\u00a0]";
+const PALABRA_CLAVE = new RegExp(
+  `(?:^|[.!?…]\\s*)${SEPARA}*(?:(?:che|ey|eh|ehh|hey|hola|buenas|oye|oi|ok|okay|okey|bueno|dale|a ver|ah)${SEPARA}+){0,2}(?:${NOMBRES})(?![\\p{L}\\p{N}])`,
+  "u",
+);
+const SOLO_NOMBRES = new RegExp(`^(?:${SEPARA}*(?:${NOMBRES})(?![\\p{L}\\p{N}]))*${SEPARA}*$`, "u");
+const sinTildes = (texto) => texto.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 // Frases que Whisper inventa cuando solo hay ruido.
 const ALUCINACIONES = /amara\.org|gracias por ver|suscr[ií]b|subt[ií]tulos|^\W*$/i;
 const MAX_PASIVAS_POR_MINUTO = 8;
@@ -847,7 +855,7 @@ async function entender(wav, esOrden) {
   if (esOrden) ponerEstado("pensando");
   let texto = "";
   try {
-    texto = ((await api("/api/transcribir", { metodo: "POST", cuerpo: wav, tipo: "audio/wav" })).texto || "").trim();
+    texto = ((await api(esOrden ? "/api/transcribir" : "/api/transcribir?pasivo=1", { metodo: "POST", cuerpo: wav, tipo: "audio/wav" })).texto || "").trim();
   } catch (err) {
     if (esOrden) agregarLinea("jarvis error", err.message);
   }
@@ -855,13 +863,16 @@ async function entender(wav, esOrden) {
   if (ALUCINACIONES.test(texto)) texto = "";
 
   if (!esOrden) {
-    const encontrada = texto.match(PALABRA_CLAVE);
-    // Solo si la nombran al principio ("Jarvis…", "Che Jarvis…"), no en medio de otra charla.
-    if (!encontrada || encontrada.index > 15) return;
+    // Sin tildes y en minúsculas mide lo mismo, así que la posición sirve para cortar el texto original.
+    const normal = sinTildes(texto);
+    const encontrada = normal.match(PALABRA_CLAVE);
+    if (!encontrada) return;
     if (estado && !estado.activa) return;
     escritorio?.mostrar();
-    const resto = texto.slice(encontrada.index + encontrada[0].length).replace(/^[\s,.;:!¡¿?]+/, "").trim();
-    if (resto.replace(/[^\p{L}\p{N}]/gu, "").length >= 3) {
+    const base = normal.length === texto.length ? texto : normal;
+    const resto = base.slice(encontrada.index + encontrada[0].length).replace(/^[\s,.;:!¡¿?…]+/, "").trim();
+    // "Jarvis… Jarvis" es llamarla, no una orden.
+    if (resto.replace(/[^\p{L}\p{N}]/gu, "").length >= 3 && !SOLO_NOMBRES.test(sinTildes(resto))) {
       await preguntar(resto, "voz");
       return;
     }

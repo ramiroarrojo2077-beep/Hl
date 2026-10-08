@@ -43,8 +43,8 @@ final class Dictado {
     private static final Pattern ALUCINACIONES = Pattern.compile(
             "amara\\.org|gracias por ver|suscr[ií]b|subt[ií]tulos|^\\W*$", Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern SOLO_NOMBRE = Pattern.compile("[\\s\\p{Punct}¡¿]*(jarvis|yarvis|jarbis)[\\s\\p{Punct}]*",
-            Pattern.CASE_INSENSITIVE);
+    private static final Pattern SOLO_NOMBRE = Pattern.compile(
+            "(?:[\\s\\p{Punct}¡¿…«»\\u00a0]*(?:" + Oido.NOMBRES + ")\\b)+[\\s\\p{Punct}¡¿…«»\\u00a0]*");
 
     private final Context contexto;
     private Thread hilo;
@@ -105,7 +105,8 @@ final class Dictado {
         }
 
         List<short[]> segmento = null;
-        double silencioFinal = 0;
+        // Bloques realmente silenciosos del final (los únicos que se recortan).
+        int colaFinal = 0;
         try {
             grabadora.startRecording();
             short[] bloque = new short[MUESTRAS_BLOQUE];
@@ -117,6 +118,7 @@ final class Dictado {
             double hablado = 0;
             double silencio = 0;
             int racha = 0;
+            int cola = 0;
             long ultimoNivel = 0;
             while (!cancelado && !Thread.currentThread().isInterrupted()) {
                 int leidas = grabadora.read(bloque, 0, bloque.length);
@@ -156,16 +158,17 @@ final class Dictado {
                     if (rms > umbral * 0.75) {
                         racha++;
                         hablado += duracion;
-                        // Seguís hablando: se reinicia la espera.
+                        cola = 0;
+                        // Seguís hablando: se reinicia la espera. Un pico suelto ni suma ni resta.
                         if (racha >= BLOQUES_DE_VOZ) silencio = 0;
-                        else silencio += duracion;
                     } else {
                         racha = 0;
+                        cola++;
                         silencio += duracion;
                     }
                     double espera = hablado < EMPEZANDO_S ? SILENCIO_AL_EMPEZAR_S : SILENCIO_FINAL_S;
                     if (silencio > espera) {
-                        silencioFinal = silencio;
+                        colaFinal = cola;
                         break;
                     }
                     if (segmento.size() * duracion > MAXIMO_S) break;
@@ -188,13 +191,13 @@ final class Dictado {
             return;
         }
         // El silencio del final no hace falta mandarlo: se deja un poquito.
-        int sobrante = (int) (Math.max(0, silencioFinal - 0.35) * FRECUENCIA / MUESTRAS_BLOQUE);
+        int sobrante = colaFinal - (int) (0.35 * FRECUENCIA / MUESTRAS_BLOQUE);
         while (sobrante-- > 0 && segmento.size() > 10) segmento.remove(segmento.size() - 1);
         oyente.procesando();
         try {
             String texto = Transcriptor.transcribir(contexto, Oido.wav(segmento), "audio/wav").trim();
             // Solo "Jarvis" (o nada entendible) no es una orden.
-            if (ALUCINACIONES.matcher(texto).find() || SOLO_NOMBRE.matcher(texto).matches()) texto = "";
+            if (ALUCINACIONES.matcher(texto).find() || SOLO_NOMBRE.matcher(Oido.sinTildes(texto)).matches()) texto = "";
             if (!cancelado) oyente.resultado(texto);
         } catch (Exception e) {
             if (!cancelado) oyente.error(e.getMessage() == null ? "No te pude entender." : e.getMessage());

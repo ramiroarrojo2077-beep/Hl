@@ -136,14 +136,15 @@ final class Transcriptor {
     }
 
     /**
-     * Un pedazo que probablemente no es voz real o que Whisper inventó (mismos criterios que Whisper: sin voz con poca
-     * confianza, confianza muy baja o texto repetitivo).
+     * Un pedazo que Whisper mismo descartaría: probablemente sin voz y con poca confianza, o texto repetitivo (la regla
+     * de openai/whisper; con una sola palabra corta la confianza puede ser baja aunque se haya dicho bien).
      */
     static boolean dudoso(JSONObject segmento) {
         double sinVoz = segmento.optDouble("no_speech_prob", 0);
         double confianza = segmento.optDouble("avg_logprob", 0);
         double compresion = segmento.optDouble("compression_ratio", 1);
-        return (sinVoz > 0.6 && confianza < -1.0) || sinVoz > 0.85 || confianza < -1.5 || compresion > 2.4;
+        Log.d(TAG, "segmento: sinVoz=" + sinVoz + " confianza=" + confianza + " compresion=" + compresion);
+        return (sinVoz > 0.6 && confianza < -1.0) || compresion > 2.4;
     }
 
     private static void campo(ByteArrayOutputStream cuerpo, CharSequence limite, String nombre, String valor) {

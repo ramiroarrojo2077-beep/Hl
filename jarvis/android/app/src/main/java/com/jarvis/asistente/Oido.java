@@ -42,11 +42,22 @@ final class Oido {
     private static final int FRECUENCIA = 16000;
     private static final int MUESTRAS_BLOQUE = 480; // 30 ms
     private static final int MAX_PASIVAS_POR_MINUTO = 8;
-    // Solo cuenta si la frase EMPIEZA con "Jarvis" (o "che/hola/ey Jarvis"): nombrarla de pasada no la abre.
+    private static final int MAX_CORTAS_POR_MINUTO = 20;
+    // Solo cuenta si una oración EMPIEZA con "Jarvis" (o "che/hola/ey Jarvis"): nombrarla de pasada no la abre. Se
+    // aplica sobre el texto sin tildes ni mayúsculas.
+    static final String NOMBRES = "jarvis|yarvis|jarbis|yarbis|charvis|sharvis|llarvis|jervis|yervis|harvis|garvis|jarviz|"
+            + "yarviz|javis|jarvi|yarvi|charvi|jarbi|jervi";
     private static final Pattern PALABRA_CLAVE = Pattern.compile(
-            "^[\\s\\p{Punct}¡¿]*(?:(?:che|ey|eh|hey|hola|oye|oi|ok|okay|okey|bueno|dale)[\\s,.!¡]+)?"
-                    + "(jarvis|yarvis|jarbis|yarbis|charvis|jervis|harvis|garvis|jarviz|yarviz|jarvi|yarvi)\\b",
-            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+            "(?:^|[.!?…]\\s*)[\\s\\p{Punct}¡¿…«»\"'\\u00a0]*"
+                    + "(?:(?:che|ey|eh|ehh|hey|hola|buenas|oye|oi|ok|okay|okey|bueno|dale|a ver|ah)[\\s\\p{Punct}¡¿…«»\\u00a0]+){0,2}"
+                    + "(" + NOMBRES + ")\\b");
+    private static final Pattern SOLO_NOMBRES = Pattern.compile(
+            "(?:[\\s\\p{Punct}¡¿…«»\\u00a0]*(?:" + NOMBRES + ")\\b)*[\\s\\p{Punct}¡¿…«»\\u00a0]*");
+
+    static String sinTildes(String texto) {
+        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase(java.util.Locale.ROOT);
+    }
+
     private static final Pattern ALUCINACIONES = Pattern.compile(
             "amara\\.org|gracias por ver|suscr[ií]b|subt[ií]tulos", Pattern.CASE_INSENSITIVE);
 
@@ -59,6 +70,9 @@ final class Oido {
     private volatile boolean activo;
     private volatile boolean ocupado;
     private final ArrayDeque<Long> pasivas = new ArrayDeque<>();
+    private final ArrayDeque<Long> cortas = new ArrayDeque<>();
+    // Si Groq dice que se acabó el cupo (429), descansa un rato en vez de seguir gastando pedidos.
+    private volatile long sinCupoHasta;
 
     Oido(Context c, Oyente o) {
         contexto = c.getApplicationContext();
@@ -192,9 +206,12 @@ final class Oido {
                         // Para la palabra clave alcanza con frases cortas.
                         // Un poco más de un segundo: si decís "Jarvis, poné…" con una pausa corta, no te corta la orden.
                         if (silencio > 1.0 || segmento.size() * duracion > 10) {
-                            if (hablado >= 0.3) {
-                                if (Transcriptor.disponible(contexto) && puedeTranscribir()) enviar(segmento);
-                                else ruido *= 1.5;
+                            // Un "Jarvis" rápido o de lejos tiene poca voz fuerte: con 0,2 s alcanza (Whisper filtra el ruido).
+                            if (hablado >= 0.2) {
+                                // Los cortos ("Jarvis", "Jarvis, poné música") pasan siempre; el tope es para la charla o la tele.
+                                boolean largo = segmento.size() * duracion > 3.5;
+                                if (Transcriptor.disponible(contexto) && puedeTranscribir(largo)) enviar(segmento);
+                                else if (largo) ruido *= 1.5;
                             }
                             segmento = null;
                             voz = 0;
@@ -210,8 +227,15 @@ final class Oido {
     }
 
     // Si hay mucho ruido (tele, música), se pone menos sensible en vez de gastar cupo.
-    private boolean puedeTranscribir() {
+    private boolean puedeTranscribir(boolean largo) {
         long ahora = System.currentTimeMillis();
+        if (ahora < sinCupoHasta) return false;
+        if (!largo) {
+            while (!cortas.isEmpty() && ahora - cortas.peekFirst() > 60_000) cortas.removeFirst();
+            if (cortas.size() >= MAX_CORTAS_POR_MINUTO) return false;
+            cortas.addLast(ahora);
+            return true;
+        }
         while (!pasivas.isEmpty() && ahora - pasivas.peekFirst() > 60_000) pasivas.removeFirst();
         if (pasivas.size() >= MAX_PASIVAS_POR_MINUTO) return false;
         pasivas.addLast(ahora);
@@ -224,14 +248,21 @@ final class Oido {
         red.execute(() -> {
             try {
                 String texto = Transcriptor.transcribirPasivo(contexto, wav).trim();
-                Matcher m = PALABRA_CLAVE.matcher(texto);
+                // Sin tildes y en minúsculas tiene el mismo largo (NFD + sacar marcas solo quita las tildes), así que
+                // las posiciones sirven para cortar el texto original.
+                String normal = sinTildes(texto);
+                Matcher m = PALABRA_CLAVE.matcher(normal);
                 if (!ALUCINACIONES.matcher(texto).find() && m.find()) {
-                    String resto = texto.substring(m.end()).replaceAll("^[\\s,.;:!¡¿?]+", "").trim();
-                    String orden = resto.replaceAll("[^\\p{L}\\p{N}]", "").length() >= 3 ? resto : null;
+                    String base = normal.length() == texto.length() ? texto : normal;
+                    String resto = base.substring(m.end()).replaceAll("^[\\s,.;:!¡¿?…]+", "").trim();
+                    // "Jarvis… Jarvis" es llamarla, no una orden.
+                    String orden = resto.replaceAll("[^\\p{L}\\p{N}]", "").length() >= 3
+                            && !SOLO_NOMBRES.matcher(sinTildes(resto)).matches() ? resto : null;
                     principal.post(() -> avisar(orden));
                 }
             } catch (Exception e) {
                 Log.w(TAG, "No pude transcribir: " + e.getMessage());
+                if (e.getMessage() != null && e.getMessage().contains("HTTP 429")) sinCupoHasta = System.currentTimeMillis() + 90_000;
             } finally {
                 ocupado = false;
             }

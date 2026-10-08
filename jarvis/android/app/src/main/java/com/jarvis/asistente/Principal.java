@@ -67,7 +67,8 @@ public class Principal extends Activity {
         setContentView(web);
         cargar();
         pedirPermisos();
-        procesar(getIntent());
+        // Si Android la recrea (desde Recientes o después de cerrar el proceso), no repite el aviso ni se pone a escuchar.
+        if (guardado == null && (getIntent().getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) procesar(getIntent());
     }
 
     @Override
@@ -199,7 +200,8 @@ public class Principal extends Activity {
             estado("hablando");
             Voz.de(this).hablar(decir, () -> {
                 estado(null);
-                if (escucharDespues) escuchar();
+                // Si saliste de la app mientras te hablaba, no se queda escuchando en segundo plano.
+                if (escucharDespues && visible) escuchar();
                 else ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
             });
         } else if (orden != null) {
@@ -336,7 +338,11 @@ public class Principal extends Activity {
     private class Puente {
         @JavascriptInterface
         public void escuchar() {
-            Principal.this.escuchar();
+            // La página la pide al tocar el reactor o después de una pregunta: solo con la app a la vista.
+            runOnUiThread(() -> {
+                if (visible) Principal.this.escuchar();
+                else ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
+            });
         }
 
         @JavascriptInterface

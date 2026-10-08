@@ -463,7 +463,9 @@ final class ServidorLocal {
         } else if (m.equals("POST") && r.equals("/api/transcribir")) {
             if (p.cuerpo.length < 1000) throw new ErrorHttp(400, "El audio está vacío.");
             String tipo = p.cabeceras.getOrDefault("content-type", "audio/wav");
-            responderJson(out, 200, new JSONObject().put("texto", conError502(() -> Transcriptor.transcribir(c, p.cuerpo, tipo))));
+            boolean pasivo = "1".equals(p.parametros.get("pasivo"));
+            responderJson(out, 200, new JSONObject().put("texto", conError502(() -> pasivo
+                    ? Transcriptor.transcribirPasivo(c, p.cuerpo) : Transcriptor.transcribir(c, p.cuerpo, tipo))));
         } else if (m.equals("POST") && r.equals("/api/hablar")) {
             String texto = p.json().optString("texto", "").trim();
             if (texto.isEmpty()) throw new ErrorHttp(400, "Falta \"texto\".");
