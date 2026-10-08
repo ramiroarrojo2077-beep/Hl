@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "jarvis/android/**"
+      # La interfaz del celular se empaqueta desde jarvis/public.
+      - "jarvis/public/**"
       - ".github/workflows/jarvis-apk.yml"
   workflow_dispatch:
 

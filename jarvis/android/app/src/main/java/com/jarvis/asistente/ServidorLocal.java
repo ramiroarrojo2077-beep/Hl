@@ -515,8 +515,13 @@ final class ServidorLocal {
             responderJson(out, 200, correo(c, "1".equals(p.parametros.get("refrescar"))));
         } else if (m.equals("GET") && r.equals("/api/ajustes")) {
             responderJson(out, 200, Ajustes.comoJson(c));
+        } else if (m.equals("POST") && r.equals("/api/modelo/descargar")) {
+            Local.asegurar(c, true);
+            Eventos.emitir("estado", null);
+            responderJson(out, 200, Local.estado(c));
         } else if (m.equals("POST") && r.equals("/api/ajustes")) {
             Ajustes.actualizar(c, p.json());
+            Local.asegurar(c, false);
             Correo.iniciar(c);
             Servicio.alCambiarAjustes(c);
             Asistente.programar(c);

@@ -290,7 +290,7 @@ function filaConexion(iconoId, nombre, detalle, clasePunto, extra) {
 function dibujarEstado(e) {
   estado = e;
   const filas = [];
-  const ia = e.ia.find((p) => p.disponible) ?? e.ia[0];
+  const ia = e.ia.find((p) => p.disponible && !p.local) ?? e.ia.find((p) => p.disponible) ?? e.ia[0];
   filas.push(
     filaConexion(
       "i-jarvis",
@@ -299,6 +299,21 @@ function dibujarEstado(e) {
       ia ? (ia.disponible ? "ok" : "espera") : "mal",
     ),
   );
+  const local = e.ia.find((p) => p.local);
+  if (local && local.modelo !== "apagado") {
+    const mb = local.bytes ? ` de ${Math.round(local.bytes / 1e6)} MB` : "";
+    const detalle = local.disponible
+      ? "Lista: responde sin internet"
+      : local.descargando
+        ? `Bajando${mb}… ${local.progreso}%`
+        : local.error || "Falta bajarla (por Wi-Fi)";
+    const bajar = !local.disponible && !local.descargando
+      ? el("button", { type: "button", class: "enlace-boton", onclick: () => api("/api/modelo/descargar", { metodo: "POST" }).catch((err) => agregarLinea("jarvis error", err.message)) }, "BAJAR")
+      : undefined;
+    const fila = filaConexion("i-jarvis", local.modelo.replace(" (en el celular)", " · en el celular"), detalle, local.disponible ? "ok" : local.descargando ? "espera" : "mal", bajar);
+    if (local.descargando) fila.append(el("div", { class: "barra progreso-modelo" }, el("span", { style: `width:${local.progreso}%` })));
+    filas.push(fila);
+  }
   for (const cuenta of e.email) {
     const clase = cuenta.estado === "conectado" ? "ok" : cuenta.estado === "conectando" ? "espera" : "mal";
     filas.push(
@@ -386,6 +401,8 @@ const CAMPOS_AJUSTES = [
   ["elevenlabs", "Clave de ElevenLabs (voz natural)", "password", "https://elevenlabs.io"],
   ["elevenlabsVoz", "ID de voz de ElevenLabs", "text", "Vacío = elige sola una voz femenina en español"],
   ["picovoice", "AccessKey de Picovoice", "password", "https://console.picovoice.ai · detecta «Jarvis» sin internet"],
+  ["iaLocal", "IA del celular (Qwen, sin internet)", "select:auto,qwen2.5-1.5b,qwen3-0.6b,no", "auto = elige según la memoria del celular · responde sin claves y cuando se acaba el cupo de Gemini"],
+  ["descargaConDatos", "Bajar Qwen con datos móviles", "select:no,si", "no = espera Wi-Fi (pesa entre 0,6 y 1,6 GB)"],
   ["voz", "Voz de Jarvis", "select:elena,tomas,dalia,paloma,elvira,gemini,elevenlabs,sistema", "elena = argentina natural (gratis) · tomas = argentino · gemini usa tu clave de Gemini"],
   ["emailUsuario", "Tu Gmail (para que entre directo a tu correo)", "email", "vos@gmail.com"],
   ["emailClave", "Contraseña de aplicación de ese Gmail", "password", "16 letras · se crea en https://myaccount.google.com/apppasswords (hace falta verificación en 2 pasos)"],

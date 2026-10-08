@@ -10,8 +10,12 @@ android {
         applicationId "com.jarvis.asistente"
         minSdk 26
         targetSdk 35
-        versionCode 5
-        versionName "2.2"
+        versionCode 6
+        versionName "2.3"
+        // Los celulares de hoy son de 64 bits: el motor de Qwen solo trae arm64 (y así el APK no pesa el doble).
+        ndk {
+            abiFilters "arm64-v8a"
+        }
     }
 
     // Misma firma en todas las compilaciones, para poder actualizar la app sin desinstalarla.
@@ -64,4 +68,8 @@ dependencies {
     // Correo por IMAP/SMTP (opcional, con contraseña de aplicación).
     implementation "com.sun.mail:android-mail:1.6.7"
     implementation "com.sun.mail:android-activation:1.6.7"
+    // Qwen dentro del celular (LiteRT-LM de Google): responde sin internet y cuando se acaba el cupo de la nube.
+    implementation "com.google.ai.edge.litertlm:litertlm-android:0.18.0"
+    // La variante en streaming necesita esta versión (o más nueva) de coroutines.
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
 }

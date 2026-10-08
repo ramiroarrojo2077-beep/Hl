@@ -41,13 +41,17 @@ final class Ajustes {
     static final String EMAIL_CLAVE = "emailClave";
     // "si" = Jarvis revisa sola tu correo, agenda y mensajes cada 30 minutos y te avisa lo importante.
     static final String AUTONOMO = "autonomo";
+    // IA dentro del celular (Qwen): auto | qwen2.5-1.5b | qwen3-0.6b | no
+    static final String IA_LOCAL = "iaLocal";
+    // "si" = baja el modelo del celular también con datos móviles (si no, espera Wi-Fi).
+    static final String DESCARGA_CON_DATOS = "descargaConDatos";
 
     /** Claves que nunca se devuelven completas a la interfaz. */
     static final String[] SECRETOS = {GEMINI, GROQ, OPENROUTER, ELEVENLABS, TAVILY, PICOVOICE, EMAIL_CUENTAS, EMAIL_CLAVE};
     static final String[] TODAS = {
         USUARIO, CIUDAD, PAIS, GEMINI, GEMINI_MODELO, GROQ, GROQ_MODELO, OPENROUTER, OPENROUTER_MODELO,
         ELEVENLABS, ELEVENLABS_VOZ, ELEVENLABS_MODELO, TAVILY, PICOVOICE, EMAIL_CUENTAS, AVISAR_DESDE,
-        RESUMEN_DIARIO, RAZONAMIENTO, VOZ, EMAIL_USUARIO, EMAIL_CLAVE, AUTONOMO,
+        RESUMEN_DIARIO, RAZONAMIENTO, VOZ, EMAIL_USUARIO, EMAIL_CLAVE, AUTONOMO, IA_LOCAL, DESCARGA_CON_DATOS,
     };
     private static final String OCULTO = "••••";
 
@@ -66,6 +70,8 @@ final class Ajustes {
             case RAZONAMIENTO: return "low";
             case VOZ: return "elena";
             case AUTONOMO: return "si";
+            case IA_LOCAL: return "auto";
+            case DESCARGA_CON_DATOS: return "no";
             case RESUMEN_DIARIO: return "08:00";
             default: return "";
         }

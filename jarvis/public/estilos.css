@@ -672,3 +672,7 @@ body.escritorio.completo .barra-superior { background: linear-gradient(rgba(10, 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
+
+/* Descarga de Qwen */
+.conexiones li .progreso-modelo { grid-column: 1 / -1; height: 3px; margin-top: 4px; }
+.conexiones li .progreso-modelo span { display: block; height: 100%; background: var(--rojo); box-shadow: 0 0 8px var(--brillo); transition: width 0.4s; }

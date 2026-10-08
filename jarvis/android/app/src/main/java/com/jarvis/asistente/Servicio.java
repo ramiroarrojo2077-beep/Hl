@@ -129,6 +129,7 @@ public class Servicio extends Service {
         ServidorLocal.iniciar(this);
         Correo.iniciar(this);
         Asistente.programar(this);
+        Local.asegurar(this, false);
         actualizarOido();
         return START_STICKY;
     }

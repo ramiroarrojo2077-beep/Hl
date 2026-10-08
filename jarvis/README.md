@@ -78,6 +78,10 @@ Decís «Jarvis» y se abre escuchando. Cuando te llega algo importante, se abre
 - Rutinas: «todos los días a las 9 revisá mis mails y decime lo importante» y lo hace sola cada día.
 - Nunca envía nada sin tu «sí»: solo prepara borradores.
 
+**IA dentro del celular (Qwen)**: sin ninguna clave, Jarvis responde con Qwen, que corre en el propio celular y sin internet. La primera vez se baja solo por Wi-Fi: Qwen 2.5 1.5B (1,6 GB) en celulares con 6 GB de RAM o más, o Qwen 3 0.6B (0,6 GB) en los demás. Si cargás la clave de Gemini (o Groq), responde Gemini; cuando se acaba el cupo o no hay internet, pasa solo a Qwen, así nunca se queda sin responder. Se elige en Ajustes → «IA del celular».
+
+**Comandos al instante**: hora, fecha, alarmas («poné una alarma a las 8 menos cuarto»), temporizadores, linterna, volumen, música, «llamá a mamá» y «abrí WhatsApp» se resuelven en el celular sin IA ni internet.
+
 **Correo directo**: en Ajustes poné tu Gmail y una [contraseña de aplicación](https://myaccount.google.com/apppasswords) (requiere verificación en 2 pasos). Jarvis entra directo a tu bandeja por IMAP, sin depender de las notificaciones.
 
 **Voz y oído propios**: voz neural gratis de Microsoft (Elena o Tomás de Argentina, y otras) o Gemini/ElevenLabs. Con la clave de Groq escucha con su propio oído (Whisper): sin la ventanita ni el pitido de Google.

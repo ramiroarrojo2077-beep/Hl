@@ -212,6 +212,8 @@ final class Autonomia {
     }
 
     static void ciclo(Context c) {
+        Local.liberarSiNoSeUsa();
+        Local.asegurar(c, false);
         if (!Acciones.activa(c)) return;
         try {
             avisarEventos(c);
@@ -337,7 +339,9 @@ final class Autonomia {
             if (!"si".equals(Ajustes.texto(c, Ajustes.AUTONOMO))) return "";
             int h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
             if (h < 8 || h >= 23) return "";
-            if (ahora - almacen.numero("ultimaRevision") < REVISION_MS - 60_000L) return "";
+            // Con Qwen en el celular cada revisión gasta batería: cada 2 horas en vez de 30 minutos.
+            long cada = IA.soloLocal(c) ? 4 * REVISION_MS : REVISION_MS;
+            if (ahora - almacen.numero("ultimaRevision") < cada - 60_000L) return "";
         }
         almacen.numero("ultimaRevision", ahora);
         String usuario = Ajustes.texto(c, Ajustes.USUARIO);

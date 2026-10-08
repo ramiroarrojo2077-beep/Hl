@@ -45,7 +45,7 @@ final class IA {
     private static final int MAX_RESPUESTA = 8 * 1024 * 1024;
     private static final int MAX_DETALLE = 16 * 1024;
     private static final String SIN_IA =
-            "No hay ninguna IA configurada. Abrí Ajustes y pegá tu clave gratis de Gemini o de Groq.";
+            "No hay ninguna IA configurada. Prendé la IA del celular (Qwen) en Ajustes o pegá tu clave gratis de Gemini o de Groq.";
     private static final String CANCELADA = "Se canceló la respuesta.";
     // Gemini dice en el cuerpo cuánto esperar cuando se queda sin cupo ("retryDelay": "33s").
     private static final Pattern ESPERA_GEMINI = Pattern.compile("\"retryDelay\"\\s*:\\s*\"(\\d+(?:\\.\\d+)?)s\"");
@@ -129,9 +129,14 @@ final class IA {
         return hasta != null && hasta > ahora;
     }
 
-    /** ¿Hay al menos una IA con clave? */
+    /** ¿Hay al menos una IA lista (con clave en la nube, o Qwen ya bajado al celular)? */
     static boolean configurada(Context c) {
-        return !configurados(c).isEmpty();
+        return !configurados(c).isEmpty() || Local.listo(c);
+    }
+
+    /** Sin claves de la nube: todo lo piensa Qwen en el celular (más lento y gasta batería: se usa con medida). */
+    static boolean soloLocal(Context c) {
+        return configurados(c).isEmpty();
     }
 
     /** [{nombre, modelo, disponible}] en orden de uso. */
@@ -147,6 +152,7 @@ final class IA {
             } catch (JSONException ignorada) {
             }
         }
+        if (Local.modelo(c) != null) lista.put(Local.estado(c));
         return lista;
     }
 
@@ -161,8 +167,12 @@ final class IA {
     static Respuesta completar(Context c, JSONArray mensajes, JSONArray herramientas, boolean json, AlTexto alTexto)
             throws ErrorIA {
         List<Proveedor> todos = configurados(c);
-        if (todos.isEmpty()) throw new ErrorIA(SIN_IA, 0);
         if (mensajes == null) mensajes = new JSONArray();
+        // Sin claves de la nube: responde Qwen en el celular.
+        if (todos.isEmpty()) {
+            if (Local.modelo(c) == null) throw new ErrorIA(SIN_IA, 0);
+            return Local.completar(c, mensajes, herramientas, json, alTexto);
+        }
 
         // Los que están en pausa van al final, sin perder el orden de preferencia.
         long ahora = System.currentTimeMillis();
@@ -209,6 +219,15 @@ final class IA {
             }
         }
         if (vacia != null) return vacia;
+        // Se acabó el cupo, no hay internet o la clave falló: responde Qwen en el celular, así nunca te quedás sin respuesta.
+        if (Local.modelo(c) != null && !Thread.currentThread().isInterrupted()) {
+            try {
+                Log.i(TAG, "Las IA de la nube no respondieron: paso a Qwen en el celular");
+                return Local.completar(c, mensajes, herramientas, json, alTexto);
+            } catch (ErrorIA local) {
+                fallas.add(local.getMessage());
+            }
+        }
         if (ultimo == null) throw new ErrorIA("Ninguna IA respondió.", 0);
         if (fallas.size() <= 1) throw ultimo;
         throw new ErrorIA("Ninguna IA respondió. " + String.join(" ", fallas), ultimo.estado, ultimo.esperarMs);
