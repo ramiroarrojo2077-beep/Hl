@@ -183,8 +183,8 @@ final class Herramientas {
                         + "contestarle a alguien que te escribió, usá responder_aviso.",
                 (c, a, u) -> proponerWhatsapp(c, texto(a, "numero"), texto(a, "nombre"), texto(a, "texto")))
                 .parametro("numero", "string",
-                        "Número con código de país, solo dígitos (ej: 5491112345678; en Argentina 549 + característica sin 0 + "
-                                + "número sin 15)")
+                        "Nombre de un contacto (ej: Juan) o número con código de país, solo dígitos (ej: 5491112345678; en "
+                                + "Argentina 549 + característica sin 0 + número sin 15)")
                 .parametro("nombre", "string", "Nombre de la persona, opcional")
                 .parametro("texto", "string", "Mensaje")
                 .requeridos("numero", "texto");
@@ -229,10 +229,129 @@ final class Herramientas {
                 .requeridos("segundos");
 
         agregar("llamar",
-                "Abre el teléfono con el número marcado para que el usuario toque llamar. Nunca llama sola: el usuario confirma.",
-                (c, a, u) -> llamar(c, texto(a, "numero")))
-                .parametro("numero", "string", "Número de teléfono (ej: 1123456789 o +5491123456789)")
-                .requeridos("numero");
+                "Llama a un contacto o número. Si el usuario lo pidió con sus palabras ('llamá a mamá') y dio permiso de "
+                        + "llamadas, llama directo; si no, abre el teléfono con el número marcado.",
+                (c, a, u) -> Telefono.llamar(c, texto(a, "a_quien"), sinAcentos(u).contains("llam")))
+                .parametro("a_quien", "string", "Nombre del contacto (ej: Mamá) o número de teléfono")
+                .requeridos("a_quien");
+
+        agregar("buscar_contacto", "Busca en los contactos del celular por nombre: teléfonos y mails.",
+                (c, a, u) -> Telefono.buscarContactos(c, texto(a, "nombre")))
+                .parametro("nombre", "string", "Nombre o parte del nombre")
+                .requeridos("nombre");
+
+        agregar("proponer_sms",
+                "Prepara un SMS para un contacto o número. NO lo envía: al aprobarlo se abre la app de mensajes con el texto listo.",
+                (c, a, u) -> proponerSms(c, texto(a, "a_quien"), texto(a, "texto")))
+                .parametro("a_quien", "string", "Nombre del contacto o número")
+                .parametro("texto", "string", "Mensaje")
+                .requeridos("a_quien", "texto");
+
+        agregar("ver_agenda",
+                "Eventos del calendario del celular (el de Google incluido): hoy, mañana o los próximos días.",
+                (c, a, u) -> verAgenda(c, numero(a, "dias", 1, 31), texto(a, "desde")))
+                .parametro("desde", "string", "Fecha local ISO 8601 desde la que mirar (por defecto hoy)")
+                .parametro("dias", "integer", "Cuántos días mirar, por defecto 1 (máximo 31)");
+
+        agregar("crear_evento", "Crea un evento en el calendario del celular (se sincroniza con Google Calendar).",
+                (c, a, u) -> crearEvento(c, texto(a, "titulo"), texto(a, "inicio"), texto(a, "fin"), texto(a, "lugar"), texto(a, "detalle")))
+                .parametro("titulo", "string", "Título del evento")
+                .parametro("inicio", "string", "Fecha y hora local ISO 8601, ej: 2026-10-09T15:00:00")
+                .parametro("fin", "string", "Fecha y hora local de fin, opcional (por defecto 1 hora)")
+                .parametro("lugar", "string", "Lugar, opcional")
+                .parametro("detalle", "string", "Descripción, opcional")
+                .requeridos("titulo", "inicio");
+
+        agregar("musica", "Controla la música o el video que está sonando en el celular.",
+                (c, a, u) -> Telefono.musica(c, texto(a, "accion")))
+                .parametro("accion", "string", "reproducir | pausar | siguiente | anterior")
+                .requeridos("accion");
+
+        agregar("reproducir", "Busca y abre una canción, artista, playlist o video en Spotify o YouTube.",
+                (c, a, u) -> Telefono.reproducir(c, texto(a, "que"), texto(a, "app")))
+                .parametro("que", "string", "Qué buscar, ej: 'Soda Stereo' o 'música para concentrarse'")
+                .parametro("app", "string", "spotify (por defecto) o youtube")
+                .requeridos("que");
+
+        agregar("volumen", "Sube, baja o fija el volumen de la música, o pone el celular en vibrar o con sonido.",
+                (c, a, u) -> Telefono.volumen(c, texto(a, "accion"), entero(a.opt("nivel"))))
+                .parametro("accion", "string", "subir | bajar | silenciar | vibrar | sonido (vacío si se usa nivel)")
+                .parametro("nivel", "integer", "Volumen de la música de 0 a 100, opcional");
+
+        agregar("linterna", "Prende o apaga la linterna del celular.",
+                (c, a, u) -> Telefono.linterna(c, !esFalso(a.opt("prender"))))
+                .parametro("prender", "boolean", "true = prender, false = apagar")
+                .requeridos("prender");
+
+        agregar("navegar", "Abre Google Maps navegando hacia un lugar.",
+                (c, a, u) -> Telefono.navegar(c, texto(a, "destino"), texto(a, "modo")))
+                .parametro("destino", "string", "Dirección o lugar")
+                .parametro("modo", "string", "auto (por defecto) | caminando | bici | transporte")
+                .requeridos("destino");
+
+        agregar("camara", "Abre la cámara para sacar una foto o grabar un video.",
+                (c, a, u) -> Telefono.camara(c, !esFalso(a.opt("video")) && a.has("video")))
+                .parametro("video", "boolean", "true = video, por defecto foto");
+
+        agregar("copiar", "Copia un texto al portapapeles del celular (para pegarlo en otra app).",
+                (c, a, u) -> Telefono.copiar(c, texto(a, "texto")))
+                .parametro("texto", "string", "Texto a copiar")
+                .requeridos("texto");
+
+        agregar("ajustes_celular",
+                "Abre un ajuste del celular para que el usuario lo cambie (Android no deja que las apps prendan el wifi solas).",
+                (c, a, u) -> Telefono.ajustes(c, texto(a, "cual")))
+                .parametro("cual", "string", "wifi | bluetooth | datos | nfc | volumen | pantalla | bateria | ubicacion | no_molestar")
+                .requeridos("cual");
+    }
+
+    private static String sinAcentos(String texto) {
+        return java.text.Normalizer.normalize(texto == null ? "" : texto, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
+    }
+
+    private static String proponerSms(Context c, String aQuien, String texto) throws Exception {
+        if (texto.isEmpty()) throw new Falla("Falta el mensaje.");
+        String numero = aQuien;
+        String nombre = aQuien;
+        if (LETRAS.matcher(aQuien).find()) {
+            JSONObject contacto = Telefono.telefonoDe(c, aQuien);
+            if (contacto == null) throw new Falla("No encontré a " + aQuien + " en tus contactos, o no tiene teléfono.");
+            numero = contacto.getString("numero");
+            nombre = contacto.getString("nombre");
+        }
+        if (numero.replaceAll("\\D", "").length() < 3) throw new Falla("Ese número no parece válido.");
+        JSONObject datos = new JSONObject()
+                .put("canal", "sms_nuevo")
+                .put("para", numero.replaceAll("[^0-9+]", ""))
+                .put("paraNombre", nombre)
+                .put("app", "SMS")
+                .put("texto", texto)
+                .put("motivo", "Pedido del usuario");
+        return Acciones.describirPropuesta(c, Acciones.crearPropuesta(c, datos));
+    }
+
+    private static JSONObject verAgenda(Context c, int dias, String desdeTexto) throws Exception {
+        java.util.Calendar inicio = java.util.Calendar.getInstance();
+        long desde = Almacen.leerIso(desdeTexto);
+        if (desde > 0) inicio.setTimeInMillis(desde);
+        inicio.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        inicio.set(java.util.Calendar.MINUTE, 0);
+        inicio.set(java.util.Calendar.SECOND, 0);
+        inicio.set(java.util.Calendar.MILLISECOND, 0);
+        long hasta = inicio.getTimeInMillis() + dias * 86_400_000L;
+        JSONArray eventos = Telefono.agenda(c, inicio.getTimeInMillis(), hasta);
+        JSONObject r = new JSONObject().put("eventos", eventos);
+        if (eventos.length() == 0) r.put("nota", "No hay eventos en ese período.");
+        return r;
+    }
+
+    private static JSONObject crearEvento(Context c, String titulo, String inicio, String fin, String lugar, String detalle)
+            throws Exception {
+        long desde = Almacen.leerIso(inicio);
+        if (desde < 0) throw new Falla("No entendí la fecha del evento: usá ISO 8601, ej: 2026-10-09T15:00:00.");
+        long hasta = Almacen.leerIso(fin);
+        return Telefono.crearEvento(c, titulo, desde, hasta, lugar, detalle);
     }
 
     // ---------- Definiciones y ejecución ----------
@@ -757,6 +876,13 @@ final class Herramientas {
     }
 
     private static String proponerWhatsapp(Context c, String numero, String nombre, String texto) throws Exception {
+        // Si dijo un nombre, se busca en los contactos.
+        if (!numero.isEmpty() && LETRAS.matcher(numero).find()) {
+            JSONObject contacto = Telefono.telefonoDe(c, numero);
+            if (contacto == null) throw new Falla("No encontré a " + numero + " en tus contactos, o no tiene teléfono.");
+            if (nombre.isEmpty()) nombre = contacto.getString("nombre");
+            numero = Telefono.internacional(c, contacto.getString("numero"));
+        }
         if (numero.isEmpty() || LETRAS.matcher(numero).find()) {
             throw new Falla("Necesito el número con código de país (ej: 5491112345678). Si esa persona te escribió hace "
                     + "poco, respondé su aviso con responder_aviso.");
@@ -806,6 +932,8 @@ final class Herramientas {
                 .put("para", p.optString("paraNombre"));
         if ("whatsapp_nuevo".equals(p.optString("canal"))) {
             r.put("nota", "Abrí WhatsApp con el mensaje escrito: falta que el usuario toque enviar.");
+        } else if (!p.optString("nota").isEmpty()) {
+            r.put("nota", p.optString("nota"));
         }
         return r;
     }

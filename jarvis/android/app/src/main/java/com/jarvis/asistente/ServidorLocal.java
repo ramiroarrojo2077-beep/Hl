@@ -70,7 +70,13 @@ final class ServidorLocal {
     static synchronized void iniciar(Context c) {
         if (socket != null && !socket.isClosed()) return;
         contexto = c.getApplicationContext();
-        InetAddress local = InetAddress.getLoopbackAddress();
+        InetAddress local;
+        try {
+            // En Android getLoopbackAddress() devuelve ::1 (IPv6) y la pantalla se conecta a 127.0.0.1.
+            local = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
+        } catch (IOException e) {
+            return;
+        }
         try {
             try {
                 socket = new ServerSocket(3700, 50, local);
@@ -465,6 +471,18 @@ final class ServidorLocal {
                 throw new ErrorHttp(503, "La voz de ElevenLabs falló; usá la del sistema.");
             }
             responder(out, 200, "audio/mpeg", audio);
+        } else if (m.equals("GET") && r.equals("/api/agenda")) {
+            java.util.Calendar hoy = java.util.Calendar.getInstance();
+            hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            hoy.set(java.util.Calendar.MINUTE, 0);
+            hoy.set(java.util.Calendar.SECOND, 0);
+            JSONArray eventos;
+            try {
+                eventos = Telefono.agenda(c, hoy.getTimeInMillis(), hoy.getTimeInMillis() + 3 * 86_400_000L);
+            } catch (Exception e) {
+                eventos = new JSONArray();
+            }
+            responderJson(out, 200, eventos);
         } else if (m.equals("GET") && r.equals("/api/ajustes")) {
             responderJson(out, 200, Ajustes.comoJson(c));
         } else if (m.equals("POST") && r.equals("/api/ajustes")) {

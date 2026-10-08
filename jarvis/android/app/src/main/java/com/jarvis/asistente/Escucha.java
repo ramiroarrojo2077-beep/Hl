@@ -116,7 +116,13 @@ public class Escucha extends NotificationListenerService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && a.getSemanticAction() == Notification.Action.SEMANTIC_ACTION_REPLY) return a;
             if (primera == null) primera = a;
         }
-        return primera;
+        if (primera != null) return primera;
+        // Gmail y otras: "Responder" abre su pantalla de respuesta (sin texto libre).
+        for (Notification.Action a : n.actions) {
+            String titulo = a.title == null ? "" : a.title.toString().toLowerCase(Locale.ROOT);
+            if (a.actionIntent != null && (titulo.startsWith("respond") || titulo.startsWith("reply"))) return a;
+        }
+        return null;
     }
 
     private static String canal(Context c, String paquete) {

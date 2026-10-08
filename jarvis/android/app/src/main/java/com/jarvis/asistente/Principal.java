@@ -49,6 +49,7 @@ public class Principal extends Activity {
     private boolean paginaLista;
     private final List<String> pendientes = new ArrayList<>();
     private long ultimoNivel;
+    private int reintentos;
 
     @Override
     protected void onCreate(Bundle guardado) {
@@ -130,6 +131,7 @@ public class Principal extends Activity {
 
             @Override
             public void onPageFinished(WebView vista, String url) {
+                if (url != null && url.startsWith("http://127.0.0.1")) reintentos = 0;
                 paginaLista = true;
                 for (String codigo : pendientes) web.evaluateJavascript(codigo, null);
                 pendientes.clear();
@@ -137,7 +139,14 @@ public class Principal extends Activity {
 
             @Override
             public void onReceivedError(WebView vista, WebResourceRequest pedido, WebResourceError error) {
-                if (pedido.isForMainFrame()) mostrarError(String.valueOf(error.getDescription()));
+                if (!pedido.isForMainFrame()) return;
+                // El servidor interno puede tardar un instante en arrancar: se reintenta solo antes de mostrar el error.
+                if (reintentos++ < 3) {
+                    ServidorLocal.iniciar(Principal.this);
+                    web.postDelayed(Principal.this::cargar, 800);
+                } else {
+                    mostrarError(String.valueOf(error.getDescription()));
+                }
             }
         });
     }
@@ -213,6 +222,14 @@ public class Principal extends Activity {
             }
             Voz.de(this).callar();
             ordenAlServicio(Servicio.ACCION_PAUSAR_OIDO);
+            estado("escuchando");
+            // Un instante para que el servicio suelte el micrófono (si no, el reconocedor arranca sin audio).
+            web.postDelayed(this::empezarReconocimiento, 450);
+        });
+    }
+
+    private void empezarReconocimiento() {
+        runOnUiThread(() -> {
             if (reconocedor == null) {
                 reconocedor = SpeechRecognizer.createSpeechRecognizer(this);
                 reconocedor.setRecognitionListener(new Oyente());
@@ -309,6 +326,7 @@ public class Principal extends Activity {
 
         @JavascriptInterface
         public void reintentar() {
+            reintentos = 0;
             runOnUiThread(Principal.this::cargar);
         }
 
@@ -335,6 +353,11 @@ public class Principal extends Activity {
         }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             faltan.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        // Agenda, contactos y llamadas (para "¿qué tengo hoy?" o "llamá a mamá").
+        for (String permiso : new String[] {Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR,
+                Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}) {
+            if (checkSelfPermission(permiso) != PackageManager.PERMISSION_GRANTED && !Ajustes.yaPregunto(this, "permiso_" + permiso)) faltan.add(permiso);
         }
         if (!faltan.isEmpty()) requestPermissions(faltan.toArray(new String[0]), PEDIDO_PERMISOS);
         else despuesDePermisos();

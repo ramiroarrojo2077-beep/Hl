@@ -32,13 +32,28 @@ final class Respuestas {
         return clave != null && acciones.containsKey(clave);
     }
 
-    /** @throws Exception con un mensaje en español si la notificación ya no existe o la app rechazó la respuesta. */
-    static void responder(Context c, String clave, String texto) throws Exception {
+    /**
+     * @return true si se envió directo; false si la app (por ejemplo Gmail) solo abre su pantalla de respuesta: en ese caso
+     *     se abre con el texto copiado al portapapeles para pegarlo.
+     * @throws Exception con un mensaje en español si la notificación ya no existe o la app rechazó la respuesta.
+     */
+    static boolean responder(Context c, String clave, String texto) throws Exception {
         Notification.Action accion = clave == null ? null : acciones.get(clave);
-        if (accion == null || accion.getRemoteInputs() == null) {
+        if (accion == null) {
             throw new Exception("La notificación de esa conversación ya no está. Abrí el chat y respondé desde ahí.");
         }
         RemoteInput[] entradas = accion.getRemoteInputs();
+        if (entradas == null || entradas.length == 0) {
+            c.getSystemService(android.content.ClipboardManager.class)
+                    .setPrimaryClip(android.content.ClipData.newPlainText("Jarvis", texto));
+            try {
+                accion.actionIntent.send();
+            } catch (PendingIntent.CanceledException e) {
+                acciones.remove(clave);
+                throw new Exception("La notificación ya no está. Abrí la app y respondé desde ahí (el texto quedó copiado).");
+            }
+            return false;
+        }
         Intent intent = new Intent();
         Bundle resultados = new Bundle();
         for (RemoteInput entrada : entradas) resultados.putCharSequence(entrada.getResultKey(), texto);
@@ -50,5 +65,6 @@ final class Respuestas {
             acciones.remove(clave);
             throw new Exception("La notificación de esa conversación ya no está. Abrí el chat y respondé desde ahí.");
         }
+        return true;
     }
 }

@@ -111,8 +111,16 @@ final class Acciones {
         try {
             switch (p.optString("canal")) {
                 case "notificacion":
-                    Respuestas.responder(c, p.optString("claveRespuesta", p.optString("para")), p.optString("texto"));
+                    if (!Respuestas.responder(c, p.optString("claveRespuesta", p.optString("para")), p.optString("texto"))) {
+                        p.put("nota", "Abrí la respuesta en " + p.optString("app", "la app") + " con el texto copiado: pegalo y tocá enviar.");
+                    }
                     break;
+                case "sms_nuevo": {
+                    Uri sms = Uri.parse("smsto:" + Uri.encode(p.optString("para")));
+                    c.startActivity(new Intent(Intent.ACTION_SENDTO, sms).putExtra("sms_body", p.optString("texto")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    p.put("nota", "Abrí Mensajes con el SMS escrito: falta tocar enviar.");
+                    break;
+                }
                 case "email": {
                     JSONObject respuesta = p.optJSONObject("enRespuestaA");
                     String[] refs = new String[0];
@@ -170,6 +178,7 @@ final class Acciones {
     /** "Borrador de {mail|WhatsApp|app} para X listo. Esperando que {usuario} lo apruebe." */
     static String describirPropuesta(Context c, JSONObject propuesta) {
         String canal = "email".equals(propuesta.optString("canal")) ? "mail" : propuesta.optString("app", "mensaje");
+        if (canal.isEmpty()) canal = "mensaje";
         return "Borrador de " + canal + " para " + propuesta.optString("paraNombre") + " listo. Esperando que "
                 + Ajustes.texto(c, Ajustes.USUARIO) + " lo apruebe.";
     }
