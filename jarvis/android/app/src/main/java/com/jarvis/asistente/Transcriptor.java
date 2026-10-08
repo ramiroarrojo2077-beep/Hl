@@ -21,7 +21,7 @@ import java.security.SecureRandom;
 import java.util.Locale;
 
 /**
- * Audio a texto: Whisper en Groq (whisper-large-v3-turbo, language=es, prompt "Jarvis.") y, si no hay clave o falla,
+ * Audio a texto: Whisper en Groq (whisper-large-v3-turbo, language=es, sin prompt) y, si no hay clave o falla,
  * Gemini (generateContent con inline_data, modelo de Ajustes.GEMINI_MODELO). Lo usa el detector de la palabra "Jarvis"
  * cuando no hay AccessKey de Picovoice.
  */
@@ -39,6 +39,9 @@ final class Transcriptor {
     private static final String INSTRUCCION = "Transcribí exactamente lo que se dice en este audio, en el idioma original. "
             + "La asistente se llama \"Jarvis\". Respondé solo con la transcripción, sin comillas ni comentarios. "
             + "Si no se entiende nada o no habla nadie, respondé vacío.";
+    // Para la palabra clave no se nombra a Jarvis: así no la "oye" donde no está.
+    private static final String INSTRUCCION_PASIVA = "Transcribí exactamente lo que se dice en este audio, en el idioma original. "
+            + "Respondé solo con la transcripción, sin comillas ni comentarios. Si no habla nadie o no se entiende, respondé vacío.";
     private static final SecureRandom azar = new SecureRandom();
 
     static boolean disponible(Context c) {
@@ -47,6 +50,18 @@ final class Transcriptor {
 
     /** @param tipo MIME, por ejemplo "audio/wav". Devuelve "" si no se entendió nada. */
     static String transcribir(Context c, byte[] audio, String tipo) throws Exception {
+        return transcribir(c, audio, tipo, false);
+    }
+
+    /**
+     * Para detectar la palabra "Jarvis" en segundo plano: sin pistas (Whisper tiende a "oír" la pista cuando el audio no
+     * es claro) y descartando los pedazos que Whisper marca como dudosos o sin voz.
+     */
+    static String transcribirPasivo(Context c, byte[] wav) throws Exception {
+        return transcribir(c, wav, "audio/wav", true);
+    }
+
+    private static String transcribir(Context c, byte[] audio, String tipo, boolean pasivo) throws Exception {
         if (audio == null || audio.length == 0) return "";
         if (audio.length > MAX_AUDIO) throw new IOException("El audio es demasiado largo para transcribirlo.");
         String mime = tipo == null ? "" : tipo;
@@ -58,13 +73,13 @@ final class Transcriptor {
         boolean hayGemini = Ajustes.tiene(c, Ajustes.GEMINI);
         if (Ajustes.tiene(c, Ajustes.GROQ)) {
             try {
-                return conGroq(clave(c, Ajustes.GROQ), audio, mime);
+                return conGroq(clave(c, Ajustes.GROQ), audio, mime, pasivo);
             } catch (Exception e) {
                 if (!hayGemini) throw e;
                 Log.w(TAG, "Groq falló, pruebo con Gemini: " + e.getMessage());
             }
         }
-        if (hayGemini) return conGemini(clave(c, Ajustes.GEMINI), Ajustes.texto(c, Ajustes.GEMINI_MODELO), audio, mime);
+        if (hayGemini) return conGemini(clave(c, Ajustes.GEMINI), Ajustes.texto(c, Ajustes.GEMINI_MODELO), audio, mime, pasivo);
         throw new IOException("Para entender audio hace falta la clave gratis de Groq o de Gemini. Pegala en Ajustes.");
     }
 
@@ -82,7 +97,7 @@ final class Transcriptor {
 
     // ---------- Whisper en Groq ----------
 
-    private static String conGroq(String clave, byte[] audio, String mime) throws IOException {
+    private static String conGroq(String clave, byte[] audio, String mime, boolean pasivo) throws IOException {
         byte[] semilla = new byte[12];
         azar.nextBytes(semilla);
         StringBuilder limite = new StringBuilder("----JarvisLimite");
@@ -96,19 +111,39 @@ final class Transcriptor {
         escribir(cuerpo, "\r\n");
         campo(cuerpo, limite, "model", "whisper-large-v3-turbo");
         campo(cuerpo, limite, "language", "es");
-        campo(cuerpo, limite, "response_format", "json");
-        // Ayuda a que escriba bien la palabra clave.
-        campo(cuerpo, limite, "prompt", "Jarvis.");
+        // Sin "prompt": con una pista, Whisper a veces la devuelve tal cual cuando no entiende el audio (y cualquier ruido
+        // terminaba pareciendo "Jarvis"). En modo pasivo pide los detalles para descartar lo dudoso.
+        campo(cuerpo, limite, "response_format", pasivo ? "verbose_json" : "json");
+        campo(cuerpo, limite, "temperature", "0");
         escribir(cuerpo, "--" + limite + "--\r\n");
 
         String respuesta = enviar("Groq", URL_GROQ, cuerpo.toByteArray(),
                 "multipart/form-data; boundary=" + limite, "Authorization", "Bearer " + clave);
         try {
             JSONObject json = new JSONObject(respuesta);
-            return json.isNull("text") ? "" : json.optString("text", "").trim();
+            JSONArray segmentos = pasivo ? json.optJSONArray("segments") : null;
+            if (segmentos == null) return json.isNull("text") ? "" : json.optString("text", "").trim();
+            StringBuilder texto = new StringBuilder();
+            for (int i = 0; i < segmentos.length(); i++) {
+                JSONObject s = segmentos.optJSONObject(i);
+                if (s == null || dudoso(s)) continue;
+                texto.append(s.optString("text", ""));
+            }
+            return texto.toString().trim();
         } catch (JSONException e) {
             throw new IOException("Groq devolvió una transcripción que no entiendo.");
         }
+    }
+
+    /**
+     * Un pedazo que probablemente no es voz real o que Whisper inventó (mismos criterios que Whisper: sin voz con poca
+     * confianza, confianza muy baja o texto repetitivo).
+     */
+    static boolean dudoso(JSONObject segmento) {
+        double sinVoz = segmento.optDouble("no_speech_prob", 0);
+        double confianza = segmento.optDouble("avg_logprob", 0);
+        double compresion = segmento.optDouble("compression_ratio", 1);
+        return (sinVoz > 0.6 && confianza < -1.0) || sinVoz > 0.85 || confianza < -1.5 || compresion > 2.4;
     }
 
     private static void campo(ByteArrayOutputStream cuerpo, CharSequence limite, String nombre, String valor) {
@@ -124,7 +159,7 @@ final class Transcriptor {
 
     // ---------- Gemini ----------
 
-    private static String conGemini(String clave, String modelo, byte[] audio, String mime) throws IOException {
+    private static String conGemini(String clave, String modelo, byte[] audio, String mime, boolean pasivo) throws IOException {
         if (modelo.startsWith("models/")) modelo = modelo.substring("models/".length());
         byte[] cuerpo;
         try {
@@ -133,7 +168,7 @@ final class Transcriptor {
                     .put("data", Base64.encodeToString(audio, Base64.NO_WRAP));
             JSONArray partes = new JSONArray()
                     .put(new JSONObject().put("inline_data", datos))
-                    .put(new JSONObject().put("text", INSTRUCCION));
+                    .put(new JSONObject().put("text", pasivo ? INSTRUCCION_PASIVA : INSTRUCCION));
             JSONObject pedido = new JSONObject()
                     .put("contents", new JSONArray().put(new JSONObject().put("parts", partes)));
             cuerpo = pedido.toString().getBytes(StandardCharsets.UTF_8);

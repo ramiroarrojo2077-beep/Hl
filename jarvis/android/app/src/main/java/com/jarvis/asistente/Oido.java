@@ -42,8 +42,10 @@ final class Oido {
     private static final int FRECUENCIA = 16000;
     private static final int MUESTRAS_BLOQUE = 480; // 30 ms
     private static final int MAX_PASIVAS_POR_MINUTO = 8;
+    // Solo cuenta si la frase EMPIEZA con "Jarvis" (o "che/hola/ey Jarvis"): nombrarla de pasada no la abre.
     private static final Pattern PALABRA_CLAVE = Pattern.compile(
-            "\\b(jarvis|yarvis|jarbis|yarbis|charvis|jervis|harvis|jarvi|yarvi)\\b",
+            "^[\\s\\p{Punct}¡¿]*(?:(?:che|ey|eh|hey|hola|oye|oi|ok|okay|okey|bueno|dale)[\\s,.!¡]+)?"
+                    + "(jarvis|yarvis|jarbis|yarbis|charvis|jervis|harvis|garvis|jarviz|yarviz|jarvi|yarvi)\\b",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     private static final Pattern ALUCINACIONES = Pattern.compile(
             "amara\\.org|gracias por ver|suscr[ií]b|subt[ií]tulos", Pattern.CASE_INSENSITIVE);
@@ -104,7 +106,7 @@ final class Oido {
             porcupine = new PorcupineManager.Builder()
                     .setAccessKey(clave)
                     .setKeyword(Porcupine.BuiltInKeyword.JARVIS)
-                    .setSensitivity(0.65f)
+                    .setSensitivity(0.5f)
                     .setErrorCallback(e -> Log.w(TAG, "Porcupine: " + e.getMessage()))
                     .build(contexto, indice -> principal.post(() -> avisar(null)));
             porcupine.start();
@@ -220,10 +222,9 @@ final class Oido {
         byte[] wav = wav(segmento);
         red.execute(() -> {
             try {
-                String texto = Transcriptor.transcribir(contexto, wav, "audio/wav");
+                String texto = Transcriptor.transcribirPasivo(contexto, wav).trim();
                 Matcher m = PALABRA_CLAVE.matcher(texto);
-                // Solo si te dirigís a ella al principio ("Jarvis…", "Che Jarvis…"), no si la nombrás de pasada.
-                if (!ALUCINACIONES.matcher(texto).find() && m.find() && m.start() <= 15) {
+                if (!ALUCINACIONES.matcher(texto).find() && m.find()) {
                     String resto = texto.substring(m.end()).replaceAll("^[\\s,.;:!¡¿?]+", "").trim();
                     String orden = resto.replaceAll("[^\\p{L}\\p{N}]", "").length() >= 3 ? resto : null;
                     principal.post(() -> avisar(orden));

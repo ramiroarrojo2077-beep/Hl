@@ -37,6 +37,9 @@ final class Dictado {
     private static final Pattern ALUCINACIONES = Pattern.compile(
             "amara\\.org|gracias por ver|suscr[ií]b|subt[ií]tulos|^\\W*$", Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern SOLO_NOMBRE = Pattern.compile("[\\s\\p{Punct}¡¿]*(jarvis|yarvis|jarbis)[\\s\\p{Punct}]*",
+            Pattern.CASE_INSENSITIVE);
+
     private final Context contexto;
     private Thread hilo;
     private volatile boolean cancelado;
@@ -170,7 +173,8 @@ final class Dictado {
         oyente.procesando();
         try {
             String texto = Transcriptor.transcribir(contexto, Oido.wav(segmento), "audio/wav").trim();
-            if (ALUCINACIONES.matcher(texto).find()) texto = "";
+            // Solo "Jarvis" (o nada entendible) no es una orden.
+            if (ALUCINACIONES.matcher(texto).find() || SOLO_NOMBRE.matcher(texto).matches()) texto = "";
             if (!cancelado) oyente.resultado(texto);
         } catch (Exception e) {
             if (!cancelado) oyente.error(e.getMessage() == null ? "No te pude entender." : e.getMessage());
