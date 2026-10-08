@@ -212,8 +212,11 @@ final class Autonomia {
     }
 
     static void ciclo(Context c) {
-        Local.liberarSiNoSeUsa();
-        Local.asegurar(c, false);
+        try {
+            Local.liberarSiNoSeUsa();
+            Local.asegurar(c, false);
+        } catch (Throwable ignorada) {
+        }
         if (!Acciones.activa(c)) return;
         try {
             avisarEventos(c);

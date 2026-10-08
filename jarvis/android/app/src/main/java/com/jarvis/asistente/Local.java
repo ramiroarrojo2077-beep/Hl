@@ -82,7 +82,11 @@ final class Local {
                     + "Qwen3-0.6B.litertlm?download=true",
             "qwen3-0.6b.litertlm", 614_236_160L, true);
 
-    private static final int MAX_TOKENS = 3072;
+    // Entrada + salida (el KV cache). Los dos modelos aceptan 4096.
+    private static final int MAX_TOKENS = 4096;
+    // Presupuesto del prompt en caracteres (~3 por token en castellano), dejando lugar para la respuesta.
+    private static final int MAX_CARACTERES = 8000;
+    private static final int MAX_RESULTADO = 1200;
     private static final int MAX_SALIDA = 512;
     private static final long ESPERA_MAXIMA_MS = 120_000;
     private static final long DESCARGAR_SI_CAMBIO_MS = 30 * 60_000L;
@@ -91,10 +95,13 @@ final class Local {
     private static final Set<String> HERRAMIENTAS = new HashSet<>(Arrays.asList(
             "clima", "noticias", "buscar_web", "calcular", "crear_recordatorio", "leer_mensajes", "leer_emails",
             "buscar_emails", "ver_agenda", "agregar_tarea", "ver_tareas", "responder_aviso", "enviar_borrador",
+            "proponer_whatsapp", "proponer_email", "proponer_sms",
             "corregir_borrador", "descartar_borrador", "recordar", "reproducir", "navegar", "llamar", "poner_alarma",
             "poner_temporizador", "abrir"));
 
     private static final Object motorLock = new Object();
+    // Lo que se está generando para algo de fondo (análisis, revisión): si hablás vos, se corta para atenderte.
+    private static volatile Conversation enCursoDeFondo;
     private static Engine motor;
     private static String motorDe;
     private static long ultimoUso;
@@ -109,6 +116,8 @@ final class Local {
     static Modelo modelo(Context c) {
         String elegido = Ajustes.texto(c, Ajustes.IA_LOCAL);
         if ("no".equals(elegido)) return null;
+        // El motor solo existe para celulares de 64 bits.
+        if (android.os.Build.SUPPORTED_64_BIT_ABIS.length == 0) return null;
         if (QWEN_15B.id.equals(elegido)) return QWEN_15B;
         if (QWEN_06B.id.equals(elegido)) return QWEN_06B;
         ActivityManager.MemoryInfo memoria = new ActivityManager.MemoryInfo();
@@ -154,10 +163,29 @@ final class Local {
     // ---------- Descarga ----------
 
     private static boolean wifi(Context c) {
-        ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
-        NetworkCapabilities red = cm.getNetworkCapabilities(cm.getActiveNetwork());
-        return red != null && red.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-                && red.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        try {
+            ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
+            NetworkCapabilities red = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return red != null && red.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+                    && red.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    /** ¿Hay internet que funcione de verdad? (Si no, ni se intenta la nube: responde Qwen al toque.) */
+    static boolean hayInternet(Context c) {
+        try {
+            ConnectivityManager cm = c.getSystemService(ConnectivityManager.class);
+            NetworkCapabilities red = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return red != null && red.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (RuntimeException e) {
+            return true;
+        }
+    }
+
+    private static boolean puedeBajar(Context c, boolean forzar) {
+        return forzar || "si".equals(Ajustes.texto(c, Ajustes.DESCARGA_CON_DATOS)) || wifi(c);
     }
 
     /**
@@ -165,23 +193,54 @@ final class Local {
      * donde quedó si se cortó. Se puede llamar seguido: no hace nada si ya está o se está bajando.
      */
     static synchronized void asegurar(Context c, boolean forzar) {
-        Modelo m = modelo(c);
-        if (m == null || listo(c) || descargando) return;
-        long ahora = System.currentTimeMillis();
-        if (!forzar && ahora - ultimoIntento < DESCARGAR_SI_CAMBIO_MS && errorDescarga != null) return;
-        boolean conDatos = "si".equals(Ajustes.texto(c, Ajustes.DESCARGA_CON_DATOS));
-        if (!forzar && !conDatos && !wifi(c)) {
-            errorDescarga = "Esperando Wi-Fi para bajar " + m.nombre + ".";
-            return;
+        try {
+            Modelo m = modelo(c);
+            if (m == null) {
+                // Apagada: se libera la memoria y el espacio (hasta 1,6 GB).
+                if (!descargando) borrarModelos(c, null);
+                return;
+            }
+            if (listo(c) || descargando) return;
+            long ahora = System.currentTimeMillis();
+            if (!forzar && ahora - ultimoIntento < DESCARGAR_SI_CAMBIO_MS && errorDescarga != null && !errorDescarga.startsWith("Esperando")) return;
+            if (!puedeBajar(c, false) && !forzar) {
+                errorDescarga = "Esperando Wi-Fi para bajar " + m.nombre + ".";
+                return;
+            }
+            ultimoIntento = ahora;
+            descargando = true;
+            progreso = -1;
+            errorDescarga = null;
+            Context app = c.getApplicationContext();
+            new Thread(() -> descargar(app, m, forzar), "jarvis-descarga-qwen").start();
+        } catch (Throwable e) {
+            descargando = false;
+            errorDescarga = e.getMessage();
+            Log.w(TAG, "No pude preparar la descarga", e);
         }
-        ultimoIntento = ahora;
-        descargando = true;
-        errorDescarga = null;
-        Context app = c.getApplicationContext();
-        new Thread(() -> descargar(app, m), "jarvis-descarga-qwen").start();
     }
 
-    private static void descargar(Context c, Modelo m) {
+    /** Borra los modelos que no sean {@code salvo} (null = todos) y, si estaba cargado otro, lo cierra. */
+    private static void borrarModelos(Context c, Modelo salvo) {
+        File[] archivos = carpeta(c).listFiles();
+        if (archivos == null || archivos.length == 0) return;
+        synchronized (motorLock) {
+            if (motor != null && (salvo == null || !salvo.id.equals(motorDe))) cerrarMotor();
+        }
+        for (File f : archivos) {
+            if (salvo == null || !f.getName().startsWith(salvo.archivo)) //noinspection ResultOfMethodCallIgnored
+                f.delete();
+        }
+    }
+
+    /** Se cortó a propósito (cambió el modelo elegido o se fue el Wi-Fi): el .parte queda para seguir después. */
+    private static final class Pausa extends Exception {
+        Pausa(String mensaje) {
+            super(mensaje);
+        }
+    }
+
+    private static void descargar(Context c, Modelo m, boolean forzar) {
         File destino = archivo(c, m);
         File parcial = new File(destino.getPath() + ".parte");
         android.os.PowerManager.WakeLock despierta = c.getSystemService(android.os.PowerManager.class)
@@ -195,17 +254,17 @@ final class Local {
                 wifiDespierto.acquire();
             }
             // Otros modelos que hayan quedado (por ejemplo, si cambiaste de modelo) liberan espacio.
-            File[] viejos = carpeta(c).listFiles();
-            if (viejos != null) {
-                for (File f : viejos) if (!f.getName().startsWith(m.archivo)) //noinspection ResultOfMethodCallIgnored
-                    f.delete();
-            }
+            borrarModelos(c, m);
             if (carpeta(c).getUsableSpace() + parcial.length() < m.bytes + 200_000_000L) {
                 throw new Exception("No hay espacio: hacen falta " + (m.bytes / 1_000_000) + " MB libres.");
             }
-            for (int intento = 0; intento < 5 && !listo(c); intento++) {
+            for (int intento = 0; intento < 5 && !(destino.isFile() && destino.length() == m.bytes); intento++) {
+                if (modelo(c) != m) throw new Pausa("Cambiaste el modelo.");
+                if (!puedeBajar(c, forzar)) throw new Pausa("Esperando Wi-Fi para bajar " + m.nombre + ".");
                 try {
-                    bajar(c, m, parcial);
+                    bajar(c, m, parcial, forzar);
+                } catch (Pausa p) {
+                    throw p;
                 } catch (Exception e) {
                     Log.w(TAG, "Descarga cortada: " + e.getMessage());
                     errorDescarga = e.getMessage();
@@ -218,7 +277,9 @@ final class Local {
                     Log.i(TAG, m.nombre + " descargado");
                 }
             }
-            if (!listo(c) && errorDescarga == null) errorDescarga = "No pude bajar " + m.nombre + ".";
+            if (!(destino.isFile() && destino.length() == m.bytes) && errorDescarga == null) errorDescarga = "No pude bajar " + m.nombre + ".";
+        } catch (Pausa p) {
+            errorDescarga = p.getMessage();
         } catch (Exception e) {
             errorDescarga = e.getMessage();
             Log.w(TAG, "No pude bajar el modelo: " + e.getMessage());
@@ -230,7 +291,7 @@ final class Local {
         }
     }
 
-    private static void bajar(Context c, Modelo m, File parcial) throws Exception {
+    private static void bajar(Context c, Modelo m, File parcial, boolean forzar) throws Exception {
         long ya = parcial.isFile() ? parcial.length() : 0;
         if (ya > m.bytes) {
             //noinspection ResultOfMethodCallIgnored
@@ -251,6 +312,7 @@ final class Local {
             byte[] bloque = new byte[256 * 1024];
             int leidos;
             int ultimo = -1;
+            long revisado = total;
             while ((leidos = entrada.read(bloque)) != -1) {
                 salida.write(bloque, 0, leidos);
                 total += leidos;
@@ -261,6 +323,12 @@ final class Local {
                     Eventos.emitir("estado", null);
                 }
                 if (total > m.bytes) throw new Exception("El archivo del modelo es más grande de lo esperado.");
+                // Cada 8 MB: si cambiaste de modelo o se fue el Wi-Fi (y no querés gastar datos), se pausa.
+                if (total - revisado > 8_000_000L) {
+                    revisado = total;
+                    if (modelo(c) != m) throw new Pausa("Cambiaste el modelo.");
+                    if (!puedeBajar(c, forzar)) throw new Pausa("Esperando Wi-Fi para bajar " + m.nombre + ".");
+                }
             }
         } finally {
             con.disconnect();
@@ -360,21 +428,32 @@ final class Local {
             sistema = sistema + instruccionesHerramientas(ofrecidas) + (json ? "\n\nRespondé SOLO con el JSON pedido, sin texto antes ni después." : "");
 
             Map<String, Object> extra = Collections.singletonMap("enable_thinking", (Object) false);
-            Engine e = motor(c, m);
-            ConversationConfig config = new ConversationConfig(Contents.Companion.of(sistema), previos, Collections.emptyList(),
-                    new SamplerConfig(20, 0.8, json || ofrecidas.length() > 0 ? 0.3 : 0.6, 0), false, null, extra, null, false, MAX_SALIDA);
-            synchronized (motorLock) {
-                ultimoUso = System.currentTimeMillis();
-                Conversation charla = e.createConversation(config);
+            SamplerConfig muestreo = new SamplerConfig(20, 0.8, json || ofrecidas.length() > 0 ? 0.3 : 0.6, 0);
+            boolean deFondo = alTexto == null;
+            // Si hablás vos y Qwen está ocupado con algo de fondo (analizar un mensaje), lo corta para atenderte.
+            Conversation fondo = enCursoDeFondo;
+            if (!deFondo && fondo != null) {
                 try {
-                    return generar(charla, m.piensa ? ultimo + " /no_think" : ultimo, alTexto, json);
+                    fondo.cancelProcess();
+                } catch (Throwable ignorada) {
+                }
+            }
+            String pedidoFinal = m.piensa ? ultimo + " /no_think" : ultimo;
+            synchronized (motorLock) {
+                Engine e = motor(c, m);
+                ultimoUso = System.currentTimeMillis();
+                try {
+                    return conversar(e, new ConversationConfig(Contents.Companion.of(sistema), previos, Collections.emptyList(),
+                            muestreo, false, null, extra, null, false, MAX_SALIDA), pedidoFinal, alTexto, json, deFondo);
+                } catch (Exception largo) {
+                    String msj = String.valueOf(largo.getMessage()).toLowerCase(java.util.Locale.ROOT);
+                    if (!msj.contains("too long") && !msj.contains("kv") && !msj.contains("token")) throw largo;
+                    // El prompt no entró: se reintenta solo con las instrucciones y el último mensaje.
+                    Log.w(TAG, "Prompt demasiado largo, reintento corto: " + largo.getMessage());
+                    return conversar(e, new ConversationConfig(Contents.Companion.of(sistema.length() > 3000 ? sistema.substring(0, 3000) : sistema),
+                            new ArrayList<>(), Collections.emptyList(), muestreo, false, null, extra, null, false, MAX_SALIDA),
+                            pedidoFinal.length() > 3000 ? pedidoFinal.substring(pedidoFinal.length() - 3000) : pedidoFinal, alTexto, json, deFondo);
                 } finally {
-                    try {
-                        // Si se cortó (por ejemplo, se canceló la charla), que el motor no siga generando.
-                        charla.cancelProcess();
-                        charla.close();
-                    } catch (Throwable ignorada) {
-                    }
                     ultimoUso = System.currentTimeMillis();
                 }
             }
@@ -391,6 +470,21 @@ final class Local {
         }
     }
 
+    private static IA.Respuesta conversar(Engine e, ConversationConfig config, String texto, IA.AlTexto alTexto, boolean json,
+                                          boolean deFondo) throws Exception {
+        Conversation charla = e.createConversation(config);
+        if (deFondo) enCursoDeFondo = charla;
+        try {
+            return generar(charla, texto, alTexto, json);
+        } finally {
+            if (deFondo) enCursoDeFondo = null;
+            try {
+                charla.close();
+            } catch (Throwable ignorada) {
+            }
+        }
+    }
+
     private static IA.Respuesta generar(Conversation charla, String texto, IA.AlTexto alTexto, boolean json) throws Exception {
         StringBuilder todo = new StringBuilder();
         List<ToolCall> llamadasNativas = new ArrayList<>();
@@ -398,6 +492,8 @@ final class Local {
         CountDownLatch fin = new CountDownLatch(1);
         final int[] emitido = {0};
         final boolean[] enVivo = {alTexto != null && !json};
+        // Después de cortar por tiempo no se manda más texto en vivo.
+        final java.util.concurrent.atomic.AtomicBoolean terminado = new java.util.concurrent.atomic.AtomicBoolean(false);
         charla.sendMessageAsync(Message.Companion.user(texto), new MessageCallback() {
             @Override
             public void onMessage(Message parte) {
@@ -405,6 +501,7 @@ final class Local {
                 if (parte.getToolCalls() != null) llamadasNativas.addAll(parte.getToolCalls());
                 if (d == null || d.isEmpty()) return;
                 synchronized (todo) {
+                    if (terminado.get()) return;
                     todo.append(d);
                     if (!enVivo[0]) return;
                     // Lo que empieza con "<" puede ser una llamada a herramienta o un pensamiento: no se lee en voz alta.
@@ -436,11 +533,31 @@ final class Local {
                 fin.countDown();
             }
         });
+        boolean cortada = false;
         if (!fin.await(ESPERA_MAXIMA_MS, TimeUnit.MILLISECONDS)) {
+            // Se le pide que pare y se espera a que el motor lo confirme antes de cerrar la conversación.
             charla.cancelProcess();
-            throw new Exception("tardó demasiado");
+            fin.await(10, TimeUnit.SECONDS);
+            cortada = true;
         }
-        if (falla.get() != null) throw new Exception(falla.get().getMessage(), falla.get());
+        terminado.set(true);
+        String parcial;
+        synchronized (todo) {
+            parcial = LLAMADA.matcher(PENSAMIENTO.matcher(todo).replaceAll("")).replaceAll("").trim();
+        }
+        if (cortada || falla.get() != null) {
+            boolean cancelada = falla.get() instanceof java.util.concurrent.CancellationException;
+            // Si ya dijo algo, eso es la respuesta (mejor media respuesta que un error).
+            if (!parcial.isEmpty() && !parcial.startsWith("<")) {
+                IA.Respuesta r = new IA.Respuesta();
+                r.proveedor = "qwen";
+                r.texto = parcial;
+                return r;
+            }
+            if (cortada) throw new Exception("tardó demasiado");
+            if (cancelada) throw new Exception("se cortó para atender otro pedido");
+            throw new Exception(falla.get().getMessage(), falla.get());
+        }
 
         IA.Respuesta r = new IA.Respuesta();
         r.proveedor = "qwen";
@@ -498,15 +615,15 @@ final class Local {
             return sb.toString();
         }
         if ("tool".equals(rol)) {
-            String r = contenido.length() > 2500 ? contenido.substring(0, 2500) + "…" : contenido;
+            String r = contenido.length() > MAX_RESULTADO ? contenido.substring(0, MAX_RESULTADO) + "…" : contenido;
             return "<tool_response>\n{\"name\": " + JSONObject.quote(msj.optString("name")) + ", \"result\": " + JSONObject.quote(r) + "}\n</tool_response>";
         }
         return contenido;
     }
 
     /**
-     * Un modelo chico anda más rápido y mejor con poco contexto: system corto (si es el de la charla), las últimas
-     * vueltas, y los resultados de herramientas seguidos juntos en un solo turno de "usuario".
+     * Un modelo chico anda más rápido y mejor con poco contexto: el system corto si es el de la charla, las últimas
+     * vueltas que entren en el presupuesto y los resultados de herramientas seguidos juntos en un turno de "usuario".
      */
     private static JSONArray recortar(Context c, JSONArray mensajes) throws Exception {
         List<JSONObject> lista = new ArrayList<>();
@@ -529,14 +646,30 @@ final class Local {
                 juntos.add(msj);
             }
         }
-        // Las últimas 8 vueltas, empezando por un mensaje del usuario.
-        int desde = Math.max(0, juntos.size() - 8);
-        while (desde > 0 && desde < juntos.size() && !"user".equals(juntos.get(desde).optString("role"))) desde--;
-        JSONArray salida = new JSONArray();
+        String textoSistema = "";
         if (sistema != null) {
             String s = sistema.optString("content");
-            salida.put(new JSONObject().put("role", "system").put("content", s.length() > 3500 ? Asistente.sistemaCorto(c) : s));
+            // El de la charla (largo, con memoria y avisos) se cambia por uno corto; los demás (análisis, revisión)
+            // se respetan, y si son muy largos se cortan por el final (las instrucciones van al principio).
+            if (s.contains(Asistente.MARCA_CHARLA)) s = Asistente.sistemaCorto(c);
+            else if (s.length() > 3500) s = s.substring(0, 3500);
+            textoSistema = s;
         }
+        // Desde el final hacia atrás, mientras entre en el presupuesto (el último siempre entra).
+        int usado = textoSistema.length();
+        int desde = juntos.size();
+        while (desde > 0) {
+            JSONObject msj = juntos.get(desde - 1);
+            int largo = "tool_junto".equals(msj.optString("role")) ? msj.optString("content").length() : textoDe(msj).length();
+            if (desde < juntos.size() && usado + largo > MAX_CARACTERES) break;
+            usado += largo;
+            desde--;
+            if (juntos.size() - desde >= 8) break;
+        }
+        // Que empiece por un mensaje del usuario (no por una respuesta o un resultado suelto).
+        while (desde > 0 && desde < juntos.size() - 1 && !"user".equals(juntos.get(desde).optString("role"))) desde++;
+        JSONArray salida = new JSONArray();
+        if (sistema != null) salida.put(new JSONObject().put("role", "system").put("content", textoSistema));
         for (int i = desde; i < juntos.size(); i++) {
             JSONObject msj = juntos.get(i);
             if ("tool_junto".equals(msj.optString("role"))) salida.put(new JSONObject().put("role", "user").put("content", msj.optString("content")));
@@ -556,7 +689,8 @@ final class Local {
             {"mail|correo|email|gmail", "leer_emails,buscar_emails,responder_aviso"},
             {"agenda|calendario|reunion|turno|evento|que tengo|cita", "ver_agenda"},
             {"tarea|pendiente|anota|tengo que", "agregar_tarea,ver_tareas"},
-            {"manda|envia|mandala|mandalo|dale|si|ok|listo|perfecto", "enviar_borrador"},
+            {"mandale|mandale un|escribile|decile|avisale|whatsapp a|mensaje a|un whatsapp|un mensaje", "proponer_whatsapp,proponer_sms"},
+            {"mail a|correo a|un mail|un correo|email a", "proponer_email"},
             {"cambia|corregi|modifica|agrega", "corregir_borrador"},
             {"descarta|no la mandes|no lo mandes|borra", "descartar_borrador"},
             {"acordate|guarda|me gusta|mi cumple|soy|vivo", "recordar"},
@@ -576,7 +710,19 @@ final class Local {
                 .replaceAll("\\p{M}", "").toLowerCase(java.util.Locale.ROOT);
         Set<String> elegidas = new java.util.LinkedHashSet<>();
         for (String[] pista : PISTAS) {
-            if (Pattern.compile("\\b(?:" + pista[0] + ")").matcher(t).find()) elegidas.addAll(Arrays.asList(pista[1].split(",")));
+            if (Pattern.compile("\\b(?:" + pista[0] + ")\\b").matcher(t).find()) elegidas.addAll(Arrays.asList(pista[1].split(",")));
+        }
+        String limpio = t.replaceAll("[^a-z ]", " ").replaceAll("\\s+", " ").trim();
+        // "Mandala" solo se ofrece si el pedido entero es una confirmación corta (si no, "dale, decile a Juan…" podría
+        // mandar otro borrador).
+        if (limpio.matches("(si|dale|ok|okey|listo|perfecto|de una|mandala|mandalo|enviala|envialo|mandasela|mandaselo)"
+                + "( (si|dale|mandala|mandalo|enviala|envialo|mandasela|mandaselo|nomas|ya))?")) {
+            elegidas.add("enviar_borrador");
+        }
+        // Una pregunta sin pistas probablemente sea de actualidad: mejor buscar que inventar.
+        boolean charla = limpio.matches(".*\\b(como estas|como andas|como va|que tal|que haces|como te llamas|quien sos)\\b.*");
+        if (elegidas.isEmpty() && !charla && (t.contains("?") || limpio.matches("^(que|quien|quienes|cuando|donde|cuanto|cuanta|cuantos|como|cual|a que hora)\\b.*"))) {
+            elegidas.add("buscar_web");
         }
         for (int i = 0; i < herramientas.length() && salida.length() < 6; i++) {
             JSONObject f = herramientas.optJSONObject(i).optJSONObject("function");

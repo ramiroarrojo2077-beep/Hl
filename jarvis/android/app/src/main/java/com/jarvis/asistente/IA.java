@@ -131,7 +131,35 @@ final class IA {
 
     /** ¿Hay al menos una IA lista (con clave en la nube, o Qwen ya bajado al celular)? */
     static boolean configurada(Context c) {
-        return !configurados(c).isEmpty() || Local.listo(c);
+        return !configurados(c).isEmpty() || localLista(c);
+    }
+
+    // Lo de Qwen nunca puede tumbar a Jarvis: ante cualquier problema, se hace de cuenta que no está.
+    private static boolean localPrendida(Context c) {
+        try {
+            return Local.modelo(c) != null;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    private static boolean localLista(Context c) {
+        try {
+            return Local.listo(c);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    private static Respuesta conLocal(Context c, JSONArray mensajes, JSONArray herramientas, boolean json, AlTexto alTexto)
+            throws ErrorIA {
+        try {
+            return Local.completar(c, mensajes, herramientas, json, alTexto);
+        } catch (ErrorIA e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new ErrorIA("La IA del celular no está disponible.", 0);
+        }
     }
 
     /** Sin claves de la nube: todo lo piensa Qwen en el celular (más lento y gasta batería: se usa con medida). */
@@ -152,7 +180,10 @@ final class IA {
             } catch (JSONException ignorada) {
             }
         }
-        if (Local.modelo(c) != null) lista.put(Local.estado(c));
+        try {
+            if (Local.modelo(c) != null) lista.put(Local.estado(c));
+        } catch (Throwable ignorada) {
+        }
         return lista;
     }
 
@@ -170,8 +201,14 @@ final class IA {
         if (mensajes == null) mensajes = new JSONArray();
         // Sin claves de la nube: responde Qwen en el celular.
         if (todos.isEmpty()) {
-            if (Local.modelo(c) == null) throw new ErrorIA(SIN_IA, 0);
-            return Local.completar(c, mensajes, herramientas, json, alTexto);
+            if (!localPrendida(c)) throw new ErrorIA(SIN_IA, 0);
+            return conLocal(c, mensajes, herramientas, json, alTexto);
+        }
+        // Sin internet que funcione no tiene sentido esperar a la nube: contesta Qwen al toque.
+        boolean qwenLista = localLista(c);
+        if (qwenLista && !Local.hayInternet(c)) {
+            Log.i(TAG, "Sin internet: respondo con Qwen en el celular");
+            return conLocal(c, mensajes, herramientas, json, alTexto);
         }
 
         // Los que están en pausa van al final, sin perder el orden de preferencia.
@@ -179,7 +216,8 @@ final class IA {
         List<Proveedor> ordenados = new ArrayList<>(todos.size());
         List<Proveedor> pausados = new ArrayList<>();
         for (Proveedor p : todos) (enPausa(p.nombre, ahora) ? pausados : ordenados).add(p);
-        ordenados.addAll(pausados);
+        // Con Qwen lista, los que están en pausa ni se prueban (no se espera a que vuelvan a fallar).
+        if (!qwenLista || ordenados.isEmpty() && pausados.isEmpty()) ordenados.addAll(pausados);
 
         String razonamiento = Ajustes.texto(c, Ajustes.RAZONAMIENTO);
         Set<String> fallas = new LinkedHashSet<>();
@@ -204,10 +242,21 @@ final class IA {
                 if (e.estado == 429 || e.estado == 503) {
                     long espera = e.esperarMs > 0 ? e.esperarMs : PAUSA_MS;
                     enPausaHasta.put(p.nombre, System.currentTimeMillis() + espera);
+                } else if (e.estado == 0 && qwenLista && !CANCELADA.equals(e.getMessage())) {
+                    // Problema de conexión: un minuto sin probarlo, así las próximas vueltas van directo a Qwen.
+                    enPausaHasta.put(p.nombre, System.currentTimeMillis() + PAUSA_MS);
                 }
                 Log.w(TAG, p.visible + " falló: " + e.getMessage()
                         + (e.detalle.isEmpty() || e.getMessage().contains(e.detalle) ? "" : " (" + e.detalle + ")"));
-                // Si ya se mostró parte de la respuesta, cambiar de proveedor la duplicaría.
+                // Si ya se mostró parte de la respuesta y se cortó internet, Qwen sigue desde ahí (sin repetir lo dicho).
+                if (empezo[0] && !CANCELADA.equals(e.getMessage()) && qwenLista && alTexto != null) {
+                    try {
+                        alTexto.delta(" … Se cortó internet, sigo yo: ");
+                        return conLocal(c, mensajes, herramientas, json, alTexto);
+                    } catch (ErrorIA local) {
+                        throw e;
+                    }
+                }
                 if (empezo[0] || CANCELADA.equals(e.getMessage())) throw e;
                 fallas.add(e.getMessage());
             } catch (RuntimeException e) {
@@ -218,16 +267,17 @@ final class IA {
                 fallas.add(ultimo.getMessage());
             }
         }
-        if (vacia != null) return vacia;
-        // Se acabó el cupo, no hay internet o la clave falló: responde Qwen en el celular, así nunca te quedás sin respuesta.
-        if (Local.modelo(c) != null && !Thread.currentThread().isInterrupted()) {
+        // Se acabó el cupo, no hay internet, la clave falló o la nube contestó vacío: responde Qwen en el celular, así
+        // nunca te quedás sin respuesta.
+        if (localPrendida(c) && !Thread.currentThread().isInterrupted()) {
             try {
                 Log.i(TAG, "Las IA de la nube no respondieron: paso a Qwen en el celular");
-                return Local.completar(c, mensajes, herramientas, json, alTexto);
+                return conLocal(c, mensajes, herramientas, json, alTexto);
             } catch (ErrorIA local) {
                 fallas.add(local.getMessage());
             }
         }
+        if (vacia != null) return vacia;
         if (ultimo == null) throw new ErrorIA("Ninguna IA respondió.", 0);
         if (fallas.size() <= 1) throw ultimo;
         throw new ErrorIA("Ninguna IA respondió. " + String.join(" ", fallas), ultimo.estado, ultimo.esperarMs);

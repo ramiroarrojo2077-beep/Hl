@@ -521,7 +521,10 @@ final class ServidorLocal {
             responderJson(out, 200, Local.estado(c));
         } else if (m.equals("POST") && r.equals("/api/ajustes")) {
             Ajustes.actualizar(c, p.json());
-            Local.asegurar(c, false);
+            try {
+                Local.asegurar(c, false);
+            } catch (Throwable ignorada) {
+            }
             Correo.iniciar(c);
             Servicio.alCambiarAjustes(c);
             Asistente.programar(c);

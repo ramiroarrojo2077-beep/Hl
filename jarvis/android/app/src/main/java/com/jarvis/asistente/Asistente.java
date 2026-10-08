@@ -37,6 +37,9 @@ final class Asistente {
     private static final ExecutorService analisis = Executors.newSingleThreadExecutor();
     private static final ExecutorService autonomo = Executors.newSingleThreadExecutor();
 
+    /** Marca del system de la charla (Qwen lo cambia por uno corto). */
+    static final String MARCA_CHARLA = "\nCómo responder:\n";
+
     private static String fechaHora() {
         return new SimpleDateFormat("EEEE d 'de' MMMM 'de' yyyy, HH:mm", AR).format(new Date());
     }
@@ -250,7 +253,9 @@ final class Asistente {
                 : "Te escribió " + quien + " por " + e.app + ": " + (e.texto.length() > 160 ? e.texto.substring(0, 160) : e.texto);
 
         JSONObject a = new JSONObject();
-        if (Acciones.activa(c) && IA.configurada(c)) {
+        // Con Qwen en el celular cada análisis cuesta: los grupos no se analizan y, si estás hablando con Jarvis, vos primero.
+        boolean ahorrar = IA.soloLocal(c) && (e.grupo != null || conversando());
+        if (Acciones.activa(c) && IA.configurada(c) && !ahorrar) {
             try {
                 String contenido = "App: " + e.app + "\nDe: " + quien + (e.asunto != null ? "\nAsunto: " + e.asunto : "") + "\n\n" + e.texto;
                 JSONArray mensajes = new JSONArray()

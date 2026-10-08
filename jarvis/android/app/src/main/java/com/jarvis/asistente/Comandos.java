@@ -82,7 +82,7 @@ final class Comandos {
         Orden o;
         try {
             o = interpretar(original);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return null;
         }
         if (o == null) return null;
@@ -91,7 +91,8 @@ final class Comandos {
         String resultado = Herramientas.ejecutar(c, o.herramienta, o.argumentos.toString(), original);
         try {
             JSONObject r = new JSONObject(resultado);
-            if (r.has("error")) return r.optString("error");
+            // Si no salió (no encontró el contacto o la app), que lo intente la IA, que sabe más contexto.
+            if (r.has("error")) return null;
         } catch (Exception noEsUnObjeto) {
             // Algunas herramientas devuelven una lista: con no ser un error alcanza.
         }

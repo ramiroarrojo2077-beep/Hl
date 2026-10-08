@@ -242,8 +242,46 @@ final class Oido {
         return true;
     }
 
+    private static final Pattern PRIMERA_PALABRA = Pattern.compile(
+            "^[\\s\\p{Punct}¡¿…«»\\u00a0]*(?:(?:che|ey|eh|hey|hola|buenas|oye|ok|okey|bueno|dale)[\\s\\p{Punct}¡¿…«»\\u00a0]+){0,2}(\\p{L}+)");
+
+    /** Cuántas letras hay que cambiar para pasar de una palabra a otra. */
+    static int distancia(String a, String b) {
+        int[] fila = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) fila[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            int diagonal = fila[0];
+            fila[0] = i;
+            for (int j = 1; j <= b.length(); j++) {
+                int arriba = fila[j];
+                fila[j] = Math.min(Math.min(fila[j] + 1, fila[j - 1] + 1), diagonal + (a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1));
+                diagonal = arriba;
+            }
+        }
+        return fila[b.length()];
+    }
+
+    /**
+     * En una frase corta, si la primera palabra se parece mucho a "jarvis" (Whisper sin pista a veces escribe "jarbiz",
+     * "yarbis", "chavis"…), se toma como el nombre. Devuelve dónde termina esa palabra, o -1.
+     */
+    static int pareceJarvis(String normal) {
+        Matcher m = PRIMERA_PALABRA.matcher(normal);
+        if (!m.find()) return -1;
+        String palabra = m.group(1);
+        if (palabra.length() < 4 || palabra.length() > 8) return -1;
+        if ("jyglschdz".indexOf(palabra.charAt(0)) < 0) return -1;
+        int d = distancia(palabra, "jarvis");
+        // A dos letras de distancia solo si termina como "Jarvis" (así "jardín" no la abre).
+        return d <= 1 || (d == 2 && palabra.matches(".*(is|iz|ys|es|ez)")) ? m.end(1) : -1;
+    }
+
     private void enviar(List<short[]> segmento) {
         ocupado = true;
+        // Frase corta (hasta 2,5 s): es cuando vale la pena aceptar un "Jarvis" mal escrito.
+        int muestras = 0;
+        for (short[] s : segmento) muestras += s.length;
+        final boolean corta = muestras <= FRECUENCIA * 2.5;
         byte[] wav = wav(segmento);
         red.execute(() -> {
             try {
@@ -252,9 +290,10 @@ final class Oido {
                 // las posiciones sirven para cortar el texto original.
                 String normal = sinTildes(texto);
                 Matcher m = PALABRA_CLAVE.matcher(normal);
-                if (!ALUCINACIONES.matcher(texto).find() && m.find()) {
+                int fin = ALUCINACIONES.matcher(texto).find() ? -1 : m.find() ? m.end() : corta ? pareceJarvis(normal) : -1;
+                if (fin >= 0) {
                     String base = normal.length() == texto.length() ? texto : normal;
-                    String resto = base.substring(m.end()).replaceAll("^[\\s,.;:!¡¿?…]+", "").trim();
+                    String resto = base.substring(fin).replaceAll("^[\\s,.;:!¡¿?…]+", "").trim();
                     // "Jarvis… Jarvis" es llamarla, no una orden.
                     String orden = resto.replaceAll("[^\\p{L}\\p{N}]", "").length() >= 3
                             && !SOLO_NOMBRES.matcher(sinTildes(resto)).matches() ? resto : null;
