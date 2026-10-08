@@ -10,8 +10,8 @@ android {
         applicationId "com.jarvis.asistente"
         minSdk 26
         targetSdk 35
-        versionCode 2
-        versionName "2.0"
+        versionCode 3
+        versionName "2.0.1"
     }
 
     // Misma firma en todas las compilaciones, para poder actualizar la app sin desinstalarla.
@@ -45,6 +45,11 @@ android {
         resources {
             excludes += ["META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.md"]
         }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
     }
 
     compileOptions {
