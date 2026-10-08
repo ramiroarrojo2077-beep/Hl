@@ -270,6 +270,9 @@ public class Principal extends Activity {
                     .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-AR")
                     .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                    // Que no corte en una pausa: espera a que termines de hablar.
+                    .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1800)
+                    .putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500)
                     .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
             estado("escuchando");
             reconocedor.startListening(pedido);

@@ -190,7 +190,8 @@ final class Oido {
                             silencio += duracion;
                         }
                         // Para la palabra clave alcanza con frases cortas.
-                        if (silencio > 0.8 || segmento.size() * duracion > 8) {
+                        // Un poco más de un segundo: si decís "Jarvis, poné…" con una pausa corta, no te corta la orden.
+                        if (silencio > 1.0 || segmento.size() * duracion > 10) {
                             if (hablado >= 0.3) {
                                 if (Transcriptor.disponible(contexto) && puedeTranscribir()) enviar(segmento);
                                 else ruido *= 1.5;

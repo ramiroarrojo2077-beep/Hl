@@ -807,7 +807,9 @@ function analizar(bloque) {
     } else {
       oido.silencio += duracion;
     }
-    if (oido.silencio > 0.85 || oido.segmento.length * duracion > 14) cerrarSegmento();
+    // Para una orden espera a que termines de hablar (1,5 s de silencio); para detectar "Jarvis" alcanza con menos.
+    const silencioFinal = escuchandoOrden() ? (oido.hablado < 1.2 ? 2.3 : 1.5) : 1.0;
+    if (oido.silencio > silencioFinal || oido.segmento.length * duracion > 20) cerrarSegmento();
   }
 
   // Se terminó el tiempo para dar la orden sin decir "Jarvis".

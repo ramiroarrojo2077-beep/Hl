@@ -32,7 +32,13 @@ final class Dictado {
     private static final int FRECUENCIA = 16000;
     private static final int MUESTRAS_BLOQUE = 480; // 30 ms
     private static final double SIN_HABLAR_S = 7;
-    private static final double SILENCIO_FINAL_S = 1.1;
+    // Recién cuando dejás de hablar este tiempo empieza a pensar. Si apenas arrancaste (o hiciste una pausa para
+    // pensar qué decir), espera más.
+    private static final double SILENCIO_FINAL_S = 1.5;
+    private static final double SILENCIO_AL_EMPEZAR_S = 2.3;
+    private static final double EMPEZANDO_S = 1.2;
+    // Un ruido suelto (un golpe, un clic) no cuenta como voz: hacen falta al menos 3 bloques seguidos (90 ms).
+    private static final int BLOQUES_DE_VOZ = 3;
     private static final double MAXIMO_S = 25;
     private static final Pattern ALUCINACIONES = Pattern.compile(
             "amara\\.org|gracias por ver|suscr[ií]b|subt[ií]tulos|^\\W*$", Pattern.CASE_INSENSITIVE);
@@ -99,6 +105,7 @@ final class Dictado {
         }
 
         List<short[]> segmento = null;
+        double silencioFinal = 0;
         try {
             grabadora.startRecording();
             short[] bloque = new short[MUESTRAS_BLOQUE];
@@ -109,6 +116,7 @@ final class Dictado {
             double voz = 0;
             double hablado = 0;
             double silencio = 0;
+            int racha = 0;
             long ultimoNivel = 0;
             while (!cancelado && !Thread.currentThread().isInterrupted()) {
                 int leidas = grabadora.read(bloque, 0, bloque.length);
@@ -146,12 +154,21 @@ final class Dictado {
                 } else {
                     segmento.add(copia);
                     if (rms > umbral * 0.75) {
+                        racha++;
                         hablado += duracion;
-                        silencio = 0;
+                        // Seguís hablando: se reinicia la espera.
+                        if (racha >= BLOQUES_DE_VOZ) silencio = 0;
+                        else silencio += duracion;
                     } else {
+                        racha = 0;
                         silencio += duracion;
                     }
-                    if (silencio > SILENCIO_FINAL_S || segmento.size() * duracion > MAXIMO_S) break;
+                    double espera = hablado < EMPEZANDO_S ? SILENCIO_AL_EMPEZAR_S : SILENCIO_FINAL_S;
+                    if (silencio > espera) {
+                        silencioFinal = silencio;
+                        break;
+                    }
+                    if (segmento.size() * duracion > MAXIMO_S) break;
                 }
             }
             if (segmento != null && hablado < 0.25) segmento = null;
@@ -170,6 +187,9 @@ final class Dictado {
             oyente.resultado("");
             return;
         }
+        // El silencio del final no hace falta mandarlo: se deja un poquito.
+        int sobrante = (int) (Math.max(0, silencioFinal - 0.35) * FRECUENCIA / MUESTRAS_BLOQUE);
+        while (sobrante-- > 0 && segmento.size() > 10) segmento.remove(segmento.size() - 1);
         oyente.procesando();
         try {
             String texto = Transcriptor.transcribir(contexto, Oido.wav(segmento), "audio/wav").trim();
