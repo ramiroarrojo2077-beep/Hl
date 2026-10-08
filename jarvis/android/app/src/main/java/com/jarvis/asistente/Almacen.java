@@ -54,7 +54,7 @@ final class Almacen {
         }
         try {
             if (!datos.has("activa")) datos.put("activa", true);
-            for (String lista : new String[] {"historial", "memoria", "recordatorios", "avisos", "propuestas"}) {
+            for (String lista : new String[] {"historial", "memoria", "recordatorios", "avisos", "propuestas", "tareas", "rutinas", "eventosAvisados", "dichos"}) {
                 if (datos.optJSONArray(lista) == null) datos.put(lista, new JSONArray());
             }
             if (!datos.has("ultimoResumen")) datos.put("ultimoResumen", "");
@@ -80,6 +80,24 @@ final class Almacen {
     synchronized JSONArray recordatorios() { return datos.optJSONArray("recordatorios"); }
     synchronized JSONArray avisos() { return datos.optJSONArray("avisos"); }
     synchronized JSONArray propuestas() { return datos.optJSONArray("propuestas"); }
+    synchronized JSONArray tareas() { return datos.optJSONArray("tareas"); }
+    synchronized JSONArray rutinas() { return datos.optJSONArray("rutinas"); }
+    /** Eventos de la agenda que ya avisó ("titulo|inicio"). */
+    synchronized JSONArray eventosAvisados() { return datos.optJSONArray("eventosAvisados"); }
+    /** Lo último que dijo por su cuenta, para no repetirse. */
+    synchronized JSONArray dichos() { return datos.optJSONArray("dichos"); }
+
+    synchronized long numero(String clave) {
+        return datos.optLong(clave, 0);
+    }
+
+    synchronized void numero(String clave, long valor) {
+        try {
+            datos.put(clave, valor);
+        } catch (JSONException ignorada) {
+        }
+        guardar();
+    }
 
     synchronized String ultimoResumen() {
         return datos.optString("ultimoResumen", "");
@@ -123,6 +141,9 @@ final class Almacen {
             recortar("historial", MAX_HISTORIAL);
             recortar("avisos", MAX_AVISOS);
             recortar("propuestas", MAX_PROPUESTAS);
+            recortar("tareas", 150);
+            recortar("eventosAvisados", 60);
+            recortar("dichos", 12);
             json = datos.toString();
         }
         File temporal = new File(archivo.getPath() + ".tmp");

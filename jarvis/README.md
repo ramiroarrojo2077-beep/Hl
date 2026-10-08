@@ -71,6 +71,17 @@ Todo el cerebro de Jarvis (IA, memoria, recordatorios, avisos y herramientas) vi
 
 Decís «Jarvis» y se abre escuchando. Cuando te llega algo importante, se abre sola, te lo lee, te propone una respuesta y la manda solo si decís «mandala». También pone alarmas y temporizadores, abre apps, busca en internet y te da el clima y las noticias.
 
+**Trabaja sola** (Ajustes → «Trabajar sola: si»):
+- Cada 30 minutos (de 8 a 23) revisa tu correo, mensajes, agenda, tareas y borradores, y te habla solo si hay algo que valga la pena.
+- Te avisa 15 minutos antes de cada evento del calendario y cuando vence una tarea.
+- Anota sola las tareas que salen de tus mails y mensajes («pagar la tarjeta antes del 10»).
+- Rutinas: «todos los días a las 9 revisá mis mails y decime lo importante» y lo hace sola cada día.
+- Nunca envía nada sin tu «sí»: solo prepara borradores.
+
+**Correo directo**: en Ajustes poné tu Gmail y una [contraseña de aplicación](https://myaccount.google.com/apppasswords) (requiere verificación en 2 pasos). Jarvis entra directo a tu bandeja por IMAP, sin depender de las notificaciones.
+
+**Voz y oído propios**: voz neural gratis de Microsoft (Elena o Tomás de Argentina, y otras) o Gemini/ElevenLabs. Con la clave de Groq escucha con su propio oído (Whisper): sin la ventanita ni el pitido de Google.
+
 ## 4. API
 
 Todo lo que hace la interfaz se puede usar desde otras apps. Si definiste `JARVIS_TOKEN`, mandalo como `Authorization: Bearer <token>`.

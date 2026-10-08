@@ -35,6 +35,7 @@ final class Asistente {
     private static final ReentrantLock turno = new ReentrantLock(true);
     // Lo que llega se analiza de a uno, para no gastar de golpe el cupo gratis de la IA.
     private static final ExecutorService analisis = Executors.newSingleThreadExecutor();
+    private static final ExecutorService autonomo = Executors.newSingleThreadExecutor();
 
     private static String fechaHora() {
         return new SimpleDateFormat("EEEE d 'de' MMMM 'de' yyyy, HH:mm", AR).format(new Date());
@@ -74,11 +75,16 @@ final class Asistente {
             }
         }
         String conexiones = "acceso a notificaciones: " + (Escucha.permisoConcedido(c) ? "sí" : "no (pedile que lo active)")
-                + "; correo por IMAP: " + (Correo.configurado(c) ? "sí" : "no");
+                + "; correo por IMAP: " + (Correo.configurado(c) ? "sí, entrás directo a su bandeja" : "no (decile que cargue su Gmail y una contraseña de aplicación en Ajustes)");
         return "Sos Jarvis, la asistente personal de " + usuario + ". Sos mujer, hablás en español rioplatense (de vos), con calidez, "
                 + "ingenio y un toque de humor británico al estilo del Jarvis de Iron Man. Vivís en el celular de " + usuario
                 + ": te enterás de lo que le llega por las notificaciones de sus apps (WhatsApp, Gmail, Telegram, Instagram, SMS…) "
-                + "y podés responder desde ahí, poner alarmas, abrir apps y más. Sos proactiva.\n\n"
+                + "y podés responder desde ahí, entrar directo a su correo, ver su agenda, poner alarmas, llamar, abrir apps y más.\n"
+                + "No sos un asistente de voz genérico: sos SU Jarvis. Anticipás lo que necesita, tomás la iniciativa, hacés el trabajo "
+                + "completo (buscás, comparás, leés y resumís) en vez de mandarlo a buscar, y le hablás como alguien de confianza. "
+                + "Además trabajás sola: cada 30 minutos revisás su correo, mensajes, agenda y tareas, y le avisás lo importante. "
+                + "Si te pide algo recurrente (\"todos los días a las 8 revisá mis mails\"), creá una rutina con crear_rutina; si es algo "
+                + "para hacer o acordarse después, agregar_tarea o crear_recordatorio. Si en una charla surge algo que tiene que hacer, anotalo como tarea.\n\n"
                 + "Ahora: " + fechaHora() + " (zona " + TimeZone.getDefault().getID() + ")."
                 + (ciudad.isEmpty() ? "" : " Ciudad de " + usuario + ": " + ciudad + ".") + "\n"
                 + "Canal: " + ("voz".equals(canal) ? "voz: te habla y tu respuesta se dice en voz alta" : canal) + ".\n\n"
@@ -94,7 +100,20 @@ final class Asistente {
                 + "Memoria sobre " + usuario + ":\n" + (memoria.length() == 0 ? "(vacía)\n" : memoria)
                 + "\nAvisos recientes (con id, para responder_aviso):\n" + (avisos.length() == 0 ? "(ninguno)\n" : avisos)
                 + "\nBorradores esperando aprobación (el primero es el más reciente):\n" + (borradores.length() == 0 ? "(ninguno)\n" : borradores)
+                + "\nTareas pendientes:\n" + tareasPendientes(c)
                 + "\nConexiones: " + conexiones;
+    }
+
+    private static String tareasPendientes(Context c) {
+        JSONArray t = Autonomia.tareas(c, false);
+        if (t.length() == 0) return "(ninguna)\n";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(10, t.length()); i++) {
+            JSONObject o = t.optJSONObject(i);
+            sb.append("- [").append(o.optString("id")).append("] ").append(o.optString("texto"))
+                    .append(o.optString("para").isEmpty() ? "" : " (para " + o.optString("para") + ")").append('\n');
+        }
+        return sb.toString();
     }
 
     static String chat(Context c, String texto, String canal, IA.AlTexto alTexto, AlHerramienta alHerramienta)
@@ -186,10 +205,10 @@ final class Asistente {
                 JSONArray mensajes = new JSONArray()
                         .put(new JSONObject().put("role", "system").put("content",
                                 "Sos Jarvis, la asistente personal de " + usuario + " (español rioplatense, de vos). Te llega un mensaje nuevo por "
-                                        + e.app + ". Decidí si merece avisarle y redactá el aviso.\n"
+                                        + e.app + ". Decidí si merece avisarle y redactá el aviso. Ahora: " + fechaHora() + ".\n"
                                         + "Respondé SOLO con un JSON así:\n"
                                         + "{\"importancia\":\"alta|media|baja\",\"resumen\":\"una frase con lo esencial\",\"aviso\":\"lo que le decís en voz alta, natural y corto, ej: 'Che "
-                                        + usuario + ", te escribió Juan: pregunta si mañana seguís con la reunión de las 10.'\",\"responder\":true,\"respuesta\":\"borrador de respuesta\"}\n"
+                                        + usuario + ", te escribió Juan: pregunta si mañana seguís con la reunión de las 10.'\",\"responder\":true,\"respuesta\":\"borrador de respuesta\",\"tarea\":\"algo concreto que " + usuario + " tiene que hacer por este mensaje (ej: 'Mandarle el presupuesto a Juan') o vacío\",\"tareaPara\":\"fecha ISO local límite o vacío\"}\n"
                                         + "Criterios:\n- alta: personas reales que esperan respuesta pronto, temas urgentes, plata, trabajo, familia, seguridad de cuentas.\n"
                                         + "- media: mensajes personales normales, avisos útiles.\n- baja: publicidad, newsletters, notificaciones automáticas, códigos de verificación, spam.\n"
                                         + "- responder: true solo si " + (e.puedeResponder() ? "es una persona real que espera respuesta" : "nunca (no se puede responder)")
@@ -221,6 +240,13 @@ final class Asistente {
             propuesta = Acciones.crearPropuesta(c, datos);
         }
 
+        String tarea = a.optString("tarea", "").trim();
+        if (tarea.length() > 3 && !"baja".equals(a.optString("importancia"))) {
+            try {
+                Autonomia.agregarTarea(c, tarea, a.optString("tareaPara", ""), "alta".equals(a.optString("importancia")) ? "alta" : "media", "jarvis");
+            } catch (Exception ignorada) {
+            }
+        }
         String importancia = a.optString("importancia");
         if (!"alta".equals(importancia) && !"media".equals(importancia) && !"baja".equals(importancia)) {
             importancia = e.grupo != null ? "baja" : "media";
@@ -274,6 +300,29 @@ final class Asistente {
             for (int i = 0; i < p.length(); i++) if ("pendiente".equals(p.optJSONObject(i).optString("estado"))) pendientes++;
         }
         if (hoyRec.length() > 0) partes.append("Recordatorios de hoy: ").append(hoyRec).append('\n');
+        try {
+            JSONArray ev = Telefono.agenda(c, System.currentTimeMillis(), fin.getTimeInMillis());
+            if (ev.length() > 0) {
+                partes.append("Agenda de hoy: ");
+                for (int i = 0; i < ev.length(); i++) {
+                    JSONObject e = ev.getJSONObject(i);
+                    partes.append(e.optString("titulo")).append(" (").append(e.optBoolean("todoElDia") ? "todo el día"
+                            : new SimpleDateFormat("HH:mm", AR).format(new Date(Almacen.leerIso(e.optString("inicio"))))).append("); ");
+                }
+                partes.append('\n');
+            }
+        } catch (Exception sinPermiso) {
+        }
+        JSONArray tareas = Autonomia.tareas(c, false);
+        if (tareas.length() > 0) {
+            partes.append("Tareas pendientes (").append(tareas.length()).append("): ");
+            for (int i = 0; i < Math.min(4, tareas.length()); i++) partes.append(tareas.optJSONObject(i).optString("texto")).append("; ");
+            partes.append('\n');
+        }
+        int noLeidos = 0;
+        JSONArray cuentas = Correo.estado();
+        for (int i = 0; i < cuentas.length(); i++) noLeidos += cuentas.optJSONObject(i).optInt("noLeidos");
+        if (noLeidos > 0) partes.append("Mails sin leer: ").append(noLeidos).append(".\n");
         if (pendientes > 0) partes.append("Respuestas esperando aprobación: ").append(pendientes).append(".\n");
         try {
             JSONArray n = Info.noticias(c, "", 5);
@@ -323,6 +372,8 @@ final class Asistente {
         }
         long resumen = proximoResumen(c);
         if (resumen > 0) proxima = Math.min(proxima, resumen);
+        long autonoma = Autonomia.proxima(c);
+        if (autonoma > 0) proxima = Math.min(proxima, autonoma);
 
         AlarmManager alarmas = c.getSystemService(AlarmManager.class);
         PendingIntent pi = PendingIntent.getBroadcast(c, 0, new Intent(c, Alarma.class),
@@ -389,5 +440,22 @@ final class Asistente {
             }
         }
         programar(c);
+        // Lo que hace sola (agenda, tareas, rutinas, revisión) puede tardar: va aparte, con el CPU despierto.
+        if (Acciones.activa(c) && !enCiclo) {
+            enCiclo = true;
+            autonomo.execute(() -> {
+                android.os.PowerManager.WakeLock despierta = c.getSystemService(android.os.PowerManager.class)
+                        .newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "jarvis:autonomia");
+                despierta.acquire(4 * 60_000L);
+                try {
+                    Autonomia.ciclo(c);
+                } finally {
+                    enCiclo = false;
+                    if (despierta.isHeld()) despierta.release();
+                }
+            });
+        }
     }
+
+    private static volatile boolean enCiclo;
 }

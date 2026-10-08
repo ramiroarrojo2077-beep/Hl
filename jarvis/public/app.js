@@ -45,6 +45,24 @@ const NOMBRES_HERRAMIENTA = {
   proponer_email: "redactando mail",
   proponer_whatsapp: "redactando WhatsApp",
   abrir: "abriendo",
+  estado_celular: "revisando el celular",
+  leer_mensajes: "leyendo tus mensajes",
+  buscar_emails: "buscando en tu correo",
+  proponer_sms: "redactando SMS",
+  enviar_borrador: "enviando",
+  ver_agenda: "mirando tu agenda",
+  crear_evento: "agendando",
+  agregar_tarea: "anotando tarea",
+  ver_tareas: "revisando tareas",
+  completar_tarea: "tachando tarea",
+  crear_rutina: "programando rutina",
+  ver_rutinas: "revisando rutinas",
+  revisar_todo: "revisando todo",
+  buscar_contacto: "buscando contacto",
+  llamar: "llamando",
+  poner_alarma: "poniendo alarma",
+  navegar: "abriendo el mapa",
+  reproducir: "poniendo música",
 };
 const ACCESOS = [
   ["Gmail", "https://mail.google.com"],
@@ -300,7 +318,10 @@ function dibujarEstado(e) {
       e.notificaciones ? "ok" : "mal", e.notificaciones ? undefined : activar("notificaciones")));
     filas.push(filaConexion("i-jarvis", "Abrirse sola", e.superponer ? "Se abre cuando la llamás o hay un aviso" : "Tocá ACTIVAR para que aparezca sola",
       e.superponer ? "ok" : "mal", e.superponer ? undefined : activar("superponer")));
-    filas.push(filaConexion("i-parlante", "Voz", e.vozNatural ? "ElevenLabs" : "Voz del celular", "ok"));
+    const VOCES = { elena: "Elena (neural, Argentina)", tomas: "Tomás (neural, Argentina)", dalia: "Dalia (neural, México)", paloma: "Paloma (neural, EE.UU.)",
+      elvira: "Elvira (neural, España)", gemini: "Gemini", elevenlabs: "ElevenLabs", sistema: "Voz del celular" };
+    filas.push(filaConexion("i-parlante", "Voz", VOCES[e.vozNombre] ?? (e.vozNatural ? "ElevenLabs" : "Voz del celular"), "ok"));
+    filas.push(filaConexion("i-mic", "Oído", e.oidoPropio ? "Propio (Whisper), sin Google" : "Del sistema · pegá la clave de Groq para el propio", e.oidoPropio ? "ok" : "espera"));
     $("#conexiones").replaceChildren(...filas);
     $("#ajustes").hidden = !e.ajustes;
     if (e.ajustes && e.ia.length === 0 && !ajustesMostrados) {
@@ -332,6 +353,7 @@ function dibujarEstado(e) {
   $("#conexiones").replaceChildren(...filas);
   }
 
+  if (e.movil) dibujarHoy();
   $("#marca-estado").textContent = !e.activa ? "DESACTIVADA" : ia ? "EN LÍNEA" : "SIN IA";
   const boton = $("#interruptor");
   boton.setAttribute("aria-pressed", String(e.activa));
@@ -364,7 +386,11 @@ const CAMPOS_AJUSTES = [
   ["elevenlabs", "Clave de ElevenLabs (voz natural)", "password", "https://elevenlabs.io"],
   ["elevenlabsVoz", "ID de voz de ElevenLabs", "text", "Vacío = elige sola una voz femenina en español"],
   ["picovoice", "AccessKey de Picovoice", "password", "https://console.picovoice.ai · detecta «Jarvis» sin internet"],
-  ["emailCuentas", "Cuentas de correo (opcional)", "password", "vos@gmail.com:contraseñadeaplicación · https://myaccount.google.com/apppasswords"],
+  ["voz", "Voz de Jarvis", "select:elena,tomas,dalia,paloma,elvira,gemini,elevenlabs,sistema", "elena = argentina natural (gratis) · tomas = argentino · gemini usa tu clave de Gemini"],
+  ["emailUsuario", "Tu Gmail (para que entre directo a tu correo)", "email", "vos@gmail.com"],
+  ["emailClave", "Contraseña de aplicación de ese Gmail", "password", "16 letras · se crea en https://myaccount.google.com/apppasswords (hace falta verificación en 2 pasos)"],
+  ["autonomo", "Trabajar sola", "select:si,no", "si = cada 30 min revisa correo, mensajes, agenda y tareas y te avisa lo importante"],
+  ["emailCuentas", "Otras cuentas de correo (opcional)", "password", "otra@gmail.com:contraseñadeaplicación,otra2@…"],
   ["tavily", "Clave de Tavily (opcional)", "password", "https://tavily.com · búsqueda web más precisa"],
   ["openrouter", "Clave de OpenRouter (opcional)", "password", "https://openrouter.ai"],
   ["openrouterModelo", "Modelo de OpenRouter", "text", "Ej: un modelo :free con herramientas"],
@@ -1231,6 +1257,10 @@ function conectarEventos() {
     avisos.unshift(aviso);
     avisos = avisos.slice(0, 40);
     dibujarAvisos();
+    if (movil) {
+      dibujarHoy();
+      if (aviso.canal === "email") void cargarCorreo(true);
+    }
     // En el celular, si la app no está a la vista, el aviso lo da el servicio de Android.
     if (debeHablar && !(movil && document.hidden)) {
       // Se abre sola para decirte algo y, si hay respuesta sugerida, te la lee y espera tu "mandala".
@@ -1250,6 +1280,10 @@ function conectarEventos() {
     dibujarAvisos();
   });
   al("recordatorios", dibujarRecordatorios);
+  al("tareas", (d) => {
+    tareasDatos = d;
+    dibujarTareas();
+  });
   al("historial", ({ canal, pregunta, respuesta }) => {
     // Lo que se habló por Telegram o por la API también aparece acá.
     if (canal === "telegram" || canal === "api") {
@@ -1261,6 +1295,213 @@ function conectarEventos() {
   fuente.onerror = () => {
     $("#marca-estado").textContent = "RECONECTANDO…";
   };
+}
+
+// ---------- Lo que Jarvis hace sola (celular): hoy, agenda, tareas, rutinas y correo ----------
+
+let tareasDatos = { tareas: [], rutinas: [] };
+let agendaDatos = [];
+let correoDatos = null;
+
+const PEDIDOS_RAPIDOS = [
+  ["REVISÁ TODO", null],
+  ["¿QUÉ TENGO HOY?", "¿Qué tengo hoy? Agenda, tareas y lo que esté pendiente."],
+  ["MIS MAILS", "Entrá a mi correo y decime lo importante de lo que no leí."],
+  ["MENSAJES", "¿Qué mensajes me llegaron hoy? Resumímelos."],
+  ["RESUMEN DEL DÍA", "Dame el resumen del día."],
+  ["MIS TAREAS", "¿Qué tareas tengo pendientes?"],
+];
+
+function dibujarPedidos() {
+  $("#chips").replaceChildren(
+    ...PEDIDOS_RAPIDOS.map(([rotulo, pedido]) =>
+      el("button", { type: "button", onclick: () => (pedido ? void preguntar(pedido, "voz") : void revisarAhora()) }, rotulo),
+    ),
+  );
+}
+
+async function revisarAhora() {
+  agregarLinea("yo", "Revisá todo.");
+  ponerEstado("pensando");
+  try {
+    const r = await api("/api/revisar", { metodo: "POST" });
+    ponerEstado(null);
+    // Si encontró algo, el aviso llega solo (y se dice en voz alta); si no, lo cuenta acá.
+    if (!r.dijo) {
+      agregarLinea("jarvis", r.texto);
+      hablar(r.texto);
+    }
+  } catch (err) {
+    ponerEstado(null);
+    agregarLinea("jarvis error", err.message);
+  }
+  void cargarTrabajo();
+}
+
+function horaCorta(iso) {
+  return new Date(iso).toLocaleTimeString(LOCALE, HORA);
+}
+
+function dibujarHoy() {
+  if (!estado?.movil) return;
+  const ahora = Date.now();
+  const proximo = agendaDatos.find((e) => !e.todoElDia && new Date(e.inicio).getTime() > ahora - 5 * 60_000);
+  const pendientes = tareasDatos.tareas.filter((t) => t.estado === "pendiente");
+  const noLeidos = (estado.email ?? []).reduce((n, c) => n + (c.noLeidos || 0), 0);
+  const borradores = [...propuestas.values()].filter((p) => p.estado === "pendiente").length;
+  const hoyTexto = new Date().toDateString();
+  const avisosHoy = avisos.filter((a) => new Date(a.fecha).toDateString() === hoyTexto).length;
+  const dato = (rotulo, valor, detalle, ancho) => el("li", { class: ancho ? "ancho" : "" }, el("span", {}, rotulo), el("b", {}, valor), detalle ? el("small", {}, detalle) : null);
+  $("#hoy").replaceChildren(
+    dato(
+      "Próximo",
+      proximo ? horaCorta(proximo.inicio) : "—",
+      proximo ? `${proximo.titulo}${new Date(proximo.inicio).toDateString() === hoyTexto ? "" : " · " + proximo.cuando}` : "Nada más en la agenda",
+      true,
+    ),
+    dato("Tareas", String(pendientes.length), pendientes[0]?.texto ?? "Al día"),
+    dato("Mails sin leer", estado.email?.length ? String(noLeidos) : "—", estado.email?.length ? estado.email[0].cuenta : "Cargá tu Gmail en ⚙"),
+    dato("Por aprobar", String(borradores), borradores ? "Respuestas listas para mandar" : "Nada esperando"),
+    dato("Avisos hoy", String(avisosHoy), avisos[0] ? `Último: ${avisos[0].de}` : "Todo tranquilo"),
+    dato(
+      "Modo autónomo",
+      estado.autonomo ? "ACTIVO" : "APAGADO",
+      estado.autonomo
+        ? estado.ultimaRevision
+          ? `Revisó todo a las ${horaCorta(estado.ultimaRevision)} · vuelve cada 30 min`
+          : "Revisa correo, mensajes y agenda cada 30 min"
+        : "Activalo en ⚙ Ajustes → Trabajar sola",
+      true,
+    ),
+  );
+  $("#modo-autonomo").textContent = estado.autonomo && estado.activa ? "AUTÓNOMA" : "";
+}
+
+function dibujarAgenda() {
+  const lista = agendaDatos.slice(0, 8);
+  const hoyTexto = new Date().toDateString();
+  $("#agenda").replaceChildren(
+    ...(lista.length
+      ? lista.map((e) => {
+          const fecha = new Date(e.inicio);
+          const cuando = e.todoElDia
+            ? fecha.toDateString() === hoyTexto ? "HOY" : fecha.toLocaleDateString(LOCALE, { weekday: "short", day: "numeric" })
+            : fecha.toDateString() === hoyTexto ? horaCorta(e.inicio) : fecha.toLocaleString(LOCALE, { weekday: "short", ...HORA });
+          return el("li", {}, el("span", {}, e.titulo), el("time", { datetime: e.inicio }, cuando), e.lugar ? el("small", {}, e.lugar) : null);
+        })
+      : [el("li", { class: "vacio" }, "Nada en los próximos 3 días.")]),
+  );
+}
+
+function dibujarTareas() {
+  const { tareas, rutinas } = tareasDatos;
+  const pendientes = tareas.filter((t) => t.estado === "pendiente");
+  $("#contador-tareas").textContent = pendientes.length ? String(pendientes.length) : "";
+  const visibles = [...pendientes, ...tareas.filter((t) => t.estado !== "pendiente").slice(0, 3)].slice(0, 12);
+  $("#tareas").replaceChildren(
+    ...(visibles.length
+      ? visibles.map((t) => {
+          const hecha = t.estado !== "pendiente";
+          const detalle = [t.origen === "jarvis" ? "La anotó Jarvis" : "", t.para ? `Para ${new Date(t.para).toLocaleString(LOCALE, { day: "numeric", month: "short", ...HORA })}` : ""]
+            .filter(Boolean)
+            .join(" · ");
+          return el(
+            "li",
+            { class: hecha ? "hecha" : "" },
+            el("button", { type: "button", class: "marcar", title: hecha ? "Hecha" : "Marcar como hecha", onclick: () => !hecha && void completarTarea(t.id) }, hecha ? "✓" : ""),
+            el("span", {}, t.texto),
+            el("button", { type: "button", class: "enlace-boton", title: "Borrar", onclick: () => void borrarTrabajo("tareas", t.id) }, "✕"),
+            detalle ? el("small", { class: t.origen === "jarvis" ? "jarvis" : "" }, detalle) : null,
+          );
+        })
+      : [el("li", { class: "vacio" }, "Sin tareas. Jarvis anota sola las que salen de tus mails y mensajes.")]),
+  );
+  $("#rutinas").replaceChildren(
+    ...(rutinas.length
+      ? rutinas.map((r) =>
+          el(
+            "li",
+            {},
+            el("span", {}, r.texto),
+            el("time", {}, `${r.hora}${r.dias && r.dias !== "todos" ? " · " + r.dias : ""}`),
+            el("small", {}, el("button", { type: "button", class: "enlace-boton", onclick: () => void borrarTrabajo("rutinas", r.id) }, "BORRAR")),
+          ),
+        )
+      : [el("li", { class: "vacio" }, "Pedile: «todos los días a las 9 revisá mis mails y decime lo importante».")]),
+  );
+  dibujarHoy();
+}
+
+function dibujarCorreo() {
+  const d = correoDatos;
+  if (!d) return;
+  const total = (d.cuentas ?? []).reduce((n, c) => n + (c.noLeidos || 0), 0);
+  $("#contador-correo").textContent = total ? String(total) : "";
+  let filas;
+  if (!d.configurado) {
+    filas = [el("li", { class: "vacio" }, "Cargá tu Gmail y su contraseña de aplicación en ⚙ Ajustes: Jarvis entra directo a tu bandeja.")];
+  } else if (d.error && !d.mails.length) {
+    filas = [el("li", { class: "vacio" }, d.error)];
+  } else if (!d.mails.length) {
+    filas = [el("li", { class: "vacio" }, "Bandeja al día: nada sin leer.")];
+  } else {
+    filas = d.mails.map((m) => el("li", {}, el("span", {}, m.asunto || "(sin asunto)"), el("time", { datetime: m.fecha }, haceCuanto(m.fecha)), el("small", {}, `${m.de} — ${m.texto}`)));
+  }
+  $("#correo").replaceChildren(...filas);
+}
+
+async function completarTarea(id) {
+  try {
+    await api(`/api/tareas/${encodeURIComponent(id)}/hecha`, { metodo: "POST" });
+  } catch (err) {
+    agregarLinea("jarvis error", err.message);
+  }
+}
+
+async function borrarTrabajo(lista, id) {
+  try {
+    await api(`/api/${lista}/${encodeURIComponent(id)}`, { metodo: "DELETE" });
+  } catch (err) {
+    agregarLinea("jarvis error", err.message);
+  }
+}
+
+async function cargarTrabajo() {
+  if (!movil) return;
+  const [trabajo, agenda] = await Promise.all([api("/api/tareas").catch(() => null), api("/api/agenda").catch(() => null)]);
+  if (trabajo) tareasDatos = trabajo;
+  if (agenda) agendaDatos = agenda;
+  dibujarAgenda();
+  dibujarTareas();
+}
+
+async function cargarCorreo(refrescar = false) {
+  if (!movil) return;
+  correoDatos = await api(`/api/correo${refrescar ? "?refrescar=1" : ""}`).catch(() => correoDatos);
+  dibujarCorreo();
+  dibujarHoy();
+}
+
+function iniciarTrabajo() {
+  if (!movil) return;
+  for (const id of ["chips", "panel-hoy", "panel-agenda", "panel-tareas", "panel-correo"]) $(`#${id}`).hidden = false;
+  dibujarPedidos();
+  $("#nueva-tarea").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const campo = e.target.elements.texto;
+    const texto = campo.value.trim();
+    if (!texto) return;
+    campo.value = "";
+    try {
+      await api("/api/tareas", { metodo: "POST", json: { texto } });
+    } catch (err) {
+      agregarLinea("jarvis error", err.message);
+    }
+  });
+  void cargarTrabajo();
+  void cargarCorreo();
+  setInterval(cargarTrabajo, 5 * 60_000);
+  setInterval(cargarCorreo, 4 * 60_000);
 }
 
 // ---------- Arranque ----------
@@ -1296,6 +1537,7 @@ function iniciar() {
   }), 60_000);
   void cargarInicial();
   conectarEventos();
+  iniciarTrabajo();
   dibujarBotonVoz();
   actualizarPista();
   if (movil) window.Android.escuchaContinua(oido.continuo);

@@ -298,6 +298,63 @@ final class Herramientas {
                 .parametro("texto", "string", "Texto a copiar")
                 .requeridos("texto");
 
+        agregar("buscar_emails", "Busca mails en la bandeja de entrada por persona, asunto o palabra (ej: 'facturas', 'Juan', 'reserva').",
+                (c, a, u) -> {
+                    JSONArray r = Correo.buscar(c, texto(a, "consulta"), numero(a, "cantidad", 5, 15));
+                    return r.length() == 0 ? new JSONObject().put("mails", r).put("nota", "No encontré mails con eso.") : r;
+                })
+                .parametro("consulta", "string", "Qué buscar")
+                .parametro("cantidad", "integer", "Cuántos, por defecto 5 (máximo 15)")
+                .requeridos("consulta")
+                .si(Herramientas::hayCorreo);
+
+        agregar("agregar_tarea", "Anota una tarea pendiente del usuario (Jarvis se la recuerda si tiene fecha y la tiene en cuenta al revisar).",
+                (c, a, u) -> Autonomia.agregarTarea(c, texto(a, "texto"), texto(a, "para"), texto(a, "prioridad"), "vos"))
+                .parametro("texto", "string", "La tarea, en una frase")
+                .parametro("para", "string", "Fecha y hora límite local ISO 8601, opcional")
+                .parametro("prioridad", "string", "alta | media | baja")
+                .requeridos("texto");
+
+        agregar("ver_tareas", "Lista las tareas pendientes (y las últimas hechas).",
+                (c, a, u) -> {
+                    JSONArray t = Autonomia.tareas(c, true);
+                    return t.length() == 0 ? new JSONObject().put("nota", "No hay tareas.") : t;
+                });
+
+        agregar("completar_tarea", "Marca una tarea como hecha por su id.",
+                (c, a, u) -> Autonomia.completarTarea(c, texto(a, "id")))
+                .parametro("id", "string", "Id de la tarea")
+                .requeridos("id");
+
+        agregar("borrar_tarea", "Borra una tarea por su id.",
+                (c, a, u) -> Autonomia.borrar(c, "tareas", texto(a, "id")))
+                .parametro("id", "string", "Id de la tarea")
+                .requeridos("id");
+
+        agregar("crear_rutina",
+                "Crea una rutina: algo que Jarvis hace sola todos los días (o ciertos días) a una hora, y después le cuenta el resultado. "
+                        + "Ej: 'revisá mis mails y decime lo importante', 'buscá el precio del dólar blue', 'decime el pronóstico'.",
+                (c, a, u) -> Autonomia.crearRutina(c, texto(a, "tarea"), texto(a, "hora"), texto(a, "dias")))
+                .parametro("tarea", "string", "La instrucción, como se la darías a Jarvis")
+                .parametro("hora", "string", "HH:MM (24 h)")
+                .parametro("dias", "string", "todos | laborables | finde | días separados por coma: lun,mar,mie,jue,vie,sab,dom")
+                .requeridos("tarea", "hora");
+
+        agregar("ver_rutinas", "Lista las rutinas programadas.",
+                (c, a, u) -> {
+                    JSONArray r = Autonomia.rutinas(c);
+                    return r.length() == 0 ? new JSONObject().put("nota", "No hay rutinas.") : r;
+                });
+
+        agregar("borrar_rutina", "Borra una rutina por su id.",
+                (c, a, u) -> Autonomia.borrar(c, "rutinas", texto(a, "id")))
+                .parametro("id", "string", "Id de la rutina")
+                .requeridos("id");
+
+        agregar("revisar_todo",
+                "Revisa ya mismo correo, mensajes, agenda, tareas y borradores y devuelve un panorama (lo que Jarvis hace sola cada 30 minutos).",
+                (c, a, u) -> new JSONObject().put("panorama", Autonomia.foto(c)));
+
         agregar("ajustes_celular",
                 "Abre un ajuste del celular para que el usuario lo cambie (Android no deja que las apps prendan el wifi solas).",
                 (c, a, u) -> Telefono.ajustes(c, texto(a, "cual")))
@@ -358,9 +415,15 @@ final class Herramientas {
 
     /** Definiciones OpenAI [{type:"function", function:{name, description, parameters?}}] de las herramientas disponibles. */
     static JSONArray definiciones(Context c) {
+        return definiciones(c, null);
+    }
+
+    /** Solo las herramientas de la lista (null = todas). */
+    static JSONArray definiciones(Context c, java.util.Set<String> solo) {
         JSONArray lista = new JSONArray();
         for (Map.Entry<String, Herramienta> e : HERRAMIENTAS.entrySet()) {
             Herramienta h = e.getValue();
+            if (solo != null && !solo.contains(e.getKey())) continue;
             if (!disponible(c, h)) continue;
             try {
                 JSONObject funcion = new JSONObject().put("name", e.getKey()).put("description", h.descripcion);

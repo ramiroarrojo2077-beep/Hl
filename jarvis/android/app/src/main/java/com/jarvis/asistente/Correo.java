@@ -54,9 +54,17 @@ final class Correo {
     private static final List<Cuenta> cuentas = new ArrayList<>();
     private static String configuracionActual = "";
 
+    private static String configuracion(Context c) {
+        String unica = Ajustes.texto(c, Ajustes.EMAIL_USUARIO).trim();
+        String clave = Ajustes.texto(c, Ajustes.EMAIL_CLAVE).replaceAll("\\s+", "");
+        String varias = Ajustes.texto(c, Ajustes.EMAIL_CUENTAS);
+        if (unica.isEmpty() || clave.isEmpty()) return varias;
+        return unica + ":" + clave + (varias.isEmpty() ? "" : "," + varias);
+    }
+
     private static List<Cuenta> leerCuentas(Context c) {
         List<Cuenta> lista = new ArrayList<>();
-        for (String entrada : Ajustes.texto(c, Ajustes.EMAIL_CUENTAS).split(",")) {
+        for (String entrada : configuracion(c).split(",")) {
             int separador = entrada.indexOf(':');
             if (separador <= 0) continue;
             Cuenta cuenta = new Cuenta();
@@ -87,7 +95,7 @@ final class Correo {
 
     /** Arranca (o reinicia, si cambiaron las cuentas) la escucha de todas las cuentas. Los mails nuevos van a Asistente.entrante. */
     static synchronized void iniciar(Context c) {
-        String configuracion = Ajustes.texto(c, Ajustes.EMAIL_CUENTAS);
+        String configuracion = configuracion(c);
         if (configuracion.equals(configuracionActual) && !cuentas.isEmpty()) return;
         detener();
         configuracionActual = configuracion;
@@ -293,6 +301,40 @@ final class Correo {
                     todos.add(new JSONObject()
                             .put("cuenta", cuenta.usuario).put("de", e.responderA).put("deNombre", e.de)
                             .put("asunto", e.asunto).put("texto", e.texto.length() > 1200 ? e.texto.substring(0, 1200) : e.texto)
+                            .put("fecha", Almacen.iso(m.getReceivedDate() != null ? m.getReceivedDate().getTime() : System.currentTimeMillis()))
+                            .put("leido", m.isSet(Flags.Flag.SEEN)));
+                }
+            } finally {
+                cerrar(store);
+            }
+        }
+        todos.sort((a, b) -> b.optString("fecha").compareTo(a.optString("fecha")));
+        JSONArray salida = new JSONArray();
+        for (int i = 0; i < Math.min(cantidad, todos.size()); i++) salida.put(todos.get(i));
+        return salida;
+    }
+
+    /** Busca en la bandeja de entrada por remitente, asunto o texto: [{cuenta, de, deNombre, asunto, texto, fecha, leido}]. */
+    static JSONArray buscar(Context c, String consulta, int cantidad) throws Exception {
+        List<Cuenta> lista = leerCuentas(c);
+        if (lista.isEmpty()) throw new Exception("No hay ninguna cuenta de correo configurada. Cargala en Ajustes.");
+        javax.mail.search.SearchTerm termino = new javax.mail.search.OrTerm(new javax.mail.search.SearchTerm[] {
+            new javax.mail.search.FromStringTerm(consulta), new javax.mail.search.SubjectTerm(consulta), new javax.mail.search.BodyTerm(consulta),
+        });
+        List<JSONObject> todos = new ArrayList<>();
+        for (Cuenta cuenta : lista) {
+            Store store = null;
+            try {
+                store = conectar(cuenta);
+                Folder bandeja = store.getFolder("INBOX");
+                bandeja.open(Folder.READ_ONLY);
+                Message[] mensajes = bandeja.search(termino);
+                for (int i = Math.max(0, mensajes.length - cantidad); i < mensajes.length; i++) {
+                    Message m = mensajes[i];
+                    Entrante e = aEntrante(cuenta.usuario, m);
+                    todos.add(new JSONObject()
+                            .put("cuenta", cuenta.usuario).put("de", e.responderA).put("deNombre", e.de)
+                            .put("asunto", e.asunto).put("texto", e.texto.length() > 1500 ? e.texto.substring(0, 1500) : e.texto)
                             .put("fecha", Almacen.iso(m.getReceivedDate() != null ? m.getReceivedDate().getTime() : System.currentTimeMillis()))
                             .put("leido", m.isSet(Flags.Flag.SEEN)));
                 }

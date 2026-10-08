@@ -301,6 +301,10 @@ final class ServidorLocal {
                 .put("ia", IA.proveedores(c))
                 .put("voz", true)
                 .put("vozNatural", ElevenLabs.disponible(c))
+                .put("vozNombre", Ajustes.texto(c, Ajustes.VOZ))
+                .put("oidoPropio", Dictado.disponible(c))
+                .put("autonomo", "si".equals(Ajustes.texto(c, Ajustes.AUTONOMO)))
+                .put("ultimaRevision", Almacen.de(c).numero("ultimaRevision"))
                 .put("email", Correo.estado())
                 .put("whatsapp", new JSONObject().put("estado", "apagado"))
                 .put("telegram", new JSONObject().put("estado", "apagado"))
@@ -483,6 +487,30 @@ final class ServidorLocal {
                 eventos = new JSONArray();
             }
             responderJson(out, 200, eventos);
+        } else if (m.equals("GET") && r.equals("/api/tareas")) {
+            responderJson(out, 200, new JSONObject().put("tareas", Autonomia.tareas(c, true)).put("rutinas", Autonomia.rutinas(c)));
+        } else if (m.equals("POST") && r.equals("/api/tareas")) {
+            JSONObject j = p.json();
+            responderJson(out, 201, conError400(() -> Autonomia.agregarTarea(c, j.optString("texto"), j.optString("para"), j.optString("prioridad"), "vos")));
+        } else if (m.equals("POST") && r.startsWith("/api/tareas/") && (id = id(r, "/api/tareas/", "/hecha")) != null) {
+            String tarea = id;
+            responderJson(out, 200, conError400(() -> Autonomia.completarTarea(c, tarea)));
+        } else if (m.equals("DELETE") && r.startsWith("/api/tareas/") && (id = id(r, "/api/tareas/", null)) != null) {
+            String tarea = id;
+            responderJson(out, 200, conError400(() -> Autonomia.borrar(c, "tareas", tarea)));
+        } else if (m.equals("POST") && r.equals("/api/rutinas")) {
+            JSONObject j = p.json();
+            JSONObject nueva = conError400(() -> Autonomia.crearRutina(c, j.optString("texto"), j.optString("hora"), j.optString("dias")));
+            Asistente.programar(c);
+            responderJson(out, 201, nueva);
+        } else if (m.equals("DELETE") && r.startsWith("/api/rutinas/") && (id = id(r, "/api/rutinas/", null)) != null) {
+            String rutina = id;
+            responderJson(out, 200, conError400(() -> Autonomia.borrar(c, "rutinas", rutina)));
+        } else if (m.equals("POST") && r.equals("/api/revisar")) {
+            String dicho = conError502(() -> Autonomia.revisar(c, true));
+            responderJson(out, 200, new JSONObject().put("texto", dicho.isEmpty() ? "Revisé todo: no hay nada urgente." : dicho).put("dijo", !dicho.isEmpty()));
+        } else if (m.equals("GET") && r.equals("/api/correo")) {
+            responderJson(out, 200, correo(c, "1".equals(p.parametros.get("refrescar"))));
         } else if (m.equals("GET") && r.equals("/api/ajustes")) {
             responderJson(out, 200, Ajustes.comoJson(c));
         } else if (m.equals("POST") && r.equals("/api/ajustes")) {
@@ -499,6 +527,34 @@ final class ServidorLocal {
 
     private interface Accion<T> {
         T hacer() throws Exception;
+    }
+
+    // Los mails sin leer se guardan 3 minutos para no conectarse a la bandeja cada vez que se abre la pantalla.
+    private static JSONArray mailsCache;
+    private static long mailsCuando;
+
+    private static JSONObject correo(Context c, boolean refrescar) throws Exception {
+        JSONObject r = new JSONObject().put("configurado", Correo.configurado(c)).put("cuentas", Correo.estado());
+        if (!Correo.configurado(c)) return r.put("mails", new JSONArray());
+        synchronized (ServidorLocal.class) {
+            if (refrescar || mailsCache == null || System.currentTimeMillis() - mailsCuando > 180_000L) {
+                try {
+                    mailsCache = Correo.leer(c, 8, true);
+                    mailsCuando = System.currentTimeMillis();
+                } catch (Exception e) {
+                    r.put("error", e.getMessage());
+                    if (mailsCache == null) mailsCache = new JSONArray();
+                }
+            }
+            JSONArray resumen = new JSONArray();
+            for (int i = 0; i < mailsCache.length(); i++) {
+                JSONObject m = mailsCache.optJSONObject(i);
+                String t = m.optString("texto");
+                resumen.put(new JSONObject().put("de", m.optString("deNombre", m.optString("de"))).put("asunto", m.optString("asunto"))
+                        .put("fecha", m.optString("fecha")).put("texto", t.length() > 160 ? t.substring(0, 160) : t));
+            }
+            return r.put("mails", resumen);
+        }
     }
 
     private static <T> T conError400(Accion<T> a) throws ErrorHttp {

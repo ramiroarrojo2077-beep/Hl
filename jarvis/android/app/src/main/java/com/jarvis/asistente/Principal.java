@@ -46,6 +46,7 @@ public class Principal extends Activity {
 
     private WebView web;
     private SpeechRecognizer reconocedor;
+    private Dictado dictado;
     private boolean paginaLista;
     private final List<String> pendientes = new ArrayList<>();
     private long ultimoNivel;
@@ -96,6 +97,7 @@ public class Principal extends Activity {
     @Override
     protected void onDestroy() {
         if (reconocedor != null) reconocedor.destroy();
+        if (dictado != null) dictado.cancelar();
         web.destroy();
         super.onDestroy();
     }
@@ -216,15 +218,45 @@ public class Principal extends Activity {
                 requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, PEDIDO_PERMISOS);
                 return;
             }
-            if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-                js("window.jarvisMovil&&jarvisMovil.mostrar('No encuentro el reconocimiento de voz del celular. Instalá o actualizá la app de Google.')");
+            boolean propio = Dictado.disponible(this);
+            if (!propio && !SpeechRecognizer.isRecognitionAvailable(this)) {
+                js("window.jarvisMovil&&jarvisMovil.mostrar('Para escucharte pegá la clave gratis de Groq en Ajustes.')");
                 return;
             }
             Voz.de(this).callar();
             ordenAlServicio(Servicio.ACCION_PAUSAR_OIDO);
             estado("escuchando");
-            // Un instante para que el servicio suelte el micrófono (si no, el reconocedor arranca sin audio).
-            web.postDelayed(this::empezarReconocimiento, 450);
+            // Un instante para que el servicio suelte el micrófono (si no, se graba sin audio).
+            web.postDelayed(propio ? this::empezarDictado : this::empezarReconocimiento, 350);
+        });
+    }
+
+    // Oído propio (Whisper): sin la ventana ni el sonido de Google.
+    private void empezarDictado() {
+        if (dictado == null) dictado = new Dictado(this);
+        estado("escuchando");
+        dictado.iniciar(new Dictado.Oyente() {
+            @Override
+            public void nivel(float rms) {
+                js("window.jarvisMovil&&jarvisMovil.nivel(" + rms + ")");
+            }
+
+            @Override
+            public void procesando() {
+                estado("pensando");
+            }
+
+            @Override
+            public void resultado(String texto) {
+                js("window.jarvisMovil&&jarvisMovil.oido(" + JSONObject.quote(texto) + ")");
+                ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
+            }
+
+            @Override
+            public void error(String mensaje) {
+                js("window.jarvisMovil&&(jarvisMovil.oido(''),jarvisMovil.mostrar(" + JSONObject.quote(mensaje) + "))");
+                ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
+            }
         });
     }
 
@@ -246,6 +278,7 @@ public class Principal extends Activity {
 
     private void detenerReconocimiento() {
         if (reconocedor != null) reconocedor.cancel();
+        if (dictado != null) dictado.cancelar();
         ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
     }
 

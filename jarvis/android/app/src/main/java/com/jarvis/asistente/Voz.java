@@ -76,13 +76,45 @@ final class Voz {
         hablando = true;
         audio.requestAudioFocus(foco);
         hilo.execute(() -> {
-            File mp3 = ElevenLabs.sintetizar(contexto, texto);
+            File mp3 = sintetizar(texto);
             principal.post(() -> {
                 if (miTurno != turno) return;
                 if (mp3 != null) reproducir(mp3, texto, miTurno, alTerminar);
                 else conSistema(texto, miTurno, alTerminar);
             });
         });
+    }
+
+    private static String vozEdge(String voz) {
+        switch (voz) {
+            case "tomas": return "es-AR-TomasNeural";
+            case "dalia": return "es-MX-DaliaNeural";
+            case "paloma": return "es-US-PalomaNeural";
+            case "elvira": return "es-ES-ElviraNeural";
+            default: return "es-AR-ElenaNeural";
+        }
+    }
+
+    /** La voz elegida en Ajustes y, si falla, las de respaldo. null = voz del sistema. */
+    private File sintetizar(String texto) {
+        String voz = Ajustes.texto(contexto, Ajustes.VOZ);
+        File f = null;
+        switch (voz) {
+            case "sistema":
+                return null;
+            case "elevenlabs":
+                f = ElevenLabs.sintetizar(contexto, texto);
+                break;
+            case "gemini":
+                f = VozNube.gemini(contexto, texto, "Kore");
+                break;
+            default:
+                f = VozNube.edge(contexto, texto, vozEdge(voz), "+6%");
+        }
+        if (f != null) return f;
+        if (!"elevenlabs".equals(voz) && ElevenLabs.disponible(contexto)) f = ElevenLabs.sintetizar(contexto, texto);
+        if (f == null && ("elevenlabs".equals(voz) || "gemini".equals(voz))) f = VozNube.edge(contexto, texto, vozEdge("elena"), "+6%");
+        return f;
     }
 
     void callar() {

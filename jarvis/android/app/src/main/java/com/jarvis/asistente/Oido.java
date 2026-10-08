@@ -240,7 +240,7 @@ final class Oido {
         if (activo && !Voz.de(contexto).estaHablando()) oyente.palabraClave(orden);
     }
 
-    private static byte[] wav(List<short[]> segmento) {
+    static byte[] wav(List<short[]> segmento) {
         int muestras = 0;
         for (short[] s : segmento) muestras += s.length;
         ByteBuffer b = ByteBuffer.allocate(44 + muestras * 2).order(ByteOrder.LITTLE_ENDIAN);

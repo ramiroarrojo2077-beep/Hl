@@ -242,6 +242,39 @@ h2::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg
 .lista-simple li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; border-left: 2px solid var(--rojo-oscuro); padding-left: 8px; }
 .lista-simple time { color: var(--rojo-claro); font: 600 12px var(--fuente-hud); }
 .lista-simple .vacio { border: 0; padding: 0; display: block; }
+.lista-simple small { grid-column: 1 / -1; color: var(--texto-tenue); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-simple .borrar { background: none; border: 0; color: var(--texto-tenue); cursor: pointer; padding: 0 2px; font-size: 14px; }
+
+/* Pedidos rápidos */
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; width: 0; min-width: 100%; padding: 2px 0; flex: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips button {
+  flex: none; background: var(--panel); border: 1px solid var(--linea-fuerte); color: var(--rojo-claro);
+  font: 600 11px var(--fuente-hud); letter-spacing: 0.08em; padding: 7px 12px; border-radius: 14px; cursor: pointer; white-space: nowrap;
+}
+.chips button:active { background: var(--rojo); color: #fff; }
+
+/* Hoy: panorama de un vistazo */
+.hoy { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hoy li { border: 1px solid var(--linea); border-left: 2px solid var(--rojo); padding: 6px 8px; display: grid; gap: 1px; min-width: 0; }
+.hoy li.ancho { grid-column: 1 / -1; }
+.hoy b { font: 700 20px var(--fuente-hud); color: #fff; text-shadow: 0 0 10px var(--brillo); }
+.hoy span { font: 600 10px var(--fuente-hud); letter-spacing: 0.12em; color: var(--rojo-claro); text-transform: uppercase; }
+.hoy small { color: var(--texto-tenue); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Tareas */
+.panel h3 { margin: 12px 0 6px; font: 600 11px var(--fuente-hud); letter-spacing: 0.14em; color: var(--rojo-claro); text-transform: uppercase; }
+.tareas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tareas li { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 8px; align-items: start; font-size: 14px; }
+.tareas li.hecha span { text-decoration: line-through; color: var(--texto-tenue); }
+.tareas .marcar { width: 18px; height: 18px; border: 1px solid var(--rojo); background: none; cursor: pointer; margin-top: 1px; padding: 0; color: #fff; font-size: 12px; line-height: 1; }
+.tareas li.hecha .marcar { background: var(--rojo); }
+.tareas small { grid-column: 2 / -1; color: var(--texto-tenue); font-size: 12px; }
+.tareas small.jarvis::before { content: "◆ "; color: var(--rojo); }
+.tareas .vacio { display: block; }
+.nueva-tarea { display: flex; gap: 6px; margin-top: 8px; }
+.nueva-tarea input { flex: 1; min-width: 0; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--linea); padding: 6px 8px; font-size: 14px; }
+.nueva-tarea input:focus { outline: none; border-color: var(--rojo); }
 
 /* ---------- Centro: reactor ---------- */
 
@@ -538,7 +571,12 @@ body.vertical .barra-superior {
 }
 body.vertical .mes-actual { display: none; }
 body.vertical .marca { grid-area: marca; align-items: flex-start; }
-body.vertical .controles { grid-area: controles; }
+body.vertical .controles { grid-area: controles; gap: 6px; }
+body.vertical .barra-superior { column-gap: 8px; }
+body.vertical .marca { min-width: 0; }
+body.vertical .marca-nombre { letter-spacing: 0.18em; font-size: clamp(14px, 4.4vw, 18px); white-space: nowrap; }
+body.vertical .controles .boton-icono { width: 30px; height: 30px; }
+body.vertical .interruptor { padding-left: 8px; padding-right: 8px; }
 body.vertical .dias-mes { grid-area: dias; font-size: 15px; }
 body.vertical .dias-mes li { min-width: 0; flex: 1; padding: 3px 0; }
 body.vertical .dias-mes li .corto { display: block; }
@@ -564,13 +602,17 @@ body.vertical .paneles {
 }
 body.vertical .paneles::-webkit-scrollbar { display: none; }
 body.vertical .paneles > .columna:not(.clima) { display: contents; }
+body.vertical .panel-hoy { order: 0; }
 body.vertical .panel-avisos { order: 1; }
-body.vertical .panel-fecha { order: 2; }
-body.vertical .clima { order: 3; }
-body.vertical .panel-recordatorios { order: 4; }
-body.vertical .panel-noticias { order: 5; }
-body.vertical .panel-comunicaciones { order: 6; }
-body.vertical .panel-sistema { order: 7; }
+body.vertical .panel-agenda { order: 2; }
+body.vertical .panel-tareas { order: 3; }
+body.vertical .panel-correo { order: 4; }
+body.vertical .panel-fecha { order: 5; }
+body.vertical .clima { order: 6; }
+body.vertical .panel-recordatorios { order: 7; }
+body.vertical .panel-noticias { order: 8; }
+body.vertical .panel-comunicaciones { order: 9; }
+body.vertical .panel-sistema { order: 10; }
 body.vertical .panel-hora { display: none; }
 body.vertical .crece { flex: none; min-height: 0; overflow: visible; }
 body.vertical .crece > ul { overflow: visible; }

@@ -34,13 +34,20 @@ final class Ajustes {
     static final String RESUMEN_DIARIO = "resumenDiario";
     // low | medium | high
     static final String RAZONAMIENTO = "razonamiento";
+    // elena | tomas | dalia | paloma | elvira (Microsoft, gratis) | gemini | elevenlabs | sistema
+    static final String VOZ = "voz";
+    // Tu correo y su contraseña de aplicación (más fácil que EMAIL_CUENTAS para una sola cuenta).
+    static final String EMAIL_USUARIO = "emailUsuario";
+    static final String EMAIL_CLAVE = "emailClave";
+    // "si" = Jarvis revisa sola tu correo, agenda y mensajes cada 30 minutos y te avisa lo importante.
+    static final String AUTONOMO = "autonomo";
 
     /** Claves que nunca se devuelven completas a la interfaz. */
-    static final String[] SECRETOS = {GEMINI, GROQ, OPENROUTER, ELEVENLABS, TAVILY, PICOVOICE, EMAIL_CUENTAS};
+    static final String[] SECRETOS = {GEMINI, GROQ, OPENROUTER, ELEVENLABS, TAVILY, PICOVOICE, EMAIL_CUENTAS, EMAIL_CLAVE};
     static final String[] TODAS = {
         USUARIO, CIUDAD, PAIS, GEMINI, GEMINI_MODELO, GROQ, GROQ_MODELO, OPENROUTER, OPENROUTER_MODELO,
         ELEVENLABS, ELEVENLABS_VOZ, ELEVENLABS_MODELO, TAVILY, PICOVOICE, EMAIL_CUENTAS, AVISAR_DESDE,
-        RESUMEN_DIARIO, RAZONAMIENTO,
+        RESUMEN_DIARIO, RAZONAMIENTO, VOZ, EMAIL_USUARIO, EMAIL_CLAVE, AUTONOMO,
     };
     private static final String OCULTO = "••••";
 
@@ -57,6 +64,9 @@ final class Ajustes {
             case ELEVENLABS_MODELO: return "eleven_flash_v2_5";
             case AVISAR_DESDE: return "media";
             case RAZONAMIENTO: return "low";
+            case VOZ: return "elena";
+            case AUTONOMO: return "si";
+            case RESUMEN_DIARIO: return "08:00";
             default: return "";
         }
     }

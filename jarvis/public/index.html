@@ -101,6 +101,8 @@
       <span class="voz-pista" id="voz-pista">Decí «Jarvis» o tocá el reactor</span>
     </div>
 
+    <nav class="chips" id="chips" aria-label="Pedidos rápidos" hidden></nav>
+
     <section class="graficos panel">
       <div class="grafico">
         <div class="grafico-titulo"><span>Carga CPU</span><b id="grafico-cpu-valor">--</b></div>
@@ -116,6 +118,11 @@
   <div class="paneles">
   <!-- Columna izquierda -->
   <aside class="columna izquierda">
+    <section class="panel panel-hoy" id="panel-hoy" hidden>
+      <h2>Hoy <span class="contador" id="modo-autonomo"></span></h2>
+      <ul class="hoy" id="hoy"></ul>
+    </section>
+
     <section class="panel panel-fecha">
       <svg class="anillo-fecha" viewBox="0 0 200 200" aria-hidden="true">
         <circle cx="100" cy="100" r="92" class="pista fina"/>
@@ -173,6 +180,11 @@
       <ul class="conexiones" id="conexiones"></ul>
     </section>
 
+    <section class="panel panel-agenda" id="panel-agenda" hidden>
+      <h2>Agenda</h2>
+      <ul class="lista-simple" id="agenda"><li class="vacio">Cargando…</li></ul>
+    </section>
+
     <section class="panel crece panel-recordatorios">
       <h2>Recordatorios</h2>
       <ul class="lista-simple" id="recordatorios"><li class="vacio">Sin recordatorios. Pedíselos a Jarvis.</li></ul>
@@ -196,6 +208,22 @@
     <section class="panel crece panel-avisos">
       <h2>Avisos recientes <span class="contador" id="contador-avisos"></span></h2>
       <ul class="avisos" id="avisos"><li class="vacio">Todo tranquilo por ahora.</li></ul>
+    </section>
+
+    <section class="panel panel-tareas" id="panel-tareas" hidden>
+      <h2>Tareas <span class="contador" id="contador-tareas"></span></h2>
+      <ul class="tareas" id="tareas"><li class="vacio">Sin tareas.</li></ul>
+      <form class="nueva-tarea" id="nueva-tarea" autocomplete="off">
+        <input name="texto" placeholder="Anotar tarea…" maxlength="300">
+        <button type="submit" class="enlace-boton">AGREGAR</button>
+      </form>
+      <h3>Rutinas automáticas</h3>
+      <ul class="lista-simple" id="rutinas"><li class="vacio">Pedile: «todos los días a las 9 revisá mis mails».</li></ul>
+    </section>
+
+    <section class="panel panel-correo" id="panel-correo" hidden>
+      <h2>Correo <span class="contador" id="contador-correo"></span></h2>
+      <ul class="lista-simple correo" id="correo"><li class="vacio">Cargando…</li></ul>
     </section>
 
     <section class="panel crece panel-noticias">
