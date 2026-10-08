@@ -200,8 +200,8 @@ public class Principal extends Activity {
             estado("hablando");
             Voz.de(this).hablar(decir, () -> {
                 estado(null);
-                // Si saliste de la app mientras te hablaba, no se queda escuchando en segundo plano.
-                if (escucharDespues && visible) escuchar();
+                // Manos libres: con el celular bloqueado o en el bolsillo te escucha la respuesta; si te fuiste a otra app, no.
+                if (escucharDespues && puedeSeguirEscuchando()) escuchar();
                 else ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
             });
         } else if (orden != null) {
@@ -210,6 +210,14 @@ public class Principal extends Activity {
             // Te llamó con "Jarvis": ya queda escuchando, sin tocar nada.
             escuchar();
         }
+    }
+
+    /** A la vista, o con la pantalla apagada o bloqueada (manos libres). No si estás usando otra app. */
+    private boolean puedeSeguirEscuchando() {
+        if (visible) return true;
+        boolean pantallaPrendida = getSystemService(PowerManager.class).isInteractive();
+        boolean bloqueado = getSystemService(android.app.KeyguardManager.class).isKeyguardLocked();
+        return !pantallaPrendida || bloqueado;
     }
 
     // ---------- Reconocimiento de voz ----------
@@ -338,9 +346,9 @@ public class Principal extends Activity {
     private class Puente {
         @JavascriptInterface
         public void escuchar() {
-            // La página la pide al tocar el reactor o después de una pregunta: solo con la app a la vista.
+            // La página la pide al tocar el reactor o después de una pregunta.
             runOnUiThread(() -> {
-                if (visible) Principal.this.escuchar();
+                if (puedeSeguirEscuchando()) Principal.this.escuchar();
                 else ordenAlServicio(Servicio.ACCION_REANUDAR_OIDO);
             });
         }
