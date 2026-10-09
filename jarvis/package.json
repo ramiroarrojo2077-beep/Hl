@@ -1,0 +1,31 @@
+{
+  "name": "jarvis",
+  "version": "1.0.0",
+  "description": "Asistente personal tipo Jarvis: voz, chat, API y avisos proactivos de Gmail, WhatsApp y Telegram",
+  "type": "module",
+  "private": true,
+  "main": "desktop/main.mjs",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "escritorio": "electron .",
+    "check": "tsc"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "baileys": "7.0.0-rc14",
+    "imapflow": "^2.2.8",
+    "mailparser": "^3.9.36",
+    "nodemailer": "^10.0.16",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.9.0",
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "electron": "^44.6.0",
+    "typescript": "^7.0.2"
+  }
+}

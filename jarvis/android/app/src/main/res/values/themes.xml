@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Tema.Jarvis" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:colorAccent">@color/rojo</item>
+        <item name="android:windowBackground">@color/negro</item>
+    </style>
+
+    <!-- Transparente: se ve lo que hay detrás (tu fondo o la app que estabas usando). -->
+    <style name="Tema.Jarvis.Transparente">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Translucent</item>
+    </style>
+</resources>

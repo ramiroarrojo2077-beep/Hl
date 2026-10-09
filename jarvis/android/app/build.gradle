@@ -1,0 +1,75 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.jarvis.asistente"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.jarvis.asistente"
+        minSdk 26
+        targetSdk 35
+        versionCode 9
+        versionName "2.4.1"
+        // arm64 (con Qwen) y armeabi-v7a para celulares de 32 bits (andan sin Qwen). Sin x86, que es solo de emuladores.
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a"
+        }
+    }
+
+    // Misma firma en todas las compilaciones, para poder actualizar la app sin desinstalarla.
+    signingConfigs {
+        jarvis {
+            storeFile file("jarvis.keystore")
+            storePassword "jarvis-android"
+            keyAlias "jarvis"
+            keyPassword "jarvis-android"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.jarvis
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.jarvis
+        }
+    }
+
+    // La interfaz HUD es la misma que la de la PC: se empaqueta tal cual desde jarvis/public.
+    sourceSets {
+        main {
+            assets.srcDirs += ["../../public"]
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += ["META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.md"]
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Detecta la palabra "Jarvis" en el celular, sin internet (opcional: necesita una AccessKey gratis de Picovoice).
+    implementation "ai.picovoice:porcupine-android:4.0.2"
+    // Correo por IMAP/SMTP (opcional, con contraseña de aplicación).
+    implementation "com.sun.mail:android-mail:1.6.7"
+    implementation "com.sun.mail:android-activation:1.6.7"
+    // Qwen dentro del celular (LiteRT-LM de Google): responde sin internet y cuando se acaba el cupo de la nube.
+    implementation "com.google.ai.edge.litertlm:litertlm-android:0.18.0"
+    // La variante en streaming necesita esta versión (o más nueva) de coroutines.
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
+}
