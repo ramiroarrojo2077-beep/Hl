@@ -34,8 +34,11 @@ final class Dictado {
     private static final double SIN_HABLAR_S = 7;
     // Recién cuando dejás de hablar este tiempo empieza a pensar. Si apenas arrancaste (o hiciste una pausa para
     // pensar qué decir), espera más.
-    private static final double SILENCIO_FINAL_S = 1.5;
-    private static final double SILENCIO_AL_EMPEZAR_S = 2.3;
+    private static final double SILENCIO_FINAL_S = 1.2;
+    private static final double SILENCIO_AL_EMPEZAR_S = 2.0;
+    // Tu voz manda: si lo que se oye baja a menos de esta fracción de tu volumen al hablar (~ -11 dB), es que te
+    // callaste aunque siga la tele, gente hablando lejos o ruido de la calle.
+    private static final double FRACCION_DE_TU_VOZ = 0.28;
     private static final double EMPEZANDO_S = 1.2;
     // Un ruido suelto (un golpe, un clic) no cuenta como voz: hacen falta al menos 3 bloques seguidos (90 ms).
     private static final int BLOQUES_DE_VOZ = 3;
@@ -75,6 +78,17 @@ final class Dictado {
                 Thread.currentThread().interrupt();
             }
             hilo = null;
+        }
+    }
+
+    /** Sube el volumen si hablaste bajito o lejos (pico a ~90 %, máximo x6): Whisper entiende mejor. */
+    static void normalizar(List<short[]> segmento) {
+        int pico = 1;
+        for (short[] b : segmento) for (short x : b) pico = Math.max(pico, Math.abs((int) x));
+        double factor = Math.min(6.0, 29_500.0 / pico);
+        if (factor <= 1.15) return;
+        for (short[] b : segmento) {
+            for (int i = 0; i < b.length; i++) b[i] = (short) Math.max(-32768, Math.min(32767, Math.round(b[i] * factor)));
         }
     }
 
@@ -119,6 +133,8 @@ final class Dictado {
             double silencio = 0;
             int racha = 0;
             int cola = 0;
+            // Volumen típico de tu voz en esta frase (se aprende mientras hablás).
+            double tuVoz = 0;
             long ultimoNivel = 0;
             while (!cancelado && !Thread.currentThread().isInterrupted()) {
                 int leidas = grabadora.read(bloque, 0, bloque.length);
@@ -146,6 +162,7 @@ final class Dictado {
                             segmento = new ArrayList<>(previo);
                             hablado = voz;
                             silencio = 0;
+                            tuVoz = rms;
                         }
                     } else {
                         voz = 0;
@@ -155,7 +172,10 @@ final class Dictado {
                     if (esperando > SIN_HABLAR_S) break;
                 } else {
                     segmento.add(copia);
-                    if (rms > umbral * 0.75) {
+                    // Lo que está muy por debajo de tu voz no cuenta como que seguís hablando.
+                    double sigue = Math.max(umbral * 0.75, tuVoz * FRACCION_DE_TU_VOZ);
+                    if (rms > Math.max(umbral, tuVoz * 0.5)) tuVoz = tuVoz == 0 ? rms : tuVoz * 0.9 + rms * 0.1;
+                    if (rms > sigue) {
                         racha++;
                         hablado += duracion;
                         cola = 0;
@@ -195,7 +215,8 @@ final class Dictado {
         while (sobrante-- > 0 && segmento.size() > 10) segmento.remove(segmento.size() - 1);
         oyente.procesando();
         try {
-            String texto = Transcriptor.transcribir(contexto, Oido.wav(segmento), "audio/wav").trim();
+            normalizar(segmento);
+            String texto = Transcriptor.transcribirOrden(contexto, Oido.wav(segmento)).trim();
             // Solo "Jarvis" (o nada entendible) no es una orden.
             if (ALUCINACIONES.matcher(texto).find() || SOLO_NOMBRE.matcher(Oido.sinTildes(texto)).matches()) texto = "";
             if (!cancelado) oyente.resultado(texto);

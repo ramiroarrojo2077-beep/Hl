@@ -230,9 +230,12 @@ final class Oido {
     private boolean puedeTranscribir(boolean largo) {
         long ahora = System.currentTimeMillis();
         if (ahora < sinCupoHasta) return false;
+        // Sin Groq, cada frase oída se transcribiría con Gemini y se comería el cupo de la charla: pocas y solo cortas.
+        boolean conGemini = !Ajustes.tiene(contexto, Ajustes.GROQ);
+        if (conGemini && largo) return false;
         if (!largo) {
             while (!cortas.isEmpty() && ahora - cortas.peekFirst() > 60_000) cortas.removeFirst();
-            if (cortas.size() >= MAX_CORTAS_POR_MINUTO) return false;
+            if (cortas.size() >= (conGemini ? 4 : MAX_CORTAS_POR_MINUTO)) return false;
             cortas.addLast(ahora);
             return true;
         }

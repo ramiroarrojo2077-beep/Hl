@@ -19,6 +19,7 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -106,16 +107,37 @@ final class IA {
         }
     }
 
-    /** Los proveedores con clave, en el orden de preferencia. Se lee cada vez: los ajustes cambian en caliente. */
-    private static List<Proveedor> configurados(Context c) {
-        List<Proveedor> lista = new ArrayList<>(3);
+    // Cada modelo gratis tiene su propio cupo: si uno se queda sin cupo por un rato, se pasa al siguiente del mismo
+    // proveedor (con la misma clave) antes de rendirse.
+    private static final String[] GEMINI_MODELOS = {
+            "gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"};
+    private static final String[] GEMINI_LIVIANOS = {"gemini-flash-lite-latest", "gemini-2.5-flash-lite"};
+    private static final String[] GROQ_MODELOS = {
+            "openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "meta-llama/llama-4-scout-17b-16e-instruct"};
+    private static final String[] GROQ_LIVIANOS = {"openai/gpt-oss-20b", "llama-3.1-8b-instant"};
+
+    private static void agregar(List<Proveedor> lista, String nombre, String visible, String url, String clave,
+                                String elegido, String[] preferidos, String[] cadena) {
+        Set<String> modelos = new LinkedHashSet<>();
+        if (preferidos != null) Collections.addAll(modelos, preferidos);
+        if (!elegido.isEmpty()) modelos.add(elegido);
+        Collections.addAll(modelos, cadena);
+        for (String m : modelos) lista.add(new Proveedor(nombre, visible, url, clave, m));
+    }
+
+    /**
+     * Los proveedores con clave y sus modelos, en el orden de preferencia. Lo de fondo (analizar mensajes, revisar
+     * el correo) usa primero los modelos livianos, así no gasta el cupo del que usás para charlar.
+     */
+    private static List<Proveedor> configurados(Context c, boolean fondo) {
+        List<Proveedor> lista = new ArrayList<>(12);
         if (Ajustes.tiene(c, Ajustes.GEMINI)) {
-            lista.add(new Proveedor("gemini", "Gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
-                    Ajustes.texto(c, Ajustes.GEMINI), Ajustes.texto(c, Ajustes.GEMINI_MODELO)));
+            agregar(lista, "gemini", "Gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
+                    Ajustes.texto(c, Ajustes.GEMINI), Ajustes.texto(c, Ajustes.GEMINI_MODELO), fondo ? GEMINI_LIVIANOS : null, GEMINI_MODELOS);
         }
         if (Ajustes.tiene(c, Ajustes.GROQ)) {
-            lista.add(new Proveedor("groq", "Groq", "https://api.groq.com/openai/v1",
-                    Ajustes.texto(c, Ajustes.GROQ), Ajustes.texto(c, Ajustes.GROQ_MODELO)));
+            agregar(lista, "groq", "Groq", "https://api.groq.com/openai/v1",
+                    Ajustes.texto(c, Ajustes.GROQ), Ajustes.texto(c, Ajustes.GROQ_MODELO), fondo ? GROQ_LIVIANOS : null, GROQ_MODELOS);
         }
         if (Ajustes.tiene(c, Ajustes.OPENROUTER) && Ajustes.tiene(c, Ajustes.OPENROUTER_MODELO)) {
             lista.add(new Proveedor("openrouter", "OpenRouter", "https://openrouter.ai/api/v1",
@@ -124,8 +146,16 @@ final class IA {
         return lista;
     }
 
-    private static boolean enPausa(String nombre, long ahora) {
-        Long hasta = enPausaHasta.get(nombre);
+    private static List<Proveedor> configurados(Context c) {
+        return configurados(c, false);
+    }
+
+    private static String llave(Proveedor p) {
+        return p.nombre + "|" + p.modelo;
+    }
+
+    private static boolean enPausa(String llave, long ahora) {
+        Long hasta = enPausaHasta.get(llave);
         return hasta != null && hasta > ahora;
     }
 
@@ -167,19 +197,29 @@ final class IA {
         return configurados(c).isEmpty();
     }
 
-    /** [{nombre, modelo, disponible}] en orden de uso. */
+    /** [{nombre, modelo, disponible, pausaHasta?}] en orden de uso (uno por proveedor, con el modelo que va a usar). */
     static JSONArray proveedores(Context c) {
         JSONArray lista = new JSONArray();
         long ahora = System.currentTimeMillis();
+        Map<String, JSONObject> porNombre = new java.util.LinkedHashMap<>();
         for (Proveedor p : configurados(c)) {
             try {
-                lista.put(new JSONObject()
-                        .put("nombre", p.nombre)
-                        .put("modelo", p.modelo)
-                        .put("disponible", !enPausa(p.nombre, ahora)));
+                JSONObject o = porNombre.get(p.nombre);
+                boolean libre = !enPausa(llave(p), ahora);
+                if (o == null) {
+                    o = new JSONObject().put("nombre", p.nombre).put("modelo", p.modelo).put("disponible", libre);
+                    if (!libre) o.put("pausaHasta", enPausaHasta.get(llave(p)));
+                    porNombre.put(p.nombre, o);
+                } else if (!o.optBoolean("disponible") && libre) {
+                    // El primero está en pausa: se usa el siguiente modelo libre.
+                    o.put("modelo", p.modelo).put("disponible", true).remove("pausaHasta");
+                } else if (!o.optBoolean("disponible")) {
+                    o.put("pausaHasta", Math.min(o.optLong("pausaHasta", Long.MAX_VALUE), enPausaHasta.get(llave(p))));
+                }
             } catch (JSONException ignorada) {
             }
         }
+        for (JSONObject o : porNombre.values()) lista.put(o);
         try {
             if (Local.modelo(c) != null) lista.put(Local.estado(c));
         } catch (Throwable ignorada) {
@@ -197,7 +237,54 @@ final class IA {
      */
     static Respuesta completar(Context c, JSONArray mensajes, JSONArray herramientas, boolean json, AlTexto alTexto)
             throws ErrorIA {
-        List<Proveedor> todos = configurados(c);
+        return completar(c, mensajes, herramientas, json, alTexto, false);
+    }
+
+    /** Para lo que Jarvis hace sola (no te está hablando): modelos livianos primero y sin esperas. */
+    static Respuesta completarDeFondo(Context c, JSONArray mensajes, JSONArray herramientas) throws ErrorIA {
+        return completar(c, mensajes, herramientas, false, null, true);
+    }
+
+    private static Respuesta completar(Context c, JSONArray mensajes, JSONArray herramientas, boolean json, AlTexto alTexto,
+                                       boolean fondo) throws ErrorIA {
+        Respuesta r = intentar(c, mensajes, herramientas, json, alTexto, fondo);
+        if (r != null) return r;
+        // Todos los modelos de la nube están en pausa por el límite por minuto: si es por unos segundos y te está
+        // hablando, espera y prueba de nuevo en vez de decirte que no hay cupo.
+        long espera = esperaMasCorta(c, fondo);
+        if (!fondo && espera > 0 && espera <= 15_000) {
+            try {
+                Thread.sleep(espera + 300);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new ErrorIA(CANCELADA, 0);
+            }
+            r = intentar(c, mensajes, herramientas, json, alTexto, fondo);
+            if (r != null) return r;
+        }
+        throw ultimoError.get() != null ? ultimoError.get()
+                : new ErrorIA("Estoy con mucha demanda en este momento. Dame unos segundos y repetímelo.", 429);
+    }
+
+    // El último error de intentar() en este hilo (para explicarlo si no queda otra).
+    private static final ThreadLocal<ErrorIA> ultimoError = new ThreadLocal<>();
+
+    private static long esperaMasCorta(Context c, boolean fondo) {
+        long ahora = System.currentTimeMillis();
+        long minimo = Long.MAX_VALUE;
+        for (Proveedor p : configurados(c, fondo)) {
+            Long hasta = enPausaHasta.get(llave(p));
+            if (hasta == null || hasta <= ahora) return 0;
+            minimo = Math.min(minimo, hasta - ahora);
+        }
+        return minimo == Long.MAX_VALUE ? 0 : minimo;
+    }
+
+    /** Una pasada por todos los modelos; null si todos estaban en pausa o sin cupo (para esperar y reintentar). */
+    private static Respuesta intentar(Context c, JSONArray mensajes, JSONArray herramientas, boolean json, AlTexto alTexto,
+                                      boolean fondo) throws ErrorIA {
+        ultimoError.remove();
+        List<Proveedor> todos = configurados(c, fondo);
         if (mensajes == null) mensajes = new JSONArray();
         // Sin claves de la nube: responde Qwen en el celular.
         if (todos.isEmpty()) {
@@ -215,9 +302,8 @@ final class IA {
         long ahora = System.currentTimeMillis();
         List<Proveedor> ordenados = new ArrayList<>(todos.size());
         List<Proveedor> pausados = new ArrayList<>();
-        for (Proveedor p : todos) (enPausa(p.nombre, ahora) ? pausados : ordenados).add(p);
-        // Con Qwen lista, los que están en pausa ni se prueban (no se espera a que vuelvan a fallar).
-        if (!qwenLista || ordenados.isEmpty() && pausados.isEmpty()) ordenados.addAll(pausados);
+        for (Proveedor p : todos) (enPausa(llave(p), ahora) ? pausados : ordenados).add(p);
+        // Los que están en pausa no se prueban (se sabe que van a fallar): se pasa a los otros modelos o a Qwen.
 
         String razonamiento = Ajustes.texto(c, Ajustes.RAZONAMIENTO);
         Set<String> fallas = new LinkedHashSet<>();
@@ -240,11 +326,16 @@ final class IA {
             } catch (ErrorIA e) {
                 ultimo = e;
                 if (e.estado == 429 || e.estado == 503) {
-                    long espera = e.esperarMs > 0 ? e.esperarMs : PAUSA_MS;
-                    enPausaHasta.put(p.nombre, System.currentTimeMillis() + espera);
+                    // Límite por minuto (espera corta) o por día (larga): se pausa SOLO ese modelo y se sigue con otro.
+                    boolean porDia = e.detalle.toLowerCase(Locale.ROOT).contains("perday") || e.detalle.toLowerCase(Locale.ROOT).contains("per day");
+                    long espera = porDia ? 3 * 3_600_000L : e.esperarMs > 0 ? e.esperarMs : PAUSA_MS;
+                    enPausaHasta.put(llave(p), System.currentTimeMillis() + espera);
+                } else if (e.estado == 404 || (e.estado == 400 && e.detalle.toLowerCase(Locale.ROOT).contains("model"))) {
+                    // Ese modelo no existe (o ya no es gratis) para tu clave: no se vuelve a probar por un día.
+                    enPausaHasta.put(llave(p), System.currentTimeMillis() + 24 * 3_600_000L);
                 } else if (e.estado == 0 && qwenLista && !CANCELADA.equals(e.getMessage())) {
                     // Problema de conexión: un minuto sin probarlo, así las próximas vueltas van directo a Qwen.
-                    enPausaHasta.put(p.nombre, System.currentTimeMillis() + PAUSA_MS);
+                    enPausaHasta.put(llave(p), System.currentTimeMillis() + PAUSA_MS);
                 }
                 Log.w(TAG, p.visible + " falló: " + e.getMessage()
                         + (e.detalle.isEmpty() || e.getMessage().contains(e.detalle) ? "" : " (" + e.detalle + ")"));
@@ -278,14 +369,21 @@ final class IA {
             }
         }
         if (vacia != null) return vacia;
-        if (ultimo == null) throw new ErrorIA("Ninguna IA respondió.", 0);
+        if (ultimo == null || ultimo.estado == 429 || ultimo.estado == 503) {
+            // Sin cupo en todos los modelos (o todos en pausa): quien llama decide si espera y reintenta.
+            if (ultimo != null) ultimoError.set(new ErrorIA(
+                    "Estoy con mucha demanda en este momento: los modelos gratis que tengo están ocupados. Dame unos segundos y repetímelo"
+                            + (localPrendida(c) && !localLista(c) ? ", o dejá que baje la IA del celular para no depender del cupo." : "."), 429, ultimo.esperarMs));
+            return null;
+        }
         if (fallas.size() <= 1) throw ultimo;
-        throw new ErrorIA("Ninguna IA respondió. " + String.join(" ", fallas), ultimo.estado, ultimo.esperarMs);
+        throw new ErrorIA("No pude responderte: " + String.join(" ", fallas), ultimo.estado, ultimo.esperarMs);
     }
 
     /** Pide un JSON y lo devuelve parseado (tolera que venga envuelto en ```json). */
     static JSONObject completarJson(Context c, JSONArray mensajes) throws ErrorIA {
-        Respuesta r = completar(c, mensajes, null, true, null);
+        // Los JSON son siempre de fondo (analizar un mensaje, revisar todo): modelos livianos primero.
+        Respuesta r = completar(c, mensajes, null, true, null, true);
         String limpio = r.texto.replaceFirst("(?i)^\\s*```(?:json)?", "").replaceFirst("```\\s*$", "");
         int inicio = limpio.indexOf('{');
         int fin = limpio.lastIndexOf('}');
@@ -614,7 +712,8 @@ final class IA {
             if (m.find()) esperar = segundosAMs(m.group(1));
         }
         ErrorIA error = new ErrorIA(explicar(p, estado, detalle), estado, esperar);
-        error.detalle = detalle;
+        // Gemini dice en los detalles si el límite es por día ("...PerDay...") o por minuto.
+        error.detalle = detalle + (cuerpo.contains("PerDay") ? " [PerDay]" : "");
         return error;
     }
 
@@ -656,7 +755,7 @@ final class IA {
             case 413:
                 return "La conversación es demasiado larga para " + p.visible + ".";
             case 429:
-                return p.visible + " se quedó sin cupo gratis por ahora.";
+                return p.visible + " está con mucho uso en este momento.";
             default:
                 if (estado >= 500) return p.visible + " está saturado o caído en este momento.";
                 return p.visible + " respondió con un error (" + estado + ").";

@@ -53,6 +53,18 @@ final class Transcriptor {
         return transcribir(c, audio, tipo, false);
     }
 
+    // Contexto para las órdenes: le marca a Whisper el idioma, el voseo y la puntuación (no nombra a Jarvis, así no la
+    // inventa). Si devolviera esta pista tal cual, se descarta.
+    static final String PISTA_ORDEN = "Poné una alarma a las siete. Mandale un mensaje a Juan. ¿Qué tengo hoy en la agenda?";
+
+    /** Para tus órdenes: Whisper grande (el más preciso) con una pista de cómo hablás. */
+    static String transcribirOrden(Context c, byte[] wav) throws Exception {
+        String texto = transcribir(c, wav, "audio/wav", false);
+        String t = texto.toLowerCase(Locale.ROOT);
+        if (t.contains("poné una alarma a las siete. mandale") || t.contains("mandale un mensaje a juan. ¿qué tengo")) return "";
+        return texto;
+    }
+
     /**
      * Para detectar la palabra "Jarvis" en segundo plano: sin pistas (Whisper tiende a "oír" la pista cuando el audio no
      * es claro) y descartando los pedazos que Whisper marca como dudosos o sin voz.
@@ -72,14 +84,29 @@ final class Transcriptor {
 
         boolean hayGemini = Ajustes.tiene(c, Ajustes.GEMINI);
         if (Ajustes.tiene(c, Ajustes.GROQ)) {
+            // Órdenes: whisper-large-v3 (más preciso en castellano); la palabra clave: turbo (más rápido). Si el
+            // grande no tiene cupo, el turbo.
+            String[] modelos = pasivo ? new String[] {"whisper-large-v3-turbo"} : new String[] {"whisper-large-v3", "whisper-large-v3-turbo"};
+            Exception ultimo = null;
+            for (String modelo : modelos) {
+                try {
+                    return conGroq(clave(c, Ajustes.GROQ), audio, mime, pasivo, modelo);
+                } catch (Exception e) {
+                    ultimo = e;
+                    Log.w(TAG, "Groq " + modelo + " falló: " + e.getMessage());
+                }
+            }
+            if (!hayGemini) throw ultimo;
+        }
+        if (hayGemini) {
+            // Para transcribir alcanza el modelo liviano, que tiene su propio cupo: así no se gasta el de la charla.
             try {
-                return conGroq(clave(c, Ajustes.GROQ), audio, mime, pasivo);
+                return conGemini(clave(c, Ajustes.GEMINI), "gemini-flash-lite-latest", audio, mime, pasivo);
             } catch (Exception e) {
-                if (!hayGemini) throw e;
-                Log.w(TAG, "Groq falló, pruebo con Gemini: " + e.getMessage());
+                Log.w(TAG, "Gemini liviano falló, pruebo con el de la charla: " + e.getMessage());
+                return conGemini(clave(c, Ajustes.GEMINI), Ajustes.texto(c, Ajustes.GEMINI_MODELO), audio, mime, pasivo);
             }
         }
-        if (hayGemini) return conGemini(clave(c, Ajustes.GEMINI), Ajustes.texto(c, Ajustes.GEMINI_MODELO), audio, mime, pasivo);
         throw new IOException("Para entender audio hace falta la clave gratis de Groq o de Gemini. Pegala en Ajustes.");
     }
 
@@ -97,7 +124,7 @@ final class Transcriptor {
 
     // ---------- Whisper en Groq ----------
 
-    private static String conGroq(String clave, byte[] audio, String mime, boolean pasivo) throws IOException {
+    private static String conGroq(String clave, byte[] audio, String mime, boolean pasivo, String modelo) throws IOException {
         byte[] semilla = new byte[12];
         azar.nextBytes(semilla);
         StringBuilder limite = new StringBuilder("----JarvisLimite");
@@ -109,10 +136,11 @@ final class Transcriptor {
                 + "Content-Type: " + mime + "\r\n\r\n");
         cuerpo.write(audio);
         escribir(cuerpo, "\r\n");
-        campo(cuerpo, limite, "model", "whisper-large-v3-turbo");
+        campo(cuerpo, limite, "model", modelo);
+        if (!pasivo) campo(cuerpo, limite, "prompt", PISTA_ORDEN);
         campo(cuerpo, limite, "language", "es");
-        // Sin "prompt": con una pista, Whisper a veces la devuelve tal cual cuando no entiende el audio (y cualquier ruido
-        // terminaba pareciendo "Jarvis"). En modo pasivo pide los detalles para descartar lo dudoso.
+        // En modo pasivo (buscar "Jarvis") va sin pista: con una, Whisper a veces la devuelve tal cual cuando no entiende
+        // el audio y cualquier ruido terminaba pareciendo "Jarvis". Además pide los detalles para descartar lo dudoso.
         campo(cuerpo, limite, "response_format", pasivo ? "verbose_json" : "json");
         campo(cuerpo, limite, "temperature", "0");
         escribir(cuerpo, "--" + limite + "--\r\n");

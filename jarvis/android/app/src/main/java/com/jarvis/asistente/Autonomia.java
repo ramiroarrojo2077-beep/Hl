@@ -45,7 +45,7 @@ final class Autonomia {
         return new SimpleDateFormat("HH:mm", AR).format(new Date(ms));
     }
 
-    private static String normal(String texto) {
+    static String normal(String texto) {
         return java.text.Normalizer.normalize(texto == null ? "" : texto, java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", "").trim();
     }
@@ -480,7 +480,7 @@ final class Autonomia {
         JSONArray herramientas = Herramientas.definiciones(c, PERMITIDAS);
         StringBuilder respuesta = new StringBuilder();
         for (int vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
-            IA.Respuesta r = IA.completar(c, mensajes, herramientas, false, null);
+            IA.Respuesta r = IA.completarDeFondo(c, mensajes, herramientas);
             String parte = r.texto == null ? "" : r.texto.trim();
             if (!parte.isEmpty()) respuesta.append(respuesta.length() > 0 ? " " : "").append(parte);
             if (r.llamadas == null || r.llamadas.length() == 0) break;

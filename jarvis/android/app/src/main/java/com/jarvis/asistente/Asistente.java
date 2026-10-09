@@ -92,7 +92,10 @@ final class Asistente {
                 + (ciudad.isEmpty() ? "" : " Ciudad de " + usuario + ": " + ciudad + ".") + "\n"
                 + "Canal: " + ("voz".equals(canal) ? "voz: te habla y tu respuesta se dice en voz alta" : canal) + ".\n\n"
                 + "Cómo responder:\n"
-                + "- Corto y directo, como en una charla: 1 a 3 frases salvo que te pidan detalle. Nada de markdown, listas, emojis ni URLs largas.\n"
+                + "- " + largoRespuestas(c) + " Nada de markdown, listas, emojis ni URLs largas.\n"
+                + "- Respuestas bien armadas: primero lo que te preguntaron, con los datos concretos (números, nombres, horarios, "
+                + "precios) y de dónde salen si los buscaste; después, si suma, un consejo o la próxima acción. Nunca contestes "
+                + "con evasivas ni digas que no podés si tenés una herramienta para hacerlo.\n"
                 + "- Usá las herramientas cuando hagan falta. No inventes datos actuales: buscalos.\n"
                 + "- Para mandar un mensaje o mail, primero armá un borrador (responder_aviso, proponer_email o proponer_whatsapp), "
                 + "leéselo a " + usuario + " y preguntale si lo mandás. Solo cuando diga que sí (\"mandala\", \"dale\") usá enviar_borrador. "
@@ -117,6 +120,14 @@ final class Asistente {
                     .append(o.optString("para").isEmpty() ? "" : " (para " + o.optString("para") + ")").append('\n');
         }
         return sb.toString();
+    }
+
+    private static String largoRespuestas(Context c) {
+        switch (Ajustes.texto(c, Ajustes.LARGO_RESPUESTAS)) {
+            case "corto": return "Muy corto y directo: 1 o 2 frases.";
+            case "detallado": return "Completo y detallado (hasta 8 frases) cuando el tema lo pida; en una charla casual, corto.";
+            default: return "Natural y completo, como una persona que sabe: 2 a 4 frases bien formuladas (más si te piden detalle).";
+        }
     }
 
     /** Versión corta del system prompt para Qwen en el celular (con poco contexto anda más rápido y se confunde menos). */
@@ -254,7 +265,9 @@ final class Asistente {
 
         JSONObject a = new JSONObject();
         // Con Qwen en el celular cada análisis cuesta: los grupos no se analizan y, si estás hablando con Jarvis, vos primero.
-        boolean ahorrar = IA.soloLocal(c) && (e.grupo != null || conversando());
+        // Los grupos solo se analizan si te nombran (si no, cada mensaje del grupo gastaría cupo de la IA).
+        boolean teNombran = Autonomia.normal(e.texto).contains(Autonomia.normal(usuario));
+        boolean ahorrar = (e.grupo != null && !teNombran) || (IA.soloLocal(c) && conversando());
         if (Acciones.activa(c) && IA.configurada(c) && !ahorrar) {
             try {
                 String contenido = "App: " + e.app + "\nDe: " + quien + (e.asunto != null ? "\nAsunto: " + e.asunto : "") + "\n\n" + e.texto;
@@ -394,7 +407,7 @@ final class Asistente {
                             + " (español rioplatense). Armá un resumen de buenos días hablado, cálido y breve (máximo 6 frases), sin markdown ni emojis. Hoy es "
                             + fechaHora() + "."))
                     .put(new JSONObject().put("role", "user").put("content", datos.isEmpty() ? "Sin datos." : datos));
-            String texto = IA.completar(c, mensajes, null, false, null).texto.trim();
+            String texto = IA.completarDeFondo(c, mensajes, null).texto.trim();
             return texto.isEmpty() ? datos : texto;
         } catch (Exception e) {
             return datos;
