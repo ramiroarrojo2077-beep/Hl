@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FocusEvent } from 'react'
 import { Link } from 'react-router'
 import { Artwork } from '../components/Artwork'
 import { ProjectCard } from '../components/ProjectCard'
@@ -91,14 +91,10 @@ export function Narrative() {
   return (
     <section className="narrative" ref={ref} aria-label={`Proceso de ${p.name}`} style={{ ['--accent' as string]: p.accent }}>
       <div className="narrative__sticky">
-        <div className="narrative__art">
-          {STEPS.map((s, i) => (
-            <div key={s.k} className={`narrative__layer ${i <= step ? 'is-on' : ''}`}>
-              <Artwork project={p} mode={s.mode} decorative />
-            </div>
-          ))}
+        <div className="narrative__bg" aria-hidden="true">
+          <Artwork project={p} decorative />
         </div>
-        <div className="narrative__ui wrap">
+        <div className="narrative__ui">
           <p className="eyebrow">Proceso · {p.name}</p>
           <ol className="narrative__steps">
             {STEPS.map((s, i) => (
@@ -113,35 +109,72 @@ export function Narrative() {
             <span />
           </div>
         </div>
+        <div className="narrative__stage" aria-hidden="true">
+          <div className="stack">
+            {STEPS.map((s, i) => (
+              <div key={s.k} className={`pane ${i <= step ? 'is-built' : ''} ${i === step ? 'is-active' : ''}`} style={{ ['--i' as string]: i }}>
+                <Artwork project={p} mode={s.mode} decorative />
+                <span className="pane__label">{s.k}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )
 }
 
-/* Bloque horizontal con todos los proyectos. */
+/* Bloque horizontal: en escritorio queda fijado y avanza con el scroll vertical; en móvil se desliza con el dedo. */
 export function Strip() {
   const rail = useRef<HTMLDivElement>(null)
-  const rev = useReveal<HTMLElement>()
+  const sec = useScrollProgress<HTMLElement>('sticky')
+  const rev = useReveal<HTMLDivElement>()
+  const [dist, setDist] = useState(0)
+  useEffect(() => {
+    const r = rail.current
+    if (!r) return
+    const mq = window.matchMedia('(min-width: 901px) and (prefers-reduced-motion: no-preference)')
+    const calc = () => setDist(mq.matches ? Math.max(0, r.scrollWidth - r.clientWidth) : 0)
+    const ro = new ResizeObserver(calc)
+    ro.observe(r)
+    mq.addEventListener('change', calc)
+    calc()
+    return () => {
+      ro.disconnect()
+      mq.removeEventListener('change', calc)
+    }
+  }, [])
   const move = (dir: number) => rail.current?.scrollBy({ left: dir * rail.current.clientWidth * 0.8, behavior: 'smooth' })
+  // Con teclado: al enfocar una tarjeta fuera de vista, desplaza la página hasta ella.
+  const onFocus = (e: FocusEvent) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('.card')
+    const s = sec.current
+    if (!dist || !card || !s) return
+    const p = Math.min(1, Math.max(0, (card.offsetLeft - 40) / dist))
+    window.scrollTo({ top: s.getBoundingClientRect().top + window.scrollY + p * dist })
+  }
   return (
-    <section className="strip section" ref={rev} aria-labelledby="strip-title">
-      <div className="wrap strip__head">
-        <div>
-          <Eyebrow>Catálogo</Eyebrow>
-          <h2 id="strip-title" className="h2" data-reveal>Todo lo que estamos construyendo.</h2>
+    <section className={`strip ${dist ? 'is-pinned' : 'section'}`} ref={sec} aria-labelledby="strip-title" style={{ ['--dist' as string]: dist }}>
+      <div className="strip__sticky" ref={rev}>
+        <div className="wrap strip__head">
+          <div>
+            <Eyebrow>Catálogo</Eyebrow>
+            <h2 id="strip-title" className="h2" data-reveal>Todo lo que estamos <em className="serif">construyendo.</em></h2>
+          </div>
+          <div className="strip__ctrl">
+            <button className="iconbtn" onClick={() => move(-1)} aria-label="Anteriores"><Arrow dir="left" /></button>
+            <button className="iconbtn" onClick={() => move(1)} aria-label="Siguientes"><Arrow dir="right" /></button>
+          </div>
         </div>
-        <div className="strip__ctrl">
-          <button className="iconbtn" onClick={() => move(-1)} aria-label="Anteriores"><Arrow dir="left" /></button>
-          <button className="iconbtn" onClick={() => move(1)} aria-label="Siguientes"><Arrow dir="right" /></button>
+        <div className="strip__rail" ref={rail} tabIndex={dist ? undefined : 0} onFocus={onFocus} aria-label="Lista de proyectos">
+          {projects.map((p, i) => (
+            <ProjectCard key={p.id} project={p} size="sm" index={i} />
+          ))}
         </div>
-      </div>
-      <div className="strip__rail" ref={rail} tabIndex={0} aria-label="Lista de proyectos, desplázate horizontalmente">
-        {projects.map((p, i) => (
-          <ProjectCard key={p.id} project={p} size="sm" index={i} />
-        ))}
-      </div>
-      <div className="wrap">
-        <ButtonLink to="/proyectos" variant="ghost">Ver catálogo completo</ButtonLink>
+        <div className="wrap strip__foot">
+          <ButtonLink to="/proyectos" variant="ghost">Ver catálogo completo</ButtonLink>
+          <div className="strip__bar" aria-hidden="true"><span /></div>
+        </div>
       </div>
     </section>
   )
@@ -214,7 +247,7 @@ export function Closing() {
         <p className="closing__text">
           El próximo mundo
           <br />
-          ya está en construcción.
+          <em>ya está en construcción.</em>
         </p>
       </div>
     </section>

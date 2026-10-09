@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { Artwork, type ArtSource } from '../components/Artwork'
+import { Object3D } from '../components/Object3D'
 import { Arrow, ButtonLink, Status } from '../components/ui'
 import { projects } from '../data/projects'
 import { prefersReducedMotion, useScrollProgress } from '../hooks/motion'
@@ -18,6 +19,9 @@ export function Hero() {
     <section className="hero" ref={ref} aria-labelledby="hero-title">
       <div className="hero__art">
         <Artwork project={HORIZON} decorative eager />
+      </div>
+      <div className="hero__obj">
+        <Object3D accent="#7FA6FF" />
       </div>
       <div className="hero__content wrap">
         <p className="eyebrow hero__in" style={{ ['--d' as string]: 0 }}>Estudio independiente · Videojuegos y tecnología</p>

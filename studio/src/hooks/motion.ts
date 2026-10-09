@@ -48,11 +48,12 @@ export function useScrollProgress<T extends HTMLElement>(
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    const reduced = prefersReducedMotion()
     let raf = 0
-    let last = -1
+    let target = 0
+    let cur = -1
     let visible = true
-    const update = () => {
-      raf = 0
+    const measure = () => {
       const r = el.getBoundingClientRect()
       const vh = window.innerHeight
       const p =
@@ -61,21 +62,28 @@ export function useScrollProgress<T extends HTMLElement>(
           : mode === 'exit'
             ? -r.top / Math.max(1, r.height)
             : (vh - r.top) / (vh + r.height)
-      const c = Math.min(1, Math.max(0, p))
-      if (Math.abs(c - last) < 0.0005) return
-      last = c
-      el.style.setProperty('--p', c.toFixed(4))
-      cb.current?.(c)
+      target = Math.min(1, Math.max(0, p))
+    }
+    // Interpolación suave (inercia) sin secuestrar el scroll nativo.
+    const tick = () => {
+      raf = 0
+      measure()
+      const next = reduced || cur < 0 ? target : cur + (target - cur) * 0.16
+      const done = Math.abs(target - next) < 0.0004
+      cur = done ? target : next
+      el.style.setProperty('--p', cur.toFixed(4))
+      cb.current?.(target)
+      if (!done) raf = requestAnimationFrame(tick)
     }
     const onScroll = () => {
-      if (visible && !raf) raf = requestAnimationFrame(update)
+      if (visible && !raf) raf = requestAnimationFrame(tick)
     }
     const io = new IntersectionObserver(([e]) => {
       visible = e.isIntersecting
       if (visible) onScroll()
     })
     io.observe(el)
-    update()
+    tick()
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     return () => {
