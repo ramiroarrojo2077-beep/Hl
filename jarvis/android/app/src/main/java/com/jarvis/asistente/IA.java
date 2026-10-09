@@ -66,6 +66,7 @@ final class IA {
         /** [{id, type:"function", function:{name, arguments}, extra_content?}] — extra_content es la firma de Gemini. */
         JSONArray llamadas = new JSONArray();
         String proveedor = "";
+        String modelo = "";
     }
 
     static final class ErrorIA extends Exception {
@@ -523,6 +524,7 @@ final class IA {
         if (error != null && error != JSONObject.NULL) throw errorEnCuerpo(p, error);
         Respuesta r = new Respuesta();
         r.proveedor = p.nombre;
+        r.modelo = p.modelo;
         JSONArray opciones = json.optJSONArray("choices");
         JSONObject opcion = opciones != null ? opciones.optJSONObject(0) : null;
         JSONObject mensaje = opcion != null ? opcion.optJSONObject("message") : null;
@@ -589,6 +591,7 @@ final class IA {
             if (!vinoDatos && otros.length() > 0) return sinStream();
             Respuesta r = new Respuesta();
             r.proveedor = proveedor.nombre;
+            r.modelo = proveedor.modelo;
             r.texto = texto.toString();
             r.llamadas = normalizar(llamadas);
             return r;

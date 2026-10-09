@@ -68,7 +68,7 @@ public class Escucha extends NotificationListenerService {
         return habilitados != null && habilitados.contains(componente.flattenToString());
     }
 
-    /** Últimos mensajes recibidos (máx. 100 en memoria): [{app, de, grupo, texto, fecha}], filtrando por app o persona. */
+    /** Últimos mensajes recibidos (máx. 100 en memoria): [{app, canal, de, grupo, asunto, texto, fecha}], filtrando por app o persona. */
     static JSONArray recientes(String filtro, int cantidad) {
         String buscado = filtro == null ? "" : sinAcentos(filtro);
         JSONArray salida = new JSONArray();
@@ -76,7 +76,7 @@ public class Escucha extends NotificationListenerService {
             Iterator<JSONObject> it = recientes.descendingIterator();
             while (it.hasNext() && salida.length() < cantidad) {
                 JSONObject m = it.next();
-                String donde = sinAcentos(m.optString("app") + " " + m.optString("de") + " " + m.optString("grupo"));
+                String donde = sinAcentos(m.optString("app") + " " + m.optString("canal") + " " + m.optString("de") + " " + m.optString("grupo"));
                 if (buscado.isEmpty() || donde.contains(buscado)) salida.put(m);
             }
         }
@@ -212,11 +212,12 @@ public class Escucha extends NotificationListenerService {
         if (grupo) e.grupo = conversacion.isEmpty() ? titulo : conversacion;
         if ("email".equals(canal)) e.asunto = texto(extras.getCharSequence(Notification.EXTRA_TEXT));
         e.texto = mensaje.length() > 3000 ? mensaje.substring(0, 3000) : mensaje;
-        if (responder != null) e.claveRespuesta = Respuestas.recordar(paquete, claveConversacion, responder);
+        if (responder != null) e.claveRespuesta = Respuestas.recordar(paquete, app, claveConversacion, grupo, responder);
 
         try {
             JSONObject reciente = new JSONObject()
-                    .put("app", app).put("de", e.de).put("grupo", e.grupo == null ? "" : e.grupo)
+                    .put("app", app).put("canal", canal).put("de", e.de).put("grupo", e.grupo == null ? "" : e.grupo)
+                    .put("asunto", e.asunto == null ? "" : e.asunto)
                     .put("texto", e.texto).put("fecha", Almacen.ahora());
             synchronized (recientes) {
                 recientes.addLast(reciente);

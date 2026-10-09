@@ -77,6 +77,12 @@ final class Local {
             "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/19edb84c69a0212f29a6ef17ba0d6f278b6a1614/"
                     + "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm?download=true",
             "qwen2.5-1.5b.litertlm", 1_597_931_520L, false);
+    // El mejor Qwen que corre en un celular con este motor (necesita ~8 GB de RAM). Su tamaño exacto no está publicado
+    // en un lugar verificable: se toma del servidor al bajarlo (0 = desconocido) y, si la URL no existe, se pasa al
+    // de 1.5B solo.
+    static final Modelo QWEN_17B = new Modelo("qwen3-1.7b", "Qwen 3 1.7B",
+            "https://huggingface.co/litert-community/Qwen3-1.7B/resolve/main/Qwen3_1.7B.litertlm?download=true",
+            "qwen3-1.7b.litertlm", 0L, true);
     static final Modelo QWEN_06B = new Modelo("qwen3-0.6b", "Qwen 3 0.6B",
             "https://huggingface.co/litert-community/Qwen3-0.6B/resolve/8414150f2e9dcc82449bcc9c5abc404b399a4d06/"
                     + "Qwen3-0.6B.litertlm?download=true",
@@ -118,12 +124,28 @@ final class Local {
         if ("no".equals(elegido)) return null;
         // El motor solo existe para celulares de 64 bits.
         if (android.os.Build.SUPPORTED_64_BIT_ABIS.length == 0) return null;
-        if (QWEN_15B.id.equals(elegido)) return QWEN_15B;
+        if (QWEN_17B.id.equals(elegido) && !noDisponible(c, QWEN_17B)) return QWEN_17B;
+        if (QWEN_15B.id.equals(elegido) || QWEN_17B.id.equals(elegido)) return QWEN_15B;
         if (QWEN_06B.id.equals(elegido)) return QWEN_06B;
         ActivityManager.MemoryInfo memoria = new ActivityManager.MemoryInfo();
         c.getSystemService(ActivityManager.class).getMemoryInfo(memoria);
-        // Con 6 GB o más anda el de 1.5B (mejor español); con menos, el liviano.
+        // Automático: el mejor que entra en la memoria del celular (un celular de 8 GB informa ~7,3 GB).
+        if (memoria.totalMem >= 7_000_000_000L && !noDisponible(c, QWEN_17B)) return QWEN_17B;
         return memoria.totalMem >= 5_500_000_000L ? QWEN_15B : QWEN_06B;
+    }
+
+    private static android.content.SharedPreferences preferencias(Context c) {
+        return c.getApplicationContext().getSharedPreferences("jarvis-modelos", Context.MODE_PRIVATE);
+    }
+
+    /** Si la URL del modelo no existe (404), no se vuelve a intentar y se usa el siguiente. */
+    private static boolean noDisponible(Context c, Modelo m) {
+        return preferencias(c).getBoolean("no_" + m.id, false);
+    }
+
+    /** Tamaño esperado: el publicado, o el que informó el servidor al empezar a bajarlo (-1 si no se sabe). */
+    static long esperado(Context c, Modelo m) {
+        return m.bytes > 0 ? m.bytes : preferencias(c).getLong("tam_" + m.id, -1);
     }
 
     private static File carpeta(Context c) {
@@ -142,7 +164,9 @@ final class Local {
         Modelo m = modelo(c);
         if (m == null) return false;
         File f = archivo(c, m);
-        return f.isFile() && f.length() == m.bytes;
+        long tam = esperado(c, m);
+        // El archivo final solo existe después de bajarse completo (se renombra al terminar).
+        return f.isFile() && (tam <= 0 ? f.length() > 100_000_000L : f.length() == tam);
     }
 
     /** {nombre, modelo, local:true, disponible, descargando, progreso, error?} para la interfaz. */
@@ -153,7 +177,7 @@ final class Local {
             o.put("nombre", "qwen").put("local", true);
             if (m == null) return o.put("modelo", "apagado").put("disponible", false);
             o.put("modelo", m.nombre + " (en el celular)").put("disponible", listo(c)).put("descargando", descargando)
-                    .put("progreso", listo(c) ? 100 : Math.max(0, progreso)).put("bytes", m.bytes);
+                    .put("progreso", listo(c) ? 100 : Math.max(0, progreso)).put("bytes", Math.max(0, esperado(c, m)));
             if (errorDescarga != null && !descargando) o.put("error", errorDescarga);
         } catch (Exception ignorada) {
         }
@@ -233,6 +257,18 @@ final class Local {
         }
     }
 
+    /** La URL del modelo no existe (404/410). */
+    private static final class NoExiste extends Exception {
+        NoExiste(String mensaje) {
+            super(mensaje);
+        }
+    }
+
+    private static boolean completo(Context c, Modelo m, File destino) {
+        long tam = esperado(c, m);
+        return destino.isFile() && (tam <= 0 || destino.length() == tam);
+    }
+
     /** Se cortó a propósito (cambió el modelo elegido o se fue el Wi-Fi): el .parte queda para seguir después. */
     private static final class Pausa extends Exception {
         Pausa(String mensaje) {
@@ -246,6 +282,7 @@ final class Local {
         android.os.PowerManager.WakeLock despierta = c.getSystemService(android.os.PowerManager.class)
                 .newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "jarvis:descarga");
         android.net.wifi.WifiManager.WifiLock wifiDespierto = null;
+        boolean siguiente = false;
         try {
             despierta.acquire(3 * 3_600_000L);
             android.net.wifi.WifiManager wm = c.getSystemService(android.net.wifi.WifiManager.class);
@@ -255,31 +292,43 @@ final class Local {
             }
             // Otros modelos que hayan quedado (por ejemplo, si cambiaste de modelo) liberan espacio.
             borrarModelos(c, m);
-            if (carpeta(c).getUsableSpace() + parcial.length() < m.bytes + 200_000_000L) {
-                throw new Exception("No hay espacio: hacen falta " + (m.bytes / 1_000_000) + " MB libres.");
+            long tam = esperado(c, m) > 0 ? esperado(c, m) : 2_300_000_000L;
+            if (carpeta(c).getUsableSpace() + parcial.length() < tam + 200_000_000L) {
+                throw new Exception("No hay espacio: hacen falta " + (tam / 1_000_000) + " MB libres.");
             }
-            for (int intento = 0; intento < 5 && !(destino.isFile() && destino.length() == m.bytes); intento++) {
+            for (int intento = 0; intento < 5 && !completo(c, m, destino); intento++) {
                 if (modelo(c) != m) throw new Pausa("Cambiaste el modelo.");
                 if (!puedeBajar(c, forzar)) throw new Pausa("Esperando Wi-Fi para bajar " + m.nombre + ".");
                 try {
                     bajar(c, m, parcial, forzar);
                 } catch (Pausa p) {
                     throw p;
+                } catch (NoExiste e) {
+                    // Ese modelo no está publicado donde se esperaba: se marca y se baja el siguiente mejor.
+                    preferencias(c).edit().putBoolean("no_" + m.id, true).apply();
+                    //noinspection ResultOfMethodCallIgnored
+                    parcial.delete();
+                    Log.w(TAG, m.nombre + " no está disponible: paso al siguiente");
+                    throw new Pausa("Siguiente modelo");
                 } catch (Exception e) {
                     Log.w(TAG, "Descarga cortada: " + e.getMessage());
                     errorDescarga = e.getMessage();
                     Thread.sleep(5_000L * (intento + 1));
                     continue;
                 }
-                if (parcial.length() == m.bytes) {
+                if (esperado(c, m) > 0 && parcial.length() == esperado(c, m)) {
                     if (!parcial.renameTo(destino)) throw new Exception("No pude guardar el modelo.");
                     errorDescarga = null;
                     Log.i(TAG, m.nombre + " descargado");
                 }
             }
-            if (!(destino.isFile() && destino.length() == m.bytes) && errorDescarga == null) errorDescarga = "No pude bajar " + m.nombre + ".";
+            if (!completo(c, m, destino) && errorDescarga == null) errorDescarga = "No pude bajar " + m.nombre + ".";
         } catch (Pausa p) {
             errorDescarga = p.getMessage();
+            if ("Siguiente modelo".equals(p.getMessage())) {
+                errorDescarga = null;
+                siguiente = true;
+            }
         } catch (Exception e) {
             errorDescarga = e.getMessage();
             Log.w(TAG, "No pude bajar el modelo: " + e.getMessage());
@@ -289,11 +338,13 @@ final class Local {
             if (despierta.isHeld()) despierta.release();
             Eventos.emitir("estado", null);
         }
+        // El modelo no existía: se arranca con el siguiente mejor.
+        if (siguiente) asegurar(c, forzar);
     }
 
     private static void bajar(Context c, Modelo m, File parcial, boolean forzar) throws Exception {
         long ya = parcial.isFile() ? parcial.length() : 0;
-        if (ya > m.bytes) {
+        if (esperado(c, m) > 0 && ya > esperado(c, m)) {
             //noinspection ResultOfMethodCallIgnored
             parcial.delete();
             ya = 0;
@@ -305,8 +356,23 @@ final class Local {
         if (ya > 0) con.setRequestProperty("Range", "bytes=" + ya + "-");
         int estado = con.getResponseCode();
         if (estado == 416) return;
+        if (estado == 404 || estado == 410 || estado == 401) throw new NoExiste(m.nombre + " no está disponible (" + estado + ").");
         if (estado != 200 && estado != 206) throw new Exception("El servidor del modelo respondió " + estado + ".");
         boolean sigue = estado == 206;
+        if (m.bytes <= 0) {
+            // Tamaño total que informa el servidor (Content-Range: bytes a-b/TOTAL, o el largo si arranca de cero).
+            long total = -1;
+            String rango = con.getHeaderField("Content-Range");
+            if (sigue && rango != null && rango.contains("/")) {
+                try {
+                    total = Long.parseLong(rango.substring(rango.lastIndexOf('/') + 1).trim());
+                } catch (NumberFormatException ignorada) {
+                }
+            } else if (!sigue) {
+                total = con.getContentLengthLong();
+            }
+            if (total > 0) preferencias(c).edit().putLong("tam_" + m.id, total).apply();
+        }
         try (InputStream entrada = con.getInputStream(); FileOutputStream salida = new FileOutputStream(parcial, sigue)) {
             long total = sigue ? ya : 0;
             byte[] bloque = new byte[256 * 1024];
@@ -316,13 +382,14 @@ final class Local {
             while ((leidos = entrada.read(bloque)) != -1) {
                 salida.write(bloque, 0, leidos);
                 total += leidos;
-                int ahora = (int) (total * 100 / m.bytes);
+                long tam = esperado(c, m);
+                int ahora = tam > 0 ? (int) (total * 100 / tam) : 0;
                 if (ahora != ultimo) {
                     ultimo = ahora;
                     progreso = ahora;
                     Eventos.emitir("estado", null);
                 }
-                if (total > m.bytes) throw new Exception("El archivo del modelo es más grande de lo esperado.");
+                if (tam > 0 && total > tam) throw new Exception("El archivo del modelo es más grande de lo esperado.");
                 // Cada 8 MB: si cambiaste de modelo o se fue el Wi-Fi (y no querés gastar datos), se pausa.
                 if (total - revisado > 8_000_000L) {
                     revisado = total;
@@ -392,7 +459,7 @@ final class Local {
             asegurar(c, false);
             throw new IA.ErrorIA(descargando
                     ? "Todavía estoy bajando mi cerebro del celular (" + Math.max(0, progreso) + "%). Mientras tanto podés pegar la clave gratis de Gemini en Ajustes."
-                    : "Para responder sin internet necesito bajar mi cerebro del celular (" + (m.bytes / 1_000_000) + " MB, por Wi-Fi).", 503);
+                    : "Para responder sin internet necesito bajar mi cerebro del celular (" + m.nombre + ", por Wi-Fi).", 503);
         }
         try {
             List<Message> previos = new ArrayList<>();

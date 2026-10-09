@@ -156,11 +156,11 @@ final class Herramientas {
                 .parametro("cantidad", "integer", "Cuántos, por defecto 15 (máximo 50)")
                 .si(Herramientas::hayNotificaciones);
 
-        agregar("leer_emails", "Lee los últimos mails de la bandeja de entrada (sin marcarlos como leídos).",
+        agregar("leer_emails", "Lee los últimos mails de Gmail (de la bandeja si está conectada, o de las notificaciones de Gmail).",
                 (c, a, u) -> leerEmails(c, numero(a, "cantidad", 5, 15), !esFalso(a.opt("solo_no_leidos"))))
                 .parametro("cantidad", "integer", "Cuántos, por defecto 5 (máximo 15)")
                 .parametro("solo_no_leidos", "boolean", "true = solo no leídos (por defecto)")
-                .si(Herramientas::hayCorreo);
+                .si(c -> hayCorreo(c) || hayNotificaciones(c));
 
         agregar("responder_aviso",
                 "Prepara un borrador de respuesta a un mensaje (WhatsApp, Telegram, SMS…) o mail que llegó (usa el id del "
@@ -179,11 +179,12 @@ final class Herramientas {
                 .si(Herramientas::hayCorreo);
 
         agregar("proponer_whatsapp",
-                "Prepara un borrador de WhatsApp para un número. NO lo envía: queda para que el usuario lo apruebe. Para "
-                        + "contestarle a alguien que te escribió, usá responder_aviso.",
+                "Prepara un borrador de WhatsApp para una persona, un GRUPO (por su nombre, ej: 'Facu' o 'Familia') o un "
+                        + "número. NO lo envía: queda para que el usuario lo apruebe. Si el chat o grupo escribió hace poco, al "
+                        + "aprobarlo se manda directo.",
                 (c, a, u) -> proponerWhatsapp(c, texto(a, "numero"), texto(a, "nombre"), texto(a, "texto")))
                 .parametro("numero", "string",
-                        "Nombre de un contacto (ej: Juan) o número con código de país, solo dígitos (ej: 5491112345678; en "
+                        "Nombre de un contacto o de un grupo (ej: Juan, Familia) o número con código de país, solo dígitos (ej: 5491112345678; en "
                                 + "Argentina 549 + característica sin 0 + número sin 15)")
                 .parametro("nombre", "string", "Nombre de la persona, opcional")
                 .parametro("texto", "string", "Mensaje")
@@ -825,7 +826,28 @@ final class Herramientas {
         return new JSONObject().put("mensajes", new JSONArray()).put("nota", nota);
     }
 
+    /** Los mails que llegaron como notificación (Gmail, Outlook), para cuando no hay cuenta conectada por IMAP. */
+    static JSONArray mailsDeNotificaciones(int cantidad) throws JSONException {
+        JSONArray todos = Escucha.recientes("", 100);
+        JSONArray salida = new JSONArray();
+        for (int i = 0; i < todos.length() && salida.length() < cantidad; i++) {
+            JSONObject m = todos.getJSONObject(i);
+            if (!"email".equals(m.optString("canal"))) continue;
+            salida.put(new JSONObject().put("de", m.optString("de")).put("deNombre", m.optString("de"))
+                    .put("asunto", m.optString("asunto")).put("texto", m.optString("texto")).put("fecha", m.optString("fecha"))
+                    .put("fuente", "notificaciones"));
+        }
+        return salida;
+    }
+
     private static Object leerEmails(Context c, int cantidad, boolean soloNoLeidos) throws Exception {
+        if (!Correo.configurado(c)) {
+            JSONArray avisos = mailsDeNotificaciones(cantidad);
+            return new JSONObject().put("mails", avisos).put("nota", (avisos.length() == 0
+                    ? "No llegó ningún mail como notificación desde que Jarvis está prendida. "
+                    : "Estos son los mails que llegaron como notificación de Gmail. ")
+                    + "Para leer toda la bandeja, el usuario puede cargar su Gmail y una contraseña de aplicación en Ajustes > Correo.");
+        }
         JSONArray mails = Correo.leer(c, cantidad, soloNoLeidos);
         if (mails == null || mails.length() == 0) {
             return new JSONObject().put("mails", new JSONArray())
@@ -939,10 +961,28 @@ final class Herramientas {
     }
 
     private static String proponerWhatsapp(Context c, String numero, String nombre, String texto) throws Exception {
-        // Si dijo un nombre, se busca en los contactos.
+        if (texto.isEmpty()) throw new Falla("Falta el mensaje.");
         if (!numero.isEmpty() && LETRAS.matcher(numero).find()) {
+            // 1) Una conversación (persona o GRUPO) que escribió hace poco: se responde directo desde la notificación.
+            Respuestas.Chat chat = Respuestas.buscar(numero, "whatsapp");
+            if (chat != null) {
+                JSONObject datos = new JSONObject()
+                        .put("canal", "notificacion").put("para", chat.clave).put("claveRespuesta", chat.clave)
+                        .put("paraNombre", chat.nombre + (chat.grupo ? " (grupo)" : "")).put("app", chat.app)
+                        .put("texto", texto).put("motivo", "Pedido del usuario");
+                return Acciones.describirPropuesta(c, Acciones.crearPropuesta(c, datos));
+            }
+            // 2) Un contacto con teléfono.
             JSONObject contacto = Telefono.telefonoDe(c, numero);
-            if (contacto == null) throw new Falla("No encontré a " + numero + " en tus contactos, o no tiene teléfono.");
+            if (contacto == null) {
+                // 3) Puede ser un grupo que no escribió desde que Jarvis está prendida: al aprobarlo se abre WhatsApp con
+                // el texto para que elijas el grupo.
+                JSONObject datos = new JSONObject()
+                        .put("canal", "whatsapp_compartir").put("para", numero).put("paraNombre", numero).put("app", "WhatsApp")
+                        .put("texto", texto).put("motivo", "Pedido del usuario");
+                return Acciones.describirPropuesta(c, Acciones.crearPropuesta(c, datos))
+                        + " Como «" + numero + "» no escribió hace poco, al aprobarlo se abre WhatsApp con el texto para elegir el chat o grupo.";
+            }
             if (nombre.isEmpty()) nombre = contacto.getString("nombre");
             numero = Telefono.internacional(c, contacto.getString("numero"));
         }

@@ -66,6 +66,10 @@ final class ElevenLabs {
 
     // Estado compartido entre hilos, protegido por el candado de la clase.
     private static String claveActual = "";
+    /** Por qué falló la última vez (para mostrarlo en Estado), o null si anduvo. */
+    static volatile String ultimoError;
+    // Voces que la cuenta no puede usar por API (por ejemplo, las de la biblioteca con el plan gratis).
+    private static final java.util.Set<String> vocesBloqueadas = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static String vozAuto;
     private static long pausaHasta;
     private static long bytesEnCache;
@@ -129,11 +133,39 @@ final class ElevenLabs {
             if (clave(c).isEmpty()) return null;
             return guardarArchivo(c, sintetizarBytes(c, texto));
         } catch (EnPausa e) {
+            ultimoError = e.getMessage();
             return null;
         } catch (Exception | OutOfMemoryError e) {
             Log.w(TAG, "No pude generar la voz, uso la del sistema: " + e.getMessage());
+            ultimoError = explicar(e);
             return null;
         }
+    }
+
+    /** El error en palabras simples, para mostrarlo en la app. */
+    static String explicar(Throwable e) {
+        String m = e.getMessage() == null ? "" : e.getMessage();
+        if (e instanceof ErrorHttp) {
+            ErrorHttp h = (ErrorHttp) e;
+            String d = h.detalle.toLowerCase(Locale.ROOT);
+            if (h.estado == 401) return "La clave de ElevenLabs no es válida.";
+            if (d.contains("quota") || d.contains("credits")) return "Se terminaron los créditos de ElevenLabs de este mes.";
+            if (h.estado == 402 || d.contains("paid_plan") || d.contains("payment")) {
+                return "Tu plan gratis de ElevenLabs no permite esa voz por la app: elegí una de las voces predeterminadas.";
+            }
+            if (h.estado == 404) return "Esa voz de ElevenLabs no existe en tu cuenta.";
+            if (h.estado == 429) return "ElevenLabs está con mucho uso; probá en un rato.";
+            return "ElevenLabs respondió " + h.estado + (h.detalle.isEmpty() ? "." : ": " + h.detalle);
+        }
+        return m.isEmpty() ? "ElevenLabs falló." : m;
+    }
+
+    /** Una voz que el plan no deja usar (402 o "paid plan"/"library"), no un problema de cupo general. */
+    private static boolean vozNoPermitida(ErrorHttp e) {
+        String d = e.detalle.toLowerCase(Locale.ROOT);
+        if (d.contains("quota") || d.contains("credits")) return false;
+        return e.estado == 402 || d.contains("paid_plan") || d.contains("library") || d.contains("payment_required")
+                || (e.estado == 403 && d.contains("voice"));
     }
 
     /** Bytes del mp3 (para POST /api/hablar). */
@@ -165,22 +197,33 @@ final class ElevenLabs {
 
         byte[] audio;
         try {
-            audio = pedir(clave, "/v1/text-to-speech/" + URLEncoder.encode(voz, "UTF-8").replace("+", "%20")
-                    + "?output_format=mp3_44100_128", "POST", cuerpo, "audio/mpeg");
+            audio = hablarCon(clave, voz, cuerpo);
         } catch (ErrorHttp e) {
-            // Si la voz que había elegido sola ya no existe, la próxima vez elige otra.
-            if (vozFija.isEmpty() && (e.estado == 404 || e.detalle.contains("voice_not_found"))) {
-                synchronized (ElevenLabs.class) {
-                    if (voz.equals(vozAuto)) vozAuto = null;
-                }
+            boolean noExiste = e.estado == 404 || e.detalle.contains("voice_not_found");
+            if (!noExiste && !vozNoPermitida(e)) throw e;
+            // Esa voz no se puede usar (no existe, o es de la biblioteca y el plan gratis no la deja): se marca y se
+            // habla con una voz predeterminada, que todos los planes pueden usar.
+            vocesBloqueadas.add(voz);
+            synchronized (ElevenLabs.class) {
+                if (voz.equals(vozAuto)) vozAuto = null;
             }
-            throw e;
+            String otra = elegirVoz(clave, "");
+            if (otra.equals(voz)) otra = VOZ_DE_RESPALDO;
+            Log.w(TAG, "La voz " + voz + " no se puede usar (" + e.estado + "): uso " + otra);
+            audio = hablarCon(clave, otra, cuerpo);
+            ultimoError = vozFija.isEmpty() ? null : explicar(e) + " Mientras tanto uso una predeterminada.";
         }
         if (audio.length == 0) throw new IOException("ElevenLabs devolvió un audio vacío.");
         synchronized (ElevenLabs.class) {
             if (clave.equals(claveActual)) guardarEnCache(llave, audio);
         }
+        if (ultimoError != null && !ultimoError.endsWith("uso una predeterminada.")) ultimoError = null;
         return audio;
+    }
+
+    private static byte[] hablarCon(String clave, String voz, JSONObject cuerpo) throws IOException {
+        return pedir(clave, "/v1/text-to-speech/" + URLEncoder.encode(voz, "UTF-8").replace("+", "%20")
+                + "?output_format=mp3_44100_128", "POST", cuerpo, "audio/mpeg");
     }
 
     /** [{id, nombre, tipo, etiquetas}] de tu cuenta. */
@@ -216,7 +259,7 @@ final class ElevenLabs {
     }
 
     private static String elegirVoz(String clave, String vozFija) throws IOException {
-        if (!vozFija.isEmpty()) return vozFija;
+        if (!vozFija.isEmpty() && !vocesBloqueadas.contains(vozFija)) return vozFija;
         synchronized (eligiendo) {
             synchronized (ElevenLabs.class) {
                 alinear(clave);
@@ -247,20 +290,23 @@ final class ElevenLabs {
         return (e.estado == 401 || e.estado == 403) && e.detalle.contains("missing_permissions");
     }
 
-    // Prioridad: voces tuyas en español (diseñadas o clonadas) > cualquier voz femenina en español >
-    // predeterminadas femeninas > cualquier femenina > la primera.
+    // Prioridad: voces que diseñaste vos en español > predeterminadas en español > predeterminadas femeninas conocidas >
+    // cualquier predeterminada femenina > cualquiera usable. Las de la biblioteca ("professional") quedan al final:
+    // con el plan gratis no se pueden usar por la app.
     private static JSONObject elegir(JSONArray crudas) {
         List<JSONObject> voces = new ArrayList<>();
         for (int i = 0; i < crudas.length(); i++) {
             JSONObject v = crudas.optJSONObject(i);
-            if (v != null && !cadena(v, "voice_id").isEmpty()) voces.add(v);
+            if (v != null && !cadena(v, "voice_id").isEmpty() && !vocesBloqueadas.contains(cadena(v, "voice_id"))) voces.add(v);
         }
-        for (JSONObject v : voces) if (propia(v) && hablaEspanol(v)) return v;
-        for (JSONObject v : voces) if (femenina(v) && hablaEspanol(v)) return v;
+        for (JSONObject v : voces) if ("generated".equals(cadena(v, "category")) && hablaEspanol(v)) return v;
+        for (JSONObject v : voces) if (!propia(v) && hablaEspanol(v)) return v;
         for (String nombre : PREDETERMINADAS_FEMENINAS) {
             for (JSONObject v : voces) if (cadena(v, "name").startsWith(nombre)) return v;
         }
-        for (JSONObject v : voces) if (femenina(v)) return v;
+        for (JSONObject v : voces) if (!propia(v) && femenina(v)) return v;
+        for (JSONObject v : voces) if (!propia(v)) return v;
+        for (JSONObject v : voces) if (femenina(v) && hablaEspanol(v)) return v;
         return voces.isEmpty() ? null : voces.get(0);
     }
 
@@ -400,7 +446,9 @@ final class ElevenLabs {
                 if (detalle.length() > 300) detalle = detalle.substring(0, 300);
                 ErrorHttp error = new ErrorHttp(estado, detalle);
                 // Sin cupo o clave inválida: se descansa media hora y mientras tanto habla la voz del sistema.
-                boolean sinCupo = estado == 401 || estado == 402 || estado == 429 || SIN_CUPO.matcher(detalle).find();
+                boolean vozNoPermitida = (estado == 402 || estado == 403) && !SIN_CUPO.matcher(detalle).find()
+                        && ruta.startsWith("/v1/text-to-speech/");
+                boolean sinCupo = !vozNoPermitida && (estado == 401 || estado == 402 || estado == 429 || SIN_CUPO.matcher(detalle).find());
                 if (sinCupo && !(ruta.startsWith("/v2/voices") && sinPermisoDeVoces(error))) pausar(clave);
                 throw error;
             }

@@ -302,6 +302,9 @@ final class ServidorLocal {
                 .put("voz", true)
                 .put("vozNatural", ElevenLabs.disponible(c))
                 .put("vozNombre", Ajustes.texto(c, Ajustes.VOZ))
+                .put("vozMotor", Voz.ultimoMotor)
+                .put("vozError", Voz.ultimoError == null ? JSONObject.NULL : Voz.ultimoError)
+                .put("oidoMotor", Ajustes.tiene(c, Ajustes.GROQ) ? "groq" : Ajustes.tiene(c, Ajustes.GEMINI) ? "gemini" : "sistema")
                 .put("oidoPropio", Dictado.disponible(c))
                 .put("autonomo", "si".equals(Ajustes.texto(c, Ajustes.AUTONOMO)))
                 .put("ultimaRevision", Almacen.de(c).numero("ultimaRevision"))
@@ -385,6 +388,42 @@ final class ServidorLocal {
         } else if (m.equals("DELETE") && r.equals("/api/historial")) {
             almacen.reemplazar("historial", new JSONArray());
             responderJson(out, 200, new JSONObject().put("listo", true));
+        } else if (m.equals("GET") && r.equals("/api/mensajes")) {
+            int cantidad = 60;
+            try {
+                cantidad = Math.min(100, Math.max(1, Integer.parseInt(p.parametros.getOrDefault("cantidad", "60"))));
+            } catch (NumberFormatException ignorada) {
+            }
+            responderJson(out, 200, Escucha.recientes(p.parametros.getOrDefault("filtro", ""), cantidad));
+        } else if (m.equals("GET") && r.equals("/api/conversaciones")) {
+            responderJson(out, 200, Respuestas.conversaciones());
+        } else if (m.equals("POST") && r.equals("/api/probar/voz")) {
+            String texto = p.json().optString("texto", "").trim();
+            if (texto.isEmpty()) texto = "Hola, " + Ajustes.texto(c, Ajustes.USUARIO) + ". Así suena mi voz.";
+            responderJson(out, 200, Voz.de(c).probar(texto));
+        } else if (m.equals("POST") && r.equals("/api/probar/ia")) {
+            long inicio = System.currentTimeMillis();
+            JSONObject res = new JSONObject();
+            try {
+                IA.Respuesta ia = IA.completar(c, new JSONArray()
+                        .put(new JSONObject().put("role", "system").put("content", "Respondé en una frase corta, en español rioplatense."))
+                        .put(new JSONObject().put("role", "user").put("content", "Decime hola y qué hora es más o menos de día o de noche.")),
+                        null, false, null);
+                res.put("ok", true).put("proveedor", ia.proveedor).put("modelo", ia.modelo).put("texto", ia.texto);
+            } catch (IA.ErrorIA e) {
+                res.put("ok", false).put("error", e.getMessage());
+            }
+            responderJson(out, 200, res.put("ms", System.currentTimeMillis() - inicio));
+        } else if (m.equals("POST") && r.equals("/api/memoria")) {
+            String texto = p.json().optString("texto", "").trim();
+            if (texto.isEmpty()) throw new ErrorHttp(400, "Falta \"texto\".");
+            JSONObject nuevo = new JSONObject().put("id", Almacen.nuevoId()).put("texto", texto).put("fecha", Almacen.ahora());
+            synchronized (almacen) {
+                almacen.memoria().put(nuevo);
+            }
+            almacen.guardar();
+            Eventos.emitir("memoria", almacen.memoria());
+            responderJson(out, 201, nuevo);
         } else if (m.equals("GET") && r.equals("/api/memoria")) {
             responderJson(out, 200, almacen.memoria());
         } else if (m.equals("DELETE") && r.startsWith("/api/memoria/") && (id = id(r, "/api/memoria/", null)) != null) {
@@ -545,7 +584,9 @@ final class ServidorLocal {
 
     private static JSONObject correo(Context c, boolean refrescar) throws Exception {
         JSONObject r = new JSONObject().put("configurado", Correo.configurado(c)).put("cuentas", Correo.estado());
-        if (!Correo.configurado(c)) return r.put("mails", new JSONArray());
+        // Sin cuenta conectada: los mails que llegaron como notificación de Gmail.
+        if (!Correo.configurado(c)) return r.put("fuente", "notificaciones").put("mails", Herramientas.mailsDeNotificaciones(20));
+        r.put("fuente", "imap");
         synchronized (ServidorLocal.class) {
             if (refrescar || mailsCache == null || System.currentTimeMillis() - mailsCuando > 180_000L) {
                 try {

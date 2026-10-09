@@ -70,6 +70,10 @@ final class Voz {
         return hablando;
     }
 
+    /** Con qué voz habló la última vez (elevenlabs | edge | gemini | sistema) y por qué no usó la elegida, si pasó. */
+    static volatile String ultimoMotor = "";
+    static volatile String ultimoError;
+
     void hablar(String texto, Runnable alTerminar) {
         callar();
         final int miTurno = ++turno;
@@ -83,6 +87,28 @@ final class Voz {
                 else conSistema(texto, miTurno, alTerminar);
             });
         });
+    }
+
+    /** Para "Probar voz": genera el audio (bloquea, llamar desde un hilo de fondo), lo dice y cuenta qué motor usó. */
+    org.json.JSONObject probar(String texto) {
+        File mp3 = sintetizar(texto);
+        String motor = mp3 == null ? "sistema" : ultimoMotor;
+        principal.post(() -> {
+            callar();
+            final int miTurno = ++turno;
+            hablando = true;
+            audio.requestAudioFocus(foco);
+            if (mp3 != null) reproducir(mp3, texto, miTurno, null);
+            else conSistema(texto, miTurno, null);
+        });
+        org.json.JSONObject r = new org.json.JSONObject();
+        try {
+            String elegida = Ajustes.texto(contexto, Ajustes.VOZ);
+            r.put("ok", true).put("elegida", elegida).put("motor", motor);
+            if (ultimoError != null) r.put("error", ultimoError);
+        } catch (org.json.JSONException ignorada) {
+        }
+        return r;
     }
 
     private static String vozEdge(String voz) {
@@ -99,21 +125,45 @@ final class Voz {
     private File sintetizar(String texto) {
         String voz = Ajustes.texto(contexto, Ajustes.VOZ);
         File f = null;
+        String motor;
         switch (voz) {
             case "sistema":
+                ultimoMotor = "sistema";
+                ultimoError = null;
                 return null;
             case "elevenlabs":
-                f = ElevenLabs.sintetizar(contexto, texto);
+                motor = "elevenlabs";
+                if (!Ajustes.tiene(contexto, Ajustes.ELEVENLABS)) {
+                    ultimoError = "Elegiste ElevenLabs pero falta su clave en Ajustes > Voz.";
+                } else {
+                    f = ElevenLabs.sintetizar(contexto, texto);
+                    ultimoError = f == null ? ElevenLabs.ultimoError : ElevenLabs.ultimoError;
+                }
                 break;
             case "gemini":
+                motor = "gemini";
                 f = VozNube.gemini(contexto, texto, "Kore");
+                ultimoError = f == null ? "La voz de Gemini no respondió (¿clave o cupo?)." : null;
                 break;
             default:
+                motor = "edge";
                 f = VozNube.edge(contexto, texto, vozEdge(voz), "+6%");
+                ultimoError = f == null ? "La voz neural no respondió (¿sin internet?)." : null;
         }
-        if (f != null) return f;
-        if (!"elevenlabs".equals(voz) && ElevenLabs.disponible(contexto)) f = ElevenLabs.sintetizar(contexto, texto);
-        if (f == null && ("elevenlabs".equals(voz) || "gemini".equals(voz))) f = VozNube.edge(contexto, texto, vozEdge("elena"), "+6%");
+        if (f != null) {
+            ultimoMotor = motor;
+            return f;
+        }
+        // Respaldo: ElevenLabs si está (salvo que sea la que falló), después la neural de Microsoft, y si no la del celular.
+        if (!"elevenlabs".equals(voz) && ElevenLabs.disponible(contexto)) {
+            f = ElevenLabs.sintetizar(contexto, texto);
+            if (f != null) ultimoMotor = "elevenlabs";
+        }
+        if (f == null && ("elevenlabs".equals(voz) || "gemini".equals(voz))) {
+            f = VozNube.edge(contexto, texto, vozEdge("elena"), "+6%");
+            if (f != null) ultimoMotor = "edge";
+        }
+        if (f == null) ultimoMotor = "sistema";
         return f;
     }
 

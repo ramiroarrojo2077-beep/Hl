@@ -133,6 +133,21 @@ final class Acciones {
                             respuesta == null ? null : respuesta.optString("messageId"), refs);
                     break;
                 }
+                case "whatsapp_compartir": {
+                    // Un chat o grupo que no escribió hace poco: WhatsApp no deja abrir un grupo por nombre, así que se
+                    // comparte el texto y vos elegís el grupo (también queda copiado).
+                    c.getSystemService(android.content.ClipboardManager.class)
+                            .setPrimaryClip(android.content.ClipData.newPlainText("Jarvis", p.optString("texto")));
+                    Intent compartir = new Intent(Intent.ACTION_SEND).setType("text/plain").setPackage("com.whatsapp")
+                            .putExtra(Intent.EXTRA_TEXT, p.optString("texto")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    try {
+                        c.startActivity(compartir);
+                    } catch (android.content.ActivityNotFoundException sinWhatsapp) {
+                        c.startActivity(Intent.createChooser(compartir.setPackage(null), "Mandar con").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    }
+                    p.put("nota", "Abrí WhatsApp con el mensaje: elegí «" + p.optString("paraNombre") + "» y tocá enviar.");
+                    break;
+                }
                 case "whatsapp_nuevo": {
                     Uri chat = Uri.parse("https://wa.me/" + p.optString("para").replaceAll("\\D", "") + "?text=" + Uri.encode(p.optString("texto")));
                     c.startActivity(new Intent(Intent.ACTION_VIEW, chat).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
