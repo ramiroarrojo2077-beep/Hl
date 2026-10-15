@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>F1 Ultra Realistic</title>
+  <meta name="description" content="Simulador de Fórmula 1 en el navegador: 15 circuitos reales, IA, boxes, clima y relato en español argentino.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700;1,900&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+
+  <div id="ui">
+    <!-- arranque -->
+    <section id="boot" class="screen active">
+      <div class="boot-inner">
+        <div class="logo big"><span class="f1">F1</span><span class="ultra">ULTRA</span><span class="real">REALISTIC</span></div>
+        <p class="boot-sub">Simulador de Fórmula 1 · 15 circuitos reales · Relato en español</p>
+        <button id="bootStart" class="cta">Tocá para empezar</button>
+        <p class="boot-hint">Teclado, mando o volante. Recomendado: auriculares.</p>
+      </div>
+    </section>
+
+    <!-- carga -->
+    <section id="loading" class="screen">
+      <div class="load-inner">
+        <div class="load-track" id="loadTrack"></div>
+        <div class="load-gp" id="loadGp"></div>
+        <canvas id="loadMap" width="360" height="240"></canvas>
+        <div class="bar"><div id="loadBar"></div></div>
+        <div class="load-step" id="loadStep">Preparando…</div>
+        <div class="load-tip" id="loadTip"></div>
+      </div>
+    </section>
+
+    <!-- menú principal -->
+    <section id="menu" class="screen">
+      <div class="menu-left">
+        <div class="logo"><span class="f1">F1</span><span class="ultra">ULTRA</span><span class="real">REALISTIC</span></div>
+        <nav class="menu-list" id="menuList">
+          <button data-go="quick"><b>Carrera rápida</b><i>Elegí circuito, equipo y largá</i></button>
+          <button data-go="gp"><b>Gran Premio</b><i>Prácticas, clasificación, carrera y podio</i></button>
+          <button data-go="championship"><b>Campeonato</b><i>Temporada completa con tabla de posiciones</i></button>
+          <button data-go="career"><b>Modo trayectoria</b><i>Creá tu piloto y llegá a campeón</i></button>
+          <button data-go="timetrial"><b>Contrarreloj</b><i>Contra tu propio fantasma</i></button>
+          <button data-go="practice"><b>Entrenamientos</b><i>Sesión libre con reglaje</i></button>
+          <button data-go="quali"><b>Clasificación</b><i>Buscá la pole position</i></button>
+          <button data-go="garage"><b>Garaje</b><i>Reglaje del auto y equipo</i></button>
+          <button data-go="replays"><b>Repeticiones</b><i>Volvé a ver tus carreras</i></button>
+          <button data-go="settings"><b>Configuración</b><i>Gráficos, audio, controles y ayudas</i></button>
+        </nav>
+      </div>
+      <div class="menu-right">
+        <div class="menu-card" id="menuCard"></div>
+      </div>
+    </section>
+
+    <!-- pantallas dinámicas -->
+    <section id="panel" class="screen"><div class="panel" id="panelBody"></div></section>
+
+    <!-- HUD -->
+    <section id="hud" class="screen">
+      <div id="tower" class="tower"></div>
+      <div class="topbar">
+        <div id="hudPos" class="pos-box"></div>
+        <div id="hudLap" class="lap-box"></div>
+        <div id="flag" class="flag hidden"></div>
+      </div>
+      <div id="lights" class="lights hidden"><i></i><i></i><i></i><i></i><i></i></div>
+      <div id="timing" class="timing"></div>
+      <canvas id="minimap" width="220" height="220"></canvas>
+      <div id="radio" class="radio hidden"><span class="radio-tag">RADIO</span><span id="radioText"></span></div>
+      <div id="subs" class="subs"></div>
+      <div id="notice" class="notice hidden"></div>
+      <div id="dash" class="dash">
+        <div class="rpm"><div id="rpmBar"></div><div class="leds" id="leds"></div></div>
+        <div class="dash-main">
+          <div class="speed"><span id="spd">0</span><small id="spdUnit">KM/H</small></div>
+          <div class="gear" id="gear">N</div>
+          <div class="dash-side">
+            <div id="drsInd" class="ind">DRS</div>
+            <div id="ersInd" class="ind small">ERS</div>
+            <div id="limInd" class="ind small hidden">PIT</div>
+            <div id="boxInd" class="ind small hidden">BOX</div>
+          </div>
+        </div>
+        <div class="dash-bars"><div class="thr"><i id="thrBar"></i></div><div class="brk"><i id="brkBar"></i></div><div class="bat"><i id="batBar"></i></div></div>
+      </div>
+      <div id="tyres" class="tyres"></div>
+      <div id="mfd" class="mfd hidden"></div>
+      <div id="touch" class="touch hidden">
+        <button data-t="left">◀</button><button data-t="right">▶</button>
+        <button data-t="brake" class="pedal">FRENO</button><button data-t="gas" class="pedal gas">ACEL</button>
+        <button data-t="drs" class="small">DRS</button>
+      </div>
+      <div id="fps" class="fps hidden"></div>
+      <div id="camLabel" class="cam-label hidden"></div>
+      <button id="pauseBtn" class="pause-btn" title="Pausa">❚❚</button>
+    </section>
+
+    <!-- repetición -->
+    <section id="replayHud" class="screen">
+      <div class="replay-top"><span class="rec">● REPETICIÓN</span><span id="replayTitle"></span></div>
+      <div class="replay-bar">
+        <button id="rpPlay">❚❚</button>
+        <button id="rpSlow">0.25×</button><button id="rpHalf">0.5×</button><button id="rpNorm">1×</button><button id="rpFast">2×</button>
+        <input type="range" id="rpSeek" min="0" max="1000" value="0">
+        <span id="rpTime">0:00</span>
+        <select id="rpCar"></select>
+        <select id="rpCam"></select>
+        <button id="rpExit">Salir</button>
+      </div>
+      <div id="rpEvents" class="rp-events"></div>
+    </section>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
