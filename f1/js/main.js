@@ -677,7 +677,7 @@ class Game {
   }
 
   async playReplay(rep) {
-    if (!rep) { alert('No hay repetición disponible.'); return; }
+    if (!rep) { this.toast('No hay repetición disponible.'); return; }
     this.replayFrom = this.state === 'results' ? 'results' : 'menu';
     this.garage.exit();
     this.voices.clear();

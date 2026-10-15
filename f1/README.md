@@ -8,7 +8,9 @@ Simulador de Fórmula 1 que corre en el navegador (Three.js + WebGL2, sin instal
 node f1/server.mjs        # o: npm run juego (desde la raíz del repo)
 ```
 
-Abrí http://localhost:8080. También funciona con cualquier servidor estático apuntando a la carpeta `f1/` (no hace falta compilar nada). Se recomienda Chrome o Edge en una PC con GPU dedicada.
+Abrí http://localhost:8080. También funciona con cualquier servidor estático apuntando a la carpeta `f1/` (no hace falta compilar nada). Se recomienda Chrome o Edge en una PC con GPU dedicada; la primera carga de cada circuito tarda unos segundos porque el mundo se genera en el momento.
+
+Si la GPU es modesta, bajá la calidad en **Configuración → Gráficos** (Baja o Media) y dejá activada la resolución dinámica.
 
 ### Controles
 
@@ -63,6 +65,7 @@ El volante se configura en **Configuración → Controles → Volante**: tocás 
 node f1/test/tracks.test.mjs        # construye los 15 circuitos y calcula el tiempo teórico de vuelta
 node f1/test/drive.test.mjs         # un piloto automático maneja el modelo físico completo
 node f1/test/race.test.mjs monza 10 # carrera completa solo con IA (boxes, banderas, resultados)
+node f1/test/player.test.mjs monza  # jugador: parada asistida, clasificación, práctica, contrarreloj y repetición
 ```
 
 ## Estructura

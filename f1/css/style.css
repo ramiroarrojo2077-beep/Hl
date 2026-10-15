@@ -11,13 +11,14 @@
   --green: #2ee86a;
   --yellow: #ffd400;
   --font: 'Titillium Web', 'Segoe UI', Arial, sans-serif;
+  color-scheme: dark;
   --cond: 'Barlow Condensed', 'Titillium Web', Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: #000; color: var(--txt); font-family: var(--font); overflow: hidden; user-select: none; -webkit-user-select: none; }
 #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-#ui { position: fixed; inset: 0; pointer-events: none; }
+#ui { position: fixed; inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); pointer-events: none; }
 .screen { position: absolute; inset: 0; display: none; pointer-events: auto; }
 .screen.active { display: block; }
 #hud, #replayHud { pointer-events: none; }
@@ -247,3 +248,6 @@ table.res .bar { display: inline-block; width: 4px; height: 16px; margin: 0 6px 
 .panel.narrow { max-width: 640px; margin: 0; }
 .panel.narrow .grid-teams { grid-template-columns: repeat(2, 1fr); }
 .panel.narrow .sliders .field { min-width: 240px; }
+
+.ask { position: sticky; top: 0; z-index: 3; background: var(--ink3); border-left: 4px solid var(--red); padding: 14px 16px; margin-bottom: 14px; }
+.ask p { margin: 0; font-size: 17px; }

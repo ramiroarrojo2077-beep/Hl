@@ -102,6 +102,24 @@ export class Screens {
     if (t.dataset.act) this.handlers[t.dataset.act]?.(t);
   }
 
+  // confirmación dentro de la página (el visor no muestra confirm())
+  ask(text, yesLabel, onYes) {
+    let box = this.body.querySelector('.ask');
+    if (box) box.remove();
+    box = document.createElement('div');
+    box.className = 'ask';
+    box.innerHTML = `<p>${esc(text)}</p><div class="actions" style="margin-top:10px"><button class="cta small" data-ask="yes">${esc(yesLabel)}</button><button class="cta small ghost" data-ask="no">Cancelar</button></div>`;
+    box.addEventListener('click', ev => {
+      const b = ev.target.closest('[data-ask]');
+      if (!b) return;
+      ev.stopPropagation();
+      box.remove();
+      if (b.dataset.ask === 'yes') onYes();
+    });
+    this.body.prepend(box);
+    box.scrollIntoView({ block: 'nearest' });
+  }
+
   onInput(e) {
     const t = e.target;
     if (!t.dataset.key) return;
@@ -291,7 +309,7 @@ export class Screens {
       back: () => this.g.showMenu(),
       race: () => this.g.startWeekend({ trackId: next.id, driverId: st.driverId, laps: this.lapsFor({ ...st, trackId: next.id }), difficulty: st.difficulty, weather: st.weather, formationLap: st.formationLap, practice: false, qualiMin: 6, mode: 'championship' }),
       quick: () => this.g.startSession({ mode: 'championship', type: 'race', trackId: next.id, driverId: st.driverId, laps: this.lapsFor({ ...st, trackId: next.id }), difficulty: st.difficulty, weather: st.weather, formationLap: st.formationLap }),
-      abandon: () => { if (confirm('¿Abandonar el campeonato actual?')) { Season.clearChamp('championship'); this.g.showMenu(); } },
+      abandon: () => this.ask('¿Abandonar el campeonato actual? Se pierden los puntos.', 'Abandonar', () => { Season.clearChamp('championship'); this.g.showMenu(); }),
     });
   }
 
@@ -312,7 +330,7 @@ export class Screens {
       <div class="actions"><button class="cta" data-act="go">Firmar contrato</button></div>`, {
       back: () => this.g.showMenu(),
       go: () => {
-        if (!cfg.teamId) { alert('Elegí un equipo.'); return; }
+        if (!cfg.teamId) { this.g.toast('Elegí un equipo para firmar.'); return; }
         const s2 = Season.newCareer({ first: cfg.first.trim() || 'Juan', last: cfg.last.trim() || 'Pérez', num: cfg.num || 27, nat: (cfg.nat || 'ARG').toUpperCase(), teamId: cfg.teamId });
         Season.saveChamp(s2);
         this.careerHub(s2);
@@ -334,7 +352,7 @@ export class Screens {
       ${st.history.length ? `<h3>Historial</h3><table class="res"><tr><th>Temporada</th><th>Equipo</th><th>Posición</th><th>Puntos</th></tr>${st.history.map(h => `<tr><td>${h.season}</td><td>${TEAM_BY_ID[h.teamId].name}</td><td>${h.pos}º</td><td>${h.points}</td></tr>`).join('')}</table>` : ''}`, {
       back: () => this.g.showMenu(),
       race: () => this.g.startWeekend({ trackId: next.id, driverId: st.driverId, laps: st.laps, difficulty: st.difficulty, weather: st.weather, formationLap: false, practice: false, qualiMin: 6, mode: 'career', playerName: st.player, teamOverrides: st.teamOverrides, teamPerf: st.teamPerf }),
-      abandon: () => { if (confirm('¿Borrar la trayectoria?')) { Season.clearChamp('career'); this.g.showMenu(); } },
+      abandon: () => this.ask('¿Borrar la trayectoria? No se puede deshacer.', 'Borrar', () => { Season.clearChamp('career'); this.g.showMenu(); }),
     });
   }
 
@@ -444,7 +462,7 @@ export class Screens {
       testvoice: () => { this.g.voices.say('relator', '¡Se apagan los semáforos y arranca el Gran Premio!', 9); setTimeout(() => this.g.voices.say('comentarista', 'Los neumáticos medios ya están mostrando desgaste.', 5), 300); },
       cal: (btn) => {
         const which = btn.dataset.w;
-        if (!this.g.input.startCalibration(which)) { alert('No se detecta ningún volante o mando. Conectalo y presioná un botón.'); return; }
+        if (!this.g.input.startCalibration(which)) { this.g.toast('No se detecta volante ni mando. Conectalo y presioná un botón.'); return; }
         btn.textContent = 'Mové el control…';
         const poll = () => {
           const r = this.g.input.pollCalibration();
