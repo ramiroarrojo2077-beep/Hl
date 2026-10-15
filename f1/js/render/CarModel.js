@@ -232,7 +232,7 @@ export class CarModel {
     this.body.add(this.high);
     this.body.add(this.low);
     this.buildWheels(m);
-    this.setLOD(this.lowOnly ? 1 : 0);
+    this.setLOD(this.lowOnly ? 2 : 0);
     this.root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   }
 
@@ -266,7 +266,7 @@ export class CarModel {
       { x: -1.35, w: 0.28, h: 0.16, y0: 0.52, r: 0.5 },
       { x: -1.95, w: 0.16, h: 0.08, y0: 0.42, r: 0.5 },
     ], 20);
-    H.add(new THREE.Mesh(merge([chassis, pods, cover]), this.paint));
+    const paintParts = [chassis, pods, cover];
 
     // toma de aire superior (negra) y aleta de tiburón
     const intake = loft([
@@ -277,7 +277,7 @@ export class CarModel {
     fin.moveTo(0, 0); fin.lineTo(-1.3, 0); fin.lineTo(-1.45, -0.32); fin.lineTo(-0.2, 0.12); fin.lineTo(0, 0);
     const finG = new THREE.ExtrudeGeometry(fin, { depth: 0.012, bevelEnabled: false });
     finG.translate(-0.45, 0.98, -0.006);
-    H.add(new THREE.Mesh(merge([intake, finG]), m.black));
+    const blackParts = [intake, finG];
 
     // ---- piso, tabla, difusor, pontones inferiores (fibra de carbono) ----
     const carbonParts = [];
@@ -355,7 +355,7 @@ export class CarModel {
     }
     // pilón cuello de cisne
     rw.push(rod([-2.0, 0.42, 0], [-2.35, 0.95, 0], 0.025));
-    H.add(new THREE.Mesh(merge(rw), this.paint));
+    H.add(new THREE.Mesh(merge([...paintParts, ...rw]), this.paint));
     // flap DRS (se abre)
     const flapG = airfoil(0.24, 0.08, rwSpan * 0.98, -0.12);
     this.drsFlap = new THREE.Mesh(flapG, this.accent);
@@ -377,10 +377,9 @@ export class CarModel {
     H.add(new THREE.Mesh(merge([halo, pillar]), m.titanium));
 
     // ---- cockpit, piloto y volante ----
-    const cockpit = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.02, 24), m.cockpit);
-    cockpit.scale.set(1.9, 1, 1);
-    cockpit.position.set(0.35, 0.665, 0);
-    H.add(cockpit);
+    const cockpitG = new THREE.CylinderGeometry(0.27, 0.27, 0.02, 24);
+    cockpitG.scale(1.9, 1, 1); cockpitG.translate(0.35, 0.665, 0);
+    blackParts.push(cockpitG);
     const helmet = new THREE.SphereGeometry(0.135, 20, 14);
     helmet.scale(1.12, 1, 1);
     this.helmet = new THREE.Mesh(helmet, this.helmetMat);
@@ -389,14 +388,16 @@ export class CarModel {
     const visor = new THREE.Mesh(new THREE.SphereGeometry(0.137, 16, 8, Math.PI - 0.9, 1.8, 1.15, 0.5), m.glass);
     this.helmet.add(visor);
     // reposacabezas
-    H.add(new THREE.Mesh(box(0.22, 0.12, 0.66, -0.06, 0.7, 0), m.black));
+    blackParts.push(box(0.22, 0.12, 0.66, -0.06, 0.7, 0));
+    H.add(new THREE.Mesh(merge(blackParts), m.black));
     // volante con pantalla
     const steerTilt = new THREE.Group();
     steerTilt.position.set(0.62, 0.69, 0);
     steerTilt.rotation.z = -0.35;
     this.steering = new THREE.Group();
     steerTilt.add(this.steering);
-    const sw = new THREE.Mesh(merge([box(0.03, 0.15, 0.27, 0, 0, 0), box(0.05, 0.1, 0.05, 0, -0.02, 0.15), box(0.05, 0.1, 0.05, 0, -0.02, -0.15)]), m.black);
+    const glovesG = [1, -1].map(sd => { const g = new THREE.SphereGeometry(0.035, 8, 6); g.translate(-0.03, -0.01, sd * 0.15); return g; });
+    const sw = new THREE.Mesh(merge([box(0.03, 0.15, 0.27, 0, 0, 0), box(0.05, 0.1, 0.05, 0, -0.02, 0.15), box(0.05, 0.1, 0.05, 0, -0.02, -0.15), ...glovesG]), m.black);
     this.steering.add(sw);
     this.screenCanvas = document.createElement('canvas');
     this.screenCanvas.width = 128; this.screenCanvas.height = 64;
@@ -406,13 +407,6 @@ export class CarModel {
     screen.position.set(-0.017, 0.02, 0);
     screen.rotation.y = -Math.PI / 2;
     this.steering.add(screen);
-    // guantes
-    const glove = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
-    for (const s of [1, -1]) {
-      const g = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), glove);
-      g.position.set(-0.03, -0.01, s * 0.15);
-      this.steering.add(g);
-    }
     H.add(steerTilt);
     // número en la trompa
     const numMat = new THREE.MeshBasicMaterial({ map: TX.numberDecal(this.driver?.num ?? 0), transparent: true, depthWrite: false });
@@ -443,6 +437,14 @@ export class CarModel {
     const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.135, 8, 6), this.helmetMat);
     helmet.position.set(0.12, 0.79, 0);
     L.add(helmet);
+    // ruedas fusionadas para la distancia (una sola llamada de dibujo)
+    const wg = [];
+    for (const [x, z, w] of [[WB_F, -TRACK_F, 0.3], [WB_F, TRACK_F, 0.3], [WB_R, -TRACK_R, 0.38], [WB_R, TRACK_R, 0.38]]) {
+      const c = new THREE.CylinderGeometry(R_TYRE, R_TYRE, w, 14);
+      c.rotateX(Math.PI / 2); c.translate(x, R_TYRE, z);
+      wg.push(c);
+    }
+    L.add(new THREE.Mesh(merge(wg), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 })));
   }
 
   buildWheels(m) {
@@ -479,12 +481,15 @@ export class CarModel {
     for (const w of this.wheels) w.tyre.material = tyreMat(c);
   }
 
+  // 0 = completo, 1 = carrocería detallada sin llantas ni discos, 2 = lejano (fusionado)
   setLOD(level) {
+    if (this.lowOnly && level < 2) level = 2;
     if (this.lod === level) return;
     this.lod = level;
-    this.high.visible = level === 0 && !this.lowOnly;
-    this.low.visible = level !== 0 || this.lowOnly;
-    for (const w of this.wheels) { w.rim.visible = level === 0; w.disc.visible = level === 0; }
+    this.high.visible = level < 2;
+    this.low.visible = level === 2;
+    for (const w of this.wheels) { w.steer.visible = level < 2; w.rim.visible = level === 0; w.disc.visible = level === 0; }
+    if (this.steering) this.steering.parent.visible = level === 0;
   }
 
   setDamage(frontWing) {

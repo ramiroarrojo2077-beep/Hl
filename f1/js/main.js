@@ -332,7 +332,9 @@ class Game {
       if (tr.wrapS(tr.pit.sIn - s.phys.s) < 60) this.autoPitEntry();
     }
     if (this.fastForward && !s.results) {
-      for (let k = 0; k < 90 && !s.results; k++) { s.update(1 / 30, { steer: 0, throttle: 0, brake: 1 }); this.recorder.update(1 / 30); }
+      const t0 = performance.now();
+      while (!s.results && performance.now() - t0 < 35) { s.update(1 / 30, { steer: 0, throttle: 0, brake: 1 }); this.recorder.update(1 / 30); }
+      this.hud.camLabel('Simulando hasta el final…');
     } else {
       s.update(dt, control);
     }
@@ -722,7 +724,7 @@ class Game {
       this.replayWheel[i] = (this.replayWheel[i] + c.v / 0.36 * dt * r.speed * (r.playing ? 1 : 0)) % (Math.PI * 2);
       m.update({ ...c, wheelRot: this.replayWheel[i], brakeT: c.braking ? 900 : 300 }, dt, this.t);
       const cam = this.world.camera.position;
-      m.setLOD(Math.hypot(c.x - cam.x, c.z - cam.z) > 70 ? 1 : 0);
+      const dd = Math.hypot(c.x - cam.x, c.z - cam.z); m.setLOD(dd > 65 ? 2 : dd > 25 ? 1 : 0);
     });
     const c = smp.cars[this.replayTarget] || smp.cars[0];
     const tr = this.trackScene.track;

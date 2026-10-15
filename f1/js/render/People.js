@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const matCache = new Map();
+let _pm = null;
+function personMat() { return _pm || (_pm = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.75 })); }
 export function solid(color, rough = 0.8, metal = 0) {
   const key = color + ':' + rough + ':' + metal;
   if (!matCache.has(key)) matCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal }));
@@ -26,7 +28,7 @@ function crowdGeometry() {
   };
   add(part(new THREE.BoxGeometry(0.42, 0.55, 0.26), 0, 0.72, 0), 0); // torso
   add(part(new THREE.BoxGeometry(0.38, 0.45, 0.4), 0, 0.25, 0.08), 0); // piernas sentadas
-  add(part(new THREE.SphereGeometry(0.12, 6, 5), 0, 1.13, 0), 0); // cabeza
+  add(part(new THREE.BoxGeometry(0.2, 0.24, 0.22), 0, 1.13, 0), 0); // cabeza
   add(part(new THREE.BoxGeometry(0.1, 0.5, 0.1), 0.27, 0.95, 0), 1); // brazos
   add(part(new THREE.BoxGeometry(0.1, 0.5, 0.1), -0.27, 0.95, 0), 1);
   crowdGeo = mergeGeometries(parts, false);
@@ -72,50 +74,37 @@ export class Person {
   constructor({ suit = 0xff6a00, helmet = null, skin = 0xc68e6a, cap = null, scale = 1 } = {}) {
     this.root = new THREE.Group();
     this.root.scale.setScalar(scale);
-    const suitM = solid(suit, 0.75), skinM = solid(skin, 0.7), dark = solid(0x1a1a1a, 0.8);
+    const vc = (g, hex) => {
+      const c = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(a, 3));
+      return g.index ? g.toNonIndexed() : g;
+    };
+    const mat = personMat();
     this.hips = new THREE.Group(); this.hips.position.y = 0.92; this.root.add(this.hips);
-    const torso = new THREE.Mesh(part(new THREE.BoxGeometry(0.26, 0.56, 0.4), 0, 0.3, 0), suitM);
-    this.hips.add(torso);
-    this.torso = torso;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), skinM);
-    head.position.y = 0.72;
-    this.hips.add(head);
+    const body = [vc(part(new THREE.BoxGeometry(0.26, 0.56, 0.4), 0, 0.3, 0), suit), vc(part(new THREE.SphereGeometry(0.11, 8, 6), 0, 0.72, 0), skin)];
     if (helmet !== null) {
-      const h = new THREE.Mesh(new THREE.SphereGeometry(0.135, 10, 8, 0, 6.3, 0, 1.9), solid(helmet, 0.3, 0.2));
-      h.position.y = 0.74;
-      this.hips.add(h);
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.18), solid(0x111111, 0.1, 0.5));
-      visor.position.set(0.12, 0.72, 0);
-      this.hips.add(visor);
-    } else if (cap !== null) {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.07, 10), solid(cap, 0.6));
-      c.position.y = 0.8;
-      this.hips.add(c);
-    }
+      body.push(vc(part(new THREE.SphereGeometry(0.135, 8, 6, 0, 6.3, 0, 1.9), 0, 0.74, 0), helmet));
+      body.push(vc(part(new THREE.BoxGeometry(0.03, 0.06, 0.18), 0.12, 0.72, 0), 0x111111));
+    } else if (cap !== null) body.push(vc(part(new THREE.CylinderGeometry(0.115, 0.115, 0.07, 8), 0, 0.8, 0), cap));
+    this.torso = new THREE.Mesh(mergeGeometries(body), mat);
+    this.hips.add(this.torso);
     this.arms = [];
-    for (const s of [1, -1]) {
+    for (const sd of [1, -1]) {
       const sh = new THREE.Group();
-      sh.position.set(0, 0.54, s * 0.24);
-      const upper = new THREE.Mesh(part(new THREE.BoxGeometry(0.09, 0.32, 0.09), 0, -0.16, 0), suitM);
-      sh.add(upper);
+      sh.position.set(0, 0.54, sd * 0.24);
+      sh.add(new THREE.Mesh(vc(part(new THREE.BoxGeometry(0.09, 0.32, 0.09), 0, -0.16, 0), suit), mat));
       const elbow = new THREE.Group(); elbow.position.y = -0.32; sh.add(elbow);
-      const fore = new THREE.Mesh(part(new THREE.BoxGeometry(0.08, 0.3, 0.08), 0, -0.15, 0), suitM);
-      elbow.add(fore);
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 5), dark);
-      hand.position.y = -0.32; elbow.add(hand);
+      elbow.add(new THREE.Mesh(mergeGeometries([vc(part(new THREE.BoxGeometry(0.08, 0.3, 0.08), 0, -0.15, 0), suit), vc(part(new THREE.BoxGeometry(0.08, 0.08, 0.08), 0, -0.32, 0), 0x1a1a1a)]), mat));
       this.hips.add(sh);
-      this.arms.push({ sh, elbow, hand });
+      this.arms.push({ sh, elbow });
     }
     this.legs = [];
-    for (const s of [1, -1]) {
-      const hip = new THREE.Group(); hip.position.set(0, 0, s * 0.1);
-      const thigh = new THREE.Mesh(part(new THREE.BoxGeometry(0.12, 0.46, 0.12), 0, -0.23, 0), suitM);
-      hip.add(thigh);
+    for (const sd of [1, -1]) {
+      const hip = new THREE.Group(); hip.position.set(0, 0, sd * 0.1);
+      hip.add(new THREE.Mesh(vc(part(new THREE.BoxGeometry(0.12, 0.46, 0.12), 0, -0.23, 0), suit), mat));
       const knee = new THREE.Group(); knee.position.y = -0.46; hip.add(knee);
-      const shin = new THREE.Mesh(part(new THREE.BoxGeometry(0.11, 0.44, 0.11), 0, -0.22, 0), suitM);
-      knee.add(shin);
-      const shoe = new THREE.Mesh(part(new THREE.BoxGeometry(0.22, 0.06, 0.11), 0.05, -0.45, 0), dark);
-      knee.add(shoe);
+      knee.add(new THREE.Mesh(mergeGeometries([vc(part(new THREE.BoxGeometry(0.11, 0.44, 0.11), 0, -0.22, 0), suit), vc(part(new THREE.BoxGeometry(0.22, 0.06, 0.11), 0.05, -0.45, 0), 0x1a1a1a)]), mat));
       this.hips.add(hip);
       this.legs.push({ hip, knee });
     }

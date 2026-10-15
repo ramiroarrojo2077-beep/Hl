@@ -104,7 +104,7 @@ export class CarViews {
       }
       // LOD por distancia
       const dx = st.x - camPos.x, dz = st.z - camPos.z, d2 = dx * dx + dz * dz;
-      m.setLOD(d2 > 70 * 70 ? 1 : 0);
+      m.setLOD(d2 > 65 * 65 ? 2 : d2 > 25 * 25 ? 1 : 0);
       m.update(st, dt, t);
       // ruedas durante el cambio de neumáticos
       if (e.pitPhase === 'service' && e.service) this.crews.wheelVisibility(e, m);

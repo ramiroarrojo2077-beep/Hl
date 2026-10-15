@@ -772,7 +772,7 @@ export class TrackScene {
     const env = this.env, tr = this.track, tb = this.terrainBounds;
     if (!env.trees || env.treeDensity <= 0) return;
     const type = env.trees;
-    const count = Math.round(5200 * env.treeDensity * this.qf);
+    const count = Math.round(4200 * env.treeDensity * this.qf);
     const geo = this.treeGeometry(type);
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
     const mesh = new THREE.InstancedMesh(geo, mat, count);
@@ -845,7 +845,7 @@ export class TrackScene {
       parts.push(trunk(3.2, 0.35));
       const hue = type === 'eucalyptus' ? 0x5d7a52 : type === 'oak' ? 0x4a6b2b : 0x3f6e2c;
       for (let k = 0; k < 3; k++) {
-        const b = new THREE.IcosahedronGeometry(2.4 - k * 0.3, 1);
+        const b = new THREE.IcosahedronGeometry(2.4 - k * 0.3, 0);
         b.translate((k - 1) * 1.2, 4.5 + k * 1.1, (k % 2) * 0.9 - 0.4);
         parts.push(paint(b, hue));
       }
