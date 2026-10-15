@@ -59,6 +59,7 @@ export class Screens {
   }
 
   show(html, handlers = {}) {
+    this.body.classList.remove('narrow');
     this.body.innerHTML = html;
     this.handlers = handlers;
     this.g.showScreen('panel');
@@ -385,7 +386,8 @@ export class Screens {
       reset: () => { s.setup = { ...DEFAULT_SETUP }; Store.save('settings', s); this.garage(); },
     });
     this.g.showScreen('panel');
-    document.getElementById('panel').style.background = 'linear-gradient(90deg, rgba(5,6,9,0.92) 0 55%, rgba(5,6,9,0.3))';
+    this.body.classList.add('narrow');
+    document.getElementById('panel').style.background = 'linear-gradient(90deg, rgba(5,6,9,0.94) 0 48%, rgba(5,6,9,0) 62%)';
   }
 
   // ---------- configuración ----------

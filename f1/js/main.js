@@ -332,7 +332,7 @@ class Game {
       if (tr.wrapS(tr.pit.sIn - s.phys.s) < 60) this.autoPitEntry();
     }
     if (this.fastForward && !s.results) {
-      for (let k = 0; k < 90 && !s.results; k++) s.update(1 / 30, { steer: 0, throttle: 0, brake: 1 });
+      for (let k = 0; k < 90 && !s.results; k++) { s.update(1 / 30, { steer: 0, throttle: 0, brake: 1 }); this.recorder.update(1 / 30); }
     } else {
       s.update(dt, control);
     }
@@ -379,7 +379,7 @@ class Game {
     this.hud.update(dt, this);
     this.commentary.update();
     this.radio.update(dt);
-    this.recorder.update(dt);
+    if (!this.fastForward) this.recorder.update(dt);
     if (ph && !s.playerAuto && p) {
       this._scr = (this._scr || 0) + dt;
       if (this._scr > 0.1 && this.rig.interior) {
@@ -642,9 +642,9 @@ class Game {
     this.podium.enter();
     this.state = 'podium';
     const hx = n => '#' + n.toString(16).padStart(6, '0');
-    this.screens.show(`<div style="position:absolute;left:0;right:0;bottom:24px;text-align:center">
-      <h2 style="text-shadow:0 2px 10px #000"><small>${s.track.meta.gp}</small>Podio</h2>
-      <div class="rowf" style="justify-content:center;gap:10px;margin:8px 0 14px">${top3.map((e, i) => `<div class="menu-card" style="min-width:200px;border-top-color:${hx(e.team.colors.primary)}"><h4>${['1º', '2º', '3º'][i]}</h4><div class="big">${e.fullName}</div><div class="info">${e.team.name}</div></div>`).join('')}</div>
+    const order = [1, 0, 2].filter(i => top3[i]);
+    this.screens.show(`<div style="position:absolute;left:0;right:0;bottom:18px;text-align:center">
+      <div class="rowf" style="justify-content:center;gap:10px;margin:0 0 12px">${order.map(i => { const e = top3[i]; return `<div class="menu-card" style="min-width:190px;border-top-color:${hx(e.team.colors.primary)}"><h4>${['1º', '2º', '3º'][i]} · ${s.track.meta.gp}</h4><div class="big">${e.fullName}</div><div class="info">${e.team.name}</div></div>`; }).join('')}</div>
       <button class="cta" data-act="back">Continuar</button></div>`, {
       back: () => { this.podium.exit(); this.reshowResults(); },
     });

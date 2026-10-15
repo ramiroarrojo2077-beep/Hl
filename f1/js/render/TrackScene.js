@@ -101,7 +101,36 @@ export class TrackScene {
     this.rand = rng(track.length * 7 + 13);
   }
 
+  computeTvCams() {
+    const tr = this.track, pit = tr.pit, p = {};
+    this.tvCams = [];
+    for (let s = 0; s < tr.length; s += 170) {
+      const i = tr.idx(s);
+      const c = tr.cornerNear(s);
+      let sgn = c ? c.dir : (Math.floor(s / 170) % 2 ? 1 : -1);
+      if (sgn === pit.side && tr.pitU(s) <= pit.length + 20) sgn = -sgn;
+      const wall = sgn > 0 ? tr.wallL[i] : tr.wallR[i];
+      tr.pointAt(s, sgn * (wall + 3), p);
+      this.tvCams.push({ s, x: p.x, y: p.y + 8 + (s % 3) * 2.5, z: p.z, sgn });
+    }
+  }
+
+  // zona ocupada por la calle de boxes, garajes y paddock
+  inPitArea(x, z) {
+    const tr = this.track, pit = tr.pit;
+    const near = tr.groundHeight(x, z);
+    if (!near || near.dist > 90) return false;
+    const pr = tr.project(x, z, near.i);
+    return tr.pitU(pr.s) < pit.length + 30 && pr.d * pit.side > 0 && Math.abs(pr.d) < Math.abs(pit.garageD) + 50;
+  }
+
+  nearTvCam(x, z, r) {
+    for (const c of this.tvCams) if ((c.x - x) ** 2 + (c.z - z) ** 2 < r * r) return true;
+    return false;
+  }
+
   async build(progress = () => {}) {
+    this.computeTvCams();
     const steps = [
       ['Asfalto y pianos', () => this.buildRoad()],
       ['Escapatorias', () => this.buildShoulders()],
@@ -724,7 +753,7 @@ export class TrackScene {
       this.group.add(m);
     }
     if (roofParts.length) {
-      const m = new THREE.Mesh(mergeGeometries(roofParts), new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5, metalness: 0.4 }));
+      const m = new THREE.Mesh(mergeGeometries(roofParts), new THREE.MeshStandardMaterial({ color: 0xaeb3ba, roughness: 0.75, metalness: 0.2 }));
       m.castShadow = true;
       this.group.add(m);
     }
@@ -769,6 +798,7 @@ export class TrackScene {
       }
       const h = this.heightAt(x, z);
       if (this.isWater(x, z, h.dist)) continue;
+      if (this.nearTvCam(x, z, 45)) continue;
       pos.set(x, h.y, z);
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * 6.28);
       const s = 0.75 + r() * 0.6;
@@ -848,7 +878,7 @@ export class TrackScene {
           float rnd = fract(sin(dot(floor(vec2(hcoord / 2.6, vWP.y / 3.3)), vec2(12.9898, 78.233))) * 43758.5453);
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.12, 0.15, 0.2), win * 0.75);
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.25), roof);
-          ${night ? 'totalEmissiveRadiance += win * step(0.45, rnd) * vec3(1.0, 0.82, 0.55) * 1.4;' : ''}`);
+          ${night ? 'totalEmissiveRadiance += win * step(0.55, rnd) * vec3(1.0, 0.82, 0.55) * 0.55;' : ''}`);
     };
     const mesh = new THREE.InstancedMesh(geo, mat, count);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), pos = new THREE.Vector3();
@@ -872,14 +902,17 @@ export class TrackScene {
       }
       const near = tr.groundHeight(x, z);
       const dist = near ? near.dist : 999;
+      let headIdx = -1;
       if (near) {
         const pr = tr.project(x, z, near.i);
+        headIdx = pr.i;
         const wall = pr.d > 0 ? tr.wallL[pr.i] : tr.wallR[pr.i];
         if (Math.abs(pr.d) < wall + 7) continue;
         if (tr.pitU(pr.s) < tr.pit.length + 40 && Math.sign(pr.d) === tr.pit.side && Math.abs(pr.d) < 70) continue;
       }
       const h0 = this.heightAt(x, z);
       if (this.isWater(x, z, h0.dist)) continue;
+      if (this.nearTvCam(x, z, 40)) continue;
       if (kind === 'suburb' && dist < 150) continue;
       if (kind === 'sparse' && dist < 120) continue;
       let h = hBase * (0.5 + r() * 1.2);
@@ -888,7 +921,7 @@ export class TrackScene {
       const w = kind === 'skyscrapers' ? 18 + r() * 22 : 10 + r() * 16;
       const d = 10 + r() * 16;
       pos.set(x, h0.y - 0.5, z);
-      const ang = close ? Math.atan2(tr.tz[pr.i], tr.tx[pr.i]) : r() * 3;
+      const ang = close && headIdx >= 0 ? Math.atan2(tr.tz[headIdx], tr.tx[headIdx]) : r() * 3;
       q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -ang);
       sc.set(w, h, d);
       m4.compose(pos, q, sc);
@@ -1015,6 +1048,10 @@ export class TrackScene {
         for (let a = 0; a < Math.PI * 2; a += 0.08) {
           for (let r = 0; r < 18; r++) {
             const rad = 95 + r * 1.6, h = 2 + r * 0.9;
+            const sx = p.x + Math.cos(a) * rad, sz = p.z + Math.sin(a) * rad;
+            const nearT = tr.groundHeight(sx, sz);
+            if (nearT && nearT.dist < tr.halfW + 16) continue;
+            if (this.inPitArea(sx, sz)) continue;
             const g = new THREE.BoxGeometry(8, h, 1.7);
             g.translate(0, h / 2, 0); g.rotateY(-a); g.translate(p.x + Math.cos(a) * rad, p.y, p.z + Math.sin(a) * rad);
             parts.push(g);
@@ -1214,20 +1251,16 @@ export class TrackScene {
       this.photographers = this.photographers || [];
       this.photographers.push(ph.root);
     }
-    // cámaras de TV (puntos de vista)
-    for (let s = 0; s < tr.length; s += 180) {
-      const i = tr.idx(s);
-      const c = tr.cornerNear(s);
-      const sgn = c ? -c.dir : (Math.floor(s / 180) % 2 ? 1 : -1);
-      if (sgn === pit.side && tr.pitU(s) <= pit.length) continue;
-      const wall = sgn > 0 ? tr.wallL[i] : tr.wallR[i];
-      tr.pointAt(s, sgn * (wall + 5), p);
-      this.tvCams.push({ s, x: p.x, y: p.y + 5 + Math.random() * 6, z: p.z });
-      if (this.qf >= 0.6 && s % 360 < 1) {
-        const tower = new THREE.Mesh(new THREE.BoxGeometry(1.4, p.y + 5, 1.4), steel);
-        tower.position.set(p.x, p.y + 2.5, p.z);
-        this.group.add(tower);
+    // torres de cámaras de TV
+    if (this.qf >= 0.6) {
+      const towers = [];
+      for (const c of this.tvCams.filter((_, k) => k % 2 === 0)) {
+        const h = c.y - this.track.y[this.track.idx(c.s)];
+        const t = new THREE.BoxGeometry(1.4, h, 1.4); t.translate(c.x, c.y - h / 2 - 1, c.z);
+        const plat = new THREE.BoxGeometry(2.4, 0.2, 2.4); plat.translate(c.x, c.y - 1, c.z);
+        towers.push(t, plat);
       }
+      if (towers.length) this.group.add(new THREE.Mesh(mergeGeometries(towers), steel));
     }
     // torres de iluminación (carreras nocturnas)
     if (this.env.floodlights) {

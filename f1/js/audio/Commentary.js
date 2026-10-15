@@ -231,7 +231,7 @@ export class Commentary {
       case 'fastest_lap': if (race && d.car && (d.car.isPlayer || d.car.position <= 8 || this.cooled('fl', 60)) && s.raceTime > 120 && this.cooled('flany', 20)) this.rel('fastest_lap', d, 5, 6); break;
       case 'lap': {
         const left = s.laps - d.lap + 1;
-        if (left <= 5 && left > 1 && this.cooled('lastlaps', 40)) this.com('last_laps', { extra: { left } }, 3);
+        if (s.laps >= 8 && left <= 5 && left > 1 && this.cooled('lastlaps', 40)) this.com('last_laps', { extra: { left } }, 3);
         else if (d.lap % 3 === 0 && this.cooled('lapcall', 60)) this.rel('lap', { ...d, car: d.leader }, 2, 6);
         break;
       }
@@ -302,7 +302,7 @@ export class Commentary {
         }
       }
       const left = s.laps - (lead.lap || 0);
-      if (left <= 5 && left > 1) topics.push(() => this.com('last_laps', { extra: { left } }, 2));
+      if (s.laps >= 8 && left <= 5 && left > 1) topics.push(() => this.com('last_laps', { extra: { left } }, 2));
       if (!this.stratSaid && lead.lap > 1) topics.push(() => { this.stratSaid = true; this.com('strategy', {}, 2); });
     }
     if (p) {

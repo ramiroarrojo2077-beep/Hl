@@ -160,11 +160,11 @@ export class World {
     if (night) {
       this.scene.background = new THREE.Color(0x0a0f1c);
       fogColor = 0x10172a;
-      this.sun.color.setHex(0xf3f6ff); this.sun.intensity = 1.6;
+      this.sun.color.setHex(0xf3f6ff); this.sun.intensity = 2.4;
       this.sun.position.set(0.25, 1, 0.15);
-      this.hemi.color.setHex(0xa8b8d8); this.hemi.groundColor.setHex(0x303438); this.hemi.intensity = 1.3;
-      r.toneMappingExposure = 1.1;
-      if (this.bloom) { this.bloom.strength = 0.8; this.bloom.threshold = 0.7; }
+      this.hemi.color.setHex(0xb8c4e0); this.hemi.groundColor.setHex(0x4a4c50); this.hemi.intensity = 1.9;
+      r.toneMappingExposure = 0.95;
+      if (this.bloom) { this.bloom.strength = 0.45; this.bloom.threshold = 0.92; this.bloom.radius = 0.4; }
     } else {
       this.scene.background = null;
       fogColor = overcast ? 0xa9b2ba : env.sky === 'dusk' ? 0xe0a578 : 0xbfd4e6;

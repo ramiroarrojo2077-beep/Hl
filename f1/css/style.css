@@ -161,7 +161,7 @@ table.res .bar { display: inline-block; width: 4px; height: 16px; margin: 0 6px 
 #minimap { position: absolute; right: 14px; top: 150px; width: 200px; height: 200px; }
 .radio { position: absolute; left: 14px; bottom: 120px; max-width: min(460px, 70vw); background: rgba(12,14,19,0.9); border-left: 4px solid var(--red); padding: 8px 12px; font-size: 16px; }
 .radio-tag { font-family: var(--cond); font-weight: 800; color: var(--red); margin-right: 8px; letter-spacing: 1px; }
-.subs { position: absolute; left: 50%; transform: translateX(-50%); bottom: 150px; width: min(760px, 92vw); text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.subs { position: absolute; left: 50%; transform: translateX(-50%); bottom: 190px; width: min(760px, 92vw); text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
 .subs div { background: rgba(0,0,0,0.72); padding: 6px 12px; font-size: 17px; line-height: 1.3; }
 .subs div b { font-family: var(--cond); letter-spacing: 1px; margin-right: 6px; }
 .subs .relator b { color: var(--yellow); } .subs .comentarista b { color: #6fd0ff; }
@@ -243,3 +243,7 @@ table.res .bar { display: inline-block; width: 4px; height: 16px; margin: 0 6px 
 
 .toast { position: fixed; left: 50%; bottom: 40px; transform: translate(-50%, 20px); background: rgba(10,12,16,0.95); border-left: 4px solid var(--red); padding: 10px 18px; font-size: 16px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 10; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.panel.narrow { max-width: 640px; margin: 0; }
+.panel.narrow .grid-teams { grid-template-columns: repeat(2, 1fr); }
+.panel.narrow .sliders .field { min-width: 240px; }
