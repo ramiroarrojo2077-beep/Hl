@@ -24,7 +24,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
       - run: npm ci
       - run: npm test
       - run: npx cap add android
