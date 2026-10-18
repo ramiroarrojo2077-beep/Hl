@@ -1,0 +1,7 @@
+{
+  "appId": "io.nexo.studio",
+  "appName": "NEXO Studio",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "android": {"allowMixedContent": false}
+}

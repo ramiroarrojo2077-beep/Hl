@@ -1,0 +1,45 @@
+name: NEXO Studio APK
+
+on:
+  push:
+    branches: [claude/apk-mini-review-t8r1x0, main]
+    paths: ['nexo-studio/**', '.github/workflows/nexo-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nexo-studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm test
+      - run: npx cap add android
+      - run: npx cap sync android
+      - name: Build debug APK
+        working-directory: nexo-studio/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk NEXO-Studio.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXO-Studio-apk
+          path: nexo-studio/NEXO-Studio.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nexo-apk-${{ github.run_number }}
+          name: NEXO Studio APK (build ${{ github.run_number }})
+          files: nexo-studio/NEXO-Studio.apk
+          prerelease: true
