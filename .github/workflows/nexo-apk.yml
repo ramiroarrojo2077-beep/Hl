@@ -1,0 +1,32 @@
+name: NEXO Studio APK
+
+on:
+  push:
+    paths:
+      - 'nexo-studio/**'
+      - '.github/workflows/nexo-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nexo-studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npx cap sync android
+      - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXO-Studio-debug-apk
+          path: nexo-studio/android/app/build/outputs/apk/debug/*.apk
