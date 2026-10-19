@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-19",
+  "node": "24.19.0",
+  "syntax": "passed",
+  "engine_tests": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "transport": "in-memory HTTP handler",
+    "provider": "controlled test provider",
+    "storage": "real SQLite"
+  },
+  "contrast": {
+    "base_pairs": 10,
+    "passed": 10
+  },
+  "not_verified": [
+    "real model inference",
+    "Electron desktop execution and packaging",
+    "Chromium UI",
+    "Docker terminal",
+    "Playwright computer browsing"
+  ],
+  "published": false
+}

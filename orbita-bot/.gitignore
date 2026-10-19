@@ -1,0 +1,6 @@
+.env
+data/
+*.zip
+__pycache__/
+node_modules/
+releases/

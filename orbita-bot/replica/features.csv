@@ -1,0 +1,23 @@
+feature,area,priority,original,clone,notes
+Perfiles persistentes,bots,must,yes,yes,CRUD y persistencia comprobados; UI pendiente
+Chat e inferencia real,chat,must,yes,partial,Adaptadores xAI/Ollama programados; sin modelo real para validar
+Memoria por bot,memory,must,yes,yes,Contexto explícito persistido por bot; sin resumen automático
+Bucle de herramientas,agent,must,yes,yes,Iteración y efectos comprobados con proveedor controlado
+Aprobaciones y cancelación,security,must,yes,yes,Rechazo caducidad y permiso de un uso comprobados
+Archivos compartidos,files,must,yes,yes,Texto en SQLite; no binarios ni montaje integrado con terminal
+Skills,skills,must,yes,yes,Biblioteca de instrucciones y lectura por herramientas
+Rutinas,automation,must,yes,yes,Intervalos UTC con proceso encendido; no continuidad al apagar equipo
+Delegación entre bots,collaboration,must,yes,partial,Traspaso asíncrono básico probado; no coordinador ni retorno automático
+Terminal aislado,computer,must,yes,partial,Adaptador Docker escrito; ejecución externa no verificada
+Navegador persistente,computer,must,yes,partial,Adaptador Playwright y captura escritos; arranque no verificado
+Cliente de escritorio,desktop,must,yes,partial,Entrada Electron escrita; instalación y empaquetado pendientes
+Ordenador cloud administrado,cloud,must,yes,no,No aprovisionado; motor local
+Grupos de conversación,collaboration,should,yes,no,No implementados
+Voz y dictado,voice,should,yes,no,No implementados
+Conectores OAuth,integrations,should,yes,no,No implementados
+Aplicaciones móviles,mobile,could,yes,no,Solo CSS responsive sin verificar; no app móvil
+Aprendizaje por demostración,skills,could,yes,no,No implementado
+Integración con X,integrations,could,yes,no,No implementada
+Marketplace de bots,marketplace,could,yes,no,No implementado
+Sincronización entre equipos,sync,should,yes,no,No implementada
+Políticas empresariales SSO,enterprise,could,yes,no,Espacio personal de un usuario

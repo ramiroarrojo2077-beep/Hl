@@ -1,0 +1,20 @@
+{
+  "name": "orbita-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "description": "Espacio personal de bots, conversaciones y rutinas",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node --use-env-proxy --env-file-if-exists=.env server.mjs",
+    "desktop": "electron .",
+    "computer:build": "docker build -t orbita-computer:local runtime",
+    "package:desktop": "electron-packager . Orbita --out=releases --overwrite --ignore=^/data --ignore=^/releases --ignore=^/\\.env$",
+    "test": "node tests/server.test.mjs",
+    "doctor": "node --env-file-if-exists=.env scripts/doctor.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check runtime/agent.mjs && node --check runtime/computer.mjs && node --check runtime/provider.mjs && node --check desktop/main.mjs"
+  },
+  "optionalDependencies": { "playwright": "1.62.1" },
+  "devDependencies": { "electron": "^40.0.0", "@electron/packager": "^19.0.0" }
+}
