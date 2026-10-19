@@ -3,6 +3,8 @@ on:
   push:
     paths: ['orbita-bot/android/**', '.github/workflows/android.yml']
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,3 +18,13 @@ jobs:
       - run: gradle assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with: { name: orbita-apk, path: orbita-bot/android/app/build/outputs/apk/debug/app-debug.apk }
+      - name: Guardar APK en la rama
+        working-directory: .
+        run: |
+          mkdir -p apk
+          cp orbita-bot/android/app/build/outputs/apk/debug/app-debug.apk apk/Orbita-debug.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f apk/Orbita-debug.apk
+          git commit -m "APK de Órbita generado por CI"
+          git push
