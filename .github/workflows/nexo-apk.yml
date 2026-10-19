@@ -1,0 +1,58 @@
+name: NEXO Studio APK
+
+on:
+  push:
+    paths:
+      - 'nexo-studio/**'
+      - '!nexo-studio/dist/**'
+      - '.github/workflows/nexo-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nexo-studio
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Sincronizar web con Android
+        run: npx cap sync android
+
+      - name: Compilar APK
+        working-directory: nexo-studio/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXO-Studio-apk
+          path: nexo-studio/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Guardar APK en la rama
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/NEXO-Studio.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f dist/NEXO-Studio.apk
+          git commit -m "NEXO Studio: APK compilado" || exit 0
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

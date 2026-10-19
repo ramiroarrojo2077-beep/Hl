@@ -1,0 +1,7 @@
+data/
+node_modules/
+.whatsapp_session/
+.env
+.secrets/
+.gradle/
+.DS_Store
