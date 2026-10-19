@@ -3,6 +3,8 @@ on:
   push:
     paths: ['orbita-bot/**', '.github/workflows/orbita-apk.yml']
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -21,3 +23,10 @@ jobs:
         with:
           name: orbita-debug-apk
           path: orbita-bot/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish APK to apk-build branch
+        working-directory: .
+        run: |
+          mkdir out && cp orbita-bot/mobile/android/app/build/outputs/apk/debug/app-debug.apk out/orbita-debug.apk
+          cd out && git init -q -b apk-build && git add . \
+            && git -c user.name=ci -c user.email=ci@local commit -qm "APK ${GITHUB_SHA}" \
+            && git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" apk-build
