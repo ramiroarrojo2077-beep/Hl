@@ -1,0 +1,12 @@
+import { cp,mkdir,readFile,writeFile,rm } from 'node:fs/promises';
+import { dirname,join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { build } from 'esbuild';
+const here=dirname(fileURLToPath(import.meta.url)),dist=join(here,'dist'),publicDir=join(here,'../public');
+await rm(dist,{recursive:true,force:true});await mkdir(dist,{recursive:true});
+for(const name of ['index.html','styles.css','favicon.svg','tray.png'])await cp(join(publicDir,name),join(dist,name));
+let html=await readFile(join(dist,'index.html'),'utf8');
+html=html.replace('</head>','<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\'; style-src \'self\'; connect-src \'self\' https: http:; img-src \'self\' data: blob:; object-src \'none\'; base-uri \'none\'; form-action \'none\'">\n</head>');
+await writeFile(join(dist,'index.html'),html);
+await build({entryPoints:[join(publicDir,'app.js')],outfile:join(dist,'app.js'),bundle:true,format:'esm',target:'chrome110',minify:false,plugins:[{name:'native-platform',setup(b){b.onResolve({filter:/^\.\/platform\.js$/},()=>({path:join(here,'native-platform.js')}));}}]});
+console.log('Cliente Android construido en mobile/dist. No contiene servidor, claves ni datos de usuario.');

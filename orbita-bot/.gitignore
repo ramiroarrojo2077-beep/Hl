@@ -1,0 +1,10 @@
+.env
+data/
+*.zip
+__pycache__/
+node_modules/
+releases/
+mobile/dist/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/**/build/

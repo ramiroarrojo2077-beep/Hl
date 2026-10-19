@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "date": "2026-10-19",
+  "tests": {
+    "total": 23,
+    "passed": 23,
+    "transport": "in-memory HTTP",
+    "provider": "controlled"
+  },
+  "syntax": "passed",
+  "startup_permission_error": "reproduced and handled",
+  "android": "Capacitor client and build scripts implemented; dependencies not installed, APK not compiled",
+  "not_verified": [
+    "real HTTP listener",
+    "Android device",
+    "Chromium UI",
+    "real inference",
+    "Electron",
+    "Docker"
+  ]
+}

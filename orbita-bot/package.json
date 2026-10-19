@@ -1,0 +1,26 @@
+{
+  "name": "orbita-bot",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "description": "Espacio personal de bots, conversaciones y rutinas",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "desktop": "npm --prefix desktop start",
+    "computer:build": "docker build -t orbita-computer:local runtime",
+    "test": "node tests/server.test.mjs",
+    "doctor": "node --env-file-if-exists=.env scripts/doctor.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check runtime/agent.mjs && node --check runtime/computer.mjs && node --check runtime/provider.mjs && node --check desktop/main.mjs",
+    "desktop:install": "npm --prefix desktop install",
+    "mobile:install": "npm --prefix mobile install",
+    "mobile:build": "npm --prefix mobile run build",
+    "android:prepare": "npm --prefix mobile run android:prepare",
+    "android:open": "npm --prefix mobile run android:open",
+    "android:apk": "npm --prefix mobile run android:apk",
+    "browser:install": "npm --prefix runtime install"
+  }
+}
