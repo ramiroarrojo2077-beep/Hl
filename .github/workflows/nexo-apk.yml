@@ -22,7 +22,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
       - run: npm ci
       - run: npx cap add android
       - run: chmod +x android/gradlew && cd android && ./gradlew assembleDebug --no-daemon
