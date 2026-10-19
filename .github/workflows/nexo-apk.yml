@@ -7,6 +7,9 @@ on:
       - '.github/workflows/nexo-apk.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,3 +32,14 @@ jobs:
         with:
           name: NEXO-Studio-debug-apk
           path: nexo-studio/android/app/build/outputs/apk/debug/*.apk
+      - name: Guardar APK en la rama
+        if: github.event_name == 'workflow_dispatch' || github.ref_name == 'ccr-73d1bbcb-27mo03'
+        working-directory: .
+        run: |
+          mkdir -p apk
+          cp nexo-studio/android/app/build/outputs/apk/debug/app-debug.apk apk/NEXO-Studio-4.1-debug.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f apk/NEXO-Studio-4.1-debug.apk
+          git commit -m "APK de NEXO Studio generado por CI"
+          git push
