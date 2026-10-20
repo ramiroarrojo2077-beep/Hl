@@ -40,9 +40,9 @@ Las búsquedas repetidas (mismo producto y país) se guardan en memoria 6 horas 
 
 `npm run check` corre el chequeo de tipos.
 
-## Compas (bots)
+## Gravity (bots)
 
-El repo también incluye **Compas**, un clon de Grok Bot: compañeros de IA con trabajo propio, memoria, una computadora compartida (terminal y archivos), aprobaciones y rutinas programadas. Se arranca con `npm run bots` y se documenta en [`bots/README.md`](bots/README.md).
+El repo también incluye **Gravity**, un clon de Grok Bot: compañeros de IA con trabajo propio, memoria, una computadora compartida (terminal y archivos), aprobaciones y rutinas programadas. Se arranca con `npm run gravity` y se documenta en [`bots/README.md`](bots/README.md).
 
 ## Aclaración
 

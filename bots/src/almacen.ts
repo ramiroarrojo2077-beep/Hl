@@ -5,7 +5,7 @@ import path from "node:path";
 import type Anthropic from "@anthropic-ai/sdk";
 
 // Fuera del repo a propósito: así un comando de git que corra un bot no toca este repositorio.
-export const DATOS = path.resolve((process.env.BOTS_DATOS ?? "~/compas").replace(/^~(?=$|\/)/, os.homedir()));
+export const DATOS = path.resolve((process.env.BOTS_DATOS ?? "~/gravity").replace(/^~(?=$|\/)/, os.homedir()));
 // La "computadora" que comparten todos los bots: una carpeta local.
 export const COMPUTADORA = path.join(DATOS, "computadora");
 const MEMORIA = path.join(DATOS, "memoria");

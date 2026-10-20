@@ -437,7 +437,7 @@ const servidor = http.createServer(async (req, res) => {
 iniciarProgramador(ejecutarRutina);
 
 servidor.listen(PUERTO, HOST, () => {
-  console.log(`Compas: http://${HOST.includes(":") ? `[${HOST}]` : HOST}:${PUERTO}`);
+  console.log(`Gravity: http://${HOST.includes(":") ? `[${HOST}]` : HOST}:${PUERTO}`);
   console.log(`Computadora de los bots: ${COMPUTADORA}`);
   if (!LOCAL) {
     console.warn(

@@ -156,7 +156,7 @@ Ver `features.csv`.
 | La cuenta Cursor y los planes SuperGrok | Son del original. El clon es de uso personal, sin cuentas |
 | La VM en la nube por usuario | Infraestructura propia del original. El clon usa una carpeta local como "computadora" (o un contenedor Docker si se quiere aislar) |
 | Dominio de email `@mail.grokbot.com` | Es del original. Se podría hacer con un proveedor de email propio |
-| Marca, nombre, logo y avatar | Marca registrada. El clon se llama **Compas** (nombre de trabajo) y usa avatares propios |
+| Marca, nombre, logo y avatar | Marca registrada. El clon se llama **Gravity** y usa avatares propios |
 
 ## 9. Tamaño
 

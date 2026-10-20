@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Compas</title>
+<title>Gravity</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23ff8a4c'/%3E%3Ccircle cx='16' cy='10' r='10' fill='%231b1a18' fill-opacity='.85'/%3E%3C/svg%3E">
 <style>
   :root {
@@ -216,7 +216,7 @@
   <aside class="lateral">
     <div class="marca">
       <span class="logo" aria-hidden="true"></span>
-      <span class="nombre">Compas</span>
+      <span class="nombre">Gravity</span>
       <button id="nuevo" class="boton-redondo" title="Nuevo compañero" aria-label="Nuevo compañero">+</button>
     </div>
     <ul id="lista-bots"></ul>
@@ -385,7 +385,7 @@
     if (primeraCarga) {
       primeraCarga = false;
       let ultimo = null;
-      try { ultimo = localStorage.getItem("compas-bot"); } catch {}
+      try { ultimo = localStorage.getItem("gravity-bot"); } catch {}
       const inicial = bot(ultimo) || S.bots[0];
       if (inicial) abrirBot(inicial.id, false);
       else abrirBienvenida(false);
@@ -451,7 +451,7 @@
       S.pestana = "chat";
     }
     S.vista = "bot"; S.botId = id; S.pegado = true;
-    try { localStorage.setItem("compas-bot", id); } catch {}
+    try { localStorage.setItem("gravity-bot", id); } catch {}
     $("#app").classList.toggle("detalle", mostrarDetalle);
     renderLista();
     renderPrincipal();
@@ -946,7 +946,7 @@
       S.aprobaciones.push(a);
       renderLista();
       if (a.botId === S.botId) renderEnVivo();
-      notificar(bot(a.botId)?.nombre ?? "Compas", `Necesita tu aprobación: ${a.titulo}`);
+      notificar(bot(a.botId)?.nombre ?? "Gravity", `Necesita tu aprobación: ${a.titulo}`);
     });
     es.addEventListener("aprobacion-resuelta", (e) => {
       const d = datos(e);
