@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23ff8a4c'/%3E%3Ccircle cx='16' cy='10' r='10' fill='%231b1a18' fill-opacity='.85'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --fondo: #f4f3f0;
+    --lateral: #ebe9e4;
+    --superficie: #ffffff;
+    --superficie-2: #f0eee9;
+    --texto: #1b1a18;
+    --suave: #6a675f;
+    --borde: #dedad2;
+    --acento: #d9480f;
+    --acento-texto: #ffffff;
+    --burbuja-yo: #1b1a18;
+    --burbuja-yo-texto: #f4f3f0;
+    --peligro: #b3261e;
+    --aviso: #9a6700;
+    --bien: #1f7a3a;
+    --codigo: #f0eee9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #0f0f0e;
+      --lateral: #161615;
+      --superficie: #1c1c1a;
+      --superficie-2: #252522;
+      --texto: #ecebe6;
+      --suave: #9e9b93;
+      --borde: #2f2e2b;
+      --acento: #ff8a4c;
+      --acento-texto: #1a0d05;
+      --burbuja-yo: #ecebe6;
+      --burbuja-yo-texto: #121211;
+      --peligro: #f08a80;
+      --aviso: #e0b44a;
+      --bien: #5cc27a;
+      --codigo: #252522;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button {
+    border: 1px solid var(--acento);
+    background: var(--acento);
+    color: var(--acento-texto);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secundario { background: transparent; color: var(--texto); border-color: var(--borde); font-weight: 500; }
+  button.peligro { background: transparent; color: var(--peligro); border-color: var(--peligro); font-weight: 500; }
+  button.chico { padding: 4px 10px; font-size: 0.85rem; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  input, select, textarea {
+    width: 100%;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    padding: 9px 11px;
+    min-width: 0;
+  }
+  textarea { resize: vertical; }
+  label { display: block; font-size: 0.85rem; color: var(--suave); margin: 12px 0 4px; }
+  input[type="checkbox"] { width: auto; }
+  pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85em; }
+  pre { background: var(--codigo); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
+  [hidden] { display: none !important; }
+
+  .app { display: grid; grid-template-columns: 280px 1fr; height: 100vh; height: 100dvh; }
+
+  /* Lista de compañeros */
+  .lateral { background: var(--lateral); border-right: 1px solid var(--borde); display: flex; flex-direction: column; min-height: 0; }
+  .marca { display: flex; align-items: center; gap: 10px; padding: 16px; font-weight: 700; font-size: 1.15rem; }
+  .marca .nombre { flex: 1; }
+  .logo { position: relative; width: 26px; height: 20px; }
+  .logo::before, .logo::after { content: ""; position: absolute; top: 0; width: 20px; height: 20px; border-radius: 50%; }
+  .logo::before { left: 0; background: var(--acento); }
+  .logo::after { left: 8px; background: var(--texto); mix-blend-mode: difference; }
+  .boton-redondo { width: 32px; height: 32px; padding: 0; border-radius: 50%; font-size: 1.2rem; line-height: 1; }
+  #lista-bots { list-style: none; margin: 0; padding: 0 8px; overflow-y: auto; flex: 1; }
+  #lista-bots li { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; cursor: pointer; }
+  #lista-bots li:hover { background: var(--superficie-2); }
+  #lista-bots li.activo { background: var(--superficie); }
+  #lista-bots .info { flex: 1; min-width: 0; }
+  #lista-bots .linea1 { display: flex; gap: 6px; align-items: center; font-weight: 600; }
+  #lista-bots .linea2 { font-size: 0.82rem; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--acento); flex: none; }
+  .insignia { font-size: 0.72rem; font-weight: 700; border-radius: 999px; padding: 1px 7px; background: var(--aviso); color: var(--fondo); }
+  .lateral footer { padding: 12px 16px; border-top: 1px solid var(--borde); }
+  .lateral footer button { width: 100%; }
+  .vacio-lista { color: var(--suave); font-size: 0.9rem; padding: 8px; }
+
+  /* Avatar: inicial sobre el color del bot; late mientras trabaja */
+  .avatar {
+    flex: none; width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center; color: #fff; font-weight: 700;
+    position: relative;
+  }
+  .avatar.grande { width: 44px; height: 44px; font-size: 1.15rem; }
+  .avatar.trabajando::after, .avatar.esperando::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--acento);
+  }
+  .avatar.trabajando::after { animation: latido 1.4s ease-in-out infinite; }
+  .avatar.esperando::after { border-color: var(--aviso); }
+  @keyframes latido { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.08); } }
+
+  /* Panel principal */
+  main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .cabecera { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--borde); }
+  .cabecera .titulos { flex: 1; min-width: 0; }
+  .cabecera h2 { margin: 0; font-size: 1.1rem; }
+  .cabecera .sub { font-size: 0.85rem; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .volver { display: none; background: transparent; color: var(--texto); border: none; padding: 4px 8px; font-size: 1.3rem; }
+  .pestanas { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--borde); overflow-x: auto; }
+  .pestanas button { background: transparent; border: none; border-bottom: 2px solid transparent; border-radius: 0; color: var(--suave); padding: 10px 10px; font-weight: 600; white-space: nowrap; }
+  .pestanas button.activa { color: var(--texto); border-bottom-color: var(--acento); }
+  .contenido { flex: 1; overflow-y: auto; padding: 20px; min-height: 0; }
+  .ancho { max-width: 820px; margin: 0 auto; }
+
+  /* Chat */
+  .chat { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  #mensajes { flex: 1; overflow-y: auto; padding: 20px; }
+  #historial, #en-vivo { max-width: 820px; margin: 0 auto; }
+  .msj { margin: 10px 0; display: flex; }
+  .msj.yo { justify-content: flex-end; }
+  .burbuja { max-width: 85%; padding: 10px 14px; border-radius: 16px; overflow-wrap: anywhere; }
+  .yo .burbuja { background: var(--burbuja-yo); color: var(--burbuja-yo-texto); border-bottom-right-radius: 4px; white-space: pre-wrap; }
+  .bot .burbuja { background: var(--superficie); border: 1px solid var(--borde); border-bottom-left-radius: 4px; }
+  .burbuja p { margin: 0 0 8px; } .burbuja p:last-child { margin-bottom: 0; }
+  .burbuja h4 { margin: 10px 0 6px; }
+  .burbuja ul, .burbuja ol { margin: 4px 0 8px; padding-left: 22px; }
+  .burbuja code { background: var(--codigo); padding: 1px 4px; border-radius: 4px; }
+  .burbuja pre code { background: none; padding: 0; }
+  .burbuja a { color: var(--acento); }
+  .burbuja table { border-collapse: collapse; margin: 6px 0; font-size: 0.9em; display: block; overflow-x: auto; }
+  .burbuja th, .burbuja td { border: 1px solid var(--borde); padding: 4px 8px; text-align: left; }
+  .fecha { font-size: 0.75rem; color: var(--suave); text-align: right; margin-top: -6px; }
+  .rutina-chip { font-size: 0.8rem; color: var(--suave); margin: 14px 0 4px; }
+  .rutina-chip details { display: inline; }
+  .rutina-chip summary { cursor: pointer; display: inline; }
+  .rutina-chip strong { color: var(--texto); }
+  .nota { color: var(--suave); font-size: 0.85rem; font-style: italic; margin: 4px 0 4px 4px; }
+  .accion { font-size: 0.85rem; color: var(--suave); margin: 2px 0 2px 4px; }
+  .accion summary { cursor: pointer; list-style: none; overflow-wrap: anywhere; }
+  .accion summary::-webkit-details-marker { display: none; }
+  .accion summary::before { content: "▸ "; }
+  .accion details[open] summary::before { content: "▾ "; }
+  .accion.error, .accion.error summary { color: var(--peligro); }
+  .accion .cmd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .aviso-chat { text-align: center; font-size: 0.82rem; color: var(--suave); margin: 12px 0; }
+  .aviso-chat.error { color: var(--peligro); }
+  .estado-vivo { color: var(--suave); font-size: 0.85rem; margin: 10px 0 0 4px; overflow-wrap: anywhere; }
+  .estado-vivo::before { content: "● "; color: var(--acento); animation: latido 1.4s infinite; }
+  .tarjeta-aprobacion { border: 1px solid var(--aviso); border-radius: 12px; padding: 12px 14px; margin: 12px 0; background: var(--superficie); }
+  .tarjeta-aprobacion h4 { margin: 0 0 6px; font-size: 0.95rem; }
+  .tarjeta-aprobacion pre { max-height: 240px; overflow-y: auto; }
+  .botones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .vacio { color: var(--suave); text-align: center; padding: 40px 10px; }
+  .compositor { display: flex; gap: 8px; align-items: flex-end; padding: 12px 20px 16px; max-width: 860px; width: 100%; margin: 0 auto; }
+  .compositor textarea { resize: none; max-height: 200px; border-radius: 12px; }
+
+  /* Tarjetas genéricas */
+  .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .tarjeta h3 { margin: 0 0 4px; font-size: 1rem; }
+  .meta { font-size: 0.85rem; color: var(--suave); }
+  .fila { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .seccion { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--suave); margin: 24px 0 10px; }
+  .seccion:first-child { margin-top: 0; }
+  .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .plantilla { display: flex; flex-direction: column; gap: 8px; }
+  .plantilla p { margin: 0; font-size: 0.88rem; color: var(--suave); flex: 1; }
+  .plantilla .fila { justify-content: flex-start; flex-wrap: nowrap; }
+  .plantilla .fila > div { min-width: 0; }
+  .ok { color: var(--bien); } .mal { color: var(--peligro); } .curso { color: var(--aviso); }
+  .historial { list-style: none; padding: 0; margin: 8px 0 0; font-size: 0.85rem; }
+  .historial li { padding: 6px 0; border-top: 1px solid var(--borde); }
+
+  /* Computadora */
+  .compu { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; }
+  .archivos { list-style: none; margin: 0; padding: 0; font-size: 0.88rem; }
+  .archivos li { padding: 4px 6px; border-radius: 6px; cursor: pointer; display: flex; gap: 8px; justify-content: space-between; }
+  .archivos li:hover, .archivos li.activo { background: var(--superficie-2); }
+  .archivos li.carpeta { color: var(--suave); cursor: default; }
+  .archivos .tam { color: var(--suave); white-space: nowrap; }
+  .terminal pre { max-height: 220px; overflow-y: auto; }
+
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--texto); color: var(--fondo); padding: 10px 16px; border-radius: 10px; font-size: 0.9rem; max-width: calc(100% - 32px); z-index: 10; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+    .app.detalle .lateral { display: none; }
+    .app:not(.detalle) main { display: none; }
+    .volver { display: block; }
+    .cabecera, .contenido, #mensajes { padding-left: 16px; padding-right: 16px; }
+    .compositor { padding: 10px 16px 14px; }
+    .compu { grid-template-columns: 1fr; }
+    .burbuja { max-width: 92%; }
+  }
+</style>
+</head>
+<body>
+<div id="app" class="app">
+  <aside class="lateral">
+    <div class="marca">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="nombre">Compas</span>
+      <button id="nuevo" class="boton-redondo" title="Nuevo compañero" aria-label="Nuevo compañero">+</button>
+    </div>
+    <ul id="lista-bots"></ul>
+    <footer><button id="abrir-ajustes" class="secundario">Habilidades y ajustes</button></footer>
+  </aside>
+  <main id="principal"></main>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+  const $ = (sel) => document.querySelector(sel);
+
+  // Estado de la interfaz
+  const S = {
+    bots: [], habilidades: [], reglas: [], aprobaciones: [], plantillas: [], config: {},
+    vista: null, botId: null, pestana: "chat",
+    items: [], streaming: "", corteStream: 0, pegado: true, borrador: {},
+    compu: null, archivoAbierto: null, editandoRutina: null, editandoHabilidad: null,
+  };
+  const bot = (id) => S.bots.find((b) => b.id === id);
+
+  // ---- Utilidades ----
+
+  function el(tag, props = {}, ...hijos) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (v == null || v === false) continue;
+      if (k === "class") e.className = v;
+      else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+      else if (k === "value") e.value = v;
+      else if (v === true) e[k] = true;
+      else e.setAttribute(k, v);
+    }
+    for (const h of hijos.flat()) if (h != null && h !== false) e.append(h);
+    return e;
+  }
+
+  async function api(metodo, ruta, cuerpo) {
+    const opciones = { method: metodo };
+    // El servidor exige JSON en todo lo que no sea GET (protección contra otros sitios).
+    if (metodo !== "GET") {
+      opciones.headers = { "Content-Type": "application/json" };
+      opciones.body = JSON.stringify(cuerpo ?? {});
+    }
+    const r = await fetch(ruta, opciones);
+    const datos = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(datos.error || `Error ${r.status}`);
+    return datos;
+  }
+
+  let temporizadorToast;
+  function toast(texto) {
+    const t = $("#toast");
+    t.textContent = texto;
+    t.hidden = false;
+    clearTimeout(temporizadorToast);
+    temporizadorToast = setTimeout(() => (t.hidden = true), 4000);
+  }
+
+  const intentar = (fn) => async (...args) => {
+    try { await fn(...args); } catch (err) { toast(err.message); }
+  };
+
+  function cuando(iso) {
+    if (!iso) return "";
+    return new Date(iso).toLocaleString("es", { dateStyle: "short", timeStyle: "short" });
+  }
+  function tamano(n) {
+    return n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+  }
+
+  function avatar(b, grande) {
+    const clase = ["avatar", grande && "grande", b.estado !== "libre" && b.estado].filter(Boolean).join(" ");
+    const a = el("span", { class: clase, title: b.accion || b.titulo, "aria-hidden": "true" }, (b.nombre[0] || "?").toUpperCase());
+    a.style.background = b.color;
+    return a;
+  }
+
+  function autoTam(ta) {
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight + 2, 200)}px`;
+  }
+
+  // Markdown mínimo y seguro: se escapa todo primero y solo se agregan etiquetas conocidas.
+  function escapar(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+  function enLinea(s) {
+    return s.split(/(`[^`]+`)/).map((parte, i) => {
+      if (i % 2) return `<code>${parte.slice(1, -1)}</code>`;
+      return parte
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/(^|[\s(])(https?:\/\/[^\s<)]+[^\s<).,;:])/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+    }).join("");
+  }
+  function bloques(texto, html) {
+    const lineas = escapar(texto).split("\n");
+    let parrafo = [];
+    let lista = null;
+    let tabla = null;
+    const cerrar = () => {
+      if (parrafo.length) html.push(`<p>${parrafo.map(enLinea).join("<br>")}</p>`);
+      if (lista) html.push(`<${lista.tipo}>${lista.items.map((x) => `<li>${enLinea(x)}</li>`).join("")}</${lista.tipo}>`);
+      if (tabla) {
+        const filas = tabla.filter((f) => !/^\|?\s*:?-{2,}/.test(f));
+        html.push(`<table>${filas.map((f, i) => {
+          const celdas = f.replace(/^\||\|$/g, "").split("|").map((c) => enLinea(c.trim()));
+          const t = i === 0 ? "th" : "td";
+          return `<tr>${celdas.map((c) => `<${t}>${c}</${t}>`).join("")}</tr>`;
+        }).join("")}</table>`);
+      }
+      parrafo = []; lista = null; tabla = null;
+    };
+    for (const linea of lineas) {
+      let m;
+      if (!linea.trim()) { cerrar(); continue; }
+      if ((m = /^#{1,6}\s+(.*)/.exec(linea))) { cerrar(); html.push(`<h4>${enLinea(m[1])}</h4>`); continue; }
+      if (linea.trim().startsWith("|")) {
+        if (!tabla) cerrar();
+        (tabla ??= []).push(linea.trim());
+        continue;
+      }
+      const item = /^\s*[-*•]\s+(.*)/.exec(linea) || /^\s*\d+[.)]\s+(.*)/.exec(linea);
+      if (item) {
+        const tipo = /^\s*\d/.test(linea) ? "ol" : "ul";
+        if (!lista || lista.tipo !== tipo) { cerrar(); lista = { tipo, items: [] }; }
+        lista.items.push(item[1]);
+        continue;
+      }
+      if (lista || tabla) cerrar();
+      parrafo.push(linea);
+    }
+    cerrar();
+  }
+  function markdown(texto) {
+    const html = [];
+    let ultimo = 0;
+    for (const m of texto.matchAll(/```[^\n]*\n([\s\S]*?)(?:```|$)/g)) {
+      bloques(texto.slice(ultimo, m.index), html);
+      html.push(`<pre><code>${escapar(m[1])}</code></pre>`);
+      ultimo = m.index + m[0].length;
+    }
+    bloques(texto.slice(ultimo), html);
+    const div = el("div");
+    div.innerHTML = html.join("");
+    return div;
+  }
+
+  // ---- Notificaciones del navegador (solo si la pestaña está oculta) ----
+
+  function pedirPermisoNotificaciones() {
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {});
+  }
+  function notificar(titulo, cuerpo) {
+    if (document.visibilityState === "visible" || !("Notification" in window) || Notification.permission !== "granted") return;
+    try { new Notification(titulo, { body: cuerpo }); } catch {}
+  }
+
+  // ---- Carga de datos ----
+
+  let primeraCarga = true;
+  async function cargarEstado() {
+    const d = await api("GET", "/api/estado");
+    Object.assign(S, d);
+    if (primeraCarga) {
+      primeraCarga = false;
+      let ultimo = null;
+      try { ultimo = localStorage.getItem("compas-bot"); } catch {}
+      const inicial = bot(ultimo) || S.bots[0];
+      if (inicial) abrirBot(inicial.id, false);
+      else abrirBienvenida(false);
+    } else if (S.botId && !bot(S.botId)) {
+      S.bots.length ? abrirBot(S.bots[0].id, false) : abrirBienvenida(false);
+    } else if (S.vista === "ajustes") {
+      renderPrincipal();
+    } else if (S.vista === "bot") {
+      renderCabecera();
+      renderEnVivo();
+    }
+    renderLista();
+  }
+
+  async function cargarConversacion() {
+    const id = S.botId;
+    const items = await api("GET", `/api/bots/${id}/conversacion`);
+    if (id !== S.botId) return;
+    S.items = items;
+    // Lo que se transmitió antes del último "cambio" ya está en el historial.
+    S.streaming = S.streaming.slice(S.corteStream);
+    S.corteStream = 0;
+    renderHistorial();
+    renderEnVivo();
+    marcarLeido();
+  }
+
+  function marcarLeido() {
+    const b = bot(S.botId);
+    if (!b || S.vista !== "bot" || S.pestana !== "chat" || document.visibilityState !== "visible") return;
+    if (b.noLeido) {
+      b.noLeido = false;
+      renderLista();
+    }
+    api("POST", `/api/bots/${b.id}/leido`).catch(() => {});
+  }
+
+  // ---- Lista lateral ----
+
+  function renderLista() {
+    const lista = $("#lista-bots");
+    if (!S.bots.length) {
+      lista.replaceChildren(el("li", { class: "vacio-lista" }, "Todavía no tenés compañeros."));
+      return;
+    }
+    lista.replaceChildren(...S.bots.map((b) => {
+      const pendientes = S.aprobaciones.filter((a) => a.botId === b.id).length;
+      const sub = pendientes ? "Necesita tu aprobación" : b.estado !== "libre" ? (b.accion || "Trabajando…") : b.titulo;
+      return el("li", { class: S.vista === "bot" && S.botId === b.id ? "activo" : "", onclick: () => abrirBot(b.id) },
+        avatar(b),
+        el("div", { class: "info" },
+          el("div", { class: "linea1" }, el("span", {}, b.nombre), b.noLeido && S.botId !== b.id ? el("span", { class: "punto", title: "Novedades" }) : null),
+          el("div", { class: "linea2" }, sub)),
+        pendientes ? el("span", { class: "insignia" }, String(pendientes)) : null);
+    }));
+  }
+
+  // ---- Navegación ----
+
+  function abrirBot(id, mostrarDetalle = true) {
+    if (S.botId !== id) {
+      S.items = []; S.streaming = ""; S.corteStream = 0; S.archivoAbierto = null; S.editandoRutina = null;
+      S.pestana = "chat";
+    }
+    S.vista = "bot"; S.botId = id; S.pegado = true;
+    try { localStorage.setItem("compas-bot", id); } catch {}
+    $("#app").classList.toggle("detalle", mostrarDetalle);
+    renderLista();
+    renderPrincipal();
+  }
+  function abrirBienvenida(mostrarDetalle = true) {
+    S.vista = "bienvenida"; S.botId = null;
+    $("#app").classList.toggle("detalle", mostrarDetalle);
+    renderLista();
+    renderPrincipal();
+  }
+  function abrirAjustes() {
+    S.vista = "ajustes"; S.botId = null; S.editandoHabilidad = null;
+    $("#app").classList.add("detalle");
+    renderLista();
+    renderPrincipal();
+  }
+  const botonVolver = () => el("button", { class: "volver", "aria-label": "Volver", onclick: () => $("#app").classList.remove("detalle") }, "←");
+
+  function renderPrincipal() {
+    const main = $("#principal");
+    if (S.vista === "bienvenida") return main.replaceChildren(...vistaBienvenida());
+    if (S.vista === "ajustes") return main.replaceChildren(...vistaAjustes());
+    const b = bot(S.botId);
+    if (!b) return main.replaceChildren();
+    const pestanas = [["chat", "Chat"], ["computadora", "Computadora"], ["rutinas", "Rutinas"], ["memoria", "Memoria"], ["perfil", "Perfil"]];
+    main.replaceChildren(
+      el("header", { class: "cabecera", id: "cabecera" }),
+      el("nav", { class: "pestanas" }, pestanas.map(([id, nombre]) =>
+        el("button", { class: S.pestana === id ? "activa" : "", onclick: () => { S.pestana = id; renderPrincipal(); } }, nombre))),
+      ...(S.pestana === "chat" ? vistaChat(b) : [el("div", { class: "contenido", id: "contenido" })]),
+    );
+    renderCabecera();
+    if (S.pestana === "chat") { renderHistorial(); renderEnVivo(); intentar(cargarConversacion)(); }
+    if (S.pestana === "computadora") intentar(cargarComputadora)();
+    if (S.pestana === "rutinas") intentar(cargarRutinas)();
+    if (S.pestana === "memoria") intentar(cargarMemoria)();
+    if (S.pestana === "perfil") renderPerfil(b);
+  }
+
+  function renderCabecera() {
+    const c = $("#cabecera");
+    const b = bot(S.botId);
+    if (!c || !b) return;
+    const estado = b.estado === "esperando" ? "Esperando tu aprobación" : b.estado === "trabajando" ? "Trabajando" : "Disponible";
+    const cola = b.enCola ? ` · ${b.enCola} en cola` : "";
+    c.replaceChildren(botonVolver(), avatar(b, true),
+      el("div", { class: "titulos" }, el("h2", {}, b.nombre), el("div", { class: "sub" }, `${b.titulo} · ${estado}${cola}`)));
+    const detener = $("#detener");
+    if (detener) detener.hidden = b.estado === "libre";
+  }
+
+  // ---- Bienvenida: crear un compañero ----
+
+  function vistaBienvenida() {
+    const crear = intentar(async (datos) => {
+      const b = await api("POST", "/api/bots", datos);
+      await cargarEstado();
+      abrirBot(b.id);
+    });
+    const form = el("form", { class: "tarjeta" },
+      el("h3", {}, "Creá el tuyo"),
+      el("p", { class: "meta" }, "Describí el trabajo como se lo explicarías a alguien que recién entra."),
+      el("label", { for: "n-nombre" }, "Nombre"), el("input", { id: "n-nombre", maxlength: 40, required: true, placeholder: "Ej: Bruno" }),
+      el("label", { for: "n-titulo" }, "Puesto"), el("input", { id: "n-titulo", maxlength: 80, required: true, placeholder: "Ej: Asistente de compras" }),
+      el("label", { for: "n-desc" }, "Trabajo"), el("textarea", { id: "n-desc", rows: 5, maxlength: 4000, required: true, placeholder: "Qué hace, con qué fuentes o herramientas, qué entrega y cómo sabe que terminó." }),
+      el("div", { class: "botones" }, el("button", { type: "submit" }, "Crear compañero")));
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      crear({ nombre: $("#n-nombre").value, titulo: $("#n-titulo").value, descripcion: $("#n-desc").value });
+    });
+    return [
+      el("header", { class: "cabecera" }, botonVolver(), el("div", { class: "titulos" }, el("h2", {}, "Conocé a tu próximo compañero"),
+        el("div", { class: "sub" }, "Cada compañero tiene un trabajo, memoria y acceso a la computadora compartida."))),
+      el("div", { class: "contenido" }, el("div", { class: "ancho" },
+        el("div", { class: "seccion" }, "Sugeridos"),
+        el("div", { class: "grilla" }, S.plantillas.map((p, i) => {
+          const muestra = { ...p, estado: "libre", color: ["#e8590c", "#2b8a3e", "#1971c2", "#9c36b5", "#c2255c"][i % 5] };
+          return el("div", { class: "tarjeta plantilla" },
+            el("div", { class: "fila" }, avatar(muestra), el("div", {}, el("h3", {}, p.nombre), el("div", { class: "meta" }, p.titulo))),
+            el("p", {}, p.descripcion),
+            el("button", { class: "secundario", onclick: () => crear(p) }, `Sumar a ${p.nombre}`));
+        })),
+        el("div", { class: "seccion" }, "O desde cero"),
+        form)),
+    ];
+  }
+
+  // ---- Chat ----
+
+  function vistaChat(b) {
+    const mensajes = el("div", { id: "mensajes" }, el("div", { id: "historial" }), el("div", { id: "en-vivo" }));
+    mensajes.addEventListener("scroll", () => {
+      S.pegado = mensajes.scrollHeight - mensajes.scrollTop - mensajes.clientHeight < 80;
+    });
+    const ta = el("textarea", { id: "texto", rows: 1, placeholder: `Mensaje para ${b.nombre}`, "aria-label": "Mensaje" });
+    ta.value = S.borrador[b.id] || "";
+    const form = el("form", { class: "compositor" },
+      ta,
+      el("button", { type: "button", id: "detener", class: "secundario", hidden: b.estado === "libre", onclick: intentar(() => api("POST", `/api/bots/${b.id}/detener`)) }, "Detener"),
+      el("button", { type: "submit" }, "Enviar"));
+    ta.addEventListener("input", () => { S.borrador[b.id] = ta.value; autoTam(ta); });
+    ta.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
+    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const texto = ta.value.trim();
+      if (!texto) return;
+      ta.value = ""; S.borrador[b.id] = ""; autoTam(ta); S.pegado = true;
+      pedirPermisoNotificaciones();
+      try {
+        await api("POST", `/api/bots/${b.id}/mensajes`, { texto });
+      } catch (err) {
+        toast(err.message);
+        ta.value = texto;
+      }
+    });
+    requestAnimationFrame(() => { autoTam(ta); if (matchMedia("(min-width: 761px)").matches) ta.focus(); });
+    return [el("section", { class: "chat" }, mensajes, form)];
+  }
+
+  function itemANodo(it) {
+    if (it.tipo === "usuario") {
+      const nodos = [];
+      if (it.rutina) {
+        nodos.push(el("div", { class: "rutina-chip" }, el("details", {},
+          el("summary", {}, "Rutina ", el("strong", {}, it.rutina), it.fecha ? ` · ${it.fecha}` : ""),
+          el("pre", {}, it.texto))));
+        return nodos;
+      }
+      nodos.push(el("div", { class: "msj yo" }, el("div", { class: "burbuja" }, it.texto)));
+      if (it.fecha) nodos.push(el("div", { class: "fecha" }, it.fecha));
+      return nodos;
+    }
+    if (it.tipo === "bot") return el("div", { class: "msj bot" }, el("div", { class: "burbuja" }, markdown(it.texto)));
+    if (it.tipo === "nota") return el("div", { class: "nota" }, it.texto);
+    if (it.tipo === "aviso") return el("div", { class: `aviso-chat${it.error ? " error" : ""}` }, it.texto);
+    // Acciones: el comando de bash se muestra tal cual; el resto como descripción.
+    const texto = it.herramienta === "bash" ? el("span", { class: "cmd" }, `$ ${it.texto}`) : it.texto;
+    if (!it.detalle) return el("div", { class: `accion${it.error ? " error" : ""}` }, texto);
+    return el("div", { class: `accion${it.error ? " error" : ""}` }, el("details", {}, el("summary", {}, texto), el("pre", {}, it.detalle)));
+  }
+
+  function bajar() {
+    const m = $("#mensajes");
+    if (m && S.pegado) m.scrollTop = m.scrollHeight;
+  }
+
+  function renderHistorial() {
+    const h = $("#historial");
+    const b = bot(S.botId);
+    if (!h || !b) return;
+    const nodos = S.items.flatMap((it) => [itemANodo(it)].flat());
+    if (!S.items.length) {
+      nodos.push(el("div", { class: "vacio" }, `Escribile a ${b.nombre} qué necesitás. Puede buscar en la web, trabajar en la computadora y programar rutinas.`));
+    }
+    h.replaceChildren(...nodos);
+    bajar();
+  }
+
+  let marcoPendiente = false;
+  function renderEnVivo() {
+    if (marcoPendiente) return;
+    marcoPendiente = true;
+    requestAnimationFrame(() => {
+      marcoPendiente = false;
+      const v = $("#en-vivo");
+      const b = bot(S.botId);
+      if (!v || !b) return;
+      const nodos = [];
+      if (S.streaming) nodos.push(el("div", { class: "msj bot" }, el("div", { class: "burbuja" }, markdown(S.streaming))));
+      for (const a of S.aprobaciones.filter((x) => x.botId === b.id)) nodos.push(tarjetaAprobacion(a));
+      if (b.estado === "trabajando") nodos.push(el("div", { class: "estado-vivo" }, b.accion || "Trabajando…"));
+      v.replaceChildren(...nodos);
+      bajar();
+    });
+  }
+
+  function tarjetaAprobacion(a) {
+    const decidir = (decision) => intentar(async () => {
+      await api("POST", `/api/aprobaciones/${a.id}`, { decision });
+    });
+    return el("div", { class: "tarjeta-aprobacion" },
+      el("h4", {}, a.titulo),
+      a.detalle ? el("pre", {}, a.detalle) : null,
+      el("div", { class: "botones" },
+        el("button", { onclick: decidir("una") }, "Permitir una vez"),
+        a.regla ? el("button", { class: "secundario", title: a.regla, onclick: decidir("siempre") }, "Siempre permitir") : null,
+        el("button", { class: "peligro", onclick: decidir("negar") }, "Negar")),
+      a.regla ? el("div", { class: "meta", style: "margin-top:6px" }, `«Siempre permitir»: ${a.regla.charAt(0).toLowerCase()}${a.regla.slice(1)}.`) : null);
+  }
+
+  // ---- Computadora ----
+
+  async function cargarComputadora() {
+    S.compu = await api("GET", "/api/computadora");
+    renderComputadora();
+  }
+
+  function renderComputadora() {
+    const c = $("#contenido");
+    if (!c || !S.compu) return;
+    const { archivos, comandos } = S.compu;
+    const visor = el("div", { class: "tarjeta", id: "visor" }, el("p", { class: "meta" }, "Elegí un archivo para verlo."));
+    const lista = archivos.length
+      ? el("ul", { class: "archivos" }, archivos.map((a) => {
+          const nivel = a.ruta.split("/").length - 1;
+          const nombre = a.ruta.split("/").pop();
+          const li = el("li", { class: [a.carpeta && "carpeta", S.archivoAbierto === a.ruta && "activo"].filter(Boolean).join(" ") },
+            el("span", {}, `${a.carpeta ? "▸ " : ""}${nombre}`), a.carpeta ? null : el("span", { class: "tam" }, tamano(a.tamano)));
+          li.style.paddingLeft = `${6 + nivel * 14}px`;
+          if (!a.carpeta) li.addEventListener("click", () => abrirArchivo(a.ruta));
+          return li;
+        }))
+      : el("p", { class: "meta" }, "La computadora está vacía. Lo que los compañeros guarden va a aparecer acá.");
+    c.replaceChildren(el("div", { class: "ancho", style: "max-width:1100px" },
+      el("div", { class: "fila", style: "margin-bottom:12px" },
+        el("div", { class: "meta" }, `Carpeta compartida por todos los compañeros: ${S.config.computadora}`),
+        el("button", { class: "secundario chico", onclick: intentar(cargarComputadora) }, "Actualizar")),
+      el("div", { class: "compu" },
+        el("div", {}, el("div", { class: "seccion" }, "Archivos"), el("div", { class: "tarjeta" }, lista)),
+        el("div", {}, el("div", { class: "seccion" }, "Archivo"), visor,
+          el("div", { class: "seccion" }, "Terminal"),
+          comandos.length
+            ? el("div", { class: "terminal" }, comandos.slice(0, 40).map((cmd) => el("div", { class: "tarjeta" },
+                el("div", { class: "meta" }, `${cmd.bot} · ${cuando(cmd.fecha)}`),
+                el("pre", { class: cmd.error ? "mal" : "" }, `$ ${cmd.comando}\n${cmd.salida}`))))
+            : el("p", { class: "meta" }, "Todavía no se ejecutaron comandos desde que arrancó el servidor.")))));
+    if (S.archivoAbierto) abrirArchivo(S.archivoAbierto);
+  }
+
+  const abrirArchivo = intentar(async (ruta) => {
+    S.archivoAbierto = ruta;
+    document.querySelectorAll(".archivos li").forEach((li) => li.classList.toggle("activo", li.firstChild.textContent === ruta.split("/").pop()));
+    const url = `/api/computadora/archivo?ruta=${encodeURIComponent(ruta)}`;
+    const r = await fetch(url);
+    const visor = $("#visor");
+    if (!visor) return;
+    const descarga = el("a", { href: `${url}&descargar=1`, class: "meta" }, "Descargar");
+    if (!r.ok) {
+      visor.replaceChildren(el("p", { class: "mal" }, (await r.json().catch(() => ({}))).error || "No se pudo abrir."));
+      return;
+    }
+    const tipo = r.headers.get("content-type") || "";
+    visor.replaceChildren(
+      el("div", { class: "fila" }, el("strong", {}, ruta), descarga),
+      tipo.startsWith("text/plain") ? el("pre", {}, await r.text()) : el("p", { class: "meta" }, "Es un archivo binario o muy grande: descargalo para verlo."));
+  });
+
+  // ---- Rutinas ----
+
+  async function cargarRutinas() {
+    const id = S.botId;
+    const rutinas = await api("GET", `/api/bots/${id}/rutinas`);
+    if (id === S.botId && S.pestana === "rutinas") renderRutinas(rutinas);
+  }
+
+  const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+  function formularioRutina(b, r) {
+    const h = r?.horario ?? { tipo: "diaria", hora: "09:00" };
+    const campos = el("div");
+    const tipo = el("select", { id: "r-tipo" },
+      [["intervalo", "Cada cierto tiempo"], ["diaria", "Todos los días"], ["semanal", "Una vez por semana"]].map(([v, t]) =>
+        el("option", { value: v, selected: h.tipo === v }, t)));
+    const pintarCampos = () => {
+      const t = tipo.value;
+      campos.replaceChildren(
+        t === "intervalo" ? [el("label", { for: "r-min" }, "Cada cuántos minutos"), el("input", { id: "r-min", type: "number", min: 5, value: String(h.minutos ?? 60) })] : null,
+        t === "semanal" ? [el("label", { for: "r-dia" }, "Día"), el("select", { id: "r-dia" }, DIAS.map((d, i) => el("option", { value: String(i), selected: (h.dia ?? 1) === i }, d)))] : null,
+        t !== "intervalo" ? [el("label", { for: "r-hora" }, `Hora (${S.config.zona})`), el("input", { id: "r-hora", type: "time", value: h.hora ?? "09:00", required: true })] : null);
+    };
+    tipo.addEventListener("change", pintarCampos);
+    pintarCampos();
+    const form = el("form", { class: "tarjeta" },
+      el("h3", {}, r ? `Editar «${r.nombre}»` : "Nueva rutina"),
+      el("label", { for: "r-nombre" }, "Nombre"), el("input", { id: "r-nombre", required: true, maxlength: 80, value: r?.nombre ?? "", placeholder: "Ej: Resumen de noticias" }),
+      el("label", { for: "r-instr" }, "Qué tiene que hacer"), el("textarea", { id: "r-instr", rows: 4, required: true, maxlength: 8000, placeholder: "Ej: Buscá las noticias del día sobre importaciones en Argentina y dejá un resumen en noticias/AAAA-MM-DD.md" }),
+      el("label", { for: "r-hab" }, "Seguir una habilidad (opcional)"),
+      el("select", { id: "r-hab" }, el("option", { value: "" }, "Ninguna"), S.habilidades.map((x) => el("option", { value: x.id, selected: r?.habilidadId === x.id }, x.nombre))),
+      el("label", { for: "r-tipo" }, "Cuándo"), tipo, campos,
+      el("label", {}, el("input", { id: "r-activa", type: "checkbox", checked: r ? r.activa : true }), " Activa"),
+      el("div", { class: "botones" },
+        el("button", { type: "submit" }, r ? "Guardar" : "Crear rutina"),
+        el("button", { type: "button", class: "secundario", onclick: () => { S.editandoRutina = null; cargarRutinas(); } }, "Cancelar")));
+    form.querySelector("#r-instr").value = r?.instrucciones ?? "";
+    form.addEventListener("submit", intentar(async (e) => {
+      e.preventDefault();
+      const t = tipo.value;
+      const datos = {
+        nombre: $("#r-nombre").value,
+        instrucciones: $("#r-instr").value,
+        habilidadId: $("#r-hab").value || null,
+        activa: $("#r-activa").checked,
+        horario: { tipo: t, minutos: t === "intervalo" ? Number($("#r-min").value) : null, hora: t !== "intervalo" ? $("#r-hora").value : null, dia: t === "semanal" ? Number($("#r-dia").value) : null },
+      };
+      if (r) await api("PUT", `/api/rutinas/${r.id}`, datos);
+      else await api("POST", `/api/bots/${b.id}/rutinas`, datos);
+      S.editandoRutina = null;
+      await cargarRutinas();
+    }));
+    return form;
+  }
+
+  function renderRutinas(rutinas) {
+    const c = $("#contenido");
+    const b = bot(S.botId);
+    if (!c || !b) return;
+    const editando = S.editandoRutina === "nueva" ? formularioRutina(b) : null;
+    const tarjetas = rutinas.map((r) => {
+      if (S.editandoRutina === r.id) return formularioRutina(b, r);
+      const ultima = r.ejecuciones[0];
+      return el("div", { class: "tarjeta" },
+        el("div", { class: "fila" },
+          el("div", {}, el("h3", {}, r.nombre), el("div", { class: "meta" },
+            `${r.descripcionHorario} · ${r.activa ? `próxima: ${cuando(r.proxima)}` : "pausada"}`)),
+          el("div", { class: "botones", style: "margin:0" },
+            el("button", { class: "chico", disabled: ultima?.estado === "en_curso", onclick: intentar(async () => { await api("POST", `/api/rutinas/${r.id}/ejecutar`); toast("Rutina en marcha: mirala en el chat."); }) }, "Ejecutar ahora"),
+            el("button", { class: "secundario chico", onclick: intentar(async () => { await api("PUT", `/api/rutinas/${r.id}`, { ...r, activa: !r.activa }); await cargarRutinas(); }) }, r.activa ? "Pausar" : "Activar"),
+            el("button", { class: "secundario chico", onclick: () => { S.editandoRutina = r.id; renderRutinas(rutinas); } }, "Editar"),
+            el("button", { class: "peligro chico", onclick: intentar(async () => { if (!confirm(`¿Borrar la rutina «${r.nombre}»?`)) return; await api("DELETE", `/api/rutinas/${r.id}`); await cargarRutinas(); }) }, "Borrar"))),
+        el("p", { class: "meta", style: "white-space:pre-wrap" }, r.instrucciones),
+        r.ejecuciones.length
+          ? el("details", {}, el("summary", { class: "meta" }, `Últimas ejecuciones (${r.ejecuciones.length})`),
+              el("ul", { class: "historial" }, r.ejecuciones.map((e) => el("li", {},
+                el("span", { class: e.estado === "ok" ? "ok" : e.estado === "error" ? "mal" : "curso" }, e.estado === "ok" ? "✓ " : e.estado === "error" ? "✗ " : "… "),
+                `${cuando(e.inicio)}${e.resumen ? ` — ${e.resumen}` : ""}`))))
+          : el("div", { class: "meta" }, "Todavía no se ejecutó."));
+    });
+    c.replaceChildren(el("div", { class: "ancho" },
+      el("div", { class: "fila", style: "margin-bottom:12px" },
+        el("div", { class: "meta" }, `Trabajo que ${b.nombre} hace solo. También podés pedírselo en el chat: «todos los lunes a las 9…».`),
+        S.editandoRutina ? null : el("button", { class: "chico", onclick: () => { S.editandoRutina = "nueva"; renderRutinas(rutinas); } }, "Nueva rutina")),
+      editando,
+      tarjetas.length ? tarjetas : (editando ? null : el("div", { class: "vacio" }, "No tiene rutinas."))));
+  }
+
+  // ---- Memoria ----
+
+  async function cargarMemoria() {
+    const id = S.botId;
+    const archivos = await api("GET", `/api/bots/${id}/memoria`);
+    if (id === S.botId && S.pestana === "memoria") renderMemoria(archivos);
+  }
+
+  function renderMemoria(archivos) {
+    const c = $("#contenido");
+    const b = bot(S.botId);
+    if (!c || !b) return;
+    const editor = (ruta, contenido, nuevo) => {
+      const ta = el("textarea", { rows: Math.min(16, Math.max(4, contenido.split("\n").length + 1)) });
+      ta.value = contenido;
+      const rutaInput = nuevo ? el("input", { placeholder: "notas/preferencias.md", maxlength: 300 }) : null;
+      return el("div", { class: "tarjeta" },
+        nuevo ? [el("h3", {}, "Nuevo recuerdo"), el("label", {}, "Archivo"), rutaInput, el("label", {}, "Contenido")] : el("h3", {}, `/memories/${ruta}`),
+        ta,
+        el("div", { class: "botones" },
+          el("button", { class: "chico", onclick: intentar(async () => {
+            await api("PUT", `/api/bots/${b.id}/memoria`, { ruta: nuevo ? rutaInput.value : ruta, contenido: ta.value });
+            toast("Memoria guardada.");
+            await cargarMemoria();
+          }) }, "Guardar"),
+          nuevo ? null : el("button", { class: "peligro chico", onclick: intentar(async () => {
+            if (!confirm(`¿Borrar /memories/${ruta}?`)) return;
+            await api("DELETE", `/api/bots/${b.id}/memoria?ruta=${encodeURIComponent(ruta)}`);
+            await cargarMemoria();
+          }) }, "Borrar")));
+    };
+    c.replaceChildren(el("div", { class: "ancho" },
+      el("p", { class: "meta" }, `Lo que ${b.nombre} recuerda entre conversaciones. Lo escribe solo, pero podés corregirlo o agregar cosas.`),
+      archivos.length ? archivos.map((a) => editor(a.ruta, a.contenido, false)) : el("div", { class: "vacio" }, "Todavía no guardó nada."),
+      editor("", "", true)));
+  }
+
+  // ---- Perfil ----
+
+  function renderPerfil(b) {
+    const c = $("#contenido");
+    const form = el("form", { class: "tarjeta" },
+      el("label", { for: "p-nombre" }, "Nombre"), el("input", { id: "p-nombre", value: b.nombre, maxlength: 40, required: true }),
+      el("label", { for: "p-titulo" }, "Puesto"), el("input", { id: "p-titulo", value: b.titulo, maxlength: 80, required: true }),
+      el("label", { for: "p-desc" }, "Trabajo"), el("textarea", { id: "p-desc", rows: 8, maxlength: 4000, required: true }),
+      el("div", { class: "botones" }, el("button", { type: "submit" }, "Guardar")));
+    form.querySelector("#p-desc").value = b.descripcion;
+    form.addEventListener("submit", intentar(async (e) => {
+      e.preventDefault();
+      await api("PUT", `/api/bots/${b.id}`, { nombre: $("#p-nombre").value, titulo: $("#p-titulo").value, descripcion: $("#p-desc").value });
+      toast("Perfil guardado.");
+      await cargarEstado();
+    }));
+    c.replaceChildren(el("div", { class: "ancho" },
+      form,
+      el("div", { class: "tarjeta" },
+        el("h3", {}, "Borrar compañero"),
+        el("p", { class: "meta" }, "Se borran su conversación, su memoria y sus rutinas. Los archivos de la computadora quedan."),
+        el("div", { class: "botones" }, el("button", { class: "peligro", onclick: intentar(async () => {
+          if (!confirm(`¿Borrar a ${b.nombre}? No se puede deshacer.`)) return;
+          await api("DELETE", `/api/bots/${b.id}`);
+          await cargarEstado();
+        }) }, `Borrar a ${b.nombre}`))),
+      el("p", { class: "meta" }, `Creado el ${cuando(b.creado)}.`)));
+  }
+
+  // ---- Ajustes: habilidades y reglas ----
+
+  function formularioHabilidad(h) {
+    const form = el("form", { class: "tarjeta" },
+      el("h3", {}, h ? `Editar «${h.nombre}»` : "Nueva habilidad"),
+      el("label", { for: "h-nombre" }, "Nombre"), el("input", { id: "h-nombre", required: true, maxlength: 80, value: h?.nombre ?? "" }),
+      el("label", { for: "h-desc" }, "Para qué sirve (una línea)"), el("input", { id: "h-desc", maxlength: 300, value: h?.descripcion ?? "" }),
+      el("label", { for: "h-instr" }, "Instrucciones"), el("textarea", { id: "h-instr", rows: 10, required: true, maxlength: 20000, placeholder: "1. …\n2. …" }),
+      el("div", { class: "botones" },
+        el("button", { type: "submit" }, "Guardar"),
+        el("button", { type: "button", class: "secundario", onclick: () => { S.editandoHabilidad = null; renderPrincipal(); } }, "Cancelar")));
+    form.querySelector("#h-instr").value = h?.instrucciones ?? "";
+    form.addEventListener("submit", intentar(async (e) => {
+      e.preventDefault();
+      const datos = { nombre: $("#h-nombre").value, descripcion: $("#h-desc").value, instrucciones: $("#h-instr").value };
+      if (h) await api("PUT", `/api/habilidades/${h.id}`, datos);
+      else await api("POST", "/api/habilidades", datos);
+      S.editandoHabilidad = null;
+      await cargarEstado();
+    }));
+    return form;
+  }
+
+  function vistaAjustes() {
+    const describirRegla = (r) =>
+      r.herramienta === "bash" ? `Comandos «${r.patron}» sin operadores de shell` : r.herramienta === "editor" ? "Escribir y editar archivos de la computadora" : "Crear, modificar y borrar rutinas";
+    return [
+      el("header", { class: "cabecera" }, botonVolver(), el("div", { class: "titulos" }, el("h2", {}, "Habilidades y ajustes"))),
+      el("div", { class: "contenido" }, el("div", { class: "ancho" },
+        el("div", { class: "fila" }, el("div", { class: "seccion", style: "margin:0" }, "Habilidades"),
+          S.editandoHabilidad ? null : el("button", { class: "chico", onclick: () => { S.editandoHabilidad = "nueva"; renderPrincipal(); } }, "Nueva habilidad")),
+        el("p", { class: "meta" }, "Procedimientos guardados que cualquier compañero puede seguir, y que las rutinas pueden usar."),
+        S.editandoHabilidad === "nueva" ? formularioHabilidad() : null,
+        S.habilidades.length ? S.habilidades.map((h) => S.editandoHabilidad === h.id ? formularioHabilidad(h) : el("div", { class: "tarjeta" },
+          el("div", { class: "fila" }, el("div", {}, el("h3", {}, h.nombre), el("div", { class: "meta" }, h.descripcion)),
+            el("div", { class: "botones", style: "margin:0" },
+              el("button", { class: "secundario chico", onclick: () => { S.editandoHabilidad = h.id; renderPrincipal(); } }, "Editar"),
+              el("button", { class: "peligro chico", onclick: intentar(async () => { if (!confirm(`¿Borrar la habilidad «${h.nombre}»?`)) return; await api("DELETE", `/api/habilidades/${h.id}`); await cargarEstado(); }) }, "Borrar"))),
+          el("details", {}, el("summary", { class: "meta" }, "Ver instrucciones"), el("pre", {}, h.instrucciones))))
+          : (S.editandoHabilidad ? null : el("p", { class: "meta" }, "No hay habilidades todavía. Los compañeros también pueden guardarlas cuando les enseñás algo.")),
+
+        el("div", { class: "seccion" }, "Permitido siempre"),
+        el("p", { class: "meta" }, "Acciones que los compañeros hacen sin pedirte aprobación. Se agregan con «Siempre permitir»."),
+        S.reglas.length ? el("div", { class: "tarjeta" }, S.reglas.map((r) => el("div", { class: "fila", style: "padding:6px 0" },
+          el("span", {}, describirRegla(r)),
+          el("button", { class: "secundario chico", onclick: intentar(async () => { await api("DELETE", `/api/reglas/${r.id}`); await cargarEstado(); }) }, "Quitar"))))
+          : el("p", { class: "meta" }, "Ninguna: todo lo que modifica la computadora pide aprobación."),
+
+        el("div", { class: "seccion" }, "Configuración"),
+        el("div", { class: "tarjeta meta" },
+          el("div", {}, `Modelo: ${S.config.modelo} (esfuerzo ${S.config.esfuerzo})`),
+          el("div", {}, `Computadora: ${S.config.computadora}`),
+          el("div", {}, `Zona horaria de las rutinas: ${S.config.zona}`),
+          el("div", { style: "margin-top:8px" }, "Se cambian con variables de entorno: ver bots/README.md.")))),
+    ];
+  }
+
+  // ---- Eventos en vivo ----
+
+  function conectar() {
+    const es = new EventSource("/api/eventos");
+    const datos = (e) => JSON.parse(e.data);
+    es.addEventListener("open", () => intentar(cargarEstado)());
+    es.addEventListener("estado", (e) => {
+      const d = datos(e);
+      const b = bot(d.botId);
+      if (!b) return;
+      const antes = b.estado;
+      Object.assign(b, { estado: d.estado, accion: d.accion, enCola: d.enCola });
+      renderLista();
+      if (d.botId === S.botId) { renderCabecera(); renderEnVivo(); }
+      if (antes !== "libre" && d.estado === "libre") notificar(b.nombre, "Terminó lo que estaba haciendo.");
+    });
+    es.addEventListener("delta", (e) => {
+      const d = datos(e);
+      if (d.botId !== S.botId) return;
+      S.streaming += d.texto;
+      if (S.pestana === "chat") renderEnVivo();
+    });
+    es.addEventListener("cambio", (e) => {
+      const d = datos(e);
+      if (d.botId !== S.botId) return;
+      S.corteStream = S.streaming.length;
+      if (S.pestana === "chat") intentar(cargarConversacion)();
+      else S.streaming = "";
+    });
+    es.addEventListener("aprobacion", (e) => {
+      const a = datos(e);
+      S.aprobaciones.push(a);
+      renderLista();
+      if (a.botId === S.botId) renderEnVivo();
+      notificar(bot(a.botId)?.nombre ?? "Compas", `Necesita tu aprobación: ${a.titulo}`);
+    });
+    es.addEventListener("aprobacion-resuelta", (e) => {
+      const d = datos(e);
+      S.aprobaciones = S.aprobaciones.filter((a) => a.id !== d.id);
+      renderLista();
+      if (d.botId === S.botId) renderEnVivo();
+    });
+    es.addEventListener("bots", () => intentar(cargarEstado)());
+    es.addEventListener("habilidades", () => intentar(cargarEstado)());
+    es.addEventListener("reglas", () => intentar(cargarEstado)());
+    es.addEventListener("rutinas", (e) => { if (datos(e).botId === S.botId && S.pestana === "rutinas" && !S.editandoRutina) intentar(cargarRutinas)(); });
+    es.addEventListener("memoria", (e) => { if (datos(e).botId === S.botId && S.pestana === "memoria") intentar(cargarMemoria)(); });
+    es.addEventListener("computadora", () => { if (S.vista === "bot" && S.pestana === "computadora") intentar(cargarComputadora)(); });
+  }
+
+  $("#nuevo").addEventListener("click", () => abrirBienvenida());
+  $("#abrir-ajustes").addEventListener("click", abrirAjustes);
+  document.addEventListener("visibilitychange", marcarLeido);
+  intentar(cargarEstado)();
+  conectar();
+</script>
+</body>
+</html>

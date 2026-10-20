@@ -1,0 +1,47 @@
+feature,area,priority,original,clone,notes
+Crear bot con nombre título y descripción del trabajo,bots,must,yes,yes,
+Compañeros sugeridos (plantillas),bots,must,yes,yes,
+Lista de bots con avatar y estado,bots,must,yes,yes,trabajando / esperando aprobación / libre
+Indicador de no leído,bots,should,yes,yes,
+Editar y borrar bot,bots,must,yes,yes,borrar también elimina sus rutinas
+Fijar y agrupar bots en la lista,bots,could,yes,no,
+Límite de 50 bots,bots,could,yes,yes,
+Chat 1:1 persistente con streaming,chat,must,yes,yes,
+Progreso visible (acción actual),chat,must,yes,yes,notas de progreso entre herramientas
+Detener al bot mientras trabaja,chat,should,yes,yes,
+Mensajes en cola mientras trabaja,chat,should,yes,yes,
+Hilos (respuestas en hilo),chat,could,yes,no,
+Adjuntar archivos e imágenes,chat,should,yes,no,
+Resumir contexto largo automáticamente,chat,should,yes,yes,compactación del lado del servidor
+Búsqueda y lectura web,herramientas,must,yes,yes,
+Terminal en la computadora,computadora,must,yes,yes,carpeta local; cada comando en una shell nueva
+Archivos en la computadora (crear/editar/ver),computadora,must,yes,yes,
+Computadora compartida entre bots,computadora,must,yes,yes,
+Panel de la computadora (archivos + registro de comandos),computadora,must,yes,yes,
+Escritorio gráfico con navegador en vivo,computadora,should,yes,no,necesita VM o contenedor con VNC
+Tomar el control / I'm done,computadora,should,yes,no,depende del escritorio gráfico
+Dormir / despertar la computadora,computadora,could,yes,skip,no aplica a una carpeta local
+Aprobación: permitir una vez / siempre / negar,seguridad,must,yes,yes,
+Reglas "siempre permitir" administrables,seguridad,must,yes,yes,
+Auto-review con un modelo revisor,seguridad,should,yes,no,
+Reglas "requerir aprobación",seguridad,could,yes,no,
+No pedir contraseñas en el chat,seguridad,must,yes,yes,instrucción del sistema
+Memoria por bot,memoria,must,yes,yes,herramienta de memoria
+Ver y editar la memoria desde la app,memoria,should,no,yes,queja frecuente en el foro del original
+Memoria compartida del usuario,memoria,could,yes,no,
+Habilidades (instrucciones guardadas),automatización,must,yes,yes,
+Guardar habilidad desde el chat,automatización,should,yes,yes,
+Rutinas por horario,automatización,must,yes,yes,cada N minutos / diaria / semanal
+Crear rutinas desde el chat,automatización,should,yes,yes,requiere aprobación
+Rutinas por evento (Slack / GitHub),automatización,could,yes,no,
+Ejecutar rutina ahora (prueba),automatización,must,yes,yes,
+Historial de 20 ejecuciones,automatización,should,yes,yes,
+Límite de 50 rutinas por bot,automatización,could,yes,yes,
+Plugins OAuth (Gmail / Slack / Notion),integraciones,should,yes,no,se puede hacer con conectores MCP
+Email propio del bot,integraciones,could,yes,no,
+Chat grupal de 2 a 6 bots,chat,should,yes,no,
+Voz y llamadas,chat,could,yes,no,
+App de escritorio,plataforma,could,yes,no,el clon es web
+App iOS / Android,plataforma,could,yes,no,la web es responsive
+Login con cuenta y planes pagos,plataforma,skip,yes,skip,uso personal
+Modelo Grok,plataforma,skip,yes,skip,el clon usa Claude
