@@ -4,7 +4,11 @@ Compañeros de IA persistentes, al estilo de Grok Bot. Cada compañero tiene un 
 
 El relevamiento del producto original está en [`../replica/recon.md`](../replica/recon.md) y la matriz de funcionalidades en [`../replica/features.csv`](../replica/features.csv).
 
-## Uso
+## En el celular (todo en uno)
+
+La app de Android trae Gravity entero adentro: no hace falta compu ni servidor. Bajá **gravity.apk** de la release [apk-latest](https://github.com/ramiroarrojo2077-beep/Hl/releases/tag/apk-latest), pegá tu clave de Anthropic y listo; sigue trabajando en segundo plano y guarda las conversaciones en el celular. Guía completa: [`MOVIL.md`](MOVIL.md).
+
+## Uso en la compu
 
 Requiere Node.js 22.18 o superior, Linux o macOS (en Windows, usá WSL) y una API key de Anthropic.
 
