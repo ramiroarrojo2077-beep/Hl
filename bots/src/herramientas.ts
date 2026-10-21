@@ -1,4 +1,6 @@
 import path from "node:path";
+import { existsSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { betaAgentToolset20260401 } from "@anthropic-ai/sdk/tools/agent-toolset/node";
@@ -163,6 +165,59 @@ function herramientaHabilidades(): BetaRunnableTool {
   return Object.assign(herramienta, { input_schema: esquemaJson(EntradaHabilidades) });
 }
 
+// ---- Terminal sin bash (Android) ----
+// La terminal del SDK usa /bin/bash. Donde no existe (un celular Android) se usa la shell del sistema,
+// con la misma definición de herramienta: cada comando corre aparte y se recuerda la carpeta actual.
+
+const SHELL_ALTERNATIVA = process.env.GRAVITY_SHELL || (existsSync("/bin/bash") ? null : (["/system/bin/sh", "/bin/sh"].find((s) => existsSync(s)) ?? "sh"));
+const MARCA_CARPETA = "__GRAVITY_CARPETA__";
+const LIMITE_SALIDA = 30_000;
+
+function entornoSinClaves(): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ANTHROPIC_") && k !== "GRAVITY_TOKEN"));
+}
+
+function terminalAlternativa(original: BetaRunnableTool): BetaRunnableTool {
+  let carpeta = COMPUTADORA;
+  const comillas = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
+  return {
+    ...original,
+    run: (args: { command?: string; restart?: boolean; timeout_ms?: number }, contexto) =>
+      new Promise((resolve, reject) => {
+        if (args.restart) carpeta = COMPUTADORA;
+        if (!args.command) {
+          if (args.restart) return resolve("terminal reiniciada");
+          return reject(new Error("bash: command is required"));
+        }
+        const guion = `cd ${comillas(carpeta)} 2>/dev/null || cd ${comillas(COMPUTADORA)}\n${args.command}\n__r=$?\necho\necho "${MARCA_CARPETA}$(pwd)"\nexit $__r`;
+        const proceso = spawn(SHELL_ALTERNATIVA!, ["-c", guion], { env: entornoSinClaves(), cwd: COMPUTADORA });
+        let salida = "";
+        const sumar = (d: Buffer) => {
+          if (salida.length < LIMITE_SALIDA * 2) salida += d.toString();
+        };
+        proceso.stdout.on("data", sumar);
+        proceso.stderr.on("data", sumar);
+        const limite = Math.min(args.timeout_ms ?? 120_000, 10 * 60_000);
+        const reloj = setTimeout(() => proceso.kill("SIGKILL"), limite);
+        contexto?.signal?.addEventListener("abort", () => proceso.kill("SIGKILL"), { once: true });
+        proceso.on("error", (err) => {
+          clearTimeout(reloj);
+          reject(err);
+        });
+        proceso.on("close", (codigo) => {
+          clearTimeout(reloj);
+          const i = salida.lastIndexOf(MARCA_CARPETA);
+          if (i >= 0) {
+            carpeta = salida.slice(i + MARCA_CARPETA.length).trim() || carpeta;
+            salida = salida.slice(0, i).replace(/\n$/, "");
+          }
+          if (salida.length > LIMITE_SALIDA) salida = `${salida.slice(0, LIMITE_SALIDA / 2)}\n… (salida recortada) …\n${salida.slice(-LIMITE_SALIDA / 2)}`;
+          resolve(codigo ? `${salida}\n(código de salida ${codigo})` : salida || "(sin salida)");
+        });
+      }),
+  };
+}
+
 // ---- Herramientas por bot ----
 // Cada bot tiene su propia terminal y su memoria; la carpeta de la computadora es la misma para todos.
 
@@ -173,7 +228,7 @@ export async function herramientasDe(botId: string): Promise<Map<string, BetaRun
   if (!mapa) {
     const memoria = betaMemoryTool(await BetaLocalFilesystemMemoryTool.init(carpetaMemoria(botId)));
     const lista = [
-      ...betaAgentToolset20260401({ workdir: COMPUTADORA }),
+      ...betaAgentToolset20260401({ workdir: COMPUTADORA }).map((t) => (t.name === "bash" && SHELL_ALTERNATIVA ? terminalAlternativa(t) : t)),
       memoria,
       herramientaRutinas(botId),
       herramientaHabilidades(),

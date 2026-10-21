@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.ts",
     "gravity": "node --env-file-if-exists=.env bots/src/servidor.ts",
-    "check": "tsc"
+    "check": "tsc",
+    "empaquetar": "node bots/empaquetar.mjs"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,7 @@
     "@types/mailparser": "^3.9.0",
     "@types/node": "^22.20.5",
     "@types/nodemailer": "^8.0.2",
+    "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
   },
   "type": "module",

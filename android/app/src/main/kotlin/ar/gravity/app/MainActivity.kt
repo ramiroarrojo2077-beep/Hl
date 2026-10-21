@@ -29,6 +29,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -155,8 +156,14 @@ class MainActivity : Activity() {
         with(web.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
+            // La página solo habla con tu compu: nada de archivos locales ni contenido mixto.
             allowFileAccess = false
             allowContentAccess = false
+            @Suppress("DEPRECATION")
+            allowFileAccessFromFileURLs = false
+            @Suppress("DEPRECATION")
+            allowUniversalAccessFromFileURLs = false
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             userAgentString = "$userAgentString GravityAndroid/1"
         }
         CookieManager.getInstance().setAcceptCookie(true)
@@ -202,7 +209,8 @@ class MainActivity : Activity() {
                 ERROR_UNSUPPORTED_SCHEME, ERROR_FILE, ERROR_FILE_NOT_FOUND -> return
             }
             errorPendiente = true
-            mostrarError(getString(R.string.error_red))
+            val ssl = error.errorCode == ERROR_FAILED_SSL_HANDSHAKE
+            mostrarError(getString(if (ssl) R.string.error_ssl else R.string.error_red))
         }
 
         override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
@@ -226,8 +234,12 @@ class MainActivity : Activity() {
         }
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            // El motor del WebView se cerró (falta de memoria, por ejemplo): se arma todo de nuevo.
+            // El motor del WebView se cerró (falta de memoria, por ejemplo). Ese WebView ya no se puede
+            // usar: se saca de la pantalla, se destruye y se arma la actividad de nuevo.
+            if (rendererCaido) return true
             rendererCaido = true
+            (view.parent as? ViewGroup)?.removeView(view)
+            view.destroy()
             recreate()
             return true
         }
@@ -354,7 +366,11 @@ class MainActivity : Activity() {
     }
 
     private fun reintentar() {
+        if (rendererCaido) return
         val guardada = direccion ?: return mostrarPanelDireccion()
+        // Un error viejo (por ejemplo de certificado, que no siempre trae onPageFinished) no tiene
+        // que dejar la pantalla de error puesta si este intento sale bien.
+        errorPendiente = false
         val actual = web.url
         if (actual.isNullOrEmpty() || actual.startsWith("about:") || actual.startsWith("data:")) {
             web.loadUrl(guardada)
@@ -513,7 +529,7 @@ class MainActivity : Activity() {
     // ---------------------------------------------------------------- Atrás
 
     private fun debeInterceptarAtras(): Boolean =
-        (panelDireccion.visibility == View.VISIBLE && direccion != null) || web.canGoBack()
+        (panelDireccion.visibility == View.VISIBLE && direccion != null) || (!rendererCaido && web.canGoBack())
 
     private fun actualizarAtras() {
         if (Build.VERSION.SDK_INT >= 33) {
@@ -524,7 +540,7 @@ class MainActivity : Activity() {
     private fun volver() {
         when {
             panelDireccion.visibility == View.VISIBLE && direccion != null -> cerrarPanelDireccion()
-            web.canGoBack() -> {
+            !rendererCaido && web.canGoBack() -> {
                 ocultarError()
                 web.goBack()
             }
@@ -547,13 +563,14 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        if (rendererCaido) return
         web.onResume()
         // Si volvés a la app con la pantalla de error, se prueba de nuevo (quizás ya prendiste la compu).
         if (panelError.visibility == View.VISIBLE && panelDireccion.visibility != View.VISIBLE) reintentar()
     }
 
     override fun onPause() {
-        web.onPause()
+        if (!rendererCaido) web.onPause()
         // Guarda las cookies (la sesión) en disco: si Android cierra la app, seguís logueado.
         CookieManager.getInstance().flush()
         super.onPause()
@@ -567,8 +584,10 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         callbackArchivos?.onReceiveValue(null)
         callbackArchivos = null
-        (web.parent as? ViewGroup)?.removeView(web)
-        web.destroy()
+        if (!rendererCaido) {
+            (web.parent as? ViewGroup)?.removeView(web)
+            web.destroy()
+        }
         super.onDestroy()
     }
 

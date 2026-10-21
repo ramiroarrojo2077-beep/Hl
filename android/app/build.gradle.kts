@@ -15,7 +15,11 @@ android {
     defaultConfig {
         applicationId = "ar.gravity.app"
         minSdk = 26
-        targetSdk = 37
+        // 36 a propósito, NO 37: con targetSdk 37, Android 17 bloquea la red local (192.168.x.x) hasta que
+        // el usuario acepte el permiso de ejecución ACCESS_LOCAL_NETWORK ("dispositivos cercanos"), y el
+        // WebView hereda ese bloqueo: la conexión por Wi-Fi quedaría colgada hasta dar timeout.
+        // Para subir a 37 hay que declarar y pedir ese permiso antes de cargar una dirección local.
+        targetSdk = 36
         versionCode = numeroDeCompilacion
         versionName = "1.0.$numeroDeCompilacion"
     }

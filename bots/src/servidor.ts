@@ -173,7 +173,13 @@ function esLocal(req: http.IncomingMessage): boolean {
 function verificarOrigen(req: http.IncomingMessage): void {
   if (req.method === "GET") return;
   const origen = req.headers.origin;
-  if (origen && URL.parse(origen)?.host !== req.headers.host) throw new ErrorHttp(403, "Origen no permitido.");
+  let hostOrigen: string | null = null;
+  try {
+    hostOrigen = origen ? new URL(origen).host : null;
+  } catch {
+    // Origen ilegible: se rechaza abajo.
+  }
+  if (origen && hostOrigen !== req.headers.host) throw new ErrorHttp(403, "Origen no permitido.");
   if (!String(req.headers["content-type"] ?? "").startsWith("application/json")) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
@@ -224,6 +230,18 @@ function sesionValida(req: http.IncomingMessage): boolean {
 }
 
 const intentosFallidos: number[] = [];
+
+// Dentro de la app de Android, cualquier otra app del celular podría conectarse a este puerto local:
+// la app arranca el motor con un token secreto y la WebView lo manda en una cookie.
+const TOKEN_APP = process.env.GRAVITY_TOKEN ?? "";
+
+function tokenAppValido(req: http.IncomingMessage): boolean {
+  if (!TOKEN_APP) return true;
+  const recibido = leerCookie(req, "gravity_app") ?? String(req.headers["x-gravity-token"] ?? "");
+  const a = Buffer.from(hashToken(recibido));
+  const b = Buffer.from(hashToken(TOKEN_APP));
+  return timingSafeEqual(a, b);
+}
 
 // ---- Vistas ----
 
@@ -768,6 +786,7 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
   verificarOrigen(req);
 
   if (req.method === "GET" && (await servirPublico(res, url.pathname))) return;
+  if (!tokenAppValido(req)) throw new ErrorHttp(401, "Acceso no autorizado.");
 
   // Fuera de esta computadora hace falta clave y sesión.
   if (!local) {
