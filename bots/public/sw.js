@@ -55,7 +55,7 @@ const PAGINA_SIN_CONEXION = `<!doctype html>
   const recargar = () => location.reload();
   document.getElementById("reintentar").addEventListener("click", recargar);
   addEventListener("online", recargar);
-  // Cada 10 s pregunta si la compu ya responde (no pasa por el service worker).
+  // Cada 10 s pregunta si la compu ya responde (el service worker deja pasar este pedido a la red).
   setInterval(async () => {
     if (!navigator.onLine) return;
     try {
