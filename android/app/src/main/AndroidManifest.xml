@@ -2,6 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- El motor corre como servicio en primer plano para seguir trabajando con la app cerrada. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Mantiene la CPU despierta solo mientras hay trabajo en marcha. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Volver a prender el motor al reiniciar el celular y despertarlo para las rutinas. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:allowBackup="false"
@@ -23,11 +33,29 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Node.js en su propio proceso: si el motor se cae, la pantalla sigue viva y lo vuelve a prender. -->
+        <service
+            android:name=".Motor"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:process=":motor">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Motor local de asistentes de IA que trabajan en segundo plano y corren rutinas programadas por el usuario" />
+        </service>
+
+        <!-- Exportado solo para recibir los avisos del sistema (arranque y actualización, que otras apps no pueden mandar). -->
+        <receiver
+            android:name=".Despertador"
+            android:exported="true"
+            android:process=":motor">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

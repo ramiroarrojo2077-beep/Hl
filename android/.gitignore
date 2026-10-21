@@ -13,3 +13,8 @@ captures/
 gradlew
 gradlew.bat
 gradle/wrapper/gradle-wrapper.jar
+# Firma pública de la APK debug: va al repo a propósito (ver app/build.gradle.kts)
+!firma/gravity-debug.jks
+# Lo bajan o generan preparar.sh: Node.js para Android y el motor empaquetado
+app/libnode/
+app/src/main/assets/motor/

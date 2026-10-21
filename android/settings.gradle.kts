@@ -1,4 +1,4 @@
-// Gravity para Android: un WebView nativo que abre el Gravity que corre en tu compu.
+// Gravity para Android, todo en uno: el motor (Node.js) corre dentro del celular.
 pluginManagement {
     repositories {
         google()

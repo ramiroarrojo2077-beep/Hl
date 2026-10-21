@@ -11,20 +11,52 @@ val rutaKeystore = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
 android {
     namespace = "ar.gravity.app"
     compileSdk = 37
+    // La misma NDK con la que se compiló libnode.so (nodejs-mobile 24.x usa r27d): así coincide libc++_shared.so.
+    ndkVersion = "27.3.13750724"
 
     defaultConfig {
         applicationId = "ar.gravity.app"
         minSdk = 26
-        // 36 a propósito, NO 37: con targetSdk 37, Android 17 bloquea la red local (192.168.x.x) hasta que
-        // el usuario acepte el permiso de ejecución ACCESS_LOCAL_NETWORK ("dispositivos cercanos"), y el
-        // WebView hereda ese bloqueo: la conexión por Wi-Fi quedaría colgada hasta dar timeout.
-        // Para subir a 37 hay que declarar y pedir ese permiso antes de cargar una dirección local.
+        // 36 a propósito, NO 37: con targetSdk 37, Android 17 pide el permiso de red local
+        // (ACCESS_LOCAL_NETWORK) y cambia reglas de servicios en primer plano; el motor no lo necesita.
         targetSdk = 36
         versionCode = numeroDeCompilacion
-        versionName = "1.0.$numeroDeCompilacion"
+        versionName = "2.0.$numeroDeCompilacion"
+
+        // Node.js para Android solo se baja para arm64 (casi todos los celulares desde 2017).
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // libnode.so pesa 87 MB sin comprimir: comprimida, la APK baja a ~30 MB.
+            useLegacyPackaging = true
+        }
     }
 
     signingConfigs {
+        // Firma fija para la APK debug (android/firma/): así cada APK nueva se instala encima de la
+        // anterior y no se pierden las conversaciones. Es pública: para una firma propia, cargá los
+        // secretos ANDROID_KEYSTORE_* en el repo y la CI arma la release.
+        getByName("debug") {
+            storeFile = file("../firma/gravity-debug.jks")
+            storePassword = "gravity"
+            keyAlias = "gravity"
+            keyPassword = "gravity"
+        }
         if (rutaKeystore != null) {
             create("gravity") {
                 storeFile = file(rutaKeystore)

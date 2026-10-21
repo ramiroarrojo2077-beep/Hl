@@ -423,6 +423,28 @@ ruta("GET", "/api/estado", async ({ local }) => {
   };
 });
 
+// Para la app de Android: si hay trabajo en marcha mantiene el celular despierto; si no, programa
+// una alarma para la próxima rutina. Liviano a propósito: se consulta cada 30 segundos.
+ruta("GET", "/api/motor", async () => {
+  const { pausa } = ajustes();
+  const estados = listarBots().map((b) => estadoDe(b.id));
+  const trabajando = estados.filter((e) => e.estado === "trabajando").length;
+  const enCola = estados.reduce((n, e) => n + e.enCola, 0);
+  const reunionesActivas = listarReuniones().filter((r) => r.estado === "en_curso" || r.estado === "cierre").length;
+  const tareasActivas = listarTareas().filter((t) => abierta(t) && t.estado !== "bloqueada").length;
+  const proximas = pausa
+    ? []
+    : listarRutinas()
+        .filter((r) => r.activa && buscarBot(r.botId))
+        .map((r) => proximaEjecucion(r).getTime());
+  return {
+    ocupado: trabajando > 0 || reunionesActivas > 0 || (!pausa && (enCola > 0 || tareasActivas > 0)),
+    trabajando,
+    aprobaciones: listarAprobaciones().length,
+    proximaRutina: proximas.length ? Math.min(...proximas) : null,
+  };
+});
+
 ruta("POST", "/api/bots", async ({ cuerpo }) => {
   if (listarBots().length >= MAX_BOTS) throw new ErrorHttp(400, `Podés tener hasta ${MAX_BOTS} compañeros.`);
   const d = validar(DatosBot, await cuerpo());

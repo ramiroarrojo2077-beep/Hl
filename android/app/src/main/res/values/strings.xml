@@ -2,45 +2,66 @@
 <resources>
     <string name="app_name">Gravity</string>
 
-    <!-- Pantalla de dirección (primera vez y "Cambiar dirección") -->
-    <string name="direccion_titulo">Dirección de tu Gravity</string>
-    <string name="direccion_ayuda">Es la dirección de la compu donde corre Gravity. Para que tus compañeros trabajen, la compu tiene que estar prendida.</string>
-    <string name="direccion_pista">http://192.168.0.10:3001</string>
-    <string name="direccion_campo_descripcion">Dirección de tu Gravity</string>
-    <string name="conectar">Conectar</string>
+    <!-- Clave de Anthropic (primera vez y menú) -->
+    <string name="clave_titulo">Tu clave de Anthropic</string>
+    <string name="clave_ayuda">Gravity corre entero en este celular: tus compañeros, sus conversaciones y su compu. Solo hace falta tu clave de la API de Anthropic para que puedan pensar.</string>
+    <string name="clave_pista">sk-ant-…</string>
+    <string name="clave_guardar">Guardar y arrancar</string>
+    <string name="clave_donde">¿Dónde la consigo? → console.anthropic.com</string>
+    <string name="clave_seguridad">La clave queda cifrada en este celular (Android Keystore) y solo se usa para hablar con la API de Anthropic. No se sube a ningún lado.</string>
+    <string name="clave_vacia">Pegá tu clave de Anthropic.</string>
+    <string name="clave_invalida">Esa clave no parece completa. Copiala de nuevo desde la consola de Anthropic.</string>
+    <string name="clave_no_guardada">No se pudo guardar la clave (%1$s).</string>
     <string name="cancelar">Cancelar</string>
-    <string name="ejemplos">Ejemplos</string>
-    <string name="ejemplo_wifi">http://192.168.0.10:3001</string>
-    <string name="ejemplo_wifi_nota">En la misma Wi-Fi que la compu (Gravity iniciado con BOTS_HOST=0.0.0.0). Acordate del :3001.</string>
-    <string name="ejemplo_tailscale">https://tu-compu.ts.net</string>
-    <string name="ejemplo_tailscale_nota">Desde cualquier lado, con Tailscale o un túnel con HTTPS.</string>
-    <string name="direccion_seguridad">Fuera de tu casa usá HTTPS (Tailscale o Cloudflare): con http:// la conexión no va cifrada.</string>
-    <string name="error_vacia">Escribí la dirección de tu Gravity.</string>
-    <string name="error_esquema">La dirección tiene que empezar con http:// o https://.</string>
-    <string name="error_invalida">Esa dirección no parece válida. Fijate en los ejemplos de abajo.</string>
 
-    <!-- Sin conexión -->
-    <string name="error_titulo">No llego a tu Gravity</string>
-    <string name="error_red">Revisá que la compu esté prendida, que Gravity esté abierto y que el celu esté en la misma Wi-Fi (o con Tailscale prendido).</string>
-    <string name="error_http">Tu compu respondió con un error (%1$d). Puede que Gravity esté apagado o reiniciándose.</string>
-    <string name="error_ssl">El certificado de seguridad de esa dirección no es válido, así que no me conecté.</string>
-    <string name="reintentar">Reintentar</string>
-    <string name="cambiar_direccion">Cambiar dirección</string>
+    <!-- Estado del motor -->
+    <string name="estado_arrancando">Prendiendo Gravity…</string>
+    <string name="estado_reiniciando">Reiniciando el motor…</string>
+    <string name="estado_fallo_titulo">El motor no arrancó</string>
+    <string name="estado_fallo">Probá reiniciarlo. Si sigue igual, revisá la clave. Abajo están las últimas líneas del registro.</string>
+    <string name="reintentar">Reiniciar el motor</string>
+    <string name="cambiar_clave">Cambiar la clave</string>
+    <string name="motor_no_arranca">Android no dejó prender el motor. Abrí Gravity de nuevo.</string>
 
     <!-- Botón flotante y su menú -->
     <string name="manija_descripcion">Opciones de Gravity. Arrastralo para moverlo.</string>
     <string name="menu_recargar">Recargar</string>
-    <string name="menu_cambiar_direccion">Cambiar dirección</string>
-    <string name="menu_abrir_navegador">Abrir en el navegador</string>
+    <string name="menu_reiniciar">Reiniciar el motor</string>
+    <string name="menu_clave">Clave de Anthropic</string>
+    <string name="menu_bateria">Trabajar con la pantalla apagada</string>
+    <string name="menu_apagar">Apagar Gravity</string>
+    <string name="apagar_titulo">¿Apagar Gravity?</string>
+    <string name="apagar_explicacion">Tus compañeros dejan de trabajar y las rutinas no corren hasta que abras la app de nuevo. Las conversaciones quedan guardadas.</string>
+
+    <!-- Batería -->
+    <string name="bateria_titulo">Que sigan trabajando con la pantalla apagada</string>
+    <string name="bateria_explicacion">Para que tus compañeros terminen lo que están haciendo y las rutinas corran a horario, Android tiene que dejar a Gravity sin restricciones de batería. Solo mantiene el celular despierto mientras hay trabajo.</string>
+    <string name="bateria_permitir">Permitir</string>
+    <string name="ahora_no">Ahora no</string>
+    <string name="bateria_sin_ajuste">Buscalo en Ajustes > Apps > Gravity > Batería > Sin restricciones.</string>
+
+    <!-- Notificaciones del motor -->
+    <string name="canal_motor">Motor de Gravity</string>
+    <string name="canal_motor_descripcion">Aviso fijo mientras Gravity corre en segundo plano.</string>
+    <string name="canal_avisos">Avisos</string>
+    <string name="canal_avisos_descripcion">Aprobaciones pendientes y problemas del motor.</string>
+    <string name="motor_titulo">Gravity está prendido</string>
+    <string name="motor_arrancando">Arrancando…</string>
+    <string name="motor_trabajando_uno">Trabajando: 1 compañero</string>
+    <string name="motor_trabajando">Trabajando: %1$d compañeros</string>
+    <string name="motor_ocupado">Con tareas en marcha</string>
+    <string name="motor_proxima">En espera · próxima rutina a las %1$s</string>
+    <string name="motor_en_espera">En espera</string>
+    <string name="motor_apagar">Apagar</string>
+    <string name="motor_sin_clave">Falta tu clave de Anthropic. Abrí Gravity para cargarla.</string>
+    <string name="motor_fallo_repetido">El motor se cerró varias veces seguidas. Abrí Gravity para ver qué pasó.</string>
+    <string name="aprobacion_una">Un compañero espera tu aprobación.</string>
+    <string name="aprobaciones">%1$d aprobaciones esperan tu respuesta.</string>
 
     <!-- Avisos -->
     <string name="descarga_iniciada">Descargando %1$s…</string>
-    <string name="descarga_no_soportada">Esta descarga no funciona dentro de la app. Abrí Gravity en el navegador.</string>
+    <string name="descarga_no_soportada">Esta descarga no funciona dentro de la app.</string>
     <string name="descarga_fallo">No se pudo empezar la descarga.</string>
     <string name="sin_app_enlace">No hay ninguna app para abrir este enlace.</string>
     <string name="sin_app_archivos">No hay ninguna app para elegir archivos.</string>
-
-    <!-- Atajo del ícono -->
-    <string name="atajo_corto">Dirección</string>
-    <string name="atajo_largo">Cambiar dirección</string>
 </resources>

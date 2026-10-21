@@ -1,18 +1,24 @@
 package ar.gravity.app
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
-import android.net.http.SslError
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -22,7 +28,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.CookieManager
 import android.webkit.RenderProcessGoneDetail
-import android.webkit.SslErrorHandler
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -40,42 +45,45 @@ import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Locale
 import kotlin.math.abs
 
 /**
- * Gravity para Android: un WebView a pantalla completa que abre el Gravity de tu compu.
- * La primera vez pide la dirección; después se cambia desde el botón flotante,
- * desde la pantalla de error o manteniendo apretado el ícono de la app.
+ * Gravity todo en uno: el motor (Node.js con los bots) corre en este celular, en el servicio
+ * [Motor], y esta pantalla lo muestra en un WebView. La primera vez pide la clave de Anthropic.
  */
 class MainActivity : Activity() {
 
     private lateinit var raiz: FrameLayout
     private lateinit var web: WebView
     private lateinit var progreso: ProgressBar
-    private lateinit var panelError: View
-    private lateinit var errorDetalle: TextView
-    private lateinit var errorDireccion: TextView
-    private lateinit var panelDireccion: View
-    private lateinit var campoDireccion: EditText
-    private lateinit var avisoDireccion: TextView
+    private lateinit var panelEstado: View
+    private lateinit var estadoGirando: ProgressBar
+    private lateinit var estadoTitulo: TextView
+    private lateinit var estadoDetalle: TextView
+    private lateinit var estadoRegistro: TextView
+    private lateinit var botonReintentar: Button
+    private lateinit var botonClaveDesdeEstado: Button
+    private lateinit var panelClave: View
+    private lateinit var campoClave: EditText
+    private lateinit var avisoClave: TextView
     private lateinit var botonCancelar: Button
     private lateinit var manija: ImageButton
 
-    /** Dirección guardada (null hasta que la cargás la primera vez). */
-    private var direccion: String? = null
+    private val principal = Handler(Looper.getMainLooper())
+    private val preferencias by lazy { getSharedPreferences("gravity", Context.MODE_PRIVATE) }
 
     /** ControlAtras en Android 13+; Any para no cargar la clase en versiones viejas. */
     private var controlAtras: Any? = null
 
-    /**
-     * Hubo un error de carga desde el último onPageFinished. WebView avisa onPageStarted recién
-     * cuando la navegación se confirma (en un error, después de onReceivedError), así que la
-     * decisión de mostrar u ocultar la pantalla de error se toma en onPageFinished.
-     */
+    /** Número de la espera en curso: una espera vieja (de antes de reiniciar) no toca la pantalla. */
+    private var espera = 0
+    private var cargada = false
     private var errorPendiente = false
-    /** Al cambiar de dirección: limpiar el historial cuando cargue la primera página de la nueva. */
-    private var limpiarHistorialAlLlegarA: String? = null
+    /** Recargas seguidas por errores del motor: si no para, se muestra el error en vez de insistir. */
+    private val reintentosRecientes = ArrayDeque<Long>()
     private var rendererCaido = false
     private var callbackArchivos: ValueCallback<Array<Uri>>? = null
     private var fraccionManija = 0.42f
@@ -88,12 +96,16 @@ class MainActivity : Activity() {
         raiz = findViewById(R.id.raiz)
         web = findViewById(R.id.web)
         progreso = findViewById(R.id.progreso)
-        panelError = findViewById(R.id.panelError)
-        errorDetalle = findViewById(R.id.errorDetalle)
-        errorDireccion = findViewById(R.id.errorDireccion)
-        panelDireccion = findViewById(R.id.panelDireccion)
-        campoDireccion = findViewById(R.id.campoDireccion)
-        avisoDireccion = findViewById(R.id.avisoDireccion)
+        panelEstado = findViewById(R.id.panelEstado)
+        estadoGirando = findViewById(R.id.estadoGirando)
+        estadoTitulo = findViewById(R.id.estadoTitulo)
+        estadoDetalle = findViewById(R.id.estadoDetalle)
+        estadoRegistro = findViewById(R.id.estadoRegistro)
+        botonReintentar = findViewById(R.id.botonReintentar)
+        botonClaveDesdeEstado = findViewById(R.id.botonClaveDesdeEstado)
+        panelClave = findViewById(R.id.panelClave)
+        campoClave = findViewById(R.id.campoClave)
+        avisoClave = findViewById(R.id.avisoClave)
         botonCancelar = findViewById(R.id.botonCancelar)
         manija = findViewById(R.id.manija)
 
@@ -104,33 +116,18 @@ class MainActivity : Activity() {
         configurarPaneles()
         configurarManija()
 
-        direccion = Direcciones.leer(this)
-        val restaurado = savedInstanceState != null && web.restoreState(savedInstanceState) != null
-        val guardada = direccion
-        when {
-            guardada == null -> mostrarPanelDireccion()
-            else -> {
-                if (!restaurado) web.loadUrl(guardada)
-                manija.visibility = View.VISIBLE
-                if (intent?.action == ACCION_CAMBIAR_DIRECCION) mostrarPanelDireccion()
-            }
+        if (Clave.existe(this)) {
+            if (savedInstanceState != null && web.restoreState(savedInstanceState) != null) cargada = true
+            arrancar(reiniciar = false)
+        } else {
+            mostrarPanelClave()
         }
         actualizarAtras()
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        if (intent.action == ACCION_CAMBIAR_DIRECCION) mostrarPanelDireccion()
-    }
-
     // ---------------------------------------------------------------- Bordes de pantalla
 
-    /**
-     * Desde Android 15 (API 35) las apps que apuntan a esa versión dibujan detrás de las barras
-     * del sistema. Se agrega ese espacio como padding (también el del teclado) para que nada
-     * quede tapado. En versiones anteriores el sistema ya lo resuelve solo.
-     */
+    /** Desde Android 15 la app dibuja detrás de las barras del sistema: se agrega ese espacio como padding. */
     private fun configurarBordes() {
         raiz.setOnApplyWindowInsetsListener { vista, insets ->
             if (Build.VERSION.SDK_INT >= 35) {
@@ -145,6 +142,81 @@ class MainActivity : Activity() {
         }
     }
 
+    // ---------------------------------------------------------------- Motor
+
+    /** Prende el motor (o lo reinicia) y abre Gravity cuando responde. */
+    private fun arrancar(reiniciar: Boolean) {
+        Gravity.marcarApagado(this, false)
+        pedirNotificaciones()
+        val numero = ++espera
+        mostrarEstado(getString(if (reiniciar) R.string.estado_reiniciando else R.string.estado_arrancando), null, girando = true)
+        Thread {
+            if (reiniciar) {
+                enviarAlMotor(Motor.ACCION_REINICIAR)
+                // Se espera a que el motor viejo suelte el puerto antes de prender el nuevo.
+                val hasta = System.currentTimeMillis() + 10_000
+                while (System.currentTimeMillis() < hasta && motorResponde()) Thread.sleep(300)
+                Thread.sleep(500)
+            }
+            principal.post { if (numero == espera) enviarAlMotor(Motor.ACCION_INICIAR) }
+            // La primera vez Node compila el motor entero: puede tardar un poco.
+            val hasta = System.currentTimeMillis() + 90_000
+            var listo = false
+            while (numero == espera && System.currentTimeMillis() < hasta) {
+                if (motorResponde()) {
+                    listo = true
+                    break
+                }
+                Thread.sleep(400)
+            }
+            principal.post {
+                if (numero != espera || isDestroyed) return@post
+                if (listo) abrirGravity() else mostrarFallo()
+            }
+        }.start()
+    }
+
+    private fun enviarAlMotor(accion: String) {
+        try {
+            Motor.enviar(this, accion)
+        } catch (e: Exception) {
+            principal.post { avisar(getString(R.string.motor_no_arranca)) }
+        }
+    }
+
+    /** El manifiesto es público: si responde, el motor está escuchando. */
+    private fun motorResponde(): Boolean = try {
+        val conexion = URL("${Gravity.DIRECCION}/manifest.webmanifest").openConnection() as HttpURLConnection
+        conexion.connectTimeout = 1_000
+        conexion.readTimeout = 2_000
+        try {
+            conexion.responseCode == 200
+        } finally {
+            conexion.disconnect()
+        }
+    } catch (e: Exception) {
+        false
+    }
+
+    private fun abrirGravity() {
+        val cookie = "gravity_app=${Gravity.token(this)}; Path=/; HttpOnly; SameSite=Strict"
+        CookieManager.getInstance().setCookie(Gravity.DIRECCION, cookie) {
+            CookieManager.getInstance().flush()
+            errorPendiente = false
+            if (cargada && !web.url.isNullOrEmpty()) web.reload() else web.loadUrl("${Gravity.DIRECCION}/")
+            cargada = true
+            ocultarEstado()
+            manija.visibility = View.VISIBLE
+            actualizarAtras()
+            principal.postDelayed({ ofrecerBateria() }, 4_000)
+        }
+    }
+
+    private fun mostrarFallo() {
+        val registro = Gravity.finDelRegistro(this)
+        mostrarEstado(getString(R.string.estado_fallo_titulo), getString(R.string.estado_fallo), girando = false, registro = registro)
+    }
+
     // ---------------------------------------------------------------- WebView
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -156,7 +228,7 @@ class MainActivity : Activity() {
         with(web.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
-            // La página solo habla con tu compu: nada de archivos locales ni contenido mixto.
+            // La página solo habla con el motor local: nada de archivos ni contenido mixto.
             allowFileAccess = false
             allowContentAccess = false
             @Suppress("DEPRECATION")
@@ -164,7 +236,7 @@ class MainActivity : Activity() {
             @Suppress("DEPRECATION")
             allowUniversalAccessFromFileURLs = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            userAgentString = "$userAgentString GravityAndroid/1"
+            userAgentString = "$userAgentString GravityAndroid/2"
         }
         CookieManager.getInstance().setAcceptCookie(true)
         web.webViewClient = ClienteWeb()
@@ -186,14 +258,13 @@ class MainActivity : Activity() {
 
         override fun onPageFinished(view: WebView, url: String?) {
             progreso.visibility = View.GONE
-            val huboError = errorPendiente
-            errorPendiente = false
-            if (!huboError) ocultarError()
-            val destino = limpiarHistorialAlLlegarA
-            if (destino != null && url != null && Direcciones.host(url) == Direcciones.host(destino)) {
-                // Cambiaste de dirección: el historial del servidor anterior ya no sirve.
-                limpiarHistorialAlLlegarA = null
-                view.clearHistory()
+            if (errorPendiente) {
+                // El motor se cayó o se está reiniciando: se espera a que vuelva y se recarga solo.
+                errorPendiente = false
+                val ahora = System.currentTimeMillis()
+                while (reintentosRecientes.isNotEmpty() && ahora - reintentosRecientes.first() > 60_000) reintentosRecientes.removeFirst()
+                reintentosRecientes.addLast(ahora)
+                if (reintentosRecientes.size > 3) mostrarFallo() else arrancar(reiniciar = false)
             }
             CookieManager.getInstance().flush()
             actualizarAtras()
@@ -204,38 +275,16 @@ class MainActivity : Activity() {
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-            if (!request.isForMainFrame) return
-            when (error.errorCode) {
-                ERROR_UNSUPPORTED_SCHEME, ERROR_FILE, ERROR_FILE_NOT_FOUND -> return
-            }
-            errorPendiente = true
-            val ssl = error.errorCode == ERROR_FAILED_SSL_HANDSHAKE
-            mostrarError(getString(if (ssl) R.string.error_ssl else R.string.error_red))
+            if (request.isForMainFrame && esDelMotor(request.url)) errorPendiente = true
         }
 
         override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
-            if (!request.isForMainFrame) return
-            val codigo = errorResponse.statusCode
-            // 502/503/504: túnel o proxy sin Gravity detrás. 520-530: errores de Cloudflare.
-            if (codigo == 502 || codigo == 503 || codigo == 504 || codigo in 520..530) {
-                errorPendiente = true
-                mostrarError(getString(R.string.error_http, codigo))
-            }
-        }
-
-        override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
-            // Nunca se acepta un certificado inválido.
-            handler.cancel()
-            val hostError = Direcciones.host(error.url ?: "")
-            if (hostError != null && hostError == hostServidor()) {
-                errorPendiente = true
-                mostrarError(getString(R.string.error_ssl))
-            }
+            // 401: la cookie no llegó o el token cambió. Se vuelve a poner.
+            if (request.isForMainFrame && esDelMotor(request.url) && errorResponse.statusCode == 401) errorPendiente = true
         }
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            // El motor del WebView se cerró (falta de memoria, por ejemplo). Ese WebView ya no se puede
-            // usar: se saca de la pantalla, se destruye y se arma la actividad de nuevo.
+            // El motor del WebView se cerró (falta de memoria, por ejemplo): se arma la actividad de nuevo.
             if (rendererCaido) return true
             rendererCaido = true
             (view.parent as? ViewGroup)?.removeView(view)
@@ -280,19 +329,15 @@ class MainActivity : Activity() {
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    private fun hostServidor(): String? = direccion?.let { Direcciones.host(it) }
+    private fun esDelMotor(uri: Uri): Boolean =
+        uri.scheme == "http" && uri.host == "127.0.0.1" && uri.port == Gravity.PUERTO
 
     /** true = la navegación la maneja la app (se abre afuera); false = sigue en el WebView. */
     private fun manejarNavegacion(uri: Uri): Boolean {
         val esquema = uri.scheme?.lowercase(Locale.ROOT) ?: return true
-        if (esquema == "http" || esquema == "https") {
-            val host = uri.host?.lowercase(Locale.ROOT)
-            if (host != null && host == hostServidor()) return false
-            abrirAfuera(uri)
-            return true
-        }
+        if (esDelMotor(uri)) return false
         if (esquema == "about" || esquema == "data" || esquema == "blob" || esquema == "javascript") return false
-        // mailto:, tel:, geo:, intent:...
+        // Enlaces de afuera (por ejemplo, el inicio de sesión de Microsoft), mailto:, tel:...
         abrirAfuera(uri)
         return true
     }
@@ -309,7 +354,6 @@ class MainActivity : Activity() {
         val uri = Uri.parse(url)
         val esquema = uri.scheme?.lowercase(Locale.ROOT)
         if (esquema != "http" && esquema != "https") {
-            // blob: y data: no se pueden pasar al gestor de descargas del sistema.
             avisar(getString(R.string.descarga_no_soportada))
             return
         }
@@ -319,119 +363,134 @@ class MainActivity : Activity() {
                 .setTitle(nombre)
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             if (!tipo.isNullOrBlank()) pedido.setMimeType(tipo)
-            // La sesión (cookie) viaja con la descarga, así funcionan los archivos que piden contraseña.
+            // La cookie con el token viaja con la descarga: sin ella el motor la rechaza.
             CookieManager.getInstance().getCookie(url)?.let { pedido.addRequestHeader("Cookie", it) }
             if (!agente.isNullOrBlank()) pedido.addRequestHeader("User-Agent", agente)
             if (Build.VERSION.SDK_INT >= 29) {
                 pedido.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, nombre)
             } else {
-                // Antes de Android 10 la carpeta pública pide permiso de almacenamiento; esta no.
                 pedido.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, nombre)
             }
-            val gestor = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            gestor.enqueue(pedido)
+            (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(pedido)
             avisar(getString(R.string.descarga_iniciada, nombre))
         } catch (e: Exception) {
             avisar(getString(R.string.descarga_fallo))
         }
     }
 
-    // ---------------------------------------------------------------- Error de conexión
+    // ---------------------------------------------------------------- Paneles
 
     private fun configurarPaneles() {
-        findViewById<Button>(R.id.botonReintentar).setOnClickListener { reintentar() }
-        findViewById<Button>(R.id.botonCambiarDesdeError).setOnClickListener { mostrarPanelDireccion() }
-        findViewById<Button>(R.id.botonConectar).setOnClickListener { guardarDireccion() }
-        botonCancelar.setOnClickListener { cerrarPanelDireccion() }
-        campoDireccion.setOnEditorActionListener { _, accion, _ ->
+        botonReintentar.setOnClickListener { arrancar(reiniciar = true) }
+        botonClaveDesdeEstado.setOnClickListener { mostrarPanelClave() }
+        findViewById<Button>(R.id.botonGuardarClave).setOnClickListener { guardarClave() }
+        findViewById<TextView>(R.id.enlaceConsola).setOnClickListener { abrirAfuera(Uri.parse(CONSOLA)) }
+        botonCancelar.setOnClickListener { cerrarPanelClave() }
+        campoClave.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_GO || accion == EditorInfo.IME_ACTION_DONE) {
-                guardarDireccion()
+                guardarClave()
                 true
             } else {
                 false
             }
         }
-        findViewById<TextView>(R.id.ejemploWifi).setOnClickListener { usarEjemplo(getString(R.string.ejemplo_wifi)) }
-        findViewById<TextView>(R.id.ejemploTailscale).setOnClickListener { usarEjemplo(getString(R.string.ejemplo_tailscale)) }
     }
 
-    private fun mostrarError(detalle: String) {
-        errorDetalle.text = detalle
-        errorDireccion.text = direccion ?: ""
-        panelError.visibility = View.VISIBLE
+    private fun mostrarEstado(titulo: String, detalle: String?, girando: Boolean, registro: String = "") {
+        estadoTitulo.text = titulo
+        estadoDetalle.text = detalle ?: ""
+        estadoDetalle.visibility = if (detalle == null) View.GONE else View.VISIBLE
+        estadoRegistro.text = registro
+        estadoRegistro.visibility = if (registro.isBlank()) View.GONE else View.VISIBLE
+        estadoGirando.visibility = if (girando) View.VISIBLE else View.GONE
+        botonReintentar.visibility = if (girando) View.GONE else View.VISIBLE
+        botonClaveDesdeEstado.visibility = if (girando) View.GONE else View.VISIBLE
+        panelEstado.visibility = View.VISIBLE
     }
 
-    private fun ocultarError() {
-        panelError.visibility = View.GONE
+    private fun ocultarEstado() {
+        panelEstado.visibility = View.GONE
     }
 
-    private fun reintentar() {
-        if (rendererCaido) return
-        val guardada = direccion ?: return mostrarPanelDireccion()
-        // Un error viejo (por ejemplo de certificado, que no siempre trae onPageFinished) no tiene
-        // que dejar la pantalla de error puesta si este intento sale bien.
-        errorPendiente = false
-        val actual = web.url
-        if (actual.isNullOrEmpty() || actual.startsWith("about:") || actual.startsWith("data:")) {
-            web.loadUrl(guardada)
-        } else {
-            web.reload()
-        }
-    }
-
-    // ---------------------------------------------------------------- Dirección
-
-    private fun mostrarPanelDireccion() {
-        campoDireccion.setText(direccion ?: "")
-        campoDireccion.setSelection(campoDireccion.text.length)
-        avisoDireccion.visibility = View.GONE
-        botonCancelar.visibility = if (direccion == null) View.GONE else View.VISIBLE
-        panelDireccion.visibility = View.VISIBLE
+    private fun mostrarPanelClave() {
+        campoClave.setText("")
+        avisoClave.visibility = View.GONE
+        botonCancelar.visibility = if (Clave.existe(this)) View.VISIBLE else View.GONE
+        panelClave.visibility = View.VISIBLE
         manija.visibility = View.GONE
         actualizarAtras()
     }
 
-    private fun cerrarPanelDireccion() {
+    private fun cerrarPanelClave() {
         ocultarTeclado()
-        panelDireccion.visibility = View.GONE
-        if (direccion != null) manija.visibility = View.VISIBLE
+        panelClave.visibility = View.GONE
+        if (cargada) manija.visibility = View.VISIBLE
         actualizarAtras()
     }
 
-    private fun usarEjemplo(ejemplo: String) {
-        campoDireccion.setText(ejemplo)
-        campoDireccion.requestFocus()
-        campoDireccion.setSelection(ejemplo.length)
-        val teclado = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        teclado.showSoftInput(campoDireccion, 0)
-    }
-
-    private fun guardarDireccion() {
-        when (val revision = Direcciones.revisar(campoDireccion.text.toString())) {
-            is Direcciones.Revision.Invalida -> {
-                avisoDireccion.setText(revision.mensaje)
-                avisoDireccion.visibility = View.VISIBLE
-            }
-            is Direcciones.Revision.Valida -> {
-                val nueva = revision.url
-                val cambio = nueva != direccion
-                Direcciones.guardar(this, nueva)
-                direccion = nueva
-                cerrarPanelDireccion()
-                if (cambio || web.url.isNullOrEmpty() || panelError.visibility == View.VISIBLE) {
-                    ocultarError()
-                    errorPendiente = false
-                    limpiarHistorialAlLlegarA = nueva
-                    web.stopLoading()
-                    web.loadUrl(nueva)
-                }
-            }
+    private fun guardarClave() {
+        val texto = campoClave.text.toString().trim()
+        val error = Clave.revisar(texto)
+        if (error != null) {
+            avisoClave.setText(error)
+            avisoClave.visibility = View.VISIBLE
+            return
         }
+        val habiaClave = Clave.existe(this)
+        try {
+            Clave.guardar(this, texto)
+        } catch (e: Exception) {
+            avisoClave.text = getString(R.string.clave_no_guardada, e.message ?: e.javaClass.simpleName)
+            avisoClave.visibility = View.VISIBLE
+            return
+        }
+        campoClave.setText("")
+        cerrarPanelClave()
+        // El motor lee la clave al arrancar: si ya estaba prendido, se reinicia.
+        arrancar(reiniciar = habiaClave)
     }
 
     private fun ocultarTeclado() {
         val teclado = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        teclado.hideSoftInputFromWindow(campoDireccion.windowToken, 0)
+        teclado.hideSoftInputFromWindow(campoClave.windowToken, 0)
+    }
+
+    // ---------------------------------------------------------------- Permisos y batería
+
+    private fun pedirNotificaciones() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        if (preferencias.getBoolean("pidio_notificaciones", false)) return
+        preferencias.edit().putBoolean("pidio_notificaciones", true).apply()
+        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), PEDIDO_NOTIFICACIONES)
+    }
+
+    private fun sinRestriccionDeBateria(): Boolean =
+        getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+
+    /** Una sola vez: sin esto, Android duerme al motor con la pantalla apagada. */
+    private fun ofrecerBateria() {
+        if (isFinishing || sinRestriccionDeBateria() || preferencias.getBoolean("ofrecio_bateria", false)) return
+        preferencias.edit().putBoolean("ofrecio_bateria", true).apply()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.bateria_titulo)
+            .setMessage(R.string.bateria_explicacion)
+            .setPositiveButton(R.string.bateria_permitir) { _, _ -> pedirSinRestriccion() }
+            .setNegativeButton(R.string.ahora_no, null)
+            .show()
+    }
+
+    @SuppressLint("BatteryLife")
+    private fun pedirSinRestriccion() {
+        try {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        } catch (e: ActivityNotFoundException) {
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (e2: ActivityNotFoundException) {
+                avisar(getString(R.string.bateria_sin_ajuste))
+            }
+        }
     }
 
     // ---------------------------------------------------------------- Botón flotante
@@ -439,7 +498,7 @@ class MainActivity : Activity() {
     /** Se toca para abrir el menú y se arrastra para moverlo por el borde derecho. */
     @SuppressLint("ClickableViewAccessibility")
     private fun configurarManija() {
-        fraccionManija = Direcciones.leerPosicionManija(this)
+        fraccionManija = preferencias.getFloat("manija_posicion", 0.42f)
         val umbral = ViewConfiguration.get(this).scaledTouchSlop
         var inicioY = 0f
         var traslacionInicial = 0f
@@ -460,8 +519,7 @@ class MainActivity : Activity() {
                         vista.isPressed = false
                     }
                     if (arrastrandoManija) {
-                        val maximo = recorridoManija()
-                        vista.translationY = (traslacionInicial + desplazamiento).coerceIn(0f, maximo)
+                        vista.translationY = (traslacionInicial + desplazamiento).coerceIn(0f, recorridoManija())
                     }
                     true
                 }
@@ -471,7 +529,7 @@ class MainActivity : Activity() {
                         arrastrandoManija = false
                         val maximo = recorridoManija()
                         fraccionManija = if (maximo > 0f) vista.translationY / maximo else 0f
-                        Direcciones.guardarPosicionManija(this, fraccionManija)
+                        preferencias.edit().putFloat("manija_posicion", fraccionManija).apply()
                     } else {
                         vista.performClick()
                     }
@@ -489,7 +547,6 @@ class MainActivity : Activity() {
         raiz.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> ubicarManija() }
     }
 
-    /** Cuánto puede bajar la manija desde su lugar arriba a la derecha. */
     private fun recorridoManija(): Float {
         val margen = (manija.layoutParams as? ViewGroup.MarginLayoutParams)?.topMargin ?: 0
         return (raiz.height - raiz.paddingBottom - margen - manija.bottom).toFloat().coerceAtLeast(0f)
@@ -503,33 +560,42 @@ class MainActivity : Activity() {
     private fun mostrarMenu(ancla: View) {
         val menu = PopupMenu(this, ancla)
         menu.menu.add(0, MENU_RECARGAR, 0, R.string.menu_recargar)
-        menu.menu.add(0, MENU_CAMBIAR, 1, R.string.menu_cambiar_direccion)
-        menu.menu.add(0, MENU_NAVEGADOR, 2, R.string.menu_abrir_navegador)
+        menu.menu.add(0, MENU_REINICIAR, 1, R.string.menu_reiniciar)
+        menu.menu.add(0, MENU_CLAVE, 2, R.string.menu_clave)
+        if (!sinRestriccionDeBateria()) menu.menu.add(0, MENU_BATERIA, 3, R.string.menu_bateria)
+        menu.menu.add(0, MENU_APAGAR, 4, R.string.menu_apagar)
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                MENU_RECARGAR -> {
-                    reintentar()
-                    true
-                }
-                MENU_CAMBIAR -> {
-                    mostrarPanelDireccion()
-                    true
-                }
-                MENU_NAVEGADOR -> {
-                    val actual = web.url?.takeIf { it.startsWith("http") } ?: direccion
-                    if (actual != null) abrirAfuera(Uri.parse(actual))
-                    true
-                }
-                else -> false
+                MENU_RECARGAR -> if (!rendererCaido) web.reload()
+                MENU_REINICIAR -> arrancar(reiniciar = true)
+                MENU_CLAVE -> mostrarPanelClave()
+                MENU_BATERIA -> pedirSinRestriccion()
+                MENU_APAGAR -> confirmarApagado()
+                else -> return@setOnMenuItemClickListener false
             }
+            true
         }
         menu.show()
+    }
+
+    private fun confirmarApagado() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.apagar_titulo)
+            .setMessage(R.string.apagar_explicacion)
+            .setPositiveButton(R.string.menu_apagar) { _, _ ->
+                espera++
+                Gravity.marcarApagado(this, true)
+                enviarAlMotor(Motor.ACCION_APAGAR)
+                finish()
+            }
+            .setNegativeButton(R.string.cancelar, null)
+            .show()
     }
 
     // ---------------------------------------------------------------- Atrás
 
     private fun debeInterceptarAtras(): Boolean =
-        (panelDireccion.visibility == View.VISIBLE && direccion != null) || (!rendererCaido && web.canGoBack())
+        (panelClave.visibility == View.VISIBLE && Clave.existe(this)) || (!rendererCaido && web.canGoBack())
 
     private fun actualizarAtras() {
         if (Build.VERSION.SDK_INT >= 33) {
@@ -539,12 +605,10 @@ class MainActivity : Activity() {
 
     private fun volver() {
         when {
-            panelDireccion.visibility == View.VISIBLE && direccion != null -> cerrarPanelDireccion()
-            !rendererCaido && web.canGoBack() -> {
-                ocultarError()
-                web.goBack()
-            }
-            else -> finish()
+            panelClave.visibility == View.VISIBLE && Clave.existe(this) -> cerrarPanelClave()
+            !rendererCaido && web.canGoBack() -> web.goBack()
+            // Atrás no apaga el motor: los compañeros siguen trabajando con la app cerrada.
+            else -> moveTaskToBack(true)
         }
     }
 
@@ -563,15 +627,16 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        Gravity.marcarVisible(this, true)
         if (rendererCaido) return
         web.onResume()
-        // Si volvés a la app con la pantalla de error, se prueba de nuevo (quizás ya prendiste la compu).
-        if (panelError.visibility == View.VISIBLE && panelDireccion.visibility != View.VISIBLE) reintentar()
+        // Si el motor se cayó mientras no mirabas, se vuelve a prender al entrar.
+        if (panelEstado.visibility == View.VISIBLE && botonReintentar.visibility == View.VISIBLE) arrancar(reiniciar = false)
     }
 
     override fun onPause() {
+        Gravity.marcarVisible(this, false)
         if (!rendererCaido) web.onPause()
-        // Guarda las cookies (la sesión) en disco: si Android cierra la app, seguís logueado.
         CookieManager.getInstance().flush()
         super.onPause()
     }
@@ -582,6 +647,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        espera++
         callbackArchivos?.onReceiveValue(null)
         callbackArchivos = null
         if (!rendererCaido) {
@@ -596,10 +662,13 @@ class MainActivity : Activity() {
     }
 
     private companion object {
-        const val ACCION_CAMBIAR_DIRECCION = "ar.gravity.app.CAMBIAR_DIRECCION"
+        const val CONSOLA = "https://console.anthropic.com/settings/keys"
         const val PEDIDO_ARCHIVOS = 41
+        const val PEDIDO_NOTIFICACIONES = 42
         const val MENU_RECARGAR = 1
-        const val MENU_CAMBIAR = 2
-        const val MENU_NAVEGADOR = 3
+        const val MENU_REINICIAR = 2
+        const val MENU_CLAVE = 3
+        const val MENU_BATERIA = 4
+        const val MENU_APAGAR = 5
     }
 }

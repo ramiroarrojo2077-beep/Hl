@@ -1,9 +1,11 @@
-# Compila la app de Android de Gravity (carpeta android/) y la publica como gravity.apk
-# en la release "apk-latest" del repo, además de dejarla como artefacto del workflow.
+# Compila Gravity para Android, todo en uno (carpeta android/): la APK lleva adentro Node.js
+# para Android y el motor de Gravity empaquetado, así no hace falta ninguna compu.
+# La publica como gravity.apk en la release "apk-latest" y la deja como artefacto del workflow.
 #
 # Firma: si el repo tiene los secretos ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
-# ANDROID_KEY_ALIAS y ANDROID_KEY_PASSWORD se arma una APK release firmada con esa clave
-# (las actualizaciones se instalan encima). Si falta alguno, se arma la APK debug.
+# ANDROID_KEY_ALIAS y ANDROID_KEY_PASSWORD se arma una APK release firmada con esa clave.
+# Si falta alguno, se arma la APK debug con la firma fija de android/firma/ (también se
+# instala encima de la anterior, sin perder las conversaciones).
 name: Android
 
 on:
@@ -11,6 +13,11 @@ on:
     branches: ["**"]
     paths:
       - "android/**"
+      - "bots/src/**"
+      - "bots/public/**"
+      - "bots/empaquetar.mjs"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
@@ -22,7 +29,7 @@ jobs:
   apk:
     name: Compilar APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write
     defaults:
@@ -32,6 +39,15 @@ jobs:
     steps:
       - name: Bajar el código
         uses: actions/checkout@v7
+
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Bajar Node.js para Android y empaquetar el motor
+        run: ./preparar.sh
 
       - name: Instalar Java 21
         uses: actions/setup-java@v6
@@ -82,6 +98,18 @@ jobs:
           fi
           ls -l "$GITHUB_WORKSPACE/gravity.apk"
 
+      - name: Revisar que la APK tenga el motor adentro
+        run: |
+          contenido="$(unzip -l "$GITHUB_WORKSPACE/gravity.apk")"
+          for f in lib/arm64-v8a/libnode.so lib/arm64-v8a/libgravity_nodo.so lib/arm64-v8a/libc++_shared.so \
+                   assets/motor/gravity/servidor.mjs assets/motor/public/index.html; do
+            if ! grep -q " $f\$" <<<"$contenido"; then
+              echo "::error title=APK incompleta::Falta $f"
+              exit 1
+            fi
+          done
+          echo "La APK tiene Node.js y el motor de Gravity."
+
       - name: Borrar la clave del runner
         if: always()
         run: rm -f "$RUNNER_TEMP/gravity.jks"
@@ -109,8 +137,12 @@ jobs:
             1. En el celu, abrí esta página y tocá **gravity.apk** (más abajo, en *Assets*).
             2. Cuando termine la descarga, abrila. Si Android lo pide, permití **Instalar apps desconocidas** para tu navegador (Ajustes > Apps > Chrome > Instalar apps desconocidas).
             3. Si aparece Play Protect, tocá **Más detalles > Instalar de todos modos**: la app no está en Google Play.
-            4. Abrí Gravity y escribí la dirección de tu compu, por ejemplo `http://192.168.0.10:3001` (misma Wi-Fi) o `https://tu-compu.ts.net` (Tailscale).
+            4. Abrí Gravity, pegá tu clave de la API de Anthropic y listo: el motor arranca dentro del celular.
+            5. Cuando lo pida, permití las notificaciones y dejá a Gravity **sin restricciones de batería**: así tus compañeros siguen trabajando con la pantalla apagada y las rutinas corren a horario.
 
-            Para actualizar, bajá la nueva **gravity.apk** e instalala encima. Si Android dice que el paquete está en conflicto, desinstalá la anterior y volvé a instalar (pasa con las APK debug, que cambian de firma).
+            **Todo corre en el celular**: no hace falta ninguna compu ni servidor. Las conversaciones quedan guardadas en el celular.
+            Solo para celulares de 64 bits (arm64, casi todos desde 2017) con Android 8 o más nuevo.
 
-            La compu tiene que estar prendida y con Gravity abierto. Guía completa: `bots/MOVIL.md` en el repo.
+            Para actualizar, bajá la nueva **gravity.apk** e instalala encima: no se pierde nada. Si venías de la versión vieja (la que se conectaba a la compu), desinstalala una vez antes, porque tenía otra firma.
+
+            Guía completa: `bots/MOVIL.md` en el repo.

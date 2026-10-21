@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Gravity corre en tu compu y en la Wi-Fi de casa se entra por http://192.168.x.x:3001,
-  así que hace falta permitir HTTP sin cifrar. Fuera de casa conviene HTTPS
-  (Tailscale o un túnel de Cloudflare): ver bots/MOVIL.md.
-  Solo se confía en las autoridades de certificación del sistema.
+  El motor corre en este mismo celular y la WebView le habla por http://127.0.0.1 (no sale a la red).
+  Todo lo demás va con HTTPS y solo se confía en las autoridades de certificación del sistema.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
 </network-security-config>

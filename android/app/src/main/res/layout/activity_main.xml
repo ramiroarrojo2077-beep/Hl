@@ -11,9 +11,9 @@
         android:layout_height="match_parent"
         android:background="@color/fondo" />
 
-    <!-- Sin conexión -->
+    <!-- Estado del motor: arrancando, reiniciando o con error -->
     <ScrollView
-        android:id="@+id/panelError"
+        android:id="@+id/panelEstado"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/fondo"
@@ -40,37 +40,48 @@
                 android:src="@drawable/marca" />
 
             <TextView
+                android:id="@+id/estadoTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
+                android:accessibilityLiveRegion="polite"
                 android:fontFamily="sans-serif-medium"
                 android:gravity="center"
-                android:text="@string/error_titulo"
                 android:textColor="@color/texto"
                 android:textSize="22sp" />
 
+            <ProgressBar
+                android:id="@+id/estadoGirando"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginTop="18dp"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/cian" />
+
             <TextView
-                android:id="@+id/errorDetalle"
+                android:id="@+id/estadoDetalle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:gravity="center"
                 android:lineSpacingMultiplier="1.15"
                 android:maxWidth="420dp"
-                android:text="@string/error_red"
                 android:textColor="@color/texto2"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
-                android:id="@+id/errorDireccion"
-                android:layout_width="wrap_content"
+                android:id="@+id/estadoRegistro"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/fondo_campo"
                 android:fontFamily="monospace"
-                android:gravity="center"
+                android:padding="12dp"
                 android:textColor="@color/texto3"
                 android:textIsSelectable="true"
-                android:textSize="13sp" />
+                android:textSize="11sp"
+                android:visibility="gone" />
 
             <Button
                 android:id="@+id/botonReintentar"
@@ -84,26 +95,28 @@
                 android:text="@string/reintentar"
                 android:textAllCaps="false"
                 android:textColor="@color/sobre_primario"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:visibility="gone" />
 
             <Button
-                android:id="@+id/botonCambiarDesdeError"
+                android:id="@+id/botonClaveDesdeEstado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:background="@drawable/boton_secundario"
                 android:minHeight="52dp"
                 android:stateListAnimator="@null"
-                android:text="@string/cambiar_direccion"
+                android:text="@string/cambiar_clave"
                 android:textAllCaps="false"
                 android:textColor="@color/texto"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- Dirección del servidor: primera vez y "Cambiar dirección" -->
+    <!-- Clave de Anthropic: primera vez y "Clave de Anthropic" del menú -->
     <ScrollView
-        android:id="@+id/panelDireccion"
+        android:id="@+id/panelClave"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/fondo"
@@ -132,7 +145,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:fontFamily="sans-serif-medium"
-                android:text="@string/direccion_titulo"
+                android:text="@string/clave_titulo"
                 android:textColor="@color/texto"
                 android:textSize="24sp" />
 
@@ -141,22 +154,22 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:lineSpacingMultiplier="1.15"
-                android:text="@string/direccion_ayuda"
+                android:text="@string/clave_ayuda"
                 android:textColor="@color/texto2"
                 android:textSize="15sp" />
 
             <EditText
-                android:id="@+id/campoDireccion"
+                android:id="@+id/campoClave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:background="@drawable/fondo_campo"
-                android:contentDescription="@string/direccion_campo_descripcion"
+                android:contentDescription="@string/clave_titulo"
                 android:fontFamily="monospace"
-                android:hint="@string/direccion_pista"
+                android:hint="@string/clave_pista"
                 android:imeOptions="actionGo"
                 android:importantForAutofill="no"
-                android:inputType="textUri"
+                android:inputType="textPassword"
                 android:minHeight="52dp"
                 android:paddingStart="14dp"
                 android:paddingEnd="14dp"
@@ -167,7 +180,7 @@
                 android:textSize="16sp" />
 
             <TextView
-                android:id="@+id/avisoDireccion"
+                android:id="@+id/avisoClave"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -177,7 +190,7 @@
                 android:visibility="gone" />
 
             <Button
-                android:id="@+id/botonConectar"
+                android:id="@+id/botonGuardarClave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -185,7 +198,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:minHeight="52dp"
                 android:stateListAnimator="@null"
-                android:text="@string/conectar"
+                android:text="@string/clave_guardar"
                 android:textAllCaps="false"
                 android:textColor="@color/sobre_primario"
                 android:textSize="16sp" />
@@ -205,76 +218,28 @@
                 android:visibility="gone" />
 
             <TextView
+                android:id="@+id/enlaceConsola"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:fontFamily="monospace"
-                android:letterSpacing="0.12"
-                android:text="@string/ejemplos"
-                android:textAllCaps="true"
-                android:textColor="@color/texto3"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/ejemploWifi"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/fondo_ejemplo"
-                android:fontFamily="monospace"
+                android:layout_marginTop="24dp"
                 android:minHeight="44dp"
-                android:paddingStart="14dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="10dp"
-                android:text="@string/ejemplo_wifi"
-                android:textColor="@color/texto"
-                android:textSize="14sp" />
+                android:gravity="center_vertical"
+                android:text="@string/clave_donde"
+                android:textColor="@color/cian"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/ejemplo_wifi_nota"
-                android:textColor="@color/texto3"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/ejemploTailscale"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/fondo_ejemplo"
-                android:fontFamily="monospace"
-                android:minHeight="44dp"
-                android:paddingStart="14dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="10dp"
-                android:text="@string/ejemplo_tailscale"
-                android:textColor="@color/texto"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/ejemplo_tailscale_nota"
-                android:textColor="@color/texto3"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="16dp"
                 android:lineSpacingMultiplier="1.15"
-                android:text="@string/direccion_seguridad"
+                android:text="@string/clave_seguridad"
                 android:textColor="@color/texto3"
                 android:textSize="13sp" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- Botón flotante: menú con Recargar, Cambiar dirección y Abrir en el navegador -->
+    <!-- Botón flotante: Recargar, Reiniciar motor, Clave, Batería y Apagar -->
     <ImageButton
         android:id="@+id/manija"
         android:layout_width="40dp"
