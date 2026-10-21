@@ -46,6 +46,7 @@ import {
   type FinTurno,
 } from "./equipo.ts";
 import { conectarReuniones, convocar } from "./reuniones.ts";
+import { describirConexionesPara } from "./conexiones.ts";
 import { describirHorario } from "./rutinas.ts";
 import { emitir, emitirDelta, emitirEstado, vaciarDeltas } from "./eventos.ts";
 
@@ -227,7 +228,7 @@ Las habilidades son procedimientos guardados: si una tarea coincide con una, lee
 
 const huella = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 
-// Lo que el bot tiene que saber y cambió desde la última vez: perfil, equipo, habilidades.
+// Lo que el bot tiene que saber y cambió desde la última vez: perfil, equipo, habilidades, conexiones.
 function novedadesDelArnes(bot: Bot, c: Conversacion): string[] {
   const jefe = bot.reportaA ? buscarBot(bot.reportaA) : undefined;
   const perfil = `Tu perfil: ${bot.nombre}, ${bot.titulo}. Cargo: ${bot.cargo === "manager" ? "manager" : "miembro"}. ${
@@ -249,7 +250,8 @@ function novedadesDelArnes(bot: Bot, c: Conversacion): string[] {
     ? `Habilidades disponibles:\n${listarHabilidades().map((h) => `- ${h.nombre} (id ${h.id}): ${h.descripcion}`).join("\n")}`
     : "Todavía no hay habilidades guardadas.";
   const partes: string[] = [];
-  for (const [clave, texto] of [["perfil", perfil], ["equipo", equipo], ["habilidades", habilidades]] as const) {
+  const conexiones = describirConexionesPara(bot);
+  for (const [clave, texto] of [["perfil", perfil], ["equipo", equipo], ["habilidades", habilidades], ["conexiones", conexiones]] as const) {
     const h = huella(texto);
     if (c.vistos[clave] !== h) {
       partes.push(texto);
@@ -312,6 +314,8 @@ function describirUso(nombre: string, entrada: Record<string, unknown>): string 
       return "Entregando su trabajo";
     case "reunion":
       return "Organizando una reunión";
+    case "conexion":
+      return `Usando ${String(entrada.conexion ?? "una conexión")}: ${String(entrada.accion ?? "")}`;
     default:
       return `Usando ${nombre}`;
   }

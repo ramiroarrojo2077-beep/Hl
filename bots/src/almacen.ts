@@ -89,10 +89,10 @@ export interface Habilidad {
 export type Alcance = { tipo: "global" } | { tipo: "bot"; botId: string } | { tipo: "equipo"; managerId: string };
 
 // Regla "siempre permitir". bash: el programa (ej. "ls"); editor: "*" o una carpeta terminada en "/";
-// el resto: "*".
+// externo: "<conexión>:<acción>"; el resto: "*".
 export interface Regla {
   id: string;
-  herramienta: "bash" | "editor" | "rutinas" | "reunion";
+  herramienta: "bash" | "editor" | "rutinas" | "reunion" | "externo";
   patron: string;
   alcance: Alcance;
   creada: string;

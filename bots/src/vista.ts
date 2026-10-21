@@ -59,6 +59,8 @@ function describir(nombre: string, e: Record<string, unknown>): string {
       return `Entregó la tarea ${s("tarea_id")} (${s("estado")})`;
     case "reunion":
       return `${e.accion === "programar" ? "Programó" : "Convocó"} la reunión «${s("titulo")}»`;
+    case "conexion":
+      return `${s("conexion")} · ${s("accion")}`;
     default:
       return nombre;
   }
@@ -113,7 +115,7 @@ export function vistaConversacion(c: Conversacion): Item[] {
           tipo: "accion",
           herramienta: b.name,
           texto: describir(b.name, b.input as Record<string, unknown>),
-          detalle: r && (b.name === "bash" || b.name === "delegar" || r.error) ? recortar(r.texto) : null,
+          detalle: r && (b.name === "bash" || b.name === "delegar" || b.name === "conexion" || r.error) ? recortar(r.texto) : null,
           error: r?.error ?? false,
         });
       } else if (b.type === "server_tool_use") {

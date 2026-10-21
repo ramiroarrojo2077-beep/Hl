@@ -62,6 +62,7 @@ import { hoy, resumenGasto } from "./gasto.ts";
 import { describirHorario, iniciarProgramador, normalizarHorario, proximaEjecucion } from "./rutinas.ts";
 import { vistaConversacion } from "./vista.ts";
 import { NOMBRES, PLANTILLAS, PLANTILLAS_EQUIPO } from "./plantillas.ts";
+import { actualizarConexion, borrarConexion, catalogo, crearConexion, listarConexiones, probarConexion, quitarBotDeConexiones } from "./conexiones.ts";
 import { bus, emitir } from "./eventos.ts";
 
 const PUERTO = Number(process.env.BOTS_PUERTO ?? 3001);
@@ -452,6 +453,7 @@ ruta("DELETE", "/api/bots/:id", async ({ params }) => {
   detener(bot.id);
   for (const t of listarTareas()) if (t.paraId === bot.id && abierta(t)) cancelarTarea(t.id, `${bot.nombre} fue eliminado.`);
   borrarBot(bot.id);
+  quitarBotDeConexiones(bot.id);
   await cerrarHerramientas(bot.id);
   emitir("bots");
   return { ok: true };
@@ -701,6 +703,40 @@ ruta("POST", "/api/ajustes/clave", async ({ cuerpo }) => {
   guardarSesiones();
   emitir("ajustes");
   return { ok: true };
+});
+
+// ---- Conexiones con apps de afuera ----
+
+ruta("GET", "/api/conexiones", async () => ({ tipos: catalogo(), conexiones: listarConexiones() }));
+
+ruta("POST", "/api/conexiones", async ({ cuerpo }) => {
+  const d = validar(
+    z.object({ tipo: z.string(), nombre: z.string().max(60).default(""), datos: z.record(z.string(), z.string().max(4000)), bots: z.array(z.string()).max(60).default([]) }),
+    await cuerpo(),
+  );
+  try {
+    return await crearConexion(d.tipo, d.nombre, d.datos, d.bots);
+  } catch (err) {
+    throw new ErrorHttp(400, (err as Error).message);
+  }
+});
+
+ruta("PUT", "/api/conexiones/:id", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().max(60).optional(), bots: z.array(z.string()).max(60).optional() }), await cuerpo());
+  return malPedido(() => actualizarConexion(params[0]!, d));
+});
+
+ruta("DELETE", "/api/conexiones/:id", async ({ params }) => {
+  await borrarConexion(params[0]!);
+  return { ok: true };
+});
+
+ruta("POST", "/api/conexiones/:id/probar", async ({ params }) => {
+  try {
+    return await probarConexion(params[0]!);
+  } catch (err) {
+    throw new ErrorHttp(404, (err as Error).message);
+  }
 });
 
 ruta("GET", "/api/computadora", async () => ({ archivos: await listarArchivos(COMPUTADORA), comandos: listarComandos() }));

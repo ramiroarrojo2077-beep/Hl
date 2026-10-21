@@ -27,6 +27,7 @@ import {
 import { normalizarHorario, describirHorario, proximaEjecucion } from "./rutinas.ts";
 import { herramientasEquipo } from "./equipo.ts";
 import { convocar } from "./reuniones.ts";
+import { ejecutarConexion, pedidoDeConexion } from "./conexiones.ts";
 import { emitir } from "./eventos.ts";
 
 // ---- Validación de entradas ----
@@ -178,6 +179,7 @@ export async function herramientasDe(botId: string): Promise<Map<string, BetaRun
       herramientaHabilidades(),
       ...herramientasEquipo(botId),
       herramientaReunion(botId),
+      herramientaConexion(botId),
     ];
     mapa = new Map(lista.map((t) => [t.name, t]));
     porBot.set(botId, mapa);
@@ -191,7 +193,26 @@ export async function cerrarHerramientas(botId: string): Promise<void> {
   for (const t of mapa?.values() ?? []) await t.close?.();
 }
 
-const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion"]);
+const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion", "conexion"]);
+
+// ---- Apps de afuera (Gmail, Microsoft 365, MCP…): una sola herramienta fija para todas ----
+
+const EntradaConexion = z.strictObject({
+  conexion: z.string().describe("Id o nombre de la conexión"),
+  accion: z.string().describe("Nombre de la acción"),
+  parametros: z.string().describe('Parámetros de la acción como JSON, por ejemplo {"max": 10}; "{}" si no hay'),
+});
+
+function herramientaConexion(botId: string): BetaRunnableTool {
+  const herramienta = betaZodTool({
+    name: "conexion",
+    description:
+      "Usá las apps de afuera que el usuario conectó y te habilitó (correo, Microsoft 365, otras apps). Cuáles tenés y sus acciones te llegan en mensajes del sistema. Las acciones que mandan algo afuera piden aprobación.",
+    inputSchema: EntradaConexion,
+    run: (e) => ejecutarConexion(botId, e),
+  });
+  return Object.assign(herramienta, { input_schema: esquemaJson(EntradaConexion) });
+}
 
 // ---- Reuniones convocadas por un manager ----
 
@@ -356,6 +377,11 @@ export function necesitaAprobacion(nombre: string, entrada: Record<string, unkno
       regla: "Crear, modificar y borrar rutinas",
       firma: `rutinas:${String(entrada.accion)}`,
     };
+  }
+  if (nombre === "conexion") {
+    const pedido = pedidoDeConexion(bot.id, entrada);
+    if (!pedido || permitido("externo", (p) => p === pedido.patron, bot)) return null;
+    return { herramienta: "externo", ...pedido };
   }
   if (nombre === "reunion") {
     if (permitido("reunion", (p) => p === "*", bot)) return null;
