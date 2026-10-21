@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gravity</string>
+
+    <!-- Pantalla de dirección (primera vez y "Cambiar dirección") -->
+    <string name="direccion_titulo">Dirección de tu Gravity</string>
+    <string name="direccion_ayuda">Es la dirección de la compu donde corre Gravity. Para que tus compañeros trabajen, la compu tiene que estar prendida.</string>
+    <string name="direccion_pista">http://192.168.0.10:3001</string>
+    <string name="direccion_campo_descripcion">Dirección de tu Gravity</string>
+    <string name="conectar">Conectar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="ejemplos">Ejemplos</string>
+    <string name="ejemplo_wifi">http://192.168.0.10:3001</string>
+    <string name="ejemplo_wifi_nota">En la misma Wi-Fi que la compu (Gravity iniciado con BOTS_HOST=0.0.0.0). Acordate del :3001.</string>
+    <string name="ejemplo_tailscale">https://tu-compu.ts.net</string>
+    <string name="ejemplo_tailscale_nota">Desde cualquier lado, con Tailscale o un túnel con HTTPS.</string>
+    <string name="direccion_seguridad">Fuera de tu casa usá HTTPS (Tailscale o Cloudflare): con http:// la conexión no va cifrada.</string>
+    <string name="error_vacia">Escribí la dirección de tu Gravity.</string>
+    <string name="error_esquema">La dirección tiene que empezar con http:// o https://.</string>
+    <string name="error_invalida">Esa dirección no parece válida. Fijate en los ejemplos de abajo.</string>
+
+    <!-- Sin conexión -->
+    <string name="error_titulo">No llego a tu Gravity</string>
+    <string name="error_red">Revisá que la compu esté prendida, que Gravity esté abierto y que el celu esté en la misma Wi-Fi (o con Tailscale prendido).</string>
+    <string name="error_http">Tu compu respondió con un error (%1$d). Puede que Gravity esté apagado o reiniciándose.</string>
+    <string name="error_ssl">El certificado de seguridad de esa dirección no es válido, así que no me conecté.</string>
+    <string name="reintentar">Reintentar</string>
+    <string name="cambiar_direccion">Cambiar dirección</string>
+
+    <!-- Botón flotante y su menú -->
+    <string name="manija_descripcion">Opciones de Gravity. Arrastralo para moverlo.</string>
+    <string name="menu_recargar">Recargar</string>
+    <string name="menu_cambiar_direccion">Cambiar dirección</string>
+    <string name="menu_abrir_navegador">Abrir en el navegador</string>
+
+    <!-- Avisos -->
+    <string name="descarga_iniciada">Descargando %1$s…</string>
+    <string name="descarga_no_soportada">Esta descarga no funciona dentro de la app. Abrí Gravity en el navegador.</string>
+    <string name="descarga_fallo">No se pudo empezar la descarga.</string>
+    <string name="sin_app_enlace">No hay ninguna app para abrir este enlace.</string>
+    <string name="sin_app_archivos">No hay ninguna app para elegir archivos.</string>
+
+    <!-- Atajo del ícono -->
+    <string name="atajo_corto">Dirección</string>
+    <string name="atajo_largo">Cambiar dirección</string>
+</resources>

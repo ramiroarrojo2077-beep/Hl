@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paleta "Órbita". Cian = actividad. Cálido = solo cuando algo te necesita. -->
+<resources>
+    <color name="fondo">#FF070A12</color>
+    <color name="superficie">#FF0B101B</color>
+    <color name="superficie2">#FF111827</color>
+    <color name="superficie3">#FF18213A</color>
+    <color name="linea">#FF2A3654</color>
+    <color name="texto">#FFE8ECF5</color>
+    <color name="texto2">#FFAAB3C8</color>
+    <color name="texto3">#FF8D98B0</color>
+    <color name="cian">#FF6CD3F0</color>
+    <color name="calido_texto">#FFFFB07A</color>
+    <color name="sobre_primario">#FF0A0F1A</color>
+    <color name="icono_fondo">#FF070A12</color>
+</resources>

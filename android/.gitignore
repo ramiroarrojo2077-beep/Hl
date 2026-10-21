@@ -1,0 +1,15 @@
+.gradle/
+.kotlin/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.cxx/
+# Claves de firma: nunca al repo
+*.jks
+*.keystore
+# El wrapper se genera local con `gradle wrapper`; no se sube
+gradlew
+gradlew.bat
+gradle/wrapper/gradle-wrapper.jar

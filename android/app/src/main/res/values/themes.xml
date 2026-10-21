@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema oscuro del framework (sin AppCompat). Con un tema oscuro, el WebView le avisa
+         a la página prefers-color-scheme: dark en Android 13+. -->
+    <style name="Theme.Gravity" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/fondo</item>
+        <item name="android:colorBackground">@color/fondo</item>
+        <item name="android:colorPrimary">@color/superficie2</item>
+        <item name="android:colorPrimaryDark">@color/fondo</item>
+        <item name="android:colorAccent">@color/cian</item>
+        <item name="android:textColorPrimary">@color/texto</item>
+        <item name="android:textColorSecondary">@color/texto2</item>
+        <item name="android:textColorHint">@color/texto3</item>
+        <item name="android:statusBarColor">@color/fondo</item>
+        <item name="android:navigationBarColor">@color/fondo</item>
+    </style>
+</resources>

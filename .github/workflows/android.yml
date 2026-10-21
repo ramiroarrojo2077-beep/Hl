@@ -1,0 +1,116 @@
+# Compila la app de Android de Gravity (carpeta android/) y la publica como gravity.apk
+# en la release "apk-latest" del repo, además de dejarla como artefacto del workflow.
+#
+# Firma: si el repo tiene los secretos ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS y ANDROID_KEY_PASSWORD se arma una APK release firmada con esa clave
+# (las actualizaciones se instalan encima). Si falta alguno, se arma la APK debug.
+name: Android
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: Compilar APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - name: Bajar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Java 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Instalar el SDK de Android
+        uses: android-actions/setup-android@v4
+
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.5.1"
+          cache-provider: basic
+
+      - name: Preparar la firma
+        id: firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 --decode > "$RUNNER_TEMP/gravity.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/gravity.jks" >> "$GITHUB_ENV"
+            echo "tipo=release" >> "$GITHUB_OUTPUT"
+            echo "Se arma la APK release firmada."
+          else
+            echo "tipo=debug" >> "$GITHUB_OUTPUT"
+            echo "::notice title=APK sin firma propia::Faltan los secretos de firma; se publica la APK debug."
+          fi
+
+      - name: Compilar
+        env:
+          TIPO: ${{ steps.firma.outputs.tipo }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ "$TIPO" = "release" ]; then
+            gradle --no-daemon --stacktrace :app:assembleRelease
+            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/gravity.apk"
+          else
+            gradle --no-daemon --stacktrace :app:assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/gravity.apk"
+          fi
+          ls -l "$GITHUB_WORKSPACE/gravity.apk"
+
+      - name: Borrar la clave del runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gravity.jks"
+
+      - name: Guardar como artefacto
+        uses: actions/upload-artifact@v7
+        with:
+          name: gravity-apk
+          path: gravity.apk
+          if-no-files-found: error
+
+      - name: Publicar en Releases (apk-latest)
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: apk-latest
+          name: Gravity para Android (última versión)
+          prerelease: true
+          files: gravity.apk
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          body: |
+            **Gravity para Android**, compilada automáticamente desde `${{ github.ref_name }}` (commit `${{ github.sha }}`, versión 1.0.${{ github.run_number }}, APK ${{ steps.firma.outputs.tipo }}).
+
+            ### Cómo instalarla
+            1. En el celu, abrí esta página y tocá **gravity.apk** (más abajo, en *Assets*).
+            2. Cuando termine la descarga, abrila. Si Android lo pide, permití **Instalar apps desconocidas** para tu navegador (Ajustes > Apps > Chrome > Instalar apps desconocidas).
+            3. Si aparece Play Protect, tocá **Más detalles > Instalar de todos modos**: la app no está en Google Play.
+            4. Abrí Gravity y escribí la dirección de tu compu, por ejemplo `http://192.168.0.10:3001` (misma Wi-Fi) o `https://tu-compu.ts.net` (Tailscale).
+
+            Para actualizar, bajá la nueva **gravity.apk** e instalala encima. Si Android dice que el paquete está en conflicto, desinstalá la anterior y volvé a instalar (pasa con las APK debug, que cambian de firma).
+
+            La compu tiene que estar prendida y con Gravity abierto. Guía completa: `bots/MOVIL.md` en el repo.

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Capa monocroma (iconos tematicos de Android 13+). Generado con la misma geometria que bots/public/iconos/gravity.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M59,41.96 A23.45,9.8 -24 0,1 66.29,58.34 M49,66.04 A23.45,9.8 -24 0,1 41.71,49.66"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.15"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M45.25,54 a8.75,8.75 0 1,0 17.5,0 a8.75,8.75 0 1,0 -17.5,0 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M69.45,42.58 a4.38,4.38 0 1,0 8.75,0 a4.38,4.38 0 1,0 -8.75,0 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

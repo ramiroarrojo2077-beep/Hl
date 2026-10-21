@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo de Gravity para la interfaz. Generado con la misma geometria que bots/public/iconos/gravity.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    <path
+        android:pathData="M18.69,9.16 A13.4,5.6 -24 0,1 22.88,18.58 M13.31,22.84 A13.4,5.6 -24 0,1 9.12,13.42"
+        android:strokeColor="#FFAAB3C8"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M11,16 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z"
+        android:fillColor="#FFE8ECF5" />
+    <path
+        android:pathData="M24.83,9.47 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0 Z"
+        android:fillColor="#FF6CD3F0" />
+</vector>
