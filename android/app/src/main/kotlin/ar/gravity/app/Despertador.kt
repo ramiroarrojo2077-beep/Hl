@@ -7,7 +7,7 @@ import android.content.Intent
 /**
  * Vuelve a prender el motor al reiniciar el celular o al actualizar la app, y despierta al
  * celular para las rutinas (alarma que programa el motor). Corre en el proceso ":motor".
- * Si apagaste Gravity desde la app o todavía no cargaste la clave, no hace nada.
+ * Si apagaste Gravity desde la app o todavía no cargaste una clave, no hace nada.
  */
 class Despertador : BroadcastReceiver() {
     override fun onReceive(contexto: Context, intent: Intent) {
@@ -15,7 +15,7 @@ class Despertador : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED, DESPERTAR -> Unit
             else -> return
         }
-        if (Gravity.apagadoAMano(contexto) || !Clave.existe(contexto)) return
+        if (Gravity.apagadoAMano(contexto) || !Clave.lista(contexto)) return
         val motor = Motor.instancia
         if (motor != null) {
             motor.despertar()

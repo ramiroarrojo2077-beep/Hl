@@ -30,7 +30,7 @@ import {
   type Rutina,
   type Tarea,
 } from "./almacen.ts";
-import { client, MODELO, ESFUERZO, BETA_FALLBACK } from "./cliente.ts";
+import { client, MODELO, MODELO_VISIBLE, ESFUERZO, BETA_FALLBACK, PROVEEDOR } from "./cliente.ts";
 import { llamar, definirBloqueo, reanudarCupo, type Clase } from "./cupo.ts";
 import { registrarUso, nivelGasto } from "./gasto.ts";
 import { herramientasDe, cerrarHerramientas, definiciones, entradaValida, necesitaAprobacion, conTerminal, type PedidoAprobacion } from "./herramientas.ts";
@@ -55,7 +55,7 @@ const VUELTAS_DE_GRACIA = 2;
 const ZONA = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const TERMINAL_INACTIVA_MS = 60 * 60_000;
 
-export const CONFIG = { modelo: MODELO, esfuerzo: ESFUERZO, computadora: COMPUTADORA, zona: ZONA };
+export const CONFIG = { modelo: MODELO_VISIBLE, proveedor: PROVEEDOR, esfuerzo: ESFUERZO, computadora: COMPUTADORA, zona: ZONA };
 
 // ---- Cola de trabajo de cada bot ----
 
@@ -316,6 +316,10 @@ function describirUso(nombre: string, entrada: Record<string, unknown>): string 
       return "Organizando una reunión";
     case "conexion":
       return `Usando ${String(entrada.conexion ?? "una conexión")}: ${String(entrada.accion ?? "")}`;
+    case "web_search":
+      return entrada.query ? `Buscando: ${String(entrada.query)}` : "Buscando en la web";
+    case "web_fetch":
+      return entrada.url ? `Leyendo: ${String(entrada.url)}` : "Leyendo una página";
     default:
       return `Usando ${nombre}`;
   }
@@ -594,8 +598,14 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
 }
 
 function mensajeDeError(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return "Falta o es inválida la ANTHROPIC_API_KEY del servidor.";
-  if (err instanceof Anthropic.RateLimitError) return "La API sigue pidiendo esperar. Probá de nuevo en unos minutos.";
+  if (err instanceof Anthropic.AuthenticationError) {
+    return PROVEEDOR === "gratis" ? err.message : "Falta o es inválida la ANTHROPIC_API_KEY del servidor.";
+  }
+  if (err instanceof Anthropic.RateLimitError) {
+    return PROVEEDOR === "gratis"
+      ? "Los modelos gratis se quedaron sin cupo por ahora. Siguen solos cuando se libere (el cupo de Gemini se renueva cada día)."
+      : "La API sigue pidiendo esperar. Probá de nuevo en unos minutos.";
+  }
   if (err instanceof Anthropic.APIConnectionError) return "No se pudo conectar con la API. Revisá la conexión.";
   if (err instanceof Anthropic.APIError) return `Error de la API (${err.status ?? "sin código"}): ${err.message}`;
   return "Error inesperado. Mirá la consola del servidor.";

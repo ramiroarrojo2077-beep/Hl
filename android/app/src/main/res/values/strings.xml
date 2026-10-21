@@ -2,15 +2,25 @@
 <resources>
     <string name="app_name">Gravity</string>
 
-    <!-- Clave de Anthropic (primera vez y menú) -->
-    <string name="clave_titulo">Tu clave de Anthropic</string>
-    <string name="clave_ayuda">Gravity corre entero en este celular: tus compañeros, sus conversaciones y su compu. Solo hace falta tu clave de la API de Anthropic para que puedan pensar.</string>
-    <string name="clave_pista">sk-ant-…</string>
+    <!-- Modelo y claves (primera vez y menú) -->
+    <string name="clave_titulo">Elegí el modelo de IA</string>
+    <string name="proveedor_gemini">Gemini · gratis</string>
+    <string name="proveedor_claude">Claude</string>
+    <string name="clave_ayuda_gemini">Google Gemini es gratis: sacás la clave con tu cuenta de Google, sin tarjeta. Tiene un cupo por día; si se acaba, sigue el respaldo de abajo.</string>
+    <string name="clave_ayuda_claude">Claude de Anthropic es el modelo más capaz, pero se paga por uso con tu clave de la API.</string>
+    <string name="clave_pista_gemini">Clave de Gemini (AIza…)</string>
+    <string name="clave_pista_claude">Clave de Anthropic (sk-ant-…)</string>
+    <string name="clave_guardada_pista">Ya hay una guardada (vacío = mantenerla)</string>
+    <string name="clave_donde_gemini">Sacar la clave gratis → aistudio.google.com</string>
+    <string name="clave_donde_claude">¿Dónde la consigo? → console.anthropic.com</string>
+    <string name="respaldo_titulo">Respaldo gratis (opcional)</string>
+    <string name="respaldo_ayuda">Si se acaba el cupo de Gemini, tus compañeros siguen con el mejor modelo gratuito de OpenRouter. La clave también es gratis.</string>
+    <string name="respaldo_pista">Clave de OpenRouter (sk-or-…)</string>
+    <string name="respaldo_donde">Sacar la clave gratis → openrouter.ai</string>
     <string name="clave_guardar">Guardar y arrancar</string>
-    <string name="clave_donde">¿Dónde la consigo? → console.anthropic.com</string>
-    <string name="clave_seguridad">La clave queda cifrada en este celular (Android Keystore) y solo se usa para hablar con la API de Anthropic. No se sube a ningún lado.</string>
-    <string name="clave_vacia">Pegá tu clave de Anthropic.</string>
-    <string name="clave_invalida">Esa clave no parece completa. Copiala de nuevo desde la consola de Anthropic.</string>
+    <string name="clave_seguridad">Las claves quedan cifradas en este celular (Android Keystore) y solo se usan para hablar con el modelo que elegiste. No se suben a ningún lado.</string>
+    <string name="clave_vacia">Pegá la clave del modelo que elegiste.</string>
+    <string name="clave_invalida">Esa clave no parece completa. Copiala de nuevo desde la página donde la sacaste.</string>
     <string name="clave_no_guardada">No se pudo guardar la clave (%1$s).</string>
     <string name="cancelar">Cancelar</string>
 
@@ -27,7 +37,7 @@
     <string name="manija_descripcion">Opciones de Gravity. Arrastralo para moverlo.</string>
     <string name="menu_recargar">Recargar</string>
     <string name="menu_reiniciar">Reiniciar el motor</string>
-    <string name="menu_clave">Clave de Anthropic</string>
+    <string name="menu_clave">Modelo y claves</string>
     <string name="menu_bateria">Trabajar con la pantalla apagada</string>
     <string name="menu_apagar">Apagar Gravity</string>
     <string name="apagar_titulo">¿Apagar Gravity?</string>
@@ -53,7 +63,7 @@
     <string name="motor_proxima">En espera · próxima rutina a las %1$s</string>
     <string name="motor_en_espera">En espera</string>
     <string name="motor_apagar">Apagar</string>
-    <string name="motor_sin_clave">Falta tu clave de Anthropic. Abrí Gravity para cargarla.</string>
+    <string name="motor_sin_clave">Falta la clave del modelo. Abrí Gravity para cargarla.</string>
     <string name="motor_fallo_repetido">El motor se cerró varias veces seguidas. Abrí Gravity para ver qué pasó.</string>
     <string name="aprobacion_una">Un compañero espera tu aprobación.</string>
     <string name="aprobaciones">%1$d aprobaciones esperan tu respuesta.</string>

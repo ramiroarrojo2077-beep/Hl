@@ -53,6 +53,8 @@ export function nivelGasto(): "tope" | "suave" | null {
 }
 
 export function costoDe(m: Anthropic.Beta.BetaMessage): number {
+  // Los modelos gratis (Gemini, OpenRouter) no suman gasto.
+  if (!PRECIOS[m.model] && !m.model.startsWith("claude")) return 0;
   const p = PRECIOS[m.model] ?? PRECIOS["claude-opus-5-5"]!;
   const u = m.usage;
   const cache5m = u.cache_creation?.ephemeral_5m_input_tokens ?? 0;

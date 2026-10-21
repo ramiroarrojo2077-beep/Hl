@@ -11,14 +11,19 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * La clave de la API de Anthropic. Se guarda cifrada (AES-256-GCM) con una llave del
- * Android Keystore, que no se puede sacar del celular; el archivo queda fuera de las copias de seguridad.
+ * Las claves de los modelos (Gemini, Anthropic y el respaldo gratis de OpenRouter). Se guardan cifradas
+ * (AES-256-GCM) con una llave del Android Keystore, que no se puede sacar del celular; los archivos
+ * quedan fuera de las copias de seguridad.
  */
 object Clave {
-    private const val ALIAS = "gravity_clave_anthropic"
-    private const val ARCHIVO = "clave.bin"
+    const val GEMINI = "gemini"
+    const val ANTHROPIC = "anthropic"
+    const val OPENROUTER = "openrouter"
 
-    private fun archivo(contexto: Context) = File(contexto.noBackupFilesDir, ARCHIVO)
+    private const val ALIAS = "gravity_clave_anthropic"
+
+    private fun archivo(contexto: Context, nombre: String) =
+        File(contexto.noBackupFilesDir, if (nombre == ANTHROPIC) "clave.bin" else "clave-$nombre.bin")
 
     private fun llave(): SecretKey {
         val almacen = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -34,25 +39,41 @@ object Clave {
         return generador.generateKey()
     }
 
-    fun existe(contexto: Context): Boolean = archivo(contexto).exists()
+    /** Qué modelo usan los compañeros: Gemini (gratis, por defecto) o Claude de Anthropic. */
+    fun proveedor(contexto: Context): String {
+        val elegido = File(contexto.noBackupFilesDir, "proveedor").takeIf { it.exists() }?.readText()?.trim()
+        if (elegido == GEMINI || elegido == ANTHROPIC) return elegido
+        // Instalaciones de antes de poder elegir: si ya había clave de Anthropic, sigue con esa.
+        return if (existe(contexto, ANTHROPIC)) ANTHROPIC else GEMINI
+    }
 
-    fun guardar(contexto: Context, clave: String) {
+    fun elegirProveedor(contexto: Context, proveedor: String) {
+        Gravity.escribir(File(contexto.noBackupFilesDir, "proveedor"), proveedor)
+    }
+
+    /** Hay clave para el modelo elegido: el motor puede arrancar. */
+    fun lista(contexto: Context): Boolean = existe(contexto, proveedor(contexto))
+
+    fun existe(contexto: Context, nombre: String): Boolean = archivo(contexto, nombre).exists()
+
+    fun guardar(contexto: Context, nombre: String, clave: String) {
         val cifrador = Cipher.getInstance("AES/GCM/NoPadding")
         cifrador.init(Cipher.ENCRYPT_MODE, llave())
         val cifrado = cifrador.doFinal(clave.toByteArray(Charsets.UTF_8))
         val iv = cifrador.iv
         val datos = byteArrayOf(iv.size.toByte()) + iv + cifrado
-        val temporal = File(contexto.noBackupFilesDir, "$ARCHIVO.tmp")
+        val destino = archivo(contexto, nombre)
+        val temporal = File(destino.parentFile, "${destino.name}.tmp")
         temporal.writeBytes(datos)
-        if (!temporal.renameTo(archivo(contexto))) {
-            archivo(contexto).writeBytes(datos)
+        if (!temporal.renameTo(destino)) {
+            destino.writeBytes(datos)
             temporal.delete()
         }
     }
 
     /** null si no hay clave o si no se puede descifrar (por ejemplo, si se borró la llave del Keystore). */
-    fun leer(contexto: Context): String? {
-        val datos = archivo(contexto).takeIf { it.exists() }?.readBytes() ?: return null
+    fun leer(contexto: Context, nombre: String): String? {
+        val datos = archivo(contexto, nombre).takeIf { it.exists() }?.readBytes() ?: return null
         return try {
             val largoIv = datos[0].toInt()
             val iv = datos.copyOfRange(1, 1 + largoIv)
@@ -64,7 +85,7 @@ object Clave {
         }
     }
 
-    /** Revisión liviana: la clave de verdad la valida la API la primera vez que un compañero trabaja. */
+    /** Revisión liviana: la clave de verdad la valida el proveedor la primera vez que un compañero trabaja. */
     fun revisar(texto: String): Int? {
         val limpia = texto.trim()
         return when {

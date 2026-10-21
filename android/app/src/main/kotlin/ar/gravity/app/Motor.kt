@@ -123,7 +123,9 @@ class Motor : Service() {
 
     /** false si no se pudo arrancar (y el servicio ya se cerró). */
     private fun arrancarNode(): Boolean {
-        val clave = Clave.leer(this)
+        val proveedor = Clave.proveedor(this)
+        val clave = Clave.leer(this, proveedor)
+        val respaldo = Clave.leer(this, Clave.OPENROUTER)
         if (clave == null) {
             avisar(ID_ERROR, getString(R.string.motor_sin_clave), abrirApp = true)
             cerrarServicio()
@@ -144,7 +146,7 @@ class Motor : Service() {
                 if (registro.length() > 2_000_000) registro.delete()
                 registro.appendText("\n=== Gravity arranca: ${Date()} ===\n")
                 val servidor = instalarMotor(contexto)
-                val datos = prepararEntorno(contexto, clave)
+                val datos = prepararEntorno(contexto, proveedor, clave, respaldo)
                 val codigo = NodeNativo.iniciar(arrayOf("node", servidor.absolutePath), registro.absolutePath, datos.absolutePath)
                 registro.appendText("=== El motor terminó (código $codigo) ===\n")
             } catch (t: Throwable) {
@@ -190,12 +192,16 @@ class Motor : Service() {
     }
 
     /** Variables que Node lee al arrancar (ver docs/EMBEDDING.md de nodejs-mobile). */
-    private fun prepararEntorno(contexto: Context, clave: String): File {
+    private fun prepararEntorno(contexto: Context, proveedor: String, clave: String, respaldo: String?): File {
         val datos = File(contexto.filesDir, "gravity").apply { mkdirs() }
         val temporal = File(contexto.cacheDir, "tmp").apply { mkdirs() }
         val cache = File(contexto.cacheDir, "node").apply { mkdirs() }
-        val variables = mapOf(
-            "ANTHROPIC_API_KEY" to clave,
+        // Sin ANTHROPIC_API_KEY el motor usa Gemini y, si se acaba su cupo, el respaldo gratis de OpenRouter.
+        val claves = buildMap {
+            put(if (proveedor == Clave.ANTHROPIC) "ANTHROPIC_API_KEY" else "GEMINI_API_KEY", clave)
+            if (!respaldo.isNullOrBlank()) put("OPENROUTER_API_KEY", respaldo)
+        }
+        val variables = claves + mapOf(
             "GRAVITY_TOKEN" to Gravity.token(contexto),
             "BOTS_DATOS" to datos.absolutePath,
             "BOTS_HOST" to "127.0.0.1",

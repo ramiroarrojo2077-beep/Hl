@@ -114,7 +114,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Clave de Anthropic: primera vez y "Clave de Anthropic" del menú -->
+    <!-- Modelo y claves: primera vez y "Modelo y claves" del menú -->
     <ScrollView
         android:id="@+id/panelClave"
         android:layout_width="match_parent"
@@ -149,12 +149,49 @@
                 android:textColor="@color/texto"
                 android:textSize="24sp" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/botonGemini"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/boton_primario"
+                    android:fontFamily="sans-serif-medium"
+                    android:minHeight="48dp"
+                    android:stateListAnimator="@null"
+                    android:text="@string/proveedor_gemini"
+                    android:textAllCaps="false"
+                    android:textColor="@color/sobre_primario"
+                    android:textSize="15sp" />
+
+                <Button
+                    android:id="@+id/botonClaude"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/boton_secundario"
+                    android:fontFamily="sans-serif-medium"
+                    android:minHeight="48dp"
+                    android:stateListAnimator="@null"
+                    android:text="@string/proveedor_claude"
+                    android:textAllCaps="false"
+                    android:textColor="@color/texto"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
             <TextView
+                android:id="@+id/ayudaClave"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="14dp"
                 android:lineSpacingMultiplier="1.15"
-                android:text="@string/clave_ayuda"
+                android:text="@string/clave_ayuda_gemini"
                 android:textColor="@color/texto2"
                 android:textSize="15sp" />
 
@@ -162,11 +199,11 @@
                 android:id="@+id/campoClave"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/fondo_campo"
                 android:contentDescription="@string/clave_titulo"
                 android:fontFamily="monospace"
-                android:hint="@string/clave_pista"
+                android:hint="@string/clave_pista_gemini"
                 android:imeOptions="actionGo"
                 android:importantForAutofill="no"
                 android:inputType="textPassword"
@@ -188,6 +225,75 @@
                 android:textColor="@color/calido_texto"
                 android:textSize="14sp"
                 android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/enlaceConsola"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:minHeight="44dp"
+                android:text="@string/clave_donde_gemini"
+                android:textColor="@color/cian"
+                android:textSize="15sp" />
+
+            <!-- Respaldo gratis por si se acaba el cupo de Gemini (opcional) -->
+            <LinearLayout
+                android:id="@+id/grupoRespaldo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/respaldo_titulo"
+                    android:textColor="@color/texto"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:lineSpacingMultiplier="1.15"
+                    android:text="@string/respaldo_ayuda"
+                    android:textColor="@color/texto2"
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/campoRespaldo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/fondo_campo"
+                    android:contentDescription="@string/respaldo_titulo"
+                    android:fontFamily="monospace"
+                    android:hint="@string/respaldo_pista"
+                    android:imeOptions="actionDone"
+                    android:importantForAutofill="no"
+                    android:inputType="textPassword"
+                    android:minHeight="52dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:singleLine="true"
+                    android:textColor="@color/texto"
+                    android:textColorHint="@color/texto3"
+                    android:textCursorDrawable="@null"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/enlaceRespaldo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:minHeight="44dp"
+                    android:text="@string/respaldo_donde"
+                    android:textColor="@color/cian"
+                    android:textSize="15sp" />
+            </LinearLayout>
 
             <Button
                 android:id="@+id/botonGuardarClave"
@@ -217,16 +323,6 @@
                 android:textSize="16sp"
                 android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/enlaceConsola"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:minHeight="44dp"
-                android:gravity="center_vertical"
-                android:text="@string/clave_donde"
-                android:textColor="@color/cian"
-                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="wrap_content"

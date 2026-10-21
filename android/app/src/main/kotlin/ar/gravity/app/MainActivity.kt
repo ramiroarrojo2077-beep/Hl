@@ -69,6 +69,12 @@ class MainActivity : Activity() {
     private lateinit var panelClave: View
     private lateinit var campoClave: EditText
     private lateinit var avisoClave: TextView
+    private lateinit var ayudaClave: TextView
+    private lateinit var enlaceConsola: TextView
+    private lateinit var botonGemini: Button
+    private lateinit var botonClaude: Button
+    private lateinit var grupoRespaldo: View
+    private lateinit var campoRespaldo: EditText
     private lateinit var botonCancelar: Button
     private lateinit var manija: ImageButton
 
@@ -77,6 +83,9 @@ class MainActivity : Activity() {
 
     /** ControlAtras en Android 13+; Any para no cargar la clase en versiones viejas. */
     private var controlAtras: Any? = null
+
+    /** Modelo elegido en el panel de claves (todavía sin guardar). */
+    private var proveedorElegido = Clave.GEMINI
 
     /** Número de la espera en curso: una espera vieja (de antes de reiniciar) no toca la pantalla. */
     private var espera = 0
@@ -106,6 +115,12 @@ class MainActivity : Activity() {
         panelClave = findViewById(R.id.panelClave)
         campoClave = findViewById(R.id.campoClave)
         avisoClave = findViewById(R.id.avisoClave)
+        ayudaClave = findViewById(R.id.ayudaClave)
+        enlaceConsola = findViewById(R.id.enlaceConsola)
+        botonGemini = findViewById(R.id.botonGemini)
+        botonClaude = findViewById(R.id.botonClaude)
+        grupoRespaldo = findViewById(R.id.grupoRespaldo)
+        campoRespaldo = findViewById(R.id.campoRespaldo)
         botonCancelar = findViewById(R.id.botonCancelar)
         manija = findViewById(R.id.manija)
 
@@ -116,7 +131,7 @@ class MainActivity : Activity() {
         configurarPaneles()
         configurarManija()
 
-        if (Clave.existe(this)) {
+        if (Clave.lista(this)) {
             if (savedInstanceState != null && web.restoreState(savedInstanceState) != null) cargada = true
             arrancar(reiniciar = false)
         } else {
@@ -384,7 +399,12 @@ class MainActivity : Activity() {
         botonReintentar.setOnClickListener { arrancar(reiniciar = true) }
         botonClaveDesdeEstado.setOnClickListener { mostrarPanelClave() }
         findViewById<Button>(R.id.botonGuardarClave).setOnClickListener { guardarClave() }
-        findViewById<TextView>(R.id.enlaceConsola).setOnClickListener { abrirAfuera(Uri.parse(CONSOLA)) }
+        enlaceConsola.setOnClickListener {
+            abrirAfuera(Uri.parse(if (proveedorElegido == Clave.GEMINI) CONSOLA_GEMINI else CONSOLA_ANTHROPIC))
+        }
+        findViewById<TextView>(R.id.enlaceRespaldo).setOnClickListener { abrirAfuera(Uri.parse(CONSOLA_OPENROUTER)) }
+        botonGemini.setOnClickListener { marcarProveedor(Clave.GEMINI) }
+        botonClaude.setOnClickListener { marcarProveedor(Clave.ANTHROPIC) }
         botonCancelar.setOnClickListener { cerrarPanelClave() }
         campoClave.setOnEditorActionListener { _, accion, _ ->
             if (accion == EditorInfo.IME_ACTION_GO || accion == EditorInfo.IME_ACTION_DONE) {
@@ -414,8 +434,11 @@ class MainActivity : Activity() {
 
     private fun mostrarPanelClave() {
         campoClave.setText("")
+        campoRespaldo.setText("")
+        campoRespaldo.hint = getString(if (Clave.existe(this, Clave.OPENROUTER)) R.string.clave_guardada_pista else R.string.respaldo_pista)
+        marcarProveedor(Clave.proveedor(this))
         avisoClave.visibility = View.GONE
-        botonCancelar.visibility = if (Clave.existe(this)) View.VISIBLE else View.GONE
+        botonCancelar.visibility = if (Clave.lista(this)) View.VISIBLE else View.GONE
         panelClave.visibility = View.VISIBLE
         manija.visibility = View.GONE
         actualizarAtras()
@@ -428,23 +451,51 @@ class MainActivity : Activity() {
         actualizarAtras()
     }
 
+    /** Gemini (gratis) o Claude: cambia los textos, el enlace y si se ofrece el respaldo gratis. */
+    private fun marcarProveedor(proveedor: String) {
+        proveedorElegido = proveedor
+        val gemini = proveedor == Clave.GEMINI
+        botonGemini.setBackgroundResource(if (gemini) R.drawable.boton_primario else R.drawable.boton_secundario)
+        botonGemini.setTextColor(getColor(if (gemini) R.color.sobre_primario else R.color.texto))
+        botonClaude.setBackgroundResource(if (gemini) R.drawable.boton_secundario else R.drawable.boton_primario)
+        botonClaude.setTextColor(getColor(if (gemini) R.color.texto else R.color.sobre_primario))
+        ayudaClave.setText(if (gemini) R.string.clave_ayuda_gemini else R.string.clave_ayuda_claude)
+        enlaceConsola.setText(if (gemini) R.string.clave_donde_gemini else R.string.clave_donde_claude)
+        campoClave.hint = getString(
+            when {
+                Clave.existe(this, proveedor) -> R.string.clave_guardada_pista
+                gemini -> R.string.clave_pista_gemini
+                else -> R.string.clave_pista_claude
+            },
+        )
+        grupoRespaldo.visibility = if (gemini) View.VISIBLE else View.GONE
+        avisoClave.visibility = View.GONE
+    }
+
     private fun guardarClave() {
         val texto = campoClave.text.toString().trim()
-        val error = Clave.revisar(texto)
+        val respaldo = campoRespaldo.text.toString().trim()
+        // Vacío con una clave ya guardada: se mantiene la que estaba.
+        val mantiene = texto.isEmpty() && Clave.existe(this, proveedorElegido)
+        val error = (if (mantiene) null else Clave.revisar(texto))
+            ?: respaldo.takeIf { it.isNotEmpty() && proveedorElegido == Clave.GEMINI }?.let { Clave.revisar(it) }
         if (error != null) {
             avisoClave.setText(error)
             avisoClave.visibility = View.VISIBLE
             return
         }
-        val habiaClave = Clave.existe(this)
+        val habiaClave = Clave.lista(this)
         try {
-            Clave.guardar(this, texto)
+            if (!mantiene) Clave.guardar(this, proveedorElegido, texto)
+            if (respaldo.isNotEmpty() && proveedorElegido == Clave.GEMINI) Clave.guardar(this, Clave.OPENROUTER, respaldo)
+            Clave.elegirProveedor(this, proveedorElegido)
         } catch (e: Exception) {
             avisoClave.text = getString(R.string.clave_no_guardada, e.message ?: e.javaClass.simpleName)
             avisoClave.visibility = View.VISIBLE
             return
         }
         campoClave.setText("")
+        campoRespaldo.setText("")
         cerrarPanelClave()
         // El motor lee la clave al arrancar: si ya estaba prendido, se reinicia.
         arrancar(reiniciar = habiaClave)
@@ -595,7 +646,7 @@ class MainActivity : Activity() {
     // ---------------------------------------------------------------- Atrás
 
     private fun debeInterceptarAtras(): Boolean =
-        (panelClave.visibility == View.VISIBLE && Clave.existe(this)) || (!rendererCaido && web.canGoBack())
+        (panelClave.visibility == View.VISIBLE && Clave.lista(this)) || (!rendererCaido && web.canGoBack())
 
     private fun actualizarAtras() {
         if (Build.VERSION.SDK_INT >= 33) {
@@ -605,7 +656,7 @@ class MainActivity : Activity() {
 
     private fun volver() {
         when {
-            panelClave.visibility == View.VISIBLE && Clave.existe(this) -> cerrarPanelClave()
+            panelClave.visibility == View.VISIBLE && Clave.lista(this) -> cerrarPanelClave()
             !rendererCaido && web.canGoBack() -> web.goBack()
             // Atrás no apaga el motor: los compañeros siguen trabajando con la app cerrada.
             else -> moveTaskToBack(true)
@@ -662,7 +713,9 @@ class MainActivity : Activity() {
     }
 
     private companion object {
-        const val CONSOLA = "https://console.anthropic.com/settings/keys"
+        const val CONSOLA_GEMINI = "https://aistudio.google.com/apikey"
+        const val CONSOLA_ANTHROPIC = "https://console.anthropic.com/settings/keys"
+        const val CONSOLA_OPENROUTER = "https://openrouter.ai/settings/keys"
         const val PEDIDO_ARCHIVOS = 41
         const val PEDIDO_NOTIFICACIONES = 42
         const val MENU_RECARGAR = 1

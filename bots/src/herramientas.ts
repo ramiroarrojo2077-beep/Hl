@@ -1,6 +1,7 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { lookup } from "node:dns/promises";
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { betaAgentToolset20260401 } from "@anthropic-ai/sdk/tools/agent-toolset/node";
@@ -29,8 +30,10 @@ import {
 import { normalizarHorario, describirHorario, proximaEjecucion } from "./rutinas.ts";
 import { herramientasEquipo } from "./equipo.ts";
 import { convocar } from "./reuniones.ts";
-import { ejecutarConexion, pedidoDeConexion } from "./conexiones.ts";
+import { ejecutarConexion, externo, htmlATexto, pedidoDeConexion } from "./conexiones.ts";
 import { emitir } from "./eventos.ts";
+import { PROVEEDOR } from "./cliente.ts";
+import { buscarConGoogle } from "./proveedores.ts";
 
 // ---- Validación de entradas ----
 // Las herramientas del SDK (bash, read, write…) no validan lo que reciben, y con eager_input_streaming
@@ -173,8 +176,10 @@ const SHELL_ALTERNATIVA = process.env.GRAVITY_SHELL || (existsSync("/bin/bash") 
 const MARCA_CARPETA = "__GRAVITY_CARPETA__";
 const LIMITE_SALIDA = 30_000;
 
+const CLAVES_PRIVADAS = new Set(["GRAVITY_TOKEN", "GEMINI_API_KEY", "OPENROUTER_API_KEY", "BOTS_CLAVE"]);
+
 function entornoSinClaves(): NodeJS.ProcessEnv {
-  return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ANTHROPIC_") && k !== "GRAVITY_TOKEN"));
+  return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ANTHROPIC_") && !CLAVES_PRIVADAS.has(k)));
 }
 
 function terminalAlternativa(original: BetaRunnableTool): BetaRunnableTool {
@@ -235,6 +240,8 @@ export async function herramientasDe(botId: string): Promise<Map<string, BetaRun
       ...herramientasEquipo(botId),
       herramientaReunion(botId),
       herramientaConexion(botId),
+      // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
+      ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
     ];
     mapa = new Map(lista.map((t) => [t.name, t]));
     porBot.set(botId, mapa);
@@ -267,6 +274,74 @@ function herramientaConexion(botId: string): BetaRunnableTool {
     run: (e) => ejecutarConexion(botId, e),
   });
   return Object.assign(herramienta, { input_schema: esquemaJson(EntradaConexion) });
+}
+
+// ---- Web con modelos gratis: búsqueda con Google (vía Gemini) y lectura de páginas ----
+
+const EntradaBuscar = z.strictObject({ query: z.string().describe("Qué buscar, en pocas palabras") });
+const EntradaLeer = z.strictObject({ url: z.string().describe("Dirección completa, con https://") });
+const MAX_PAGINA = 2_000_000;
+
+function herramientasWeb(): BetaRunnableTool[] {
+  const buscar = betaZodTool({
+    name: "web_search",
+    description: "Buscá en la web con Google. Devuelve un resumen con datos y las fuentes.",
+    inputSchema: EntradaBuscar,
+    run: async (e) => externo(await buscarConGoogle(e.query)),
+  });
+  const leer = betaZodTool({
+    name: "web_fetch",
+    description: "Leé el texto de una página web pública (https).",
+    inputSchema: EntradaLeer,
+    run: async (e) => externo(await leerPagina(e.url)),
+  });
+  return [Object.assign(buscar, { input_schema: esquemaJson(EntradaBuscar) }), Object.assign(leer, { input_schema: esquemaJson(EntradaLeer) })];
+}
+
+/** Direcciones que no son de internet (la propia máquina, la red de casa): no se leen. */
+function esPrivada(ip: string): boolean {
+  if (ip.includes(":")) {
+    const v = ip.toLowerCase();
+    if (v.startsWith("::ffff:")) return esPrivada(v.slice(7));
+    return v === "::1" || v === "::" || v.startsWith("fc") || v.startsWith("fd") || v.startsWith("fe80");
+  }
+  const [a, b] = ip.split(".").map(Number) as [number, number];
+  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+}
+
+async function leerPagina(direccion: string, saltos = 0): Promise<string> {
+  let url: URL;
+  try {
+    url = new URL(direccion);
+  } catch {
+    throw new Error("Dirección inválida.");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Solo páginas http o https.");
+  const ips = await lookup(url.hostname, { all: true }).catch(() => []);
+  if (!ips.length) throw new Error(`No se encontró ${url.hostname}.`);
+  if (ips.some((d) => esPrivada(d.address))) throw new Error("Esa dirección es de una red privada: no se lee.");
+  const res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(30_000), headers: { "user-agent": "Mozilla/5.0 (Gravity)" } });
+  if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
+    if (saltos >= 5) throw new Error("Demasiadas redirecciones.");
+    return leerPagina(new URL(res.headers.get("location")!, url).toString(), saltos + 1);
+  }
+  if (!res.ok) throw new Error(`La página respondió ${res.status}.`);
+  const tipo = res.headers.get("content-type") ?? "";
+  if (!/text|json|xml|html/.test(tipo)) throw new Error(`No es una página de texto (${tipo || "tipo desconocido"}).`);
+  const lector = res.body?.getReader();
+  let crudo = "";
+  const decodificador = new TextDecoder();
+  while (lector) {
+    const { done, value } = await lector.read();
+    if (done) break;
+    crudo += decodificador.decode(value, { stream: true });
+    if (crudo.length > MAX_PAGINA) {
+      await lector.cancel();
+      break;
+    }
+  }
+  const texto = /html/.test(tipo) ? htmlATexto(crudo) : crudo;
+  return `${url.toString()}\n\n${texto.slice(0, 40_000)}`;
 }
 
 // ---- Reuniones convocadas por un manager ----
@@ -328,10 +403,13 @@ function herramientaReunion(botId: string): BetaRunnableTool {
 
 // Definiciones para la API, en orden fijo para no romper el caché del prompt.
 export function definiciones(mapa: Map<string, BetaRunnableTool>): Anthropic.Beta.BetaToolUnion[] {
-  const servidor: Anthropic.Beta.BetaToolUnion[] = [
-    { type: "web_search_20260209", name: "web_search", max_uses: 10 },
-    { type: "web_fetch_20260209", name: "web_fetch", max_uses: 10 },
-  ];
+  const servidor: Anthropic.Beta.BetaToolUnion[] =
+    PROVEEDOR === "gratis"
+      ? []
+      : [
+          { type: "web_search_20260209", name: "web_search", max_uses: 10 },
+          { type: "web_fetch_20260209", name: "web_fetch", max_uses: 10 },
+        ];
   const cliente = [...mapa.values()].map(({ run: _r, parse: _p, close: _c, ...definicion }) =>
     // Las herramientas definidas por el cliente transmiten su entrada a medida que se genera; se validan antes de
     // ejecutar. Las propias tienen esquema estricto (todo requerido, opcionales como null).
