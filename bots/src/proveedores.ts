@@ -15,7 +15,8 @@ const OPENROUTER_BASE = (process.env.OPENROUTER_API_BASE ?? "https://openrouter.
 const CLAVE_GEMINI = process.env.GEMINI_API_KEY ?? "";
 const CLAVE_OPENROUTER = process.env.OPENROUTER_API_KEY ?? "";
 // "-latest" apunta siempre al último Flash de Google; Flash-Lite tiene un cupo diario aparte y más grande.
-const MODELOS_GEMINI = (process.env.GRAVITY_GEMINI_MODELOS ?? "gemini-flash-latest,gemini-flash-lite-latest")
+// Si un nombre no existe (404) se pasa al siguiente, así que conviven el alias y los nombres fijos.
+const MODELOS_GEMINI = (process.env.GRAVITY_GEMINI_MODELOS ?? "gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest,gemini-2.5-flash-lite")
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
