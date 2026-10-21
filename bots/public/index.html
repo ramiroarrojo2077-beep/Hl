@@ -586,6 +586,11 @@
       if (it.fecha) nodos.push(el("div", { class: "fecha" }, it.fecha));
       return nodos;
     }
+    if (it.tipo === "origen") {
+      return el("div", { class: "rutina-chip" }, el("details", {},
+        el("summary", {}, it.clase === "rutina" ? "Rutina " : "", el("strong", {}, it.etiqueta), it.clase === "rutina" ? "" : ` · ${it.detalle.split("\n")[0]}`, it.fecha ? ` · ${it.fecha}` : ""),
+        el("pre", {}, it.texto)));
+    }
     if (it.tipo === "bot") return el("div", { class: "msj bot" }, el("div", { class: "burbuja" }, markdown(it.texto)));
     if (it.tipo === "nota") return el("div", { class: "nota" }, it.texto);
     if (it.tipo === "aviso") return el("div", { class: `aviso-chat${it.error ? " error" : ""}` }, it.texto);

@@ -1,3 +1,4 @@
+import path from "node:path";
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { betaAgentToolset20260401 } from "@anthropic-ai/sdk/tools/agent-toolset/node";
@@ -16,9 +17,16 @@ import {
   listarHabilidades,
   buscarHabilidad,
   guardarHabilidad,
+  ajustes,
+  buscarBot,
+  jefes,
+  subarbol,
+  type Bot,
   type Regla,
 } from "./almacen.ts";
 import { normalizarHorario, describirHorario, proximaEjecucion } from "./rutinas.ts";
+import { herramientasEquipo } from "./equipo.ts";
+import { convocar } from "./reuniones.ts";
 import { emitir } from "./eventos.ts";
 
 // ---- Validación de entradas ----
@@ -163,7 +171,14 @@ export async function herramientasDe(botId: string): Promise<Map<string, BetaRun
   let mapa = porBot.get(botId);
   if (!mapa) {
     const memoria = betaMemoryTool(await BetaLocalFilesystemMemoryTool.init(carpetaMemoria(botId)));
-    const lista = [...betaAgentToolset20260401({ workdir: COMPUTADORA }), memoria, herramientaRutinas(botId), herramientaHabilidades()];
+    const lista = [
+      ...betaAgentToolset20260401({ workdir: COMPUTADORA }),
+      memoria,
+      herramientaRutinas(botId),
+      herramientaHabilidades(),
+      ...herramientasEquipo(botId),
+      herramientaReunion(botId),
+    ];
     mapa = new Map(lista.map((t) => [t.name, t]));
     porBot.set(botId, mapa);
   }
@@ -176,7 +191,64 @@ export async function cerrarHerramientas(botId: string): Promise<void> {
   for (const t of mapa?.values() ?? []) await t.close?.();
 }
 
-const ESTRICTAS = new Set(["rutinas", "habilidades"]);
+const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion"]);
+
+// ---- Reuniones convocadas por un manager ----
+
+const EntradaReunion = z.strictObject({
+  accion: z.enum(["convocar", "programar"]),
+  titulo: z.string(),
+  tipo: z.enum(["standup", "discusion"]).describe("standup: daily corta; discusion: un tema"),
+  agenda: z.string(),
+  participantes: z.array(z.string()).nullable().describe("Nombres o ids; null = tu equipo directo"),
+  horario: z
+    .strictObject({
+      tipo: z.enum(["intervalo", "diaria", "semanal"]),
+      minutos: z.number().nullable(),
+      hora: z.string().nullable().describe('"HH:MM" en hora local'),
+      dia: z.number().nullable().describe("Solo semanal: 0 = domingo … 6 = sábado"),
+    })
+    .nullable()
+    .describe("Solo para programar"),
+  confirmar_acciones: z.boolean().nullable().describe("true: las tareas del acta esperan el OK del usuario"),
+});
+
+function herramientaReunion(botId: string): BetaRunnableTool {
+  const herramienta = betaZodTool({
+    name: "reunion",
+    description:
+      "Solo managers: convocá ahora una reunión con tu equipo (daily o discusión) o programala para que se repita. Facilitás vos; al final hay un acta y sus tareas se reparten solas. Requiere aprobación del usuario.",
+    inputSchema: EntradaReunion,
+    run: (e) => {
+      const bot = buscarBot(botId);
+      if (!bot) throw new Error("El bot ya no existe.");
+      if (bot.cargo !== "manager") throw new Error("Tu cargo no permite convocar reuniones.");
+      const participantes = e.participantes?.map((p) => {
+        const b = subarbol(bot.id).find((x) => x.id === p || x.nombre.toLowerCase() === p.trim().toLowerCase());
+        if (!b) throw new Error(`«${p}» no está en tu equipo.`);
+        return b.id;
+      }) ?? null;
+      if (e.accion === "convocar") {
+        const r = convocar({ titulo: e.titulo, tipo: e.tipo, agenda: e.agenda, facilitadorId: bot.id, participantes, confirmarAcciones: e.confirmar_acciones ?? false });
+        return `Reunión «${r.titulo}» en curso con ${r.participantes.length} participantes. El acta y sus tareas llegan solas; terminá tu turno.`;
+      }
+      if (!e.horario) throw new Error("Para programar hace falta el horario.");
+      const r = crearRutina({
+        botId,
+        nombre: e.titulo,
+        instrucciones: e.agenda,
+        habilidadId: null,
+        horario: normalizarHorario(e.horario),
+        activa: true,
+        reunion: { tipo: e.tipo, participantes, confirmarAcciones: e.confirmar_acciones ?? false },
+      });
+      emitir("rutinas", { botId });
+      return `Reunión programada: ${describirHorario(r.horario)}. Próxima: ${proximaEjecucion(r).toLocaleString("es")}.`;
+    },
+  });
+  return Object.assign(herramienta, { input_schema: esquemaJson(EntradaReunion) });
+}
+
 
 // Definiciones para la API, en orden fijo para no romper el caché del prompt.
 export function definiciones(mapa: Map<string, BetaRunnableTool>): Anthropic.Beta.BetaToolUnion[] {
@@ -203,6 +275,8 @@ export interface PedidoAprobacion {
   titulo: string;
   detalle: string;
   regla: string;
+  // Clave para agrupar pedidos parecidos en la bandeja.
+  firma: string;
 }
 
 // Operadores que encadenan o redirigen comandos: con ellos una regla por programa no alcanza.
@@ -215,41 +289,63 @@ export function programaDe(comando: string): string | null {
   return /^[\w.+-]+$/.test(programa) ? programa : null;
 }
 
-const permitido = (herramienta: Regla["herramienta"], patron: string) =>
-  listarReglas().some((r) => r.herramienta === herramienta && r.patron === patron);
+// ¿Alguna regla cubre esta acción para este bot? Valen las globales, las del bot y las de cualquier
+// equipo al que pertenezca (su manager, el manager de su manager…).
+function permitido(herramienta: Regla["herramienta"], acepta: (patron: string) => boolean, bot: Bot): boolean {
+  const equipos = new Set([bot.id, ...jefes(bot.id).map((j) => j.id)]);
+  return listarReglas().some(
+    (r) =>
+      r.herramienta === herramienta &&
+      acepta(r.patron) &&
+      (r.alcance.tipo === "global" ||
+        (r.alcance.tipo === "bot" && r.alcance.botId === bot.id) ||
+        (r.alcance.tipo === "equipo" && equipos.has(r.alcance.managerId))),
+  );
+}
+
+// Ruta de un archivo relativa a la computadora (con "/" final si es carpeta), o null si queda afuera.
+function rutaEnComputadora(ruta: string): string | null {
+  const relativa = path.relative(COMPUTADORA, path.resolve(COMPUTADORA, ruta));
+  if (relativa.startsWith("..") || path.isAbsolute(relativa)) return null;
+  return relativa.split(path.sep).join("/");
+}
 
 const recortar = (s: string, n = 4000) => (s.length > n ? `${s.slice(0, n)}\n… (${s.length - n} caracteres más)` : s);
 
-export function necesitaAprobacion(nombre: string, entrada: Record<string, unknown>): PedidoAprobacion | null {
+export function necesitaAprobacion(nombre: string, entrada: Record<string, unknown>, bot: Bot): PedidoAprobacion | null {
   if (nombre === "bash") {
     const comando = String(entrada.command ?? "");
     if (!comando.trim()) return null; // solo reinicia la terminal
     const programa = programaDe(comando);
-    if (programa && permitido("bash", programa)) return null;
+    if (programa && permitido("bash", (p) => p === programa, bot)) return null;
     return {
       herramienta: "bash",
       patron: programa ?? "",
       titulo: "Ejecutar un comando en la computadora",
       detalle: recortar(comando),
-      regla: programa ? `Siempre permitir comandos «${programa}» sin operadores de shell` : "",
+      regla: programa ? `Comandos «${programa}» sin operadores de shell` : "",
+      firma: programa ? `bash:${programa}` : `bash:${comando.slice(0, 40)}`,
     };
   }
   if (nombre === "write" || nombre === "edit") {
-    if (permitido("editor", "*")) return null;
+    const ruta = rutaEnComputadora(String(entrada.file_path ?? ""));
+    if (ruta && permitido("editor", (p) => p === "*" || ruta.startsWith(p), bot)) return null;
     const detalle =
       nombre === "write"
         ? String(entrada.content ?? "")
         : `- ${String(entrada.old_string ?? "")}\n+ ${String(entrada.new_string ?? "")}`;
+    const carpeta = ruta?.includes("/") ? `${ruta.slice(0, ruta.lastIndexOf("/") + 1)}` : null;
     return {
       herramienta: "editor",
-      patron: "*",
+      patron: carpeta ?? "*",
       titulo: `${nombre === "write" ? "Escribir" : "Editar"} ${String(entrada.file_path ?? "")}`,
       detalle: recortar(detalle),
-      regla: "Siempre permitir escribir y editar archivos de la computadora",
+      regla: carpeta ? `Escribir y editar archivos en ${carpeta}` : "Escribir y editar archivos de la computadora",
+      firma: `editor:${carpeta ?? "*"}`,
     };
   }
   if (nombre === "rutinas" && entrada.accion !== "listar") {
-    if (permitido("rutinas", "*")) return null;
+    if (permitido("rutinas", (p) => p === "*", bot)) return null;
     const verbo = { crear: "Crear", modificar: "Modificar", borrar: "Borrar" }[String(entrada.accion)] ?? "Cambiar";
     const rutina = typeof entrada.id === "string" ? buscarRutina(entrada.id) : undefined;
     return {
@@ -257,8 +353,50 @@ export function necesitaAprobacion(nombre: string, entrada: Record<string, unkno
       patron: "*",
       titulo: `${verbo} la rutina «${String(entrada.nombre ?? rutina?.nombre ?? "")}»`,
       detalle: recortar(JSON.stringify(entrada, null, 2)),
-      regla: "Siempre permitir crear, modificar y borrar rutinas",
+      regla: "Crear, modificar y borrar rutinas",
+      firma: `rutinas:${String(entrada.accion)}`,
+    };
+  }
+  if (nombre === "reunion") {
+    if (permitido("reunion", (p) => p === "*", bot)) return null;
+    return {
+      herramienta: "reunion",
+      patron: "*",
+      titulo: `${entrada.accion === "programar" ? "Programar" : "Convocar"} la reunión «${String(entrada.titulo ?? "")}»`,
+      detalle: recortar(JSON.stringify(entrada, null, 2)),
+      regla: "Convocar y programar reuniones",
+      firma: `reunion:${String(entrada.accion)}`,
     };
   }
   return null;
+}
+
+// ---- Terminales: como mucho `maxComandos` comandos corriendo a la vez en toda la computadora ----
+
+let terminalesEnUso = 0;
+const esperandoTerminal: (() => void)[] = [];
+
+export async function conTerminal<T>(signal: AbortSignal, alEsperar: () => void, hacer: () => Promise<T>): Promise<T> {
+  if (terminalesEnUso >= ajustes().maxComandos) {
+    alEsperar();
+    await new Promise<void>((resolve, reject) => {
+      const entrar = () => resolve();
+      esperandoTerminal.push(entrar);
+      signal.addEventListener("abort", () => {
+        const i = esperandoTerminal.indexOf(entrar);
+        if (i >= 0) esperandoTerminal.splice(i, 1);
+        reject(new Error("Detenido."));
+      }, { once: true });
+    });
+  } else {
+    terminalesEnUso++;
+  }
+  try {
+    return await hacer();
+  } finally {
+    const siguiente = esperandoTerminal.shift();
+    // El lugar pasa directo al siguiente que espera; si no hay nadie, se libera.
+    if (siguiente) siguiente();
+    else terminalesEnUso--;
+  }
 }

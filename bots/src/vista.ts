@@ -1,9 +1,10 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Conversacion } from "./almacen.ts";
+import type { Conversacion, Origen } from "./almacen.ts";
 
 // Lo que la interfaz muestra de una conversación, derivado del historial que se manda a la API.
 export type Item =
-  | { tipo: "usuario"; texto: string; fecha: string | null; rutina: string | null }
+  | { tipo: "usuario"; texto: string; fecha: string | null }
+  | { tipo: "origen"; clase: Origen["tipo"]; etiqueta: string; detalle: string; texto: string; fecha: string }
   | { tipo: "bot"; texto: string }
   | { tipo: "nota"; texto: string }
   | { tipo: "accion"; herramienta: string; texto: string; detalle: string | null; error: boolean }
@@ -48,12 +49,22 @@ function describir(nombre: string, e: Record<string, unknown>): string {
       const verbos: Record<string, string> = { listar: "Revisó las habilidades", leer: "Leyó la habilidad", guardar: "Guardó la habilidad" };
       return `${verbos[s("accion")] ?? "Habilidades"}${e.nombre ? ` «${s("nombre")}»` : ""}`;
     }
+    case "delegar": {
+      const encargos = Array.isArray(e.encargos) ? (e.encargos as { para?: string }[]) : [];
+      return `Repartió «${s("trabajo")}» en ${encargos.length} encargo(s): ${encargos.map((x) => x.para ?? "?").join(", ")}`;
+    }
+    case "tareas":
+      return e.accion === "cancelar" ? `Canceló la tarea ${s("id")}` : "Revisó las tareas";
+    case "entregar":
+      return `Entregó la tarea ${s("tarea_id")} (${s("estado")})`;
+    case "reunion":
+      return `${e.accion === "programar" ? "Programó" : "Convocó"} la reunión «${s("titulo")}»`;
     default:
       return nombre;
   }
 }
 
-const MARCA = /^\[(\d{4}-\d\d-\d\d \d\d:\d\d)\] (?:\[Rutina "([^"]*)"\] )?/;
+const MARCA = /^\[(\d{4}-\d\d-\d\d \d\d:\d\d)\] /;
 
 export function vistaConversacion(c: Conversacion): Item[] {
   const resultados = new Map<string, { texto: string; error: boolean }>();
@@ -67,6 +78,7 @@ export function vistaConversacion(c: Conversacion): Item[] {
       }
     }
   }
+  const origenes = new Map(c.origenes.map((o) => [o.indice, o]));
 
   const items: Item[] = [];
   const notas = [...c.notas];
@@ -79,15 +91,20 @@ export function vistaConversacion(c: Conversacion): Item[] {
 
   c.mensajes.forEach((m, i) => {
     volcarNotas(i);
+    // Los mensajes de sistema son del arnés para el bot: no se muestran.
+    if (m.role === "system") return;
     const bloques = typeof m.content === "string" ? [{ type: "text" as const, text: m.content }] : m.content;
     for (const b of bloques) {
       if (b.type === "text" && b.text.trim()) {
         if (m.role === "assistant") {
           items.push({ tipo: "bot", texto: b.text });
-        } else {
-          const marca = MARCA.exec(b.text);
-          items.push({ tipo: "usuario", texto: marca ? b.text.slice(marca[0].length) : b.text, fecha: marca?.[1] ?? null, rutina: marca?.[2] ?? null });
+          continue;
         }
+        const marca = MARCA.exec(b.text);
+        const texto = marca ? b.text.slice(marca[0].length) : b.text;
+        const origen = origenes.get(i);
+        if (origen) items.push({ tipo: "origen", clase: origen.tipo, etiqueta: origen.etiqueta, detalle: origen.detalle, texto, fecha: marca?.[1] ?? origen.fecha });
+        else items.push({ tipo: "usuario", texto, fecha: marca?.[1] ?? null });
       } else if (b.type === "thinking" && b.thinking.trim()) {
         items.push({ tipo: "nota", texto: b.thinking.trim() });
       } else if (b.type === "tool_use") {
@@ -96,7 +113,7 @@ export function vistaConversacion(c: Conversacion): Item[] {
           tipo: "accion",
           herramienta: b.name,
           texto: describir(b.name, b.input as Record<string, unknown>),
-          detalle: b.name === "bash" && r ? recortar(r.texto) : r?.error ? recortar(r.texto) : null,
+          detalle: r && (b.name === "bash" || b.name === "delegar" || r.error) ? recortar(r.texto) : null,
           error: r?.error ?? false,
         });
       } else if (b.type === "server_tool_use") {

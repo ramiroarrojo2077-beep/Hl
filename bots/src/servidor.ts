@@ -1,55 +1,76 @@
 import http from "node:http";
 import { readFile, readdir, stat, writeFile, mkdir, rm } from "node:fs/promises";
+import { readFileSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
 import { resolvePath } from "@anthropic-ai/sdk/tools/agent-toolset/node";
 import {
   COMPUTADORA,
+  DATOS,
   MAX_BOTS,
   ahora,
+  ajustes,
   borrarBot,
   borrarHabilidad,
   borrarRegla,
   borrarRutina,
   buscarBot,
   buscarHabilidad,
+  buscarReunion,
   buscarRutina,
+  buscarTarea,
+  cambiarAjustes,
+  carpetaDeEquipo,
   conversacion,
   crearBot,
   crearRutina,
+  directos,
   guardarEstado,
   guardarHabilidad,
   listarBots,
   listarHabilidades,
   listarReglas,
+  listarReuniones,
   listarRutinas,
+  listarTareas,
   raizMemoria,
+  subarbol,
+  vaciarEscrituras,
+  validarJefe,
   type Bot,
   type Rutina,
 } from "./almacen.ts";
 import {
   CONFIG,
   detener,
+  detenerTodo,
   ejecutarRutina,
   enviarMensaje,
   estadoDe,
+  iniciarAgentes,
   listarAprobaciones,
   listarComandos,
+  reintentarColas,
   resolverAprobacion,
 } from "./agente.ts";
 import { cerrarHerramientas } from "./herramientas.ts";
+import { abierta, cancelarTarea, crearEquipo, iniciarEquipo, vistaTarea } from "./equipo.ts";
+import { aceptarAcciones, cancelar as cancelarReunion, convocar, iniciarReuniones, intervenir, terminar as terminarReunion, vistaReunion } from "./reuniones.ts";
+import { estadoCupo, ajustarLimite } from "./cupo.ts";
+import { hoy, resumenGasto } from "./gasto.ts";
 import { describirHorario, iniciarProgramador, normalizarHorario, proximaEjecucion } from "./rutinas.ts";
 import { vistaConversacion } from "./vista.ts";
-import { PLANTILLAS } from "./plantillas.ts";
+import { NOMBRES, PLANTILLAS, PLANTILLAS_EQUIPO } from "./plantillas.ts";
 import { bus, emitir } from "./eventos.ts";
 
 const PUERTO = Number(process.env.BOTS_PUERTO ?? 3001);
 // Los bots ejecutan comandos en esta máquina: por defecto solo se atiende desde ella misma.
 const HOST = process.env.BOTS_HOST ?? "127.0.0.1";
-const LOCAL = ["127.0.0.1", "localhost", "::1"].includes(HOST);
-const INDEX = new URL("../public/index.html", import.meta.url);
+const PUBLICO = new URL("../public/", import.meta.url);
 const MAX_CUERPO = 1_000_000;
 const MAX_ARCHIVO_TEXTO = 1_000_000;
+const NOMBRES_LOCALES = ["127.0.0.1", "localhost", "::1"];
 
 class ErrorHttp extends Error {
   readonly status: number;
@@ -65,6 +86,10 @@ const DatosBot = z.object({
   nombre: z.string().trim().min(1).max(40),
   titulo: z.string().trim().min(1).max(80),
   descripcion: z.string().trim().min(1).max(4000),
+  cargo: z.enum(["manager", "miembro"]).optional(),
+  reportaA: z.string().nullish(),
+  puedeEnviarAfuera: z.boolean().optional(),
+  esfuerzo: z.enum(["low", "medium", "high", "xhigh", "max"]).nullish(),
 });
 const DatosHorario = z.object({
   tipo: z.string(),
@@ -78,12 +103,32 @@ const DatosRutina = z.object({
   habilidadId: z.string().nullish(),
   horario: DatosHorario,
   activa: z.boolean().default(true),
+  reunion: z
+    .object({ tipo: z.enum(["standup", "discusion"]), participantes: z.array(z.string()).nullable(), confirmarAcciones: z.boolean() })
+    .nullish(),
 });
 const DatosHabilidad = z.object({
   nombre: z.string().trim().min(1).max(80),
   descripcion: z.string().trim().max(300).default(""),
   instrucciones: z.string().trim().min(1).max(20000),
 });
+const Persona = z.object({ nombre: z.string().trim().min(1).max(40), titulo: z.string().trim().min(1).max(80), descripcion: z.string().trim().min(1).max(4000) });
+const DatosEquipo = z.object({
+  manager: Persona,
+  reportaA: z.string().nullish(),
+  miembros: z.array(Persona).max(29),
+  carpetaLibre: z.boolean().default(true),
+});
+const DatosReunion = z.object({
+  titulo: z.string().trim().min(1).max(120),
+  tipo: z.enum(["standup", "discusion"]),
+  agenda: z.string().max(4000).default(""),
+  facilitadorId: z.string(),
+  participantes: z.array(z.string()).nullable().default(null),
+  confirmarAcciones: z.boolean().default(false),
+});
+const Decision = z.enum(["una", "siempre", "negar"]);
+const AlcanceSiempre = z.enum(["bot", "equipo", "global"]).optional();
 
 function validar<T>(esquema: z.ZodType<T>, datos: unknown): T {
   const r = esquema.safeParse(datos);
@@ -109,26 +154,75 @@ async function leerCuerpo(req: http.IncomingMessage): Promise<unknown> {
   }
 }
 
-function responder(res: http.ServerResponse, status: number, datos: unknown): void {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+function responder(res: http.ServerResponse, status: number, datos: unknown, cabeceras: Record<string, string> = {}): void {
+  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...cabeceras });
   res.end(JSON.stringify(datos));
 }
 
-// Bloquea pedidos de otros sitios (CSRF) y de nombres que apuntan a esta máquina (DNS rebinding).
+const nombreHost = (req: http.IncomingMessage) => (req.headers.host ?? "").replace(/:\d+$/, "").replace(/^\[|\]$/g, "");
+
+// Local = el navegador de esta misma computadora. Un túnel o el Wi-Fi llegan con otro nombre de host.
+function esLocal(req: http.IncomingMessage): boolean {
+  const remota = req.socket.remoteAddress ?? "";
+  const loopback = remota === "::1" || remota.startsWith("127.") || remota === "::ffff:127.0.0.1";
+  return loopback && NOMBRES_LOCALES.includes(nombreHost(req));
+}
+
+// Bloquea pedidos de otros sitios (CSRF): exigir JSON obliga a los navegadores a pedir permiso (CORS).
 function verificarOrigen(req: http.IncomingMessage): void {
-  const host = req.headers.host ?? "";
-  if (LOCAL) {
-    const nombre = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "");
-    if (!["127.0.0.1", "localhost", "::1"].includes(nombre)) throw new ErrorHttp(403, "Host no permitido.");
-  }
   if (req.method === "GET") return;
   const origen = req.headers.origin;
-  if (origen && URL.parse(origen)?.host !== host) throw new ErrorHttp(403, "Origen no permitido.");
-  // Exigir JSON obliga a los navegadores a pedir permiso (CORS) antes de mandar desde otro sitio.
+  if (origen && URL.parse(origen)?.host !== req.headers.host) throw new ErrorHttp(403, "Origen no permitido.");
   if (!String(req.headers["content-type"] ?? "").startsWith("application/json")) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
 }
+
+// ---- Clave y sesiones (para entrar desde el celular u otra computadora) ----
+
+const ARCHIVO_SESIONES = path.join(DATOS, "sesiones.json");
+const DURACION_SESION_MS = 30 * 86_400_000;
+let sesiones: Record<string, number> = {};
+try {
+  sesiones = JSON.parse(readFileSync(ARCHIVO_SESIONES, "utf8"));
+} catch {
+  // Sin sesiones previas.
+}
+const guardarSesiones = () => writeFileSync(ARCHIVO_SESIONES, JSON.stringify(sesiones));
+const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
+
+const claveEnv = process.env.BOTS_CLAVE ?? "";
+const hayClave = () => !!claveEnv || !!ajustes().claveHash;
+
+function claveCorrecta(clave: string): boolean {
+  if (claveEnv) {
+    const a = Buffer.from(hashToken(clave));
+    const b = Buffer.from(hashToken(claveEnv));
+    return timingSafeEqual(a, b);
+  }
+  const guardada = ajustes().claveHash;
+  if (!guardada) return false;
+  const [sal, hash] = guardada.split(":");
+  const calculado = scryptSync(clave, Buffer.from(sal!, "hex"), 32);
+  return timingSafeEqual(calculado, Buffer.from(hash!, "hex"));
+}
+
+function leerCookie(req: http.IncomingMessage, nombre: string): string | null {
+  for (const parte of (req.headers.cookie ?? "").split(";")) {
+    const [k, ...v] = parte.trim().split("=");
+    if (k === nombre) return decodeURIComponent(v.join("="));
+  }
+  return null;
+}
+
+function sesionValida(req: http.IncomingMessage): boolean {
+  const token = leerCookie(req, "gravity_sesion");
+  if (!token) return false;
+  const vence = sesiones[hashToken(token)];
+  return !!vence && vence > Date.now();
+}
+
+const intentosFallidos: number[] = [];
 
 // ---- Vistas ----
 
@@ -139,11 +233,19 @@ function vistaBot(b: Bot) {
     ...e,
     noLeido: !!b.ultimaActividad && (!b.leido || b.ultimaActividad > b.leido),
     rutinas: listarRutinas(b.id).length,
+    tareasAbiertas: listarTareas().filter((t) => t.paraId === b.id && abierta(t)).length,
+    equipo: b.cargo === "manager" ? directos(b.id).length : 0,
+    gastoHoy: resumenGasto().porBot[b.id] ?? 0,
   };
 }
 
 function vistaRutina(r: Rutina) {
   return { ...r, descripcionHorario: describirHorario(r.horario), proxima: r.activa ? proximaEjecucion(r).toISOString() : null };
+}
+
+function resumenReunion(r: ReturnType<typeof vistaReunion>) {
+  const { turnos, ...resto } = r;
+  return { ...resto, turnos: turnos.length };
 }
 
 interface Archivo {
@@ -202,9 +304,51 @@ async function enviarArchivo(res: http.ServerResponse, archivo: string, descarga
   res.end(contenido);
 }
 
+// Archivos públicos de la interfaz (sin sesión: íconos, manifest, service worker y fuentes).
+const TIPOS: Record<string, string> = {
+  ".webmanifest": "application/manifest+json",
+  ".js": "text/javascript; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+  ".css": "text/css; charset=utf-8",
+};
+
+async function servirPublico(res: http.ServerResponse, ruta: string): Promise<boolean> {
+  if (!/^\/(manifest\.webmanifest|sw\.js|(iconos|fuentes)\/[\w.-]+)$/.test(ruta)) return false;
+  const archivo = new URL(`.${ruta}`, PUBLICO);
+  const contenido = await readFile(archivo).catch(() => null);
+  if (!contenido) return false;
+  res.writeHead(200, {
+    "Content-Type": TIPOS[path.extname(ruta)] ?? "application/octet-stream",
+    "Cache-Control": ruta === "/sw.js" ? "no-cache" : "public, max-age=86400",
+    "X-Content-Type-Options": "nosniff",
+  });
+  res.end(contenido);
+  return true;
+}
+
+const PAGINA_LOGIN = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gravity</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#070A12">
+<style>:root{color-scheme:dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#070A12;color:#E8ECF5;font:15px/1.5 system-ui,sans-serif}
+form{width:min(340px,calc(100% - 32px));display:grid;gap:12px}h1{margin:0 0 4px;font-size:1.4rem}p{margin:0;color:#AAB3C8}
+input,button{font:inherit;padding:11px 12px;border-radius:10px;border:1px solid #2A3654;background:#111827;color:inherit}
+button{background:#E8ECF5;color:#070A12;border-color:#E8ECF5;font-weight:600;cursor:pointer}.error{color:#FFB07A;min-height:1.5em}</style></head>
+<body><form id="f"><h1>Gravity</h1><p>Entrá con la clave de tu Gravity.</p>
+<input id="c" type="password" autocomplete="current-password" placeholder="Clave" required autofocus>
+<button>Entrar</button><div class="error" id="e" role="alert"></div></form>
+<script>document.getElementById("f").addEventListener("submit",async(ev)=>{ev.preventDefault();
+const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clave:document.getElementById("c").value})});
+if(r.ok)location.reload();else document.getElementById("e").textContent=(await r.json().catch(()=>({}))).error||"No se pudo entrar.";});</script></body></html>`;
+
+const PAGINA_SIN_CLAVE = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Gravity</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#070A12;color:#E8ECF5;font:15px/1.6 system-ui,sans-serif}div{max-width:420px;padding:16px}</style></head>
+<body><div><h1>Falta una clave</h1><p>Para entrar a Gravity desde otro dispositivo, primero poné una clave en <b>Ajustes</b> desde la computadora donde corre (o iniciá el servidor con <code>BOTS_CLAVE</code>).</p></div></body></html>`;
+
 // ---- Rutas ----
 
-type Manejador = (p: { req: http.IncomingMessage; res: http.ServerResponse; url: URL; params: string[]; cuerpo: () => Promise<unknown> }) => Promise<unknown>;
+type Contexto = { req: http.IncomingMessage; res: http.ServerResponse; url: URL; params: string[]; cuerpo: () => Promise<unknown>; local: boolean };
+type Manejador = (p: Contexto) => Promise<unknown>;
 
 const rutas: Array<[string, RegExp, Manejador]> = [];
 const ruta = (metodo: string, patron: string, manejador: Manejador) =>
@@ -230,25 +374,74 @@ function horarioDe(datos: z.infer<typeof DatosHorario>) {
   }
 }
 
-ruta("GET", "/api/estado", async () => ({
-  bots: listarBots().map(vistaBot),
-  habilidades: listarHabilidades(),
-  reglas: listarReglas(),
-  aprobaciones: listarAprobaciones(),
-  plantillas: PLANTILLAS,
-  config: CONFIG,
-}));
+const malPedido = (fn: () => unknown) => {
+  try {
+    return fn();
+  } catch (err) {
+    if (err instanceof ErrorHttp) throw err;
+    throw new ErrorHttp(400, (err as Error).message);
+  }
+};
+
+ruta("GET", "/api/estado", async ({ local }) => {
+  const { claveHash, ...resto } = ajustes();
+  const recientes = listarTareas().filter((t) => abierta(t) || Date.now() - Date.parse(t.fin ?? t.creada) < 2 * 86_400_000);
+  return {
+    bots: listarBots().map(vistaBot),
+    habilidades: listarHabilidades(),
+    reglas: listarReglas(),
+    aprobaciones: listarAprobaciones(),
+    plantillas: PLANTILLAS,
+    plantillasEquipo: PLANTILLAS_EQUIPO,
+    nombres: NOMBRES,
+    config: CONFIG,
+    ajustes: { ...resto, tieneClave: !!claveHash || !!claveEnv, claveEnv: !!claveEnv },
+    gasto: resumenGasto(),
+    cupo: estadoCupo(),
+    tareas: recientes.slice(-300).map(vistaTarea),
+    reuniones: listarReuniones().slice(0, 50).map((r) => resumenReunion(vistaReunion(r))),
+    local,
+  };
+});
 
 ruta("POST", "/api/bots", async ({ cuerpo }) => {
-  if (listarBots().length >= MAX_BOTS) throw new ErrorHttp(400, `Podés tener hasta ${MAX_BOTS} bots.`);
-  const bot = crearBot(validar(DatosBot, await cuerpo()));
+  if (listarBots().length >= MAX_BOTS) throw new ErrorHttp(400, `Podés tener hasta ${MAX_BOTS} compañeros.`);
+  const d = validar(DatosBot, await cuerpo());
+  const error = validarJefe(null, d.reportaA ?? null);
+  if (error) throw new ErrorHttp(400, error);
+  const bot = crearBot({ ...d, reportaA: d.reportaA ?? null, esfuerzo: d.esfuerzo ?? null });
   emitir("bots");
   return vistaBot(bot);
 });
 
+ruta("POST", "/api/equipos", async ({ cuerpo }) => {
+  const d = validar(DatosEquipo, await cuerpo());
+  const { manager, miembros } = malPedido(() => crearEquipo({ ...d, reportaA: d.reportaA ?? null })) as ReturnType<typeof crearEquipo>;
+  emitir("bots");
+  emitir("reglas");
+  return { manager: vistaBot(manager), miembros: miembros.map(vistaBot) };
+});
+
 ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
   const bot = botDe(params[0]!);
-  Object.assign(bot, validar(DatosBot, await cuerpo()));
+  const d = validar(DatosBot, await cuerpo());
+  const reportaA = d.reportaA === undefined ? bot.reportaA : d.reportaA;
+  const cargo = d.cargo ?? bot.cargo;
+  if (cargo !== "manager" && bot.cargo === "manager" && directos(bot.id).length) {
+    throw new ErrorHttp(409, `${bot.nombre} tiene gente a cargo: reasigná su equipo antes de quitarle el cargo de manager.`);
+  }
+  const error = validarJefe(bot.id, reportaA ?? null);
+  if (error) throw new ErrorHttp(400, error);
+  Object.assign(bot, {
+    nombre: d.nombre,
+    titulo: d.titulo,
+    descripcion: d.descripcion,
+    cargo,
+    reportaA: reportaA ?? null,
+    puedeEnviarAfuera: d.puedeEnviarAfuera ?? bot.puedeEnviarAfuera,
+    esfuerzo: d.esfuerzo === undefined ? bot.esfuerzo : d.esfuerzo,
+  });
+  if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);
   guardarEstado();
   emitir("bots");
   return vistaBot(bot);
@@ -257,6 +450,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
 ruta("DELETE", "/api/bots/:id", async ({ params }) => {
   const bot = botDe(params[0]!);
   detener(bot.id);
+  for (const t of listarTareas()) if (t.paraId === bot.id && abierta(t)) cancelarTarea(t.id, `${bot.nombre} fue eliminado.`);
   borrarBot(bot.id);
   await cerrarHerramientas(bot.id);
   emitir("bots");
@@ -274,6 +468,14 @@ ruta("POST", "/api/bots/:id/mensajes", async ({ params, cuerpo }) => {
 
 ruta("POST", "/api/bots/:id/detener", async ({ params }) => {
   detener(botDe(params[0]!).id);
+  return { ok: true };
+});
+
+// Detiene a un manager y a todo su equipo.
+ruta("POST", "/api/bots/:id/detener-equipo", async ({ params }) => {
+  const bot = botDe(params[0]!);
+  for (const b of [bot, ...subarbol(bot.id)]) detener(b.id);
+  for (const t of listarTareas()) if (t.deId === bot.id && abierta(t)) cancelarTarea(t.id, "Se detuvo el equipo.");
   return { ok: true };
 });
 
@@ -321,13 +523,9 @@ ruta("POST", "/api/bots/:id/rutinas", async ({ params, cuerpo }) => {
   const bot = botDe(params[0]!);
   const d = validar(DatosRutina, await cuerpo());
   if (d.habilidadId && !buscarHabilidad(d.habilidadId)) throw new ErrorHttp(400, "No existe esa habilidad.");
-  let rutina: Rutina;
-  try {
-    rutina = crearRutina({ botId: bot.id, nombre: d.nombre, instrucciones: d.instrucciones, habilidadId: d.habilidadId ?? null, horario: horarioDe(d.horario), activa: d.activa });
-  } catch (err) {
-    if (err instanceof ErrorHttp) throw err;
-    throw new ErrorHttp(400, (err as Error).message);
-  }
+  const rutina = malPedido(() =>
+    crearRutina({ botId: bot.id, nombre: d.nombre, instrucciones: d.instrucciones, habilidadId: d.habilidadId ?? null, horario: horarioDe(d.horario), activa: d.activa, reunion: d.reunion ?? null }),
+  ) as Rutina;
   emitir("rutinas", { botId: bot.id });
   return vistaRutina(rutina);
 });
@@ -336,7 +534,14 @@ ruta("PUT", "/api/rutinas/:id", async ({ params, cuerpo }) => {
   const rutina = rutinaDe(params[0]!);
   const d = validar(DatosRutina, await cuerpo());
   if (d.habilidadId && !buscarHabilidad(d.habilidadId)) throw new ErrorHttp(400, "No existe esa habilidad.");
-  Object.assign(rutina, { nombre: d.nombre, instrucciones: d.instrucciones, habilidadId: d.habilidadId ?? null, horario: horarioDe(d.horario), activa: d.activa });
+  Object.assign(rutina, {
+    nombre: d.nombre,
+    instrucciones: d.instrucciones,
+    habilidadId: d.habilidadId ?? null,
+    horario: horarioDe(d.horario),
+    activa: d.activa,
+    reunion: d.reunion === undefined ? rutina.reunion : d.reunion,
+  });
   guardarEstado();
   emitir("rutinas", { botId: rutina.botId });
   return vistaRutina(rutina);
@@ -356,11 +561,71 @@ ruta("POST", "/api/rutinas/:id/ejecutar", async ({ params }) => {
   return { ok: true };
 });
 
-ruta("POST", "/api/aprobaciones/:id", async ({ params, cuerpo }) => {
-  const { decision } = validar(z.object({ decision: z.enum(["una", "siempre", "negar"]) }), await cuerpo());
-  if (!resolverAprobacion(params[0]!, decision)) throw new ErrorHttp(404, "Esa aprobación ya no está pendiente.");
+// ---- Tareas ----
+
+ruta("GET", "/api/tareas", async ({ url }) => {
+  const botId = url.searchParams.get("botId");
+  return listarTareas()
+    .filter((t) => !botId || t.deId === botId || t.paraId === botId)
+    .slice(-500)
+    .map(vistaTarea);
+});
+
+ruta("POST", "/api/tareas/:id/cancelar", async ({ params }) => {
+  const t = buscarTarea(params[0]!);
+  if (!t) throw new ErrorHttp(404, "No existe esa tarea.");
+  if (!cancelarTarea(t.id, "Cancelada por el usuario.")) throw new ErrorHttp(409, "La tarea ya estaba cerrada.");
   return { ok: true };
 });
+
+// ---- Aprobaciones ----
+
+ruta("POST", "/api/aprobaciones/lote", async ({ cuerpo }) => {
+  const { ids, decision, alcance } = validar(z.object({ ids: z.array(z.string()).min(1).max(200), decision: Decision, alcance: AlcanceSiempre }), await cuerpo());
+  const resueltas = ids.filter((id) => resolverAprobacion(id, decision, alcance)).length;
+  return { resueltas };
+});
+
+ruta("POST", "/api/aprobaciones/:id", async ({ params, cuerpo }) => {
+  const { decision, alcance } = validar(z.object({ decision: Decision, alcance: AlcanceSiempre }), await cuerpo());
+  if (!resolverAprobacion(params[0]!, decision, alcance)) throw new ErrorHttp(404, "Esa aprobación ya no está pendiente.");
+  return { ok: true };
+});
+
+// ---- Reuniones ----
+
+ruta("GET", "/api/reuniones", async () => listarReuniones().slice(0, 100).map((r) => resumenReunion(vistaReunion(r))));
+
+ruta("GET", "/api/reuniones/:id", async ({ params }) => {
+  const r = buscarReunion(params[0]!);
+  if (!r) throw new ErrorHttp(404, "No existe esa reunión.");
+  return vistaReunion(r);
+});
+
+ruta("POST", "/api/reuniones", async ({ cuerpo }) => {
+  const d = validar(DatosReunion, await cuerpo());
+  const r = malPedido(() => convocar(d)) as ReturnType<typeof convocar>;
+  return vistaReunion(r);
+});
+
+ruta("POST", "/api/reuniones/:id/mensajes", async ({ params, cuerpo }) => {
+  const { texto } = validar(z.object({ texto: z.string().trim().min(1).max(4000) }), await cuerpo());
+  return vistaReunion(malPedido(() => intervenir(params[0]!, texto)) as ReturnType<typeof intervenir>);
+});
+
+ruta("POST", "/api/reuniones/:id/terminar", async ({ params }) => {
+  terminarReunion(params[0]!);
+  return { ok: true };
+});
+
+ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
+  cancelarReunion(params[0]!);
+  return { ok: true };
+});
+
+ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
+
+// ---- Habilidades y reglas ----
 
 ruta("POST", "/api/habilidades", async ({ cuerpo }) => {
   const h = guardarHabilidad(validar(DatosHabilidad, await cuerpo()));
@@ -387,6 +652,57 @@ ruta("DELETE", "/api/reglas/:id", async ({ params }) => {
   return { ok: true };
 });
 
+// ---- Ajustes, gasto y control general ----
+
+ruta("PUT", "/api/ajustes", async ({ cuerpo }) => {
+  const d = validar(
+    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000) }).partial(),
+    await cuerpo(),
+  );
+  const a = cambiarAjustes(d);
+  if (d.maxLlamadas) ajustarLimite(d.maxLlamadas);
+  reintentarColas();
+  emitir("ajustes");
+  return { ...a, claveHash: undefined };
+});
+
+ruta("POST", "/api/ajustes/seguir-hoy", async ({ cuerpo }) => {
+  const { usd } = validar(z.object({ usd: z.number().min(0).max(10000) }), await cuerpo());
+  cambiarAjustes({ extra: { dia: hoy(), usd } });
+  reintentarColas();
+  emitir("ajustes");
+  return { ok: true };
+});
+
+ruta("POST", "/api/pausa", async ({ cuerpo }) => {
+  const { pausa } = validar(z.object({ pausa: z.boolean() }), await cuerpo());
+  cambiarAjustes({ pausa });
+  if (!pausa) reintentarColas();
+  emitir("ajustes");
+  return { ok: true };
+});
+
+ruta("POST", "/api/detener-todo", async () => {
+  cambiarAjustes({ pausa: true });
+  detenerTodo();
+  for (const r of listarReuniones()) if (r.estado === "en_curso") cancelarReunion(r.id);
+  emitir("ajustes");
+  return { ok: true };
+});
+
+// La clave solo se puede definir desde la propia computadora o con una sesión válida.
+ruta("POST", "/api/ajustes/clave", async ({ cuerpo }) => {
+  if (claveEnv) throw new ErrorHttp(409, "La clave está fijada con BOTS_CLAVE en el servidor.");
+  const { clave } = validar(z.object({ clave: z.string().min(8, "Usá al menos 8 caracteres.").max(200) }), await cuerpo());
+  const sal = randomBytes(16);
+  cambiarAjustes({ claveHash: `${sal.toString("hex")}:${scryptSync(clave, sal, 32).toString("hex")}` });
+  // Cambiar la clave cierra las sesiones abiertas en otros dispositivos.
+  sesiones = {};
+  guardarSesiones();
+  emitir("ajustes");
+  return { ok: true };
+});
+
 ruta("GET", "/api/computadora", async () => ({ archivos: await listarArchivos(COMPUTADORA), comandos: listarComandos() }));
 
 ruta("GET", "/api/computadora/archivo", async ({ url, res }) => {
@@ -410,23 +726,71 @@ ruta("GET", "/api/eventos", async ({ req, res }) => {
 
 // ---- Servidor ----
 
-const servidor = http.createServer(async (req, res) => {
+async function atender(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   const url = new URL(req.url ?? "/", "http://localhost");
-  try {
-    verificarOrigen(req);
-    if (req.method === "GET" && url.pathname === "/") {
+  const local = esLocal(req);
+  verificarOrigen(req);
+
+  if (req.method === "GET" && (await servirPublico(res, url.pathname))) return;
+
+  // Fuera de esta computadora hace falta clave y sesión.
+  if (!local) {
+    if (!hayClave()) {
+      if (url.pathname.startsWith("/api/")) throw new ErrorHttp(403, "Falta configurar una clave en Ajustes.");
+      res.writeHead(403, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      res.end(PAGINA_SIN_CLAVE);
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/api/login") {
+      const ahoraMs = Date.now();
+      while (intentosFallidos.length && ahoraMs - intentosFallidos[0]! > 10 * 60_000) intentosFallidos.shift();
+      if (intentosFallidos.length >= 10) throw new ErrorHttp(429, "Demasiados intentos. Esperá unos minutos.");
+      const { clave } = validar(z.object({ clave: z.string().max(200) }), await leerCuerpo(req));
+      if (!claveCorrecta(clave)) {
+        intentosFallidos.push(ahoraMs);
+        throw new ErrorHttp(401, "Clave incorrecta.");
+      }
+      const token = randomBytes(32).toString("base64url");
+      sesiones[hashToken(token)] = ahoraMs + DURACION_SESION_MS;
+      for (const [h, vence] of Object.entries(sesiones)) if (vence < ahoraMs) delete sesiones[h];
+      guardarSesiones();
+      const seguro = req.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+      responder(res, 200, { ok: true }, { "Set-Cookie": `gravity_sesion=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${DURACION_SESION_MS / 1000}${seguro}` });
+      return;
+    }
+    if (!sesionValida(req)) {
+      if (url.pathname.startsWith("/api/")) throw new ErrorHttp(401, "Iniciá sesión.");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      res.end(await readFile(INDEX));
+      res.end(PAGINA_LOGIN);
       return;
     }
-    for (const [metodo, patron, manejador] of rutas) {
-      const m = req.method === metodo ? patron.exec(url.pathname) : null;
-      if (!m) continue;
-      const datos = await manejador({ req, res, url, params: m.slice(1), cuerpo: () => leerCuerpo(req) });
-      if (datos !== undefined) responder(res, 200, datos);
-      return;
-    }
-    throw new ErrorHttp(404, "No encontrado.");
+  }
+  if (req.method === "POST" && url.pathname === "/api/logout") {
+    const token = leerCookie(req, "gravity_sesion");
+    if (token) delete sesiones[hashToken(token)];
+    guardarSesiones();
+    responder(res, 200, { ok: true }, { "Set-Cookie": "gravity_sesion=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0" });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    res.end(await readFile(new URL("index.html", PUBLICO)));
+    return;
+  }
+  for (const [metodo, patron, manejador] of rutas) {
+    const m = req.method === metodo ? patron.exec(url.pathname) : null;
+    if (!m) continue;
+    const datos = await manejador({ req, res, url, params: m.slice(1), cuerpo: () => leerCuerpo(req), local });
+    if (datos !== undefined) responder(res, 200, datos);
+    return;
+  }
+  throw new ErrorHttp(404, "No encontrado.");
+}
+
+const servidor = http.createServer(async (req, res) => {
+  try {
+    await atender(req, res);
   } catch (err) {
     if (!(err instanceof ErrorHttp)) console.error(err);
     if (res.headersSent) return void res.end();
@@ -434,14 +798,23 @@ const servidor = http.createServer(async (req, res) => {
   }
 });
 
+iniciarReuniones();
+iniciarAgentes();
+iniciarEquipo();
 iniciarProgramador(ejecutarRutina);
+
+// Al apagar: se escribe todo lo pendiente antes de salir.
+for (const senal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(senal, () => {
+    vaciarEscrituras();
+    process.exit(0);
+  });
+}
 
 servidor.listen(PUERTO, HOST, () => {
   console.log(`Gravity: http://${HOST.includes(":") ? `[${HOST}]` : HOST}:${PUERTO}`);
   console.log(`Computadora de los bots: ${COMPUTADORA}`);
-  if (!LOCAL) {
-    console.warn(
-      `ATENCIÓN: escuchando en ${HOST}. Cualquiera que llegue a esta dirección puede hablar con los bots y aprobar comandos en esta máquina.`,
-    );
+  if (!NOMBRES_LOCALES.includes(HOST)) {
+    console.warn(`Escuchando en ${HOST}: desde otros dispositivos se entra con clave${hayClave() ? "" : " (todavía no hay una: configurala en Ajustes)"}.`);
   }
 });
