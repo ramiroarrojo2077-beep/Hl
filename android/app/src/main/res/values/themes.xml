@@ -4,6 +4,8 @@
          a la página prefers-color-scheme: dark en Android 13+. -->
     <style name="Theme.Gravity" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/fondo</item>
+        <!-- Geist (OFL 1.1, la licencia va dentro de cada .ttf): la misma letra que la web. -->
+        <item name="android:fontFamily">@font/geist_regular</item>
         <item name="android:colorBackground">@color/fondo</item>
         <item name="android:colorPrimary">@color/superficie2</item>
         <item name="android:colorPrimaryDark">@color/fondo</item>

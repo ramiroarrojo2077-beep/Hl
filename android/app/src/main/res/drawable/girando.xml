@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Trabajando" de la app: un anillo tenue con un satélite cian que gira (como la órbita de la web).
+     El ProgressBar indeterminado mueve el nivel de 0 a 10000 y el <rotate> lo convierte en giro. -->
+<rotate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromDegrees="0"
+    android:pivotX="50%"
+    android:pivotY="50%"
+    android:toDegrees="360">
+    <layer-list>
+        <item
+            android:bottom="4dp"
+            android:left="4dp"
+            android:right="4dp"
+            android:top="4dp">
+            <shape android:shape="oval">
+                <stroke
+                    android:width="1.5dp"
+                    android:color="@color/cian_tenue" />
+            </shape>
+        </item>
+        <item
+            android:width="8dp"
+            android:height="8dp"
+            android:gravity="top|center_horizontal">
+            <shape android:shape="oval">
+                <solid android:color="@color/cian" />
+            </shape>
+        </item>
+    </layer-list>
+</rotate>

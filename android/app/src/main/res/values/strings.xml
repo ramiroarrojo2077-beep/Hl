@@ -33,8 +33,8 @@
     <string name="cambiar_clave">Cambiar la clave</string>
     <string name="motor_no_arranca">Android no dejó prender el motor. Abrí Gravity de nuevo.</string>
 
-    <!-- Botón flotante y su menú -->
-    <string name="manija_descripcion">Opciones de Gravity. Arrastralo para moverlo.</string>
+    <!-- Lengüeta del borde y su menú -->
+    <string name="manija_descripcion">Opciones de Gravity. Arrastrala por el borde para moverla.</string>
     <string name="menu_recargar">Recargar</string>
     <string name="menu_reiniciar">Reiniciar el motor</string>
     <string name="menu_clave">Modelo y claves</string>

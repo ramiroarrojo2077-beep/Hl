@@ -44,6 +44,7 @@ export const PLANTILLAS_EQUIPO = [
     },
     miembro: {
       titulo: "Investigador",
+      plural: "investigadores",
       descripcion:
         "Investigo a fondo la parte que me asignan: busco en varias fuentes, comparo, separo hechos de opiniones y entrego un informe breve en markdown con las fuentes citadas en la carpeta de la tarea.",
     },
@@ -58,6 +59,7 @@ export const PLANTILLAS_EQUIPO = [
     },
     miembro: {
       titulo: "Analista de precios",
+      plural: "analistas de precios",
       descripcion:
         "Busco precios de fábrica (Alibaba, Made-in-China, 1688), calculo el costo puesto en el país con flete, aranceles e impuestos y comparo con lo que se vende localmente. Entrego una planilla CSV con fuentes.",
     },
@@ -72,6 +74,7 @@ export const PLANTILLAS_EQUIPO = [
     },
     miembro: {
       titulo: "Redactor",
+      plural: "redactores",
       descripcion: "Escribo la pieza que me asignan en el tono pedido, la reviso y la entrego como archivo en la carpeta de la tarea.",
     },
   },
@@ -85,6 +88,7 @@ export const PLANTILLAS_EQUIPO = [
     },
     miembro: {
       titulo: "Vigía",
+      plural: "vigías",
       descripcion: "Reviso lo que me asignan, comparo con el último estado guardado en la carpeta de la tarea y cuento solo lo que cambió.",
     },
   },

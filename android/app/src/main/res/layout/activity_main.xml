@@ -45,24 +45,28 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:accessibilityLiveRegion="polite"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/geist_semibold"
                 android:gravity="center"
+                android:letterSpacing="-0.02"
                 android:textColor="@color/texto"
                 android:textSize="22sp" />
 
             <ProgressBar
                 android:id="@+id/estadoGirando"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 android:layout_marginTop="18dp"
                 android:indeterminate="true"
-                android:indeterminateTint="@color/cian" />
+                android:indeterminateDrawable="@drawable/girando"
+                android:indeterminateDuration="1600"
+                android:indeterminateOnly="true" />
 
             <TextView
                 android:id="@+id/estadoDetalle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:fontFamily="@font/geist_regular"
                 android:gravity="center"
                 android:lineSpacingMultiplier="1.15"
                 android:maxWidth="420dp"
@@ -76,7 +80,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/fondo_campo"
-                android:fontFamily="monospace"
+                android:fontFamily="@font/geist_mono"
                 android:padding="12dp"
                 android:textColor="@color/texto3"
                 android:textIsSelectable="true"
@@ -89,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"
                 android:background="@drawable/boton_primario"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/geist_semibold"
                 android:minHeight="52dp"
                 android:stateListAnimator="@null"
                 android:text="@string/reintentar"
@@ -104,6 +108,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:background="@drawable/boton_secundario"
+                android:fontFamily="@font/geist_semibold"
                 android:minHeight="52dp"
                 android:stateListAnimator="@null"
                 android:text="@string/cambiar_clave"
@@ -144,10 +149,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/geist_semibold"
+                android:letterSpacing="-0.025"
                 android:text="@string/clave_titulo"
                 android:textColor="@color/texto"
-                android:textSize="24sp" />
+                android:textSize="26sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -161,7 +167,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/boton_primario"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="@font/geist_semibold"
                     android:minHeight="48dp"
                     android:stateListAnimator="@null"
                     android:text="@string/proveedor_gemini"
@@ -176,7 +182,7 @@
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:background="@drawable/boton_secundario"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="@font/geist_semibold"
                     android:minHeight="48dp"
                     android:stateListAnimator="@null"
                     android:text="@string/proveedor_claude"
@@ -190,6 +196,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
+                android:fontFamily="@font/geist_regular"
                 android:lineSpacingMultiplier="1.15"
                 android:text="@string/clave_ayuda_gemini"
                 android:textColor="@color/texto2"
@@ -202,7 +209,7 @@
                 android:layout_marginTop="16dp"
                 android:background="@drawable/fondo_campo"
                 android:contentDescription="@string/clave_titulo"
-                android:fontFamily="monospace"
+                android:fontFamily="@font/geist_mono"
                 android:hint="@string/clave_pista_gemini"
                 android:imeOptions="actionGo"
                 android:importantForAutofill="no"
@@ -222,6 +229,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:accessibilityLiveRegion="polite"
+                android:fontFamily="@font/geist_regular"
                 android:textColor="@color/calido_texto"
                 android:textSize="14sp"
                 android:visibility="gone" />
@@ -231,6 +239,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:fontFamily="@font/geist_regular"
                 android:gravity="center_vertical"
                 android:minHeight="44dp"
                 android:text="@string/clave_donde_gemini"
@@ -248,7 +257,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="@font/geist_semibold"
                     android:text="@string/respaldo_titulo"
                     android:textColor="@color/texto"
                     android:textSize="16sp" />
@@ -257,6 +266,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
+                    android:fontFamily="@font/geist_regular"
                     android:lineSpacingMultiplier="1.15"
                     android:text="@string/respaldo_ayuda"
                     android:textColor="@color/texto2"
@@ -269,7 +279,7 @@
                     android:layout_marginTop="10dp"
                     android:background="@drawable/fondo_campo"
                     android:contentDescription="@string/respaldo_titulo"
-                    android:fontFamily="monospace"
+                    android:fontFamily="@font/geist_mono"
                     android:hint="@string/respaldo_pista"
                     android:imeOptions="actionDone"
                     android:importantForAutofill="no"
@@ -288,6 +298,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
+                    android:fontFamily="@font/geist_regular"
                     android:gravity="center_vertical"
                     android:minHeight="44dp"
                     android:text="@string/respaldo_donde"
@@ -301,7 +312,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/boton_primario"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/geist_semibold"
                 android:minHeight="52dp"
                 android:stateListAnimator="@null"
                 android:text="@string/clave_guardar"
@@ -315,6 +326,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:background="@drawable/boton_secundario"
+                android:fontFamily="@font/geist_semibold"
                 android:minHeight="52dp"
                 android:stateListAnimator="@null"
                 android:text="@string/cancelar"
@@ -328,6 +340,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:fontFamily="@font/geist_regular"
                 android:lineSpacingMultiplier="1.15"
                 android:text="@string/clave_seguridad"
                 android:textColor="@color/texto3"
@@ -335,21 +348,23 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Botón flotante: Recargar, Reiniciar motor, Clave, Batería y Apagar -->
+    <!-- Lengüeta del borde (Recargar, Reiniciar motor, Clave, Batería y Apagar): pegada al borde
+         derecho y angosta para no tapar el contenido; se arrastra para moverla. -->
     <ImageButton
         android:id="@+id/manija"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="28dp"
+        android:layout_height="56dp"
         android:layout_gravity="top|end"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="6dp"
-        android:alpha="0.85"
+        android:alpha="0.75"
         android:background="@drawable/fondo_manija"
         android:contentDescription="@string/manija_descripcion"
-        android:elevation="6dp"
-        android:padding="8dp"
+        android:elevation="4dp"
+        android:paddingStart="8dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/marca"
+        android:src="@drawable/manija_puntos"
         android:visibility="gone" />
 
     <!-- Progreso de carga (cian = actividad) -->

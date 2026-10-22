@@ -93,7 +93,8 @@ class MainActivity : Activity() {
     private val reintentosRecientes = ArrayDeque<Long>()
     private var rendererCaido = false
     private var callbackArchivos: ValueCallback<Array<Uri>>? = null
-    private var fraccionManija = 0.42f
+    // Arriba, a la altura de las pestañas: a media pantalla tapaba estados y mensajes.
+    private var fraccionManija = 0.12f
     private var arrastrandoManija = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -541,7 +542,7 @@ class MainActivity : Activity() {
     /** Se toca para abrir el menú y se arrastra para moverlo por el borde derecho. */
     @SuppressLint("ClickableViewAccessibility")
     private fun configurarManija() {
-        fraccionManija = preferencias.getFloat("manija_posicion", 0.42f)
+        fraccionManija = preferencias.getFloat("manija_posicion", fraccionManija)
         val umbral = ViewConfiguration.get(this).scaledTouchSlop
         var inicioY = 0f
         var traslacionInicial = 0f
