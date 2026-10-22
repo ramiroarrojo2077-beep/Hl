@@ -392,7 +392,7 @@ class MainActivity : Activity() {
         enlaceConsola.setOnClickListener {
             abrirAfuera(Uri.parse(if (proveedorElegido == Clave.GEMINI) CONSOLA_GEMINI else CONSOLA_ANTHROPIC))
         }
-        findViewById<TextView>(R.id.enlaceRespaldo).setOnClickListener { abrirAfuera(Uri.parse(CONSOLA_OPENROUTER)) }
+        findViewById<TextView>(R.id.enlaceRespaldo).setOnClickListener { abrirAfuera(Uri.parse(CONSOLA_MISTRAL)) }
         botonGemini.setOnClickListener { marcarProveedor(Clave.GEMINI) }
         botonClaude.setOnClickListener { marcarProveedor(Clave.ANTHROPIC) }
         botonCancelar.setOnClickListener { cerrarPanelClave() }
@@ -427,7 +427,7 @@ class MainActivity : Activity() {
     private fun mostrarPanelClave() {
         campoClave.setText("")
         campoRespaldo.setText("")
-        campoRespaldo.hint = getString(if (Clave.existe(this, Clave.OPENROUTER)) R.string.clave_guardada_pista else R.string.respaldo_pista)
+        campoRespaldo.hint = getString(if (Clave.existe(this, Clave.MISTRAL)) R.string.clave_guardada_pista else R.string.respaldo_pista)
         marcarProveedor(Clave.proveedor(this))
         avisoClave.visibility = View.GONE
         botonCancelar.visibility = if (Clave.lista(this)) View.VISIBLE else View.GONE
@@ -479,7 +479,7 @@ class MainActivity : Activity() {
         val habiaClave = Clave.lista(this)
         try {
             if (!mantiene) Clave.guardar(this, proveedorElegido, texto)
-            if (respaldo.isNotEmpty() && proveedorElegido == Clave.GEMINI) Clave.guardar(this, Clave.OPENROUTER, respaldo)
+            if (respaldo.isNotEmpty() && proveedorElegido == Clave.GEMINI) Clave.guardar(this, Clave.MISTRAL, respaldo)
             Clave.elegirProveedor(this, proveedorElegido)
         } catch (e: Exception) {
             avisoClave.text = getString(R.string.clave_no_guardada, e.message ?: e.javaClass.simpleName)
@@ -708,7 +708,7 @@ class MainActivity : Activity() {
     private companion object {
         const val CONSOLA_GEMINI = "https://aistudio.google.com/apikey"
         const val CONSOLA_ANTHROPIC = "https://console.anthropic.com/settings/keys"
-        const val CONSOLA_OPENROUTER = "https://openrouter.ai/settings/keys"
+        const val CONSOLA_MISTRAL = "https://console.mistral.ai/api-keys"
         const val PEDIDO_ARCHIVOS = 41
         const val PEDIDO_NOTIFICACIONES = 42
         const val MENU_RECARGAR = 1

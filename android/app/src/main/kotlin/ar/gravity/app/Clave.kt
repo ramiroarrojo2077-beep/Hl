@@ -11,14 +11,14 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Las claves de los modelos (Gemini, Anthropic y el respaldo gratis de OpenRouter). Se guardan cifradas
+ * Las claves de los modelos (Gemini, Anthropic y el respaldo gratis de Mistral). Se guardan cifradas
  * (AES-256-GCM) con una llave del Android Keystore, que no se puede sacar del celular; los archivos
  * quedan fuera de las copias de seguridad.
  */
 object Clave {
     const val GEMINI = "gemini"
     const val ANTHROPIC = "anthropic"
-    const val OPENROUTER = "openrouter"
+    const val MISTRAL = "mistral"
 
     private const val ALIAS = "gravity_clave_anthropic"
 

@@ -3,34 +3,38 @@
 // Si no hay clave de Anthropic, el cliente recibe este fetch: traduce cada pedido a /v1/messages
 // al proveedor que haya y la respuesta de vuelta, así el resto del código no cambia. Cadena:
 //   1. Google Gemini (clave gratis de aistudio.google.com): Flash y, cuando se agota su cupo, Flash-Lite.
-//   2. Respaldo: OpenRouter (clave gratis) con el mejor modelo gratuito que acepte herramientas.
+//   2. Respaldo: Mistral (plan gratis "Experiment": sin tarjeta, solo verificar el teléfono). Large, Medium y Small
+//      tienen cupos separados, así que se prueban en ese orden.
 // Si uno se queda sin cupo o falla, se pasa al siguiente sin cortar la conversación.
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 type Json = Record<string, unknown>;
 
 const GEMINI_BASE = (process.env.GEMINI_API_BASE ?? "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, "");
-const OPENROUTER_BASE = (process.env.OPENROUTER_API_BASE ?? "https://openrouter.ai/api/v1").replace(/\/$/, "");
+const MISTRAL_BASE = (process.env.MISTRAL_API_BASE ?? "https://api.mistral.ai/v1").replace(/\/$/, "");
 const CLAVE_GEMINI = process.env.GEMINI_API_KEY ?? "";
-const CLAVE_OPENROUTER = process.env.OPENROUTER_API_KEY ?? "";
+const CLAVE_MISTRAL = process.env.MISTRAL_API_KEY ?? "";
 // "-latest" apunta siempre al último Flash de Google; Flash-Lite tiene un cupo diario aparte y más grande.
 // Si un nombre no existe (404) se pasa al siguiente, así que conviven el alias y los nombres fijos.
 const MODELOS_GEMINI = (process.env.GRAVITY_GEMINI_MODELOS ?? "gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest,gemini-2.5-flash-lite")
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
-const MODELO_RESPALDO = process.env.GRAVITY_RESPALDO_MODELO ?? "";
+const MODELOS_MISTRAL = (process.env.GRAVITY_MISTRAL_MODELOS ?? "mistral-large-latest,mistral-medium-latest,mistral-small-latest")
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
 const ESPERA_RED_MS = 120_000;
 
 export const hayGemini = !!CLAVE_GEMINI;
-export const hayRespaldo = !!CLAVE_OPENROUTER;
+export const hayRespaldo = !!CLAVE_MISTRAL;
 
 /** Para mostrar en la interfaz. */
 export function describirProveedor(): string {
   const partes = [];
   if (hayGemini) partes.push(`Google Gemini (${MODELOS_GEMINI.join(", ")})`);
-  if (hayRespaldo) partes.push(`respaldo gratis de OpenRouter${MODELO_RESPALDO ? ` (${MODELO_RESPALDO})` : ""}`);
+  if (hayRespaldo) partes.push(`respaldo gratis de Mistral (${MODELOS_MISTRAL.join(", ")})`);
   return partes.join(" + ") || "sin proveedor";
 }
 
@@ -403,98 +407,76 @@ export async function buscarConGoogle(consulta: string, signal?: AbortSignal | n
   throw ultimo instanceof Error ? ultimo : new Error("No se pudo buscar.");
 }
 
-// ---------------------------------------------------------------- OpenRouter (respaldo gratis)
+// ---------------------------------------------------------------- Mistral (respaldo gratis)
 
-let catalogo: { modelos: string[]; hasta: number } | null = null;
+/** Mistral exige ids de llamada de exactamente 9 letras o números: se derivan del id propio, siempre igual. */
+const idMistral = (id: string) => createHash("sha256").update(id).digest("hex").slice(0, 9);
 
-// Preferencias entre los modelos gratis, de mejor a peor para trabajar con herramientas.
-const PREFERIDOS = [/deepseek.*(v3|r1|chat)/i, /qwen3.*(235b|max|coder)/i, /kimi-k2/i, /gpt-oss-120b/i, /glm-4\.[5-9]/i, /llama-4-maverick/i, /qwen3/i, /mistral/i, /gemma-3/i, /llama/i];
-
-/** Los mejores modelos gratis de OpenRouter que aceptan herramientas, de mejor a peor. */
-async function modelosGratis(signal?: AbortSignal | null): Promise<string[]> {
-  if (MODELO_RESPALDO) return [MODELO_RESPALDO];
-  if (catalogo && catalogo.hasta > Date.now()) return catalogo.modelos;
-  try {
-    const res = await fetch(`${OPENROUTER_BASE}/models`, { signal: signal ?? AbortSignal.timeout(20_000) });
-    const datos = (await res.json()) as { data?: Json[] };
-    const gratis = (datos.data ?? []).filter((m) => {
-      const precio = (m.pricing as Json) ?? {};
-      const cero = Number(precio.prompt ?? 1) === 0 && Number(precio.completion ?? 1) === 0;
-      const herramientas = ((m.supported_parameters as string[]) ?? []).includes("tools");
-      return cero && herramientas && Number(m.context_length ?? 0) >= 32_000;
-    });
-    const puntaje = (id: string) => {
-      const i = PREFERIDOS.findIndex((r) => r.test(id));
-      return i === -1 ? PREFERIDOS.length : i;
-    };
-    const modelos = gratis
-      .sort((a, b) => puntaje(String(a.id)) - puntaje(String(b.id)) || Number(b.context_length ?? 0) - Number(a.context_length ?? 0))
-      .map((m) => String(m.id))
-      .slice(0, 4);
-    if (modelos.length) catalogo = { modelos, hasta: Date.now() + 6 * 3600_000 };
-    return modelos.length ? modelos : ["openrouter/auto"];
-  } catch {
-    return catalogo?.modelos ?? ["deepseek/deepseek-chat-v3.1:free"];
-  }
-}
-
-async function pedirOpenRouter(p: Pedido, modelo: string, signal?: AbortSignal | null): Promise<Respuesta> {
+async function pedirMistral(p: Pedido, modelo: string, signal?: AbortSignal | null): Promise<Respuesta> {
   const messages: Json[] = [];
   if (p.sistema) messages.push({ role: "system", content: p.sistema });
   for (const t of p.turnos) {
     if (t.rol === "modelo") {
       messages.push({
         role: "assistant",
-        content: t.texto || null,
+        content: t.texto || "",
         ...(t.llamadas.length
-          ? { tool_calls: t.llamadas.map((l) => ({ id: l.id, type: "function", function: { name: l.nombre, arguments: JSON.stringify(l.entrada) } })) }
+          ? { tool_calls: t.llamadas.map((l) => ({ id: idMistral(l.id), type: "function", function: { name: l.nombre, arguments: JSON.stringify(l.entrada) } })) }
           : {}),
       });
       continue;
     }
-    for (const r of t.resultados) messages.push({ role: "tool", tool_call_id: r.id, content: r.error ? `ERROR: ${r.texto}` : r.texto });
+    for (const r of t.resultados) {
+      messages.push({ role: "tool", tool_call_id: idMistral(r.id), name: r.nombre, content: r.error ? `ERROR: ${r.texto}` : r.texto });
+    }
     const imagenes = [...t.resultados.flatMap((r) => r.imagenes), ...t.imagenes];
     const texto = t.textos.filter(Boolean).join("\n\n");
-    if (imagenes.length) {
-      messages.push({
-        role: "user",
-        content: [
-          ...(texto ? [{ type: "text", text: texto }] : []),
-          ...imagenes.map((i) => ({ type: "image_url", image_url: { url: `data:${i.mime};base64,${i.datos}` } })),
-        ],
-      });
-    } else if (texto) messages.push({ role: "user", content: texto });
+    if (!texto && !imagenes.length) continue;
+    // Mistral no acepta un mensaje del usuario justo después de resultados de herramientas: se suma al último.
+    const ultimo = messages.at(-1);
+    if (ultimo?.role === "tool" && !imagenes.length) {
+      ultimo.content = `${String(ultimo.content)}\n\n${texto}`;
+      continue;
+    }
+    if (ultimo?.role === "tool") messages.push({ role: "assistant", content: "Sigo." });
+    messages.push({
+      role: "user",
+      content: imagenes.length
+        ? [...(texto ? [{ type: "text", text: texto }] : []), ...imagenes.map((i) => ({ type: "image_url", image_url: `data:${i.mime};base64,${i.datos}` }))]
+        : texto,
+    });
   }
 
-  const cuerpo: Json = { model: modelo, messages, max_tokens: Math.min(p.maxTokens, 16_000) };
+  const cuerpo: Json = { model: modelo, messages, max_tokens: Math.min(p.maxTokens, 32_000) };
   if (p.herramientas.length) {
     cuerpo.tools = p.herramientas.map((h) => ({ type: "function", function: { name: h.nombre, description: h.descripcion, parameters: limpiarEsquema(h.esquema) } }));
   }
-  if (p.esquemaSalida) cuerpo.response_format = { type: "json_schema", json_schema: { name: "salida", schema: limpiarEsquema(p.esquemaSalida) } };
+  if (p.esquemaSalida) cuerpo.response_format = { type: "json_schema", json_schema: { name: "salida", schema: limpiarEsquema(p.esquemaSalida), strict: true } };
 
-  const datos = await postJson(
-    `${OPENROUTER_BASE}/chat/completions`,
-    cuerpo,
-    { authorization: `Bearer ${CLAVE_OPENROUTER}`, "x-title": "Gravity" },
-    signal,
-    errorOpenRouter,
-  );
-  if (datos.error) throw errorOpenRouter(Number((datos.error as Json).code ?? 502), datos, new Headers());
+  const datos = await postJson(`${MISTRAL_BASE}/chat/completions`, cuerpo, { authorization: `Bearer ${CLAVE_MISTRAL}` }, signal, errorMistral);
   const eleccion = (datos.choices as Json[] | undefined)?.[0];
   const mensaje = (eleccion?.message as Json) ?? {};
   const uso = (datos.usage as Json) ?? {};
   const bloques: Json[] = [];
-  const razonamiento = String(mensaje.reasoning ?? mensaje.reasoning_content ?? "").trim();
-  if (razonamiento) bloques.push({ type: "thinking", thinking: razonamiento, signature: "" });
-  let texto = typeof mensaje.content === "string" ? mensaje.content : textoDeBloques(mensaje.content);
-  // Algunos modelos dejan el JSON pedido entre ```json … ```.
+  // El contenido puede venir como texto o como partes (los modelos que razonan mandan partes "thinking").
+  let texto = "";
+  let razonamiento = "";
+  if (typeof mensaje.content === "string") texto = mensaje.content;
+  else {
+    for (const parte of (mensaje.content as Json[]) ?? []) {
+      if (parte.type === "text") texto += String(parte.text ?? "");
+      else if (parte.type === "thinking") razonamiento += textoDeBloques(parte.thinking);
+    }
+  }
+  if (razonamiento.trim()) bloques.push({ type: "thinking", thinking: razonamiento.trim(), signature: "" });
+  // A veces el JSON pedido viene entre ```json … ```.
   if (p.esquemaSalida) texto = texto.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, "");
   if (texto.trim()) bloques.push({ type: "text", text: texto, citations: null });
   for (const l of (mensaje.tool_calls as Json[]) ?? []) {
     const f = (l.function as Json) ?? {};
     let entrada: Json;
     try {
-      entrada = f.arguments ? (JSON.parse(String(f.arguments)) as Json) : {};
+      entrada = typeof f.arguments === "string" ? (f.arguments ? (JSON.parse(f.arguments) as Json) : {}) : ((f.arguments as Json) ?? {});
     } catch {
       throw new ErrorProveedor(502, `El modelo ${modelo} armó mal una llamada a herramienta.`);
     }
@@ -504,23 +486,22 @@ async function pedirOpenRouter(p: Pedido, modelo: string, signal?: AbortSignal |
   const llamo = bloques.some((b) => b.type === "tool_use");
   return {
     bloques,
-    fin: final === "content_filter" ? "refusal" : final === "length" ? "max_tokens" : llamo ? "tool_use" : "end_turn",
+    fin: final === "length" || final === "model_length" ? "max_tokens" : llamo ? "tool_use" : "end_turn",
     entrada: Number(uso.prompt_tokens ?? 0),
     salida: Number(uso.completion_tokens ?? 0),
     modelo: String(datos.model ?? modelo),
   };
 }
 
-function errorOpenRouter(status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
-  const e = (cuerpo.error as Json) ?? {};
-  const mensaje = String(e.message ?? `OpenRouter respondió ${status}`);
-  if (status === 401 || status === 403) return new ErrorProveedor(401, "La clave de respaldo (OpenRouter) no es válida. Revisala en la app.");
-  if (status === 429 || status === 402) {
+function errorMistral(status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
+  const mensaje = String((cuerpo.error as Json | undefined)?.message ?? cuerpo.message ?? cuerpo.detail ?? `Mistral respondió ${status}`);
+  if (status === 401 || status === 403) return new ErrorProveedor(401, "La clave de respaldo (Mistral) no es válida. Revisala en la app.");
+  if (status === 429) {
     const espera = cabeceras.get("retry-after");
-    return new ErrorProveedor(429, `OpenRouter: sin cupo gratis por ahora. ${mensaje}`, espera ? Math.ceil(Number(espera)) : null, true);
+    return new ErrorProveedor(429, `Mistral: sin cupo gratis por ahora. ${mensaje}`, espera ? Math.ceil(Number(espera)) : null, true);
   }
-  if (status === 404 || status === 400) return new ErrorProveedor(status, `OpenRouter: ${mensaje}`, null, true);
-  return new ErrorProveedor(status >= 500 ? 503 : status, `OpenRouter: ${mensaje}`);
+  if (status === 404) return new ErrorProveedor(404, `Mistral: el modelo no está disponible. ${mensaje}`, null, true);
+  return new ErrorProveedor(status >= 500 ? 503 : status, `Mistral: ${mensaje}`);
 }
 
 // ---------------------------------------------------------------- HTTP
@@ -569,15 +550,13 @@ const pausados = new Map<string, number>();
 async function eslabones(signal?: AbortSignal | null): Promise<Eslabon[]> {
   const lista: Eslabon[] = [];
   if (hayGemini) for (const m of MODELOS_GEMINI) lista.push({ clave: `gemini:${m}`, pedir: (p, s) => pedirGemini(p, m, s) });
-  if (hayRespaldo) {
-    for (const m of await modelosGratis(signal)) lista.push({ clave: `openrouter:${m}`, pedir: (p, s) => pedirOpenRouter(p, m, s) });
-  }
+  if (hayRespaldo) for (const m of MODELOS_MISTRAL) lista.push({ clave: `mistral:${m}`, pedir: (p, s) => pedirMistral(p, m, s) });
   return lista;
 }
 
 async function responder(p: Pedido, signal?: AbortSignal | null): Promise<Respuesta> {
   const lista = await eslabones(signal);
-  if (!lista.length) throw new ErrorProveedor(401, "No hay ninguna clave cargada (Anthropic, Gemini u OpenRouter).");
+  if (!lista.length) throw new ErrorProveedor(401, "No hay ninguna clave cargada (Anthropic, Gemini o Mistral).");
   let ultimo: ErrorProveedor | null = null;
   let esperaMinima = Infinity;
   for (const e of lista) {

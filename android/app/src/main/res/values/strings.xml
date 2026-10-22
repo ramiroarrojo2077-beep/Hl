@@ -14,9 +14,9 @@
     <string name="clave_donde_gemini">Sacar la clave gratis → aistudio.google.com</string>
     <string name="clave_donde_claude">¿Dónde la consigo? → console.anthropic.com</string>
     <string name="respaldo_titulo">Respaldo gratis (opcional)</string>
-    <string name="respaldo_ayuda">Si se acaba el cupo de Gemini, tus compañeros siguen con el mejor modelo gratuito de OpenRouter. La clave también es gratis.</string>
-    <string name="respaldo_pista">Clave de OpenRouter (sk-or-…)</string>
-    <string name="respaldo_donde">Sacar la clave gratis → openrouter.ai</string>
+    <string name="respaldo_ayuda">Si se acaba el cupo de Gemini, tus compañeros siguen con Mistral. Su plan gratis no pide tarjeta (solo verificar tu teléfono) y da mucho más cupo.</string>
+    <string name="respaldo_pista">Clave de Mistral</string>
+    <string name="respaldo_donde">Sacar la clave gratis → console.mistral.ai</string>
     <string name="clave_guardar">Guardar y arrancar</string>
     <string name="clave_seguridad">Las claves quedan cifradas en este celular (Android Keystore) y solo se usan para hablar con el modelo que elegiste. No se suben a ningún lado.</string>
     <string name="clave_vacia">Pegá la clave del modelo que elegiste.</string>

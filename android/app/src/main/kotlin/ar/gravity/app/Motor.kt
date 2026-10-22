@@ -144,7 +144,7 @@ class Motor : Service() {
     private fun arrancarNode(): Boolean {
         val proveedor = Clave.proveedor(this)
         val clave = Clave.leer(this, proveedor)
-        val respaldo = Clave.leer(this, Clave.OPENROUTER)
+        val respaldo = Clave.leer(this, Clave.MISTRAL)
         if (clave == null) {
             avisar(ID_ERROR, getString(R.string.motor_sin_clave), abrirApp = true)
             cerrarServicio()
@@ -217,10 +217,10 @@ class Motor : Service() {
         val datos = File(contexto.filesDir, "gravity").apply { mkdirs() }
         val temporal = File(contexto.cacheDir, "tmp").apply { mkdirs() }
         val cache = File(contexto.cacheDir, "node").apply { mkdirs() }
-        // Sin ANTHROPIC_API_KEY el motor usa Gemini y, si se acaba su cupo, el respaldo gratis de OpenRouter.
+        // Sin ANTHROPIC_API_KEY el motor usa Gemini y, si se acaba su cupo, el respaldo gratis de Mistral.
         val claves = buildMap {
             put(if (proveedor == Clave.ANTHROPIC) "ANTHROPIC_API_KEY" else "GEMINI_API_KEY", clave)
-            if (!respaldo.isNullOrBlank()) put("OPENROUTER_API_KEY", respaldo)
+            if (!respaldo.isNullOrBlank()) put("MISTRAL_API_KEY", respaldo)
         }
         val variables = claves + mapOf(
             "GRAVITY_TOKEN" to Gravity.token(contexto),

@@ -8,7 +8,7 @@ La app de Android trae **Gravity entero adentro**: el motor (Node.js 24 para And
 2. Abrila. Si Android lo pide, permití **Instalar apps desconocidas** para tu navegador.
 3. Si aparece Play Protect: **Más detalles > Instalar de todos modos** (la app no está en Google Play).
 4. Abrí Gravity y elegí el modelo:
-   - **Gemini · gratis** (recomendado si no querés pagar): sacá la clave gratis en [aistudio.google.com/apikey](https://aistudio.google.com/apikey) con tu cuenta de Google, sin tarjeta. Opcional: una clave gratis de [OpenRouter](https://openrouter.ai/settings/keys) como **respaldo**, para que sigan trabajando cuando se acabe el cupo diario de Gemini.
+   - **Gemini · gratis** (recomendado si no querés pagar): sacá la clave gratis en [aistudio.google.com/apikey](https://aistudio.google.com/apikey) con tu cuenta de Google, sin tarjeta. Opcional: una clave del plan gratis de [Mistral](https://console.mistral.ai/api-keys) (sin tarjeta, solo verificar el teléfono) como **respaldo**, para que sigan trabajando cuando se acabe el cupo diario de Gemini.
    - **Claude**: el más capaz, se paga por uso con tu clave de [Anthropic](https://console.anthropic.com/settings/keys).
 5. Permití las **notificaciones** y, cuando lo pregunte, dejá a Gravity **sin restricciones de batería**.
 
@@ -17,7 +17,7 @@ Requisitos: Android 8 o más nuevo, celular de 64 bits (arm64; casi todos desde 
 ## Modelos gratis: qué cambia
 
 - **Gemini** (Google): Flash es el principal y, cuando se agota su cupo del día, sigue con Flash-Lite (cupo aparte).
-- **Respaldo** (OpenRouter, opcional): elige solo el mejor modelo gratuito que maneje herramientas.
+- **Respaldo** (Mistral, opcional): plan gratis "Experiment", sin tarjeta. Usa Mistral Large y, si se agota, Medium y Small (cada uno tiene su cupo). Ojo: en ese plan Mistral puede usar lo que mandás para entrenar sus modelos.
 - Las búsquedas en la web se hacen con Google a través de Gemini, y los compañeros pueden leer páginas públicas.
 - No hay gasto en dólares: el contador de Ajustes queda en 0.
 - Con modelos gratis los compañeros son menos finos que con Claude, sobre todo en tareas largas con muchas herramientas.
@@ -37,7 +37,7 @@ Algunas marcas (Xiaomi, Huawei, Samsung con "apps en suspensión") cierran apps 
 ## Dónde quedan tus cosas
 
 - Conversaciones, memoria, rutinas, equipos, conexiones y la compu de los bots: en el almacenamiento privado de la app (`files/gravity`). Ninguna otra app puede leerlo y no se sube a ningún lado.
-- Las claves (Gemini, OpenRouter o Anthropic): cifradas con el **Android Keystore**, fuera de las copias de seguridad.
+- Las claves (Gemini, Mistral o Anthropic): cifradas con el **Android Keystore**, fuera de las copias de seguridad.
 - Actualizar la app (instalar la APK nueva encima) **no borra nada**. Desinstalarla sí borra todo.
 
 ## La compu de los bots en el celular
@@ -54,7 +54,7 @@ Los bots tienen una terminal con los comandos de Android (`ls`, `cat`, `grep`, `
 
 - **"El motor no arrancó"**: la pantalla muestra las últimas líneas del registro. Probá **Reiniciar el motor**; si dice algo de autenticación, revisá la clave (**Cambiar la clave**).
 - **Los bots responden con error de autenticación**: la clave está mal o se venció. Botón flotante > **Modelo y claves**.
-- **"Sin cupo"**: con Gemini gratis hay un límite de pedidos por minuto y por día. Gravity pasa solo de Gemini Flash a Flash-Lite y después al respaldo de OpenRouter (si cargaste su clave); cuando todo está sin cupo, espera y sigue solo. Con muchos compañeros a la vez el cupo gratis se gasta rápido.
+- **"Sin cupo"**: con Gemini gratis hay un límite de pedidos por minuto y por día. Gravity pasa solo de Gemini Flash a Flash-Lite y después al respaldo de Mistral (si cargaste su clave); cuando todo está sin cupo, espera y sigue solo. Con muchos compañeros a la vez el cupo gratis se gasta rápido.
 - **No corre con la pantalla apagada**: botón flotante > **Trabajar con la pantalla apagada** (aparece mientras falte el permiso de batería).
 
 ## Compilarla vos

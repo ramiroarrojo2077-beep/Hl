@@ -3,7 +3,7 @@ import type { Esfuerzo } from "./almacen.ts";
 import { describirProveedor, fetchGratis, hayGemini, hayRespaldo } from "./proveedores.ts";
 
 // Con clave de Anthropic se usa Claude. Sin ella, Google Gemini (gratis) y, si se acaba su cupo,
-// el mejor modelo gratuito de OpenRouter: ver proveedores.ts.
+// los modelos del plan gratis de Mistral: ver proveedores.ts.
 export const PROVEEDOR: "anthropic" | "gratis" = process.env.ANTHROPIC_API_KEY || !(hayGemini || hayRespaldo) ? "anthropic" : "gratis";
 
 export const MODELO = process.env.BOTS_MODELO ?? "claude-opus-5-5";
