@@ -3,8 +3,8 @@
 // Si no hay clave de Anthropic, el cliente recibe este fetch: traduce cada pedido a /v1/messages
 // al proveedor que haya y la respuesta de vuelta, así el resto del código no cambia. Cadena:
 //   1. Google Gemini (clave gratis de aistudio.google.com): Flash y, cuando se agota su cupo, Flash-Lite.
-//   2. Respaldo: Mistral (plan gratis "Experiment": sin tarjeta, solo verificar el teléfono). Large, Medium y Small
-//      tienen cupos separados, así que se prueban en ese orden.
+//   2. Respaldo: Groq (clave gratis, sin tarjeta) con varios modelos abiertos, cada uno con su cupo.
+//      También acepta Mistral (plan gratis "Experiment") si se carga su clave.
 // Si uno se queda sin cupo o falla, se pasa al siguiente sin cortar la conversación.
 
 import { createHash, randomBytes } from "node:crypto";
@@ -12,12 +12,22 @@ import { createHash, randomBytes } from "node:crypto";
 type Json = Record<string, unknown>;
 
 const GEMINI_BASE = (process.env.GEMINI_API_BASE ?? "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, "");
+const GROQ_BASE = (process.env.GROQ_API_BASE ?? "https://api.groq.com/openai/v1").replace(/\/$/, "");
 const MISTRAL_BASE = (process.env.MISTRAL_API_BASE ?? "https://api.mistral.ai/v1").replace(/\/$/, "");
 const CLAVE_GEMINI = process.env.GEMINI_API_KEY ?? "";
+const CLAVE_GROQ = process.env.GROQ_API_KEY ?? "";
 const CLAVE_MISTRAL = process.env.MISTRAL_API_KEY ?? "";
 // "-latest" apunta siempre al último Flash de Google; Flash-Lite tiene un cupo diario aparte y más grande.
 // Si un nombre no existe (404) se pasa al siguiente, así que conviven el alias y los nombres fijos.
 const MODELOS_GEMINI = (process.env.GRAVITY_GEMINI_MODELOS ?? "gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest,gemini-2.5-flash-lite")
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+// En Groq gratis cada modelo tiene su propio cupo por minuto y por día: si uno no alcanza, sigue el próximo.
+const MODELOS_GROQ = (
+  process.env.GRAVITY_GROQ_MODELOS ??
+  "openai/gpt-oss-120b,meta-llama/llama-4-scout-17b-16e-instruct,llama-3.3-70b-versatile,qwen/qwen3-32b,openai/gpt-oss-20b"
+)
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
@@ -28,13 +38,14 @@ const MODELOS_MISTRAL = (process.env.GRAVITY_MISTRAL_MODELOS ?? "mistral-large-l
 const ESPERA_RED_MS = 120_000;
 
 export const hayGemini = !!CLAVE_GEMINI;
-export const hayRespaldo = !!CLAVE_MISTRAL;
+export const hayRespaldo = !!(CLAVE_GROQ || CLAVE_MISTRAL);
 
 /** Para mostrar en la interfaz. */
 export function describirProveedor(): string {
   const partes = [];
   if (hayGemini) partes.push(`Google Gemini (${MODELOS_GEMINI.join(", ")})`);
-  if (hayRespaldo) partes.push(`respaldo gratis de Mistral (${MODELOS_MISTRAL.join(", ")})`);
+  if (CLAVE_GROQ) partes.push(`respaldo gratis de Groq (${MODELOS_GROQ.join(", ")})`);
+  if (CLAVE_MISTRAL) partes.push(`respaldo gratis de Mistral (${MODELOS_MISTRAL.join(", ")})`);
   return partes.join(" + ") || "sin proveedor";
 }
 
@@ -407,12 +418,24 @@ export async function buscarConGoogle(consulta: string, signal?: AbortSignal | n
   throw ultimo instanceof Error ? ultimo : new Error("No se pudo buscar.");
 }
 
-// ---------------------------------------------------------------- Mistral (respaldo gratis)
+// ---------------------------------------------------------------- Respaldos gratis estilo OpenAI: Groq y Mistral
 
-/** Mistral exige ids de llamada de exactamente 9 letras o números: se derivan del id propio, siempre igual. */
-const idMistral = (id: string) => createHash("sha256").update(id).digest("hex").slice(0, 9);
+interface Compatible {
+  nombre: string;
+  base: string;
+  clave: string;
+  /** Mistral exige ids de llamada de exactamente 9 letras o números y nada del usuario justo después de un resultado. */
+  estricto: boolean;
+  maxSalida: number;
+}
 
-async function pedirMistral(p: Pedido, modelo: string, signal?: AbortSignal | null): Promise<Respuesta> {
+const GROQ: Compatible = { nombre: "Groq", base: GROQ_BASE, clave: CLAVE_GROQ, estricto: false, maxSalida: 8192 };
+const MISTRAL: Compatible = { nombre: "Mistral", base: MISTRAL_BASE, clave: CLAVE_MISTRAL, estricto: true, maxSalida: 32_000 };
+
+/** Id de llamada para el proveedor: el propio, o (Mistral) 9 caracteres derivados de él, siempre iguales. */
+const idPara = (c: Compatible, id: string) => (c.estricto ? createHash("sha256").update(id).digest("hex").slice(0, 9) : id);
+
+async function pedirCompatible(c: Compatible, p: Pedido, modelo: string, signal?: AbortSignal | null): Promise<Respuesta> {
   const messages: Json[] = [];
   if (p.sistema) messages.push({ role: "system", content: p.sistema });
   for (const t of p.turnos) {
@@ -421,46 +444,53 @@ async function pedirMistral(p: Pedido, modelo: string, signal?: AbortSignal | nu
         role: "assistant",
         content: t.texto || "",
         ...(t.llamadas.length
-          ? { tool_calls: t.llamadas.map((l) => ({ id: idMistral(l.id), type: "function", function: { name: l.nombre, arguments: JSON.stringify(l.entrada) } })) }
+          ? { tool_calls: t.llamadas.map((l) => ({ id: idPara(c, l.id), type: "function", function: { name: l.nombre, arguments: JSON.stringify(l.entrada) } })) }
           : {}),
       });
       continue;
     }
     for (const r of t.resultados) {
-      messages.push({ role: "tool", tool_call_id: idMistral(r.id), name: r.nombre, content: r.error ? `ERROR: ${r.texto}` : r.texto });
+      messages.push({ role: "tool", tool_call_id: idPara(c, r.id), name: r.nombre, content: r.error ? `ERROR: ${r.texto}` : r.texto });
     }
     const imagenes = [...t.resultados.flatMap((r) => r.imagenes), ...t.imagenes];
     const texto = t.textos.filter(Boolean).join("\n\n");
     if (!texto && !imagenes.length) continue;
     // Mistral no acepta un mensaje del usuario justo después de resultados de herramientas: se suma al último.
     const ultimo = messages.at(-1);
-    if (ultimo?.role === "tool" && !imagenes.length) {
+    if (c.estricto && ultimo?.role === "tool" && !imagenes.length) {
       ultimo.content = `${String(ultimo.content)}\n\n${texto}`;
       continue;
     }
-    if (ultimo?.role === "tool") messages.push({ role: "assistant", content: "Sigo." });
+    if (c.estricto && ultimo?.role === "tool") messages.push({ role: "assistant", content: "Sigo." });
+    const url = (i: Imagen) => `data:${i.mime};base64,${i.datos}`;
     messages.push({
       role: "user",
       content: imagenes.length
-        ? [...(texto ? [{ type: "text", text: texto }] : []), ...imagenes.map((i) => ({ type: "image_url", image_url: `data:${i.mime};base64,${i.datos}` }))]
+        ? [
+            ...(texto ? [{ type: "text", text: texto }] : []),
+            ...imagenes.map((i) => ({ type: "image_url", image_url: c.estricto ? url(i) : { url: url(i) } })),
+          ]
         : texto,
     });
   }
 
-  const cuerpo: Json = { model: modelo, messages, max_tokens: Math.min(p.maxTokens, 32_000) };
+  const cuerpo: Json = { model: modelo, messages, max_tokens: Math.min(p.maxTokens, c.maxSalida) };
   if (p.herramientas.length) {
     cuerpo.tools = p.herramientas.map((h) => ({ type: "function", function: { name: h.nombre, description: h.descripcion, parameters: limpiarEsquema(h.esquema) } }));
   }
-  if (p.esquemaSalida) cuerpo.response_format = { type: "json_schema", json_schema: { name: "salida", schema: limpiarEsquema(p.esquemaSalida), strict: true } };
+  if (p.esquemaSalida) cuerpo.response_format = { type: "json_schema", json_schema: { name: "salida", schema: limpiarEsquema(p.esquemaSalida), ...(c.estricto ? { strict: true } : {}) } };
 
-  const datos = await postJson(`${MISTRAL_BASE}/chat/completions`, cuerpo, { authorization: `Bearer ${CLAVE_MISTRAL}` }, signal, errorMistral);
+  const datos = await postJson(`${c.base}/chat/completions`, cuerpo, { authorization: `Bearer ${c.clave}` }, signal, (st, cu, ca) =>
+    errorCompatible(c, st, cu, ca),
+  );
   const eleccion = (datos.choices as Json[] | undefined)?.[0];
   const mensaje = (eleccion?.message as Json) ?? {};
   const uso = (datos.usage as Json) ?? {};
   const bloques: Json[] = [];
   // El contenido puede venir como texto o como partes (los modelos que razonan mandan partes "thinking").
   let texto = "";
-  let razonamiento = "";
+  // Groq (gpt-oss y otros) manda el razonamiento aparte.
+  let razonamiento = typeof mensaje.reasoning === "string" ? mensaje.reasoning : "";
   if (typeof mensaje.content === "string") texto = mensaje.content;
   else {
     for (const parte of (mensaje.content as Json[]) ?? []) {
@@ -493,15 +523,17 @@ async function pedirMistral(p: Pedido, modelo: string, signal?: AbortSignal | nu
   };
 }
 
-function errorMistral(status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
-  const mensaje = String((cuerpo.error as Json | undefined)?.message ?? cuerpo.message ?? cuerpo.detail ?? `Mistral respondió ${status}`);
-  if (status === 401 || status === 403) return new ErrorProveedor(401, "La clave de respaldo (Mistral) no es válida. Revisala en la app.");
-  if (status === 429) {
+function errorCompatible(c: Compatible, status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
+  const mensaje = String((cuerpo.error as Json | undefined)?.message ?? cuerpo.message ?? cuerpo.detail ?? `${c.nombre} respondió ${status}`);
+  if (status === 401 || status === 403) return new ErrorProveedor(401, `La clave de respaldo (${c.nombre}) no es válida. Revisala en la app.`);
+  // 413: el pedido no entra en el cupo por minuto de ese modelo (pasa en Groq gratis); se prueba el siguiente.
+  if (status === 429 || status === 413) {
     const espera = cabeceras.get("retry-after");
-    return new ErrorProveedor(429, `Mistral: sin cupo gratis por ahora. ${mensaje}`, espera ? Math.ceil(Number(espera)) : null, true);
+    return new ErrorProveedor(429, `${c.nombre}: sin cupo gratis por ahora. ${mensaje}`, espera ? Math.ceil(Number(espera)) : null, true);
   }
-  if (status === 404) return new ErrorProveedor(404, `Mistral: el modelo no está disponible. ${mensaje}`, null, true);
-  return new ErrorProveedor(status >= 500 ? 503 : status, `Mistral: ${mensaje}`);
+  // 404: modelo dado de baja. 400 de formato (por ejemplo, un modelo sin salida JSON con esquema): se prueba otro.
+  if (status === 404 || status === 400) return new ErrorProveedor(status, `${c.nombre}: ${mensaje}`, null, true);
+  return new ErrorProveedor(status >= 500 ? 503 : status, `${c.nombre}: ${mensaje}`);
 }
 
 // ---------------------------------------------------------------- HTTP
@@ -550,13 +582,14 @@ const pausados = new Map<string, number>();
 async function eslabones(signal?: AbortSignal | null): Promise<Eslabon[]> {
   const lista: Eslabon[] = [];
   if (hayGemini) for (const m of MODELOS_GEMINI) lista.push({ clave: `gemini:${m}`, pedir: (p, s) => pedirGemini(p, m, s) });
-  if (hayRespaldo) for (const m of MODELOS_MISTRAL) lista.push({ clave: `mistral:${m}`, pedir: (p, s) => pedirMistral(p, m, s) });
+  if (CLAVE_GROQ) for (const m of MODELOS_GROQ) lista.push({ clave: `groq:${m}`, pedir: (p, s) => pedirCompatible(GROQ, p, m, s) });
+  if (CLAVE_MISTRAL) for (const m of MODELOS_MISTRAL) lista.push({ clave: `mistral:${m}`, pedir: (p, s) => pedirCompatible(MISTRAL, p, m, s) });
   return lista;
 }
 
 async function responder(p: Pedido, signal?: AbortSignal | null): Promise<Respuesta> {
   const lista = await eslabones(signal);
-  if (!lista.length) throw new ErrorProveedor(401, "No hay ninguna clave cargada (Anthropic, Gemini o Mistral).");
+  if (!lista.length) throw new ErrorProveedor(401, "No hay ninguna clave cargada (Anthropic, Gemini, Groq o Mistral).");
   let ultimo: ErrorProveedor | null = null;
   let esperaMinima = Infinity;
   for (const e of lista) {

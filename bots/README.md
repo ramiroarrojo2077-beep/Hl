@@ -10,7 +10,7 @@ La app de Android trae Gravity entero adentro: no hace falta compu ni servidor. 
 
 ## Uso en la compu
 
-Requiere Node.js 22.18 o superior, Linux o macOS (en Windows, usá WSL) y una clave de Anthropic, o bien una clave gratis de Google Gemini (`GEMINI_API_KEY`, con respaldo opcional del plan gratis de Mistral: ver `.env.example`).
+Requiere Node.js 22.18 o superior, Linux o macOS (en Windows, usá WSL) y una clave de Anthropic, o bien una clave gratis de Google Gemini (`GEMINI_API_KEY`, con respaldo opcional gratis de Groq o Mistral: ver `.env.example`).
 
 ```bash
 npm install

@@ -11,14 +11,15 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Las claves de los modelos (Gemini, Anthropic y el respaldo gratis de Mistral). Se guardan cifradas
+ * Las claves de los modelos (Gemini, Anthropic y el respaldo gratis: Groq o Mistral). Se guardan cifradas
  * (AES-256-GCM) con una llave del Android Keystore, que no se puede sacar del celular; los archivos
  * quedan fuera de las copias de seguridad.
  */
 object Clave {
     const val GEMINI = "gemini"
     const val ANTHROPIC = "anthropic"
-    const val MISTRAL = "mistral"
+    /** Respaldo gratis: una clave de Groq (empieza con gsk_) o de Mistral. */
+    const val RESPALDO = "mistral"
 
     private const val ALIAS = "gravity_clave_anthropic"
 

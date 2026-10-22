@@ -176,7 +176,7 @@ const SHELL_ALTERNATIVA = process.env.GRAVITY_SHELL || (existsSync("/bin/bash") 
 const MARCA_CARPETA = "__GRAVITY_CARPETA__";
 const LIMITE_SALIDA = 30_000;
 
-const CLAVES_PRIVADAS = new Set(["GRAVITY_TOKEN", "GEMINI_API_KEY", "MISTRAL_API_KEY", "BOTS_CLAVE"]);
+const CLAVES_PRIVADAS = new Set(["GRAVITY_TOKEN", "GEMINI_API_KEY", "MISTRAL_API_KEY", "GROQ_API_KEY", "BOTS_CLAVE"]);
 
 function entornoSinClaves(): NodeJS.ProcessEnv {
   return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ANTHROPIC_") && !CLAVES_PRIVADAS.has(k)));
