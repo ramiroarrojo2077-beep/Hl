@@ -9,7 +9,9 @@
 <meta name="theme-color" content="#070A12" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#EEF1F6" media="(prefers-color-scheme: light)">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/iconos/gravity.svg" type="image/svg+xml">
+<link rel="icon" href="/iconos/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/iconos/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="icon" href="/iconos/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/iconos/apple-touch-icon.png">
 <link rel="preload" href="/fuentes/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fuentes/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -74,6 +76,18 @@ h1,h2,h3,h4{margin:0}
 :focus-visible{outline:2px solid var(--ion);outline-offset:2px;border-radius:6px}
 .i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .i.s{width:15px;height:15px}
+.i.g{stroke-width:1.75}
+.i.xs{width:13px;height:13px}
+/* logo «G en órbita»: el satélite late en cian si hay trabajo y pasa a naranja si algo te necesita */
+.marca{flex:none;overflow:visible}
+.marca .sat{fill:var(--ion);transform-box:fill-box;transform-origin:center}
+.marca .halo{fill:none;stroke:var(--ion);stroke-width:1.2;opacity:0;transform-box:fill-box;transform-origin:center}
+.marca[data-s=work] .halo{animation:sat-halo 2.2s ease-out infinite}
+.marca[data-s=work] .sat{animation:sat-late 2.2s ease-in-out infinite}
+.marca[data-s=wait] .sat{fill:var(--sig)}
+.marca[data-s=wait] .halo{stroke:var(--sig);animation:sat-halo 1.6s ease-out infinite}
+@keyframes sat-late{50%{transform:scale(.82)}}
+@keyframes sat-halo{0%{transform:scale(1);opacity:.75}100%{transform:scale(2.3);opacity:0}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .micro{font:600 12px/1.2 var(--font);letter-spacing:.005em;color:var(--tx3)}
 .mono{font-family:var(--mono)}
@@ -250,7 +264,7 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .side-h .btn{height:30px;padding:0 10px;font-size:12.5px}
 /* marca en el celular (el riel con el logo se oculta) */
 .marca-m{display:none;align-items:center;gap:9px;flex:1;min-width:0;font:650 18px/1 var(--font);letter-spacing:-.03em;color:var(--tx)}
-.marca-m img{width:28px;height:28px;border-radius:8px;flex:none;box-shadow:0 0 0 1px var(--line)}
+.marca-m .marca{width:28px;height:28px}
 .agg{margin:0 12px 10px;padding:11px 12px 12px;border-radius:14px;background:var(--s2);border:1px solid var(--line)}
 .agg:empty{display:none}
 .agg-t{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--tx2);margin-bottom:9px;flex-wrap:wrap}
@@ -278,6 +292,7 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .who b{font-weight:500;font-size:13.5px}
 .who span{color:var(--tx3);font-size:12.5px;overflow:hidden;text-overflow:ellipsis}
 .who span.acc{color:var(--ion-tx)}
+.who span>.i,.gn span>.i,.bh-name span>.i,.tc-who small>.i{vertical-align:-2px;margin-right:5px;color:var(--tx3)}
 .rt{display:inline-flex;align-items:center;gap:6px}
 .st{font:500 12px/1 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap}
 .st.w{color:var(--ion-tx)}
@@ -498,7 +513,7 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .hola .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .hola .acts .btn{height:40px;padding:0 16px;font-size:14px;border-radius:12px}
 .hola-marca{display:inline-flex;align-items:center;gap:8px;font:650 15px/1 var(--font);letter-spacing:-.02em;color:var(--tx2)}
-.hola-marca img{width:22px;height:22px;border-radius:6px;box-shadow:0 0 0 1px var(--line)}
+.hola-marca .marca{width:24px;height:24px}
 .hola-sub{font:600 12.5px var(--font);color:var(--tx3);margin-top:4px;align-self:stretch;text-align:left}
 .tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;width:100%;text-align:left}
 .tplc{border:1px solid var(--line);border-radius:14px;padding:11px 12px;display:grid;grid-template-columns:30px minmax(0,1fr);gap:2px 10px;align-items:start;background:var(--s1);text-align:left;transition:border-color .15s,background .15s}
@@ -507,6 +522,80 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .tplc b{font-size:13.5px;font-weight:600}
 .tplc b span{color:var(--tx3);font-weight:500}
 .tplc small{color:var(--tx3);font-size:12.5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hola .ver-todos{align-self:center;height:40px;padding:0 16px;border-radius:12px;font-size:13.5px}
+/* glifo del puesto: en el avatar (plantillas) o chico junto al puesto */
+.av>svg.i{width:calc(var(--sz)*.5);height:calc(var(--sz)*.5);stroke-width:1.75}
+.gl{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none;background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line2)}
+.gl .i{width:20px;height:20px}
+.gl.sm{width:26px;height:26px;border-radius:8px}
+.gl.sm .i{width:15px;height:15px}
+.pst-ic{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.pst-ic>.i{color:var(--tx3);flex:none}
+.pst-ic>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* catálogo de puestos (hoja de «Nuevo compañero») */
+.cat-top{position:sticky;top:-22px;z-index:2;background:var(--s1);margin:0 -22px;padding:6px 22px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+.cat-top .field{height:40px}
+.cat-top .field input{font-size:14px}
+.cat-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -22px;padding:2px 22px}
+.cat-chips::-webkit-scrollbar{display:none}
+.cat-chips .chip{height:30px;padding:0 12px;font-size:12.5px;flex:none}
+.cat-n{font-size:12px;color:var(--tx3)}
+.pst-g h3{font:600 12.5px var(--font);color:var(--tx3);margin:6px 2px 8px}
+.pst-g+.pst-g{margin-top:10px}
+.psts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pst{display:grid;grid-template-columns:38px minmax(0,1fr);gap:2px 12px;align-items:start;padding:10px 12px 11px 10px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:left;min-height:64px;color:var(--tx)}
+.pst:hover{border-color:var(--line2);background:var(--s3)}
+.pst>.gl{grid-row:1/3}
+.pst b{font-weight:600;font-size:13.5px;line-height:1.3}
+.pst b span{font-weight:500;color:var(--tx3)}
+.pst small{color:var(--tx3);font-size:12.5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pst.cero{border-style:dashed;background:transparent}
+.pst.cero .gl{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line2);border-radius:50%}
+.elegido{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:14px;background:var(--s2);border:1px solid var(--line)}
+.elegido>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.elegido b{font-weight:600;font-size:14px}
+.elegido small{color:var(--tx3);font-size:12.5px}
+.icos{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:5px}
+.icos label{height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);color:var(--tx2);cursor:pointer;position:relative;background:var(--s2)}
+.icos label:hover{border-color:var(--tx3);color:var(--tx)}
+.icos label:has(input:checked){border-color:var(--tx);color:var(--tx);box-shadow:inset 0 0 0 1px var(--tx);background:var(--s3)}
+.icos label:has(input:focus-visible){outline:2px solid var(--ion);outline-offset:2px}
+.icos input{position:absolute;opacity:0;pointer-events:none}
+.icos .ini{font:600 12px var(--font)}
+details.mas>summary .gl{margin-left:4px}
+
+/* crear equipo: plantillas con su composición */
+.eqts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.eqt{display:grid;grid-template-columns:38px minmax(0,1fr);gap:3px 12px;align-items:start;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:left;color:var(--tx)}
+.eqt:hover{border-color:var(--line2);background:var(--s3)}
+.eqt>.gl{grid-row:1/4}
+.eqt b{font-weight:600;font-size:14px;display:flex;align-items:baseline;gap:8px;justify-content:space-between}
+.eqt b small{font:500 12px var(--font);color:var(--tx3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.eqt p{font-size:12.5px;color:var(--tx3);line-height:1.4}
+.comp-l{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.comp-l span{display:inline-flex;align-items:center;gap:4px;min-height:22px;padding:2px 8px;border-radius:999px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line);font-size:11.5px;color:var(--tx2);line-height:1.3}
+.comp-l span b{font:650 11.5px var(--font);font-variant-numeric:tabular-nums;color:var(--tx);display:inline}
+.comp-l .i{width:12px;height:12px;color:var(--tx3)}
+.pes{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--s2)}
+.pe{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:10px 10px 10px 12px;border-top:1px solid var(--line);min-width:0}
+.pe:first-child{border-top:0}
+.pe>.gl{width:34px;height:34px;border-radius:10px}
+.pe>.gl .i{width:18px;height:18px}
+.pe .pt{min-width:0;display:flex;flex-direction:column;gap:1px}
+.pe .pt b{font-weight:600;font-size:13.5px}
+.pe .pt small{color:var(--tx3);font-size:12px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pe.mgr .pt .inp{height:34px;margin-top:2px}
+.pe .tag{justify-self:end}
+.stp{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line2);border-radius:11px;padding:2px;background:var(--s1)}
+.stp .ib{width:30px;height:30px;border-radius:8px}
+.stp input{width:34px;text-align:center;font:600 15px var(--font);font-variant-numeric:tabular-nums;background:none;border:0;color:var(--tx);outline:none;-moz-appearance:textfield;padding:0}
+.stp input::-webkit-inner-spin-button,.stp input::-webkit-outer-spin-button{display:none;-webkit-appearance:none}
+.stp:focus-within{border-color:var(--ion);box-shadow:0 0 0 3px var(--ion-bg)}
+.tot-eq{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--tx2);padding:0 2px}
+.tot-eq b{color:var(--tx);font-variant-numeric:tabular-nums}
+.tot-eq.tope,.tot-eq.tope b{color:var(--sig-tx)}
+.vuelta{align-self:flex-start;margin-left:-8px}
 
 /* ---------- páginas ---------- */
 .pag{min-width:0;min-height:0;overflow:auto;background:radial-gradient(900px 520px at 50% -18%,var(--glow),transparent 70%),var(--bg);scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
@@ -675,6 +764,9 @@ dialog.dlg::backdrop{background:var(--scrim)}
 .dlg-f h2{margin:4px 0 2px;font:650 20px/1.2 var(--font);letter-spacing:-.025em}
 .dlg-f>p,.dlg-f .lead{color:var(--tx2);font-size:13.5px}
 .dlg-f .acts{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;position:sticky;bottom:-22px;background:var(--s1);padding:10px 0 0;margin-top:2px}
+.dlg-hd{display:flex;align-items:flex-start;gap:10px}
+.dlg-hd>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.dlg-hd>.ib{margin:-4px -8px 0 0;width:38px;height:38px;border-radius:50%}
 .dlg-2{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:0 22px}
 .dlg-2 .prev{text-align:center;font-size:12px;color:var(--tx3);align-self:start;position:sticky;top:0;display:flex;flex-direction:column;gap:8px;padding-top:30px}
 .dlg-2 .prev ul{list-style:none;margin:0;padding:0;font-size:12px;color:var(--tx2);text-align:left;max-height:180px;overflow:auto}
@@ -883,16 +975,121 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .cx-aviso b{color:var(--sig-tx);font-weight:600}
 .pasos{margin:0;padding-left:20px;font-size:13px;color:var(--tx2);display:flex;flex-direction:column;gap:4px}
 
+/* mensajes (WhatsApp y redes por las notificaciones del celular) */
+.vista.v-msj{grid-template-columns:340px minmax(0,1fr) 330px}
+.vista.v-msj.sin-chat{grid-template-columns:340px minmax(0,1fr)}
+.vista.v-msj.sin-chat .ctx{display:none}
+.msj-est{display:flex;align-items:center;gap:8px;margin:0 12px 10px;padding:8px 10px 8px 12px;border-radius:12px;background:var(--s2);border:1px solid var(--line);font-size:12.5px;color:var(--tx2)}
+.msj-est>span{flex:1;min-width:0}
+.msj-est b{color:var(--tx);font-weight:600}
+.msj-est .d{margin-right:2px}
+.deriv{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;background:var(--sig-bg);box-shadow:inset 0 0 0 1px var(--sig-line);color:var(--sig-tx);font-size:13px;line-height:1.45;text-align:left;width:100%}
+.deriv .i{margin-top:1px}
+.deriv b{font-weight:600}
+.deriv>span{flex:1;min-width:0}
+a.deriv:hover{background:color-mix(in oklab,var(--sig) 16%,transparent)}
+.derivs{display:flex;flex-direction:column;gap:6px;margin:0 12px 10px}
+.mgrp-h{display:flex;align-items:center;gap:8px;padding:14px 8px 6px;font:600 12px var(--font);color:var(--tx3)}
+.mgrp-h .gl{width:22px;height:22px;border-radius:7px;box-shadow:none;background:var(--s3)}
+.mgrp-h .gl .i{width:13px;height:13px}
+.mgrp-h span{font-weight:500;font-variant-numeric:tabular-nums}
+.mrow{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:3px 11px;align-items:start;padding:9px 8px;border-radius:12px;color:var(--tx)}
+.mrow:hover{background:var(--s2)}
+.mrow.on{background:var(--s3);box-shadow:inset 0 0 0 1px var(--line2)}
+.mav{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--s3);color:var(--tx2);font:600 13.5px/1 var(--font);box-shadow:inset 0 0 0 1px var(--line2);flex:none}
+.mav .i{width:18px;height:18px}
+.mav.lg{width:42px;height:42px}
+.mtx{min-width:0;display:flex;flex-direction:column;gap:2px}
+.mt1{display:flex;align-items:baseline;gap:7px;min-width:0}
+.mt1 b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow.nl .mt1 b{font-weight:700}
+.mt2{font-size:12.5px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow.nl .mt2{color:var(--tx2)}
+.mt3{display:flex;align-items:center;gap:6px;margin-top:4px;min-width:0}
+.mt3 .pill{height:21px;font-size:11.5px;padding:0 8px}
+.mrt{display:flex;flex-direction:column;align-items:flex-end;gap:5px;padding-top:2px}
+.mrt time{font:12px var(--font);font-variant-numeric:tabular-nums;color:var(--tx3);white-space:nowrap}
+.cprow{display:grid;grid-template-columns:38px minmax(0,1fr);gap:2px 11px;align-items:center;padding:8px;border-radius:12px;color:var(--tx)}
+.cprow:hover{background:var(--s2)}
+.cprow b{font-weight:500;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cprow small{font-size:12px;color:var(--tx3);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.apps{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--s2);overflow:hidden}
+.apps label{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer;min-height:52px;font-size:13.5px}
+.apps label:first-child{border-top:0}
+.apps label>span{flex:1;min-width:0;display:flex;flex-direction:column}
+.apps label small{font-size:12px;color:var(--tx3)}
+.apps label.todo{background:var(--s1)}
+.msj-vacio{display:flex;flex-direction:column;gap:14px;padding:6px 4px 18px}
+.msj-vacio h2{font:650 18px/1.25 var(--font);letter-spacing:-.02em}
+.msj-vacio p{font-size:13.5px;color:var(--tx2);line-height:1.5}
+.msj-vacio .pasos{font-size:13.5px;color:var(--tx);gap:6px}
+.msj-vacio .pasos b{font-weight:600}
+.mhint{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--tx3);line-height:1.45}
+.mhint .i{flex:none;margin-top:1px}
+.mthread .tin{gap:8px}
+.ms{display:flex;flex-direction:column;gap:3px;max-width:min(82%,560px);min-width:0}
+.ms .q{font:600 12px/1.3 var(--font);color:var(--tx2);display:flex;align-items:center;gap:6px;padding:0 4px;flex-wrap:wrap}
+.ms .q .av>i,.ms .q .av::after{display:none}
+.ms .bb{padding:8px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.45}
+.ms time,.ms .est{font:11.5px var(--font);font-variant-numeric:tabular-nums;color:var(--tx3);padding:0 4px}
+.ms.ext{align-self:flex-start}
+.ms.ext .bb{background:var(--s1);border:1px solid var(--line);border-radius:5px 16px 16px 16px;color:var(--tx)}
+.ms.yo,.ms.bot{align-self:flex-end;align-items:flex-end}
+.ms.yo .bb{background:var(--s3);border:1px solid var(--line2);border-radius:16px 5px 16px 16px}
+.ms.bot .bb{background:linear-gradient(var(--ion-bg),var(--ion-bg)),var(--s2);border:1px solid color-mix(in oklab,var(--ion) 34%,var(--line));border-radius:16px 5px 16px 16px}
+.ia{font:650 10.5px/1 var(--font);letter-spacing:.02em;color:var(--ion-tx);border:1px solid color-mix(in oklab,var(--ion) 45%,transparent);border-radius:999px;padding:2px 6px}
+.ms.pend .bb{border-style:dashed;background:transparent}
+.ms.fallo .bb{border-style:dashed;background:transparent;color:var(--tx2)}
+.ms.fallo .est{color:var(--tx);display:inline-flex;align-items:center;gap:4px}
+.dia-sep{align-self:center;font:500 12px var(--font);color:var(--tx3);padding:6px 0 2px}
+.ext-nota{align-self:center;display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--tx3);border:1px dashed var(--line2);border-radius:999px;padding:4px 12px;text-align:center;max-width:100%}
+.asig-bar{display:flex;align-items:center;gap:10px;margin:0 22px 0 28px;padding:9px 10px 9px 12px;border-radius:14px;background:var(--s1);border:1px solid var(--line);font-size:13px;color:var(--tx2);flex:none}
+.asig-bar>span{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.asig-bar>span>em{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asig-bar b{color:var(--tx);font-weight:600}
+.asig-bar.sig{background:var(--sig-bg);border-color:var(--sig-line);color:var(--sig-tx)}
+.asig-bar.sig b{color:var(--sig-tx)}
+.modos{display:flex;flex-direction:column;gap:6px}
+.modos label{display:grid;grid-template-columns:16px minmax(0,1fr);gap:2px 10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2);cursor:pointer;background:var(--s2);align-items:start}
+.modos label:hover{border-color:var(--tx3)}
+.modos label:has(input:checked){border-color:var(--tx);box-shadow:inset 0 0 0 1px var(--tx)}
+.modos label:has(input:disabled){opacity:.55;cursor:not-allowed}
+.modos input{margin-top:2px}
+.modos b{font-weight:600;font-size:13.5px}
+.modos small{grid-column:2;font-size:12.5px;color:var(--tx3);line-height:1.4}
+.cfg{display:flex;flex-direction:column;gap:14px}
+.cfg .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.cfg-n{font-size:12.5px;color:var(--tx2);display:flex;flex-direction:column;gap:4px}
+
+/* compartido desde otra app del celular */
+.cp-prev{border-radius:16px;border:1px solid var(--line);background:var(--s1);overflow:hidden}
+.cp-media{display:block;width:100%;max-height:min(440px,52vh);object-fit:contain;background:#000}
+audio.cp-media{background:none;max-height:none;padding:12px}
+.cp-info{display:flex;align-items:center;gap:12px;padding:12px 14px;min-width:0}
+.cp-info>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.cp-info b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-info small{color:var(--tx3);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-info a.lnk{word-break:break-all}
+.cp-txt{padding:12px 14px;border-top:1px solid var(--line);white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.5;max-height:260px;overflow:auto}
+.cp-form{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.sug{display:flex;gap:6px;flex-wrap:wrap}
+.sug .chip{height:auto;min-height:28px;white-space:normal;text-align:left;padding:4px 11px;line-height:1.35}
+
 /* toasts */
 .toasts{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100;pointer-events:none;width:min(460px,calc(100% - 24px))}
 .toast{pointer-events:auto;background:var(--pri);color:var(--on-pri);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:500;box-shadow:var(--shadow);display:flex;gap:10px;align-items:center}
 .toast.err{background:var(--s3);color:var(--tx);box-shadow:var(--shadow),inset 0 0 0 1px var(--tx3)}
+.toast.sig{background:var(--sig);color:var(--on-sig)}
+.toast>span{flex:1;min-width:0}
+.toast a,.toast button{flex:none;font-weight:650;text-decoration:underline;text-underline-offset:3px;color:inherit;padding:4px 2px}
 .carga{display:grid;place-items:center;flex:1;color:var(--tx3);font-size:13px;padding:40px}
 
 /* ---------- responsivo ---------- */
 @media (max-width:1279px){
   .vista.v-chats{grid-template-columns:292px minmax(0,1fr)}
   .vista.v-chats .ctx{display:none}
+  .vista.v-msj,.vista.v-msj.sin-chat{grid-template-columns:320px minmax(0,1fr)}
+  .vista.v-msj .ctx{display:none}
   .vista.v-eq{grid-template-columns:minmax(0,1fr)}
   .vista.v-eq .inbox.lat{display:none}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -907,6 +1104,8 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
   /* sin compañero elegido no hay contexto que mostrar a la derecha */
   .vista.v-chats.sin-bot{grid-template-columns:304px minmax(0,1fr)}
   .vista.v-chats.sin-bot .ctx{display:none}
+  /* con el panel de la derecha, la barra resumen de la asignación sobra */
+  .vista.v-msj .asig-bar{display:none}
 }
 @media (max-width:980px){
   .vista.v-chats{grid-template-columns:minmax(0,1fr)}
@@ -916,6 +1115,10 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
   /* primer uso: la bienvenida (con la marca y las plantillas) en vez de una lista vacía */
   .vista.v-chats.sin-bot.vacia .side{display:none}
   .vista.v-chats.sin-bot.vacia .main{display:flex}
+  .vista.v-msj,.vista.v-msj.sin-chat{grid-template-columns:minmax(0,1fr)}
+  .vista.v-msj .side{display:none}
+  .vista.v-msj.sin-chat .side{display:flex;border-right:0}
+  .vista.v-msj.sin-chat .main{display:none}
   .back{display:inline-grid!important}
   .bh{padding-left:12px}
   .pc{grid-template-columns:minmax(0,1fr)}
@@ -985,6 +1188,24 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
   .hola .acts{width:100%;flex-direction:column}
   .hola .acts .btn{width:100%;height:46px}
   .tpls{grid-template-columns:minmax(0,1fr)}
+  .hola .ver-todos{width:100%;height:46px}
+  /* catálogo y equipos: una columna, buscador fijo arriba de la hoja */
+  .psts,.eqts{grid-template-columns:minmax(0,1fr)}
+  .cat-top{top:-8px;margin:0 -16px;padding:6px 16px 10px}
+  .cat-chips{margin:0 -16px;padding:2px 16px}
+  .pst{min-height:68px}
+  .stp .ib{width:36px;height:36px}
+  .stp input{width:32px}
+  .pe{padding:10px 8px 10px 10px;gap:2px 10px}
+  /* mensajes */
+  .asig-bar{margin:0 10px;padding:8px 8px 8px 12px}
+  .mthread{padding:12px 10px 8px}
+  .ms{max-width:88%}
+  .mrow{padding:10px 8px;grid-template-columns:42px minmax(0,1fr) auto}
+  .mrow>.mav{width:42px;height:42px}
+  .mt1 b{font-size:15px}
+  .mt2{font-size:13px}
+  .msj-est,.derivs{margin-left:12px;margin-right:12px}
   /* cabecera del compañero */
   .bh{padding:10px 10px 8px 4px;gap:6px}
   .bh-deco{display:none}
@@ -1155,6 +1376,45 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14 5h5v14h-5M10 8l-4 4 4 4M6 12h9"/></symbol>
 <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6"/></symbol>
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.05-4.95M19 5v4h-4"/></symbol>
+<!-- glifos de puesto (24×24, trazo 1,75): los nombres vienen de /api/estado → iconos -->
+<symbol id="g-auriculares" viewBox="0 0 24 24"><path d="M4.5 15v-3a7.5 7.5 0 0 1 15 0v3"/><rect x="3.5" y="13.5" width="4" height="6.5" rx="1.6"/><rect x="16.5" y="13.5" width="4" height="6.5" rx="1.6"/></symbol>
+<symbol id="g-balanza" viewBox="0 0 24 24"><path d="M12 4.5v15M8.5 19.5h7M5.5 7.5h13"/><path d="M5.5 7.5 3 13.5h5zM18.5 7.5 16 13.5h5z"/><path d="M3 13.5a2.5 2.5 0 0 0 5 0M16 13.5a2.5 2.5 0 0 0 5 0"/></symbol>
+<symbol id="g-barco" viewBox="0 0 24 24"><path d="M3 13.5h18l-2.8 6H5.8z"/><path d="M6.5 13.5V9h5.5v4.5M12 13.5V11h5.5v2.5M8.5 9V5.5h2.5V9"/></symbol>
+<symbol id="g-brujula" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="m15.2 8.8-2 4.4-4.4 2 2-4.4z"/></symbol>
+<symbol id="g-caja" viewBox="0 0 24 24"><path d="m12 3.5 7.5 4v9L12 20.5l-7.5-4v-9z"/><path d="m4.5 7.5 7.5 4 7.5-4M12 11.5v9M8.2 5.5l7.5 4"/></symbol>
+<symbol id="g-calculadora" viewBox="0 0 24 24"><rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 7h7v3h-7zM9 13.5h.01M12 13.5h.01M15 13.5h.01M9 17h.01M12 17h.01M15 17h.01"/></symbol>
+<symbol id="g-calendario" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01"/></symbol>
+<symbol id="g-camion" viewBox="0 0 24 24"><path d="M13.5 16.5h-4M5.6 16.5H3.5v-10h10v10M13.5 9.5h3.8l3.2 3.7v3.3h-1.4"/><circle cx="7.5" cy="16.8" r="1.9"/><circle cx="17" cy="16.8" r="1.9"/></symbol>
+<symbol id="g-carrito" viewBox="0 0 24 24"><path d="M3.5 4.5h2.2l2.1 10.5h10.4l1.8-7.5H6.6"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/></symbol>
+<symbol id="g-chat" viewBox="0 0 24 24"><path d="M5 5h14v10.5h-8L7 19v-3.5H5z"/><path d="M8.5 9h7M8.5 12h4.5"/></symbol>
+<symbol id="g-codigo" viewBox="0 0 24 24"><path d="M8.5 7.5 4 12l4.5 4.5M15.5 7.5 20 12l-4.5 4.5M13.5 5.5l-3 13"/></symbol>
+<symbol id="g-diana" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/></symbol>
+<symbol id="g-documento" viewBox="0 0 24 24"><path d="M7 3.5h6.5L18 8v12.5H7z"/><path d="M13.5 3.5V8H18M9.5 12h5.5M9.5 15.5h5.5"/></symbol>
+<symbol id="g-escudo" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.8c0 4.3-2.9 7.3-7 8.7-4.1-1.4-7-4.4-7-8.7V6z"/><path d="m9 12 2.2 2.2L15.2 10"/></symbol>
+<symbol id="g-estrella" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.4.7-4 3.8 1 5.4-4.8-2.6-4.8 2.6 1-5.4-4-3.8 5.4-.7z"/></symbol>
+<symbol id="g-etiqueta" viewBox="0 0 24 24"><path d="M4 4.5h7.5L20 13l-7 7-9-9z"/><circle cx="8.3" cy="8.8" r="1.4"/></symbol>
+<symbol id="g-globo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.6 2.4 2.6 13.6 0 16M12 4c-2.6 2.4-2.6 13.6 0 16"/></symbol>
+<symbol id="g-grafico" viewBox="0 0 24 24"><path d="M4 4.5v15h16"/><path d="m7.5 15 3.5-4 3 2.5 5-6"/><path d="M15.5 7.5H19V11"/></symbol>
+<symbol id="g-lista" viewBox="0 0 24 24"><path d="M10.5 7h9.5M10.5 12h9.5M10.5 17h9.5"/><path d="m4 7 1.4 1.4L8 5.8M4 12l1.4 1.4L8 10.8M4 17l1.4 1.4L8 15.8"/></symbol>
+<symbol id="g-lupa" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m20 20-5.2-5.2"/></symbol>
+<symbol id="g-maletin" viewBox="0 0 24 24"><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.5h6v2M3.5 12.5h17M12 11.5v2"/></symbol>
+<symbol id="g-mail" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="m4 7 8 6 8-6"/></symbol>
+<symbol id="g-mapa" viewBox="0 0 24 24"><path d="m3.5 6.5 5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></symbol>
+<symbol id="g-megafono" viewBox="0 0 24 24"><path d="M4 9.5v5h3l8 4.5V5L7 9.5z"/><path d="m7 14.5 1.3 5h2.4l-1.1-4.4M18.5 9.5a3.5 3.5 0 0 1 0 5"/></symbol>
+<symbol id="g-moneda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M14.6 9.3c-.5-.9-1.5-1.4-2.6-1.4-1.5 0-2.6.8-2.6 2s1 1.7 2.6 2.1 2.6.9 2.6 2.1-1.1 2-2.6 2c-1.2 0-2.2-.5-2.7-1.5M12 6.4v1.5M12 16.1v1.5"/></symbol>
+<symbol id="g-pantalla" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="11.5" rx="2"/><path d="M9 20h6M12 16v4"/></symbol>
+<symbol id="g-personas" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M15.8 14.1c2.3-.3 4.2 1.2 4.7 4.4"/></symbol>
+<symbol id="g-pincel" viewBox="0 0 24 24"><path d="m19.5 4.5-7.8 7.8"/><path d="M12.3 13.2a2.8 2.8 0 0 0-4-4c-.9.9-1.3 2-1.3 3.4 0 1.6-.8 2.9-2.5 3.6 3 1.4 6.5.5 7.8-3z"/></symbol>
+<symbol id="g-pluma" viewBox="0 0 24 24"><path d="M19.5 4.5C12 5 7.5 9.5 7 17.5"/><path d="M19.5 4.5c-.2 5.5-3.7 9.6-9.4 10.6M4.5 19.5 7 17"/><path d="M12.5 11.5 9.2 14.8"/></symbol>
+<symbol id="g-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 5.6-5.6"/><circle cx="15.2" cy="15" r="1.1" fill="currentColor"/></symbol>
+<symbol id="g-tienda" viewBox="0 0 24 24"><path d="M3.5 9.5h17L19 4.5H5z"/><path d="M5 9.5v10h14v-10M10 19.5v-5h4v5"/></symbol>
+<symbol id="g-video" viewBox="0 0 24 24"><rect x="3.5" y="6.5" width="12" height="11" rx="2"/><path d="m15.5 10.5 5-3v9l-5-3"/></symbol>
+<symbol id="i-burbuja" viewBox="0 0 24 24"><path d="M12 4.5a7.5 7.5 0 0 0-6.6 11L4.5 19.5l4-1a7.5 7.5 0 1 0 3.5-14z"/><path d="M8.6 12h.01M12 12h.01M15.4 12h.01"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"/><path d="M14 10a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 7.5 12 3.5l4 4M6.5 11H5v8.5h14V11h-1.5"/></symbol>
+<symbol id="i-camara" viewBox="0 0 24 24"><path d="M4 8h3.2l1.6-2.5h6.4L16.8 8H20v11H4z"/><circle cx="12" cy="13.2" r="3.4"/></symbol>
+<symbol id="i-audio" viewBox="0 0 24 24"><path d="M9 17.5V6l10-2v11.5"/><circle cx="6.8" cy="17.5" r="2.2"/><circle cx="16.8" cy="15.5" r="2.2"/></symbol>
 </defs></svg>
 
 <div class="app" id="app">
@@ -1182,6 +1442,10 @@ const val = (v) => (v == null || v === false || v === true ? "" : v instanceof C
 const html = (partes, ...vals) => { let o = partes[0]; for (let i = 0; i < vals.length; i++) o += val(vals[i]) + partes[i + 1]; return new Crudo(o); };
 const si = (cond, attr) => (cond ? crudo(attr) : "");
 const ico = (n, c = "") => crudo(`<svg class="i ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`);
+// Glifo de puesto (auriculares, balanza…): solo si está en el sprite; si no, nada (el avatar muestra la inicial).
+const hayGlifoCache = new Map();
+const hayGlifo = (n) => { if (!n || !/^[a-z0-9-]{1,30}$/.test(n)) return false; if (!hayGlifoCache.has(n)) hayGlifoCache.set(n, !!document.getElementById(`g-${n}`)); return hayGlifoCache.get(n); };
+const glifo = (n, c = "") => (hayGlifo(n) ? crudo(`<svg class="i g ${c}" aria-hidden="true"><use href="#g-${n}"/></svg>`) : "");
 const norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 const guardarLocal = (k, v) => { try { localStorage.setItem(k, typeof v === "string" ? v : JSON.stringify(v)); } catch {} };
@@ -1216,12 +1480,15 @@ async function api(metodo, ruta, cuerpo) {
   return d;
 }
 
-function toast(texto, tipo = "") {
+function toast(texto, tipo = "", enlace = null) {
   const t = document.createElement("div");
   t.className = `toast ${tipo}`;
-  t.textContent = texto;
+  const sp = document.createElement("span");
+  sp.textContent = texto;
+  t.append(sp);
+  if (enlace) { const a = document.createElement("a"); a.href = enlace.href; a.textContent = enlace.texto; a.addEventListener("click", () => t.remove()); t.append(a); }
   $("#toasts").append(t);
-  setTimeout(() => t.remove(), tipo === "err" ? 6500 : 3800);
+  setTimeout(() => t.remove(), tipo === "err" ? 6500 : tipo === "sig" ? 9000 : 3800);
 }
 const fallo = (err) => { console.warn(err); toast(err?.message || "Algo falló.", "err"); };
 const intentar = (fn) => async (...a) => { try { return await fn(...a); } catch (err) { fallo(err); } };
@@ -1287,6 +1554,7 @@ const tamano = (n) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toLocal
 const S = {
   cargado: false,
   bots: [], habilidades: [], reglas: [], aprobaciones: [], plantillas: [], plantillasEquipo: [], nombres: [],
+  categorias: [], iconos: [], limites: { maxBots: 50, maxEquipo: 30 },
   config: {}, ajustes: {}, gasto: {}, cupo: {}, tareas: [], reuniones: [], local: true,
   ruta: { vista: "chats", id: null, sub: null },
   botId: null, pestana: "chat",
@@ -1301,9 +1569,12 @@ const S = {
   rutinas: null, editRutina: null,
   memoria: null, memSucias: new Set(),
   conexiones: undefined,
+  // mensajes: estado de la escucha, lista de conversaciones, la abierta y lo compartido desde el celular
+  msjEstado: null, chats: null, chat: null, chatId: null, msjAppsAbiertas: false,
+  compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -1513,31 +1784,51 @@ function navegar() {
     S.pestana = TABS.some(([k]) => k === r.sub) ? r.sub : "chat";
     if (id) guardarLocal("gravity-bot", id);
   }
+  if (r.vista === "mensajes") {
+    if (r.id !== S.chatId) S.chat = null;
+    S.chatId = r.id;
+  }
   S.ruta = { ...r };
   document.body.classList.toggle("en-sala", r.vista === "reuniones" && !!r.id);
-  document.body.classList.toggle("en-chat", r.vista === "chats" && !!S.botId);
+  document.body.classList.toggle("en-chat", (r.vista === "chats" && !!S.botId) || (r.vista === "mensajes" && !!r.id));
   montar(antes);
   pintarRail();
 }
 
 // ================================================================ marco: riel, barra inferior, avisos
-const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["reuniones", "Reuniones", "meet"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
+const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
+// Estado del satélite del logo: naranja si algo te necesita, late en cian si alguien trabaja.
+const derivadas = () => (S.chats || []).filter((c) => c.derivada);
+const estadoMarca = () => (S.aprobaciones.length || derivadas().length ? "wait" : S.bots.some((b) => b.estado === "trabajando") ? "work" : "idle");
+// «G en órbita»: tres cuartos de órbita que bajan al centro como travesaño, masa central y compañero a la 1:30.
+const marcaSvg = (sz) => html`<svg class="marca" viewBox="0 0 32 32" width="${sz}" height="${sz}" data-s="${estadoMarca()}" aria-hidden="true"><path d="M16 6A10 10 0 1 0 26 16H16" fill="none" stroke="var(--tx)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="16" r="4" fill="var(--tx)"/><circle class="halo" cx="23" cy="9" r="3"/><circle class="sat" cx="23" cy="9" r="3"/></svg>`;
 function pintarRail() {
   const v = S.ruta.vista;
   const nAp = S.aprobaciones.length, vivas = reunionesVivas().length;
-  const extra = (k) => k === "aprobaciones" && nAp ? html`<span class="bdg" aria-hidden="true">${nAp}</span>` : k === "reuniones" && vivas ? html`<span class="live" aria-hidden="true"></span>` : "";
-  const sr = (k) => k === "aprobaciones" && nAp ? `, ${plural(nAp, "pendiente", "pendientes")}` : k === "reuniones" && vivas ? `, ${plural(vivas, "en vivo", "en vivo")}` : "";
+  const nDer = derivadas().length, nMsj = (S.chats || []).reduce((n, c) => n + (c.noLeidos && c.modo !== "apagado" ? 1 : 0), 0);
+  const extra = (k) => k === "aprobaciones" && nAp ? html`<span class="bdg" aria-hidden="true">${nAp}</span>`
+    : k === "mensajes" && nDer ? html`<span class="bdg" aria-hidden="true">${nDer}</span>`
+    : k === "mensajes" && nMsj ? html`<span class="live" aria-hidden="true"></span>`
+    : k === "reuniones" && vivas ? html`<span class="live" aria-hidden="true"></span>` : "";
+  const sr = (k) => k === "aprobaciones" && nAp ? `, ${plural(nAp, "pendiente", "pendientes")}`
+    : k === "mensajes" && nDer ? `, ${plural(nDer, "conversación te necesita", "conversaciones te necesitan")}`
+    : k === "mensajes" && nMsj ? `, ${plural(nMsj, "conversación sin leer", "conversaciones sin leer")}`
+    : k === "reuniones" && vivas ? `, ${plural(vivas, "en vivo", "en vivo")}` : "";
   const g = S.gasto || {}, tope = g.tope || 0, pct = tope ? Math.min(100, ((g.hoy || 0) / tope) * 100) : 0;
+  const em = estadoMarca();
   pintar($("#rail"), html`
-    <a class="logo" href="#/chats" aria-label="Gravity, inicio"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><ellipse cx="16" cy="16" rx="13.4" ry="5.6" transform="rotate(-24 16 16)" fill="none" stroke="var(--tx2)" stroke-width="1.4"/><circle cx="16" cy="16" r="6.2" fill="var(--tx)" stroke="var(--rail)" stroke-width="2.4"/><circle cx="27.1" cy="9.6" r="2.4" fill="var(--ion)"/></svg></a>
+    <a class="logo" href="#/chats" aria-label="Gravity, inicio${em === "wait" ? ": algo te necesita" : em === "work" ? ": hay compañeros trabajando" : ""}" title="Gravity">${marcaSvg(30)}</a>
     ${RIEL.map(([k, t, i]) => html`<a class="rl ${v === k ? "on" : ""}" href="#/${k}" data-k="rl-${k}" ${si(v === k, 'aria-current="page"')}>${ico(i)}${t}<span class="sr">${sr(k)}</span>${extra(k)}</a>`)}
     <span class="sp"></span>
     <a class="rl ${v === "ajustes" ? "on" : ""}" href="#/ajustes" data-k="rl-ajustes" ${si(v === "ajustes", 'aria-current="page"')}>${ico("sliders")}Ajustes</a>
     <a class="gas ${g.nivel || ""}" href="#/ajustes" data-k="rl-gasto" title="Gasto de hoy: ${usd(g.hoy)}${tope ? ` de ${usd(tope)}` : " (sin tope)"}" aria-label="Gasto de hoy: ${usd(g.hoy)}${tope ? ` de ${usd(tope)}` : ""}"><b>${usd(g.hoy).replace("US$", "$")}</b><span class="gbar" aria-hidden="true"><i style="width:${pct.toFixed(1)}%"></i></span><small>${tope ? `de $${Math.round(tope)}` : "sin tope"}</small></a>
     ${!S.local ? html`<button class="rl salir" data-a="salir" data-k="rl-salir">${ico("logout")}Salir</button>` : ""}`);
-  const mn = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["reuniones", "Reuniones", "meet"], ["aprobaciones", "Aprobar", "inbox"]];
-  const enMas = ["computadora", "conexiones", "ajustes"].includes(v);
-  pintar($("#mnav"), html`${mn.map(([k, t, i]) => html`<a class="${v === k ? "on" : ""}" href="#/${k}" ${si(v === k, 'aria-current="page"')}>${ico(i)}<span>${t}</span><span class="sr">${sr(k)}</span>${extra(k)}</a>`)}<button class="${enMas ? "on" : ""}" data-a="mas" aria-haspopup="dialog">${ico("dots")}<span>Más</span></button>`);
+  // En el celular: Reuniones, Computadora, Conexiones y Ajustes van en «Más»; Mensajes queda a mano.
+  const mn = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["aprobaciones", "Aprobar", "inbox"]];
+  const enMas = ["reuniones", "computadora", "conexiones", "ajustes", "compartido"].includes(v);
+  pintar($("#mnav"), html`${mn.map(([k, t, i]) => html`<a class="${v === k ? "on" : ""}" href="#/${k}" ${si(v === k, 'aria-current="page"')}>${ico(i)}<span>${t}</span><span class="sr">${sr(k)}</span>${extra(k)}</a>`)}<button class="${enMas ? "on" : ""}" data-a="mas" aria-haspopup="dialog">${ico("dots")}<span>Más</span>${vivas ? html`<span class="live" aria-hidden="true"></span><span class="sr">, ${plural(vivas, "reunión en vivo", "reuniones en vivo")}</span>` : ""}</button>`);
+  // Las otras marcas (lista del celular, bienvenida) también siguen el estado.
+  for (const m of $$(".marca")) m.dataset.s = em;
   document.title = nAp ? `(${nAp}) Gravity` : "Gravity";
 }
 
@@ -1570,6 +1861,8 @@ function montar(antes) {
   }
   if (v === "aprobaciones") { vista.innerHTML = `<div class="pag"><div class="pag-in angosta"><div class="inbox pagina" id="bandeja" aria-label="Aprobaciones"></div></div></div>`; pintarBandejas(); return; }
   if (v === "reuniones") return S.ruta.id ? montarSala(S.ruta.id) : montarReuniones();
+  if (v === "mensajes") return montarMensajes(antes);
+  if (v === "compartido") return montarCompartido(S.ruta.id);
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
   if (v === "conexiones") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="cx"></div></div>`; pintarConexiones(); cargarConexiones(); return; }
   if (v === "ajustes") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="aj"></div></div>`; pintarAjustes(); return; }
@@ -1582,7 +1875,7 @@ function montarChats(antes) {
   vista.classList.toggle("vacia", !S.bots.length);
   if (!$("#side")) {
     vista.innerHTML = html`<aside class="side" id="side" aria-label="Compañeros">
-      <div class="side-h"><a class="marca-m" href="#/chats" aria-label="Gravity, inicio"><img src="/iconos/gravity.svg" alt="" width="28" height="28">Gravity</a><h1>Compañeros <span id="side-n"></span></h1><button class="btn out" data-a="crear-equipo">${ico("team", "s")}Crear equipo</button><button class="ib" data-a="nuevo-bot" aria-label="Nuevo compañero" title="Nuevo compañero">${ico("plus")}</button></div>
+      <div class="side-h"><a class="marca-m" href="#/chats" aria-label="Gravity, inicio">${marcaSvg(28)}Gravity</a><h1>Compañeros <span id="side-n"></span></h1><button class="btn out" data-a="crear-equipo">${ico("team", "s")}Crear equipo</button><button class="ib" data-a="nuevo-bot" aria-label="Nuevo compañero" title="Nuevo compañero">${ico("plus")}</button></div>
       <section class="agg" id="side-res" aria-label="Estado del equipo ahora"></section>
       <div class="find" id="side-find"><label class="field">${ico("search", "s")}<input id="buscar" type="search" placeholder="Buscar nombre, puesto o equipo" aria-label="Buscar compañeros" data-i="buscar" autocomplete="off" value="${S.busqueda}"><kbd aria-hidden="true">/</kbd></label><div class="chips" id="side-chips" role="group" aria-label="Filtrar por estado"></div></div>
       <div class="side-scroll" id="side-lista"></div></aside>
@@ -1616,15 +1909,24 @@ function montarMain(antes) {
 
 function bienvenida() {
   const tono = (i) => HUES[i % HUES.length];
+  const dest = S.plantillas.filter((p) => p.destacada);
+  const xs = (dest.length ? dest : S.plantillas).slice(0, 6);
   return html`<div class="hola"><div class="hola-in">
-    <span class="hola-marca"><img src="/iconos/gravity.svg" alt="" width="22" height="22">Gravity</span>
-    ${orbita(avVos(44), S.plantillas.slice(0, 5).map((p, i) => ({ id: `p${i}`, nombre: p.nombre, cargo: "miembro" })), 210, { fantasma: true, label: "Tu órbita, todavía vacía" })}
+    <span class="hola-marca">${marcaSvg(24)}Gravity</span>
+    ${orbita(avVos(44), xs.slice(0, 5).map((p, i) => ({ id: `p${i}`, nombre: p.nombre, cargo: "miembro" })), 210, { fantasma: true, label: "Tu órbita, todavía vacía" })}
     <h1>Armá tu primera órbita</h1>
     <p>Un equipo es un manager que reparte el trabajo y compañeros que lo hacen. También podés sumar a alguien suelto.</p>
     <div class="acts"><button class="btn pri" data-a="crear-equipo">${ico("team", "s")}Crear equipo</button><button class="btn out" data-a="nuevo-bot">${ico("plus", "s")}Nuevo compañero</button></div>
     <span class="hola-sub">O empezá con alguien listo para trabajar</span>
-    <div class="tpls">${S.plantillas.map((p, i) => html`<button class="tplc" data-a="sumar-plantilla" data-i="${i}" aria-label="Sumar a ${p.nombre}, ${p.titulo}">${av({ id: `tpl-${i}`, nombre: p.nombre, cargo: "miembro" }, 30, { s: "idle", h: tono(i) })}<b>${p.nombre} <span>· ${p.titulo}</span></b><small>${p.descripcion}</small></button>`)}</div>
+    <div class="tpls">${xs.map((p, i) => html`<button class="tplc" data-a="sumar-plantilla" data-id="${p.id}" aria-label="Sumar a ${p.nombre}, ${p.titulo}">${avPlantilla(p, 30, tono(i))}<b>${p.nombre} <span>· ${p.titulo}</span></b><small>${p.descripcion}</small></button>`)}</div>
+    ${S.plantillas.length > xs.length ? html`<button class="btn out ver-todos" data-a="ver-puestos">${ico("grid", "s")}Ver los ${S.plantillas.length} puestos</button>` : ""}
   </div></div>`;
+}
+// Avatar de una plantilla (todavía no es nadie): el glifo del puesto en vez de la inicial.
+function avPlantilla(p, sz, h = "ink") {
+  const g = glifo(p.icono);
+  if (!g) return av({ id: `tpl-${p.id}`, nombre: p.nombre, cargo: "miembro" }, sz, { s: "idle", h });
+  return html`<span class="av" data-s="idle" style="--h:var(--h-${h});--sz:${sz}px;--k:${hashId(p.id) % 4}" aria-hidden="true">${g}<i></i></span>`;
 }
 
 // ================================================================ lateral de compañeros
@@ -1685,7 +1987,7 @@ function insignia(b) {
 }
 function fila(b, conEquipo = false) {
   const s = est(b), on = b.id === S.botId;
-  const sub = s === "work" && b.accion ? html`<span class="acc">${b.accion}</span>` : html`<span>${conEquipo && equipoDe(b) && equipoDe(b).id !== b.id ? `${b.titulo} · ${equipoDe(b).nombre}` : b.titulo}</span>`;
+  const sub = s === "work" && b.accion ? html`<span class="acc">${b.accion}</span>` : html`<span>${glifo(b.icono, "xs")}${conEquipo && equipoDe(b) && equipoDe(b).id !== b.id ? `${b.titulo} · ${equipoDe(b).nombre}` : b.titulo}</span>`;
   const n = S.sinLeer[b.id] || (b.noLeido ? 1 : 0);
   const nl = n && !on;
   // Con algo sin leer, la insignia reemplaza a «libre»: un solo dato a la derecha.
@@ -1705,7 +2007,7 @@ function grupo(m) {
       ${miembros.length ? html`<button class="chev-b" data-a="plegar" data-id="${m.id}" data-k="pl-${m.id}" aria-expanded="${!plegado}" aria-label="${plegado ? "Mostrar" : "Ocultar"} el equipo de ${m.nombre}">${ico(plegado ? "right" : "down", "s")}</button>` : html`<span></span>`}
       <a class="grp-a ${!on && (S.sinLeer[m.id] || m.noLeido) ? "nl" : ""}" href="#/chats/${m.id}" data-k="r-${m.id}" ${si(on, 'aria-current="page"')}>
         ${av(m, 28)}
-        <span class="gt"><span class="gn"><b>${m.nombre}</b><span>${m.titulo}</span></span>
+        <span class="gt"><span class="gn"><b>${m.nombre}</b><span>${glifo(m.icono, "xs")}${m.titulo}</span></span>
           ${mostrarSum ? html`<span class="gsum">${constelacion(todos)}${c.wait ? html`<span class="a">${c.wait} ${c.wait === 1 ? "espera" : "esperan"}</span>` : subs.length ? html`<span>${plural(subs.length, "equipo", "equipos")}</span>` : ""}</span>` : ""}</span>
         <span class="rt" aria-hidden="true">${insignia(m)}${est(m) === "wait" ? html`<span class="st a">Aprobar</span>` : insignia(m) ? "" : html`<span class="gct" title="Integrantes">${total}</span>`}</span>
         <span class="sr">, ${textoEstado(m)}, equipo de ${total}${c.wait ? `, ${c.wait} esperan tu aprobación` : ""}</span>
@@ -1726,7 +2028,7 @@ function pintarCabecera() {
     <svg class="bh-deco" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="22"/><circle cx="50" cy="50" r="34"/><circle cx="50" cy="50" r="47"/></svg>
     <a class="ib back" href="#/chats" aria-label="Volver a compañeros">${ico("left")}</a>
     <div class="bh-id">${av(b, 42)}<div style="min-width:0">
-      <div class="bh-name"><h2>${b.nombre}</h2><span>${b.titulo}</span></div>
+      <div class="bh-name"><h2>${b.nombre}</h2><span>${glifo(b.icono, "xs")}${b.titulo}</span></div>
       <div class="bh-meta" role="status">${pillEstado(b)}${b.enCola ? html`<span class="cola">${b.enCola} en cola</span>` : ""}<span class="dotsep"></span><span class="rep">${j ? html`Reporta a <a href="#/chats/${j.id}">${j.nombre}</a>` : "Trabaja directo con vos"}${eq ? ` · ${plural(eq, "persona a cargo", "personas a cargo")}` : ""}</span></div>
     </div></div>
     <div class="bh-act">
@@ -1896,6 +2198,8 @@ function htmlAccion(it, i, b) {
   else if (h === "tareas" || h === "entregar") icono = "flag";
   else if (h === "reunion") icono = "meet";
   else if (h === "conexion") icono = "plug";
+  else if (h === "mensajes") icono = "burbuja";
+  else if (h === "analizar_video") icono = "play";
   const cuerpo = html`${ico(icono)}<b>${verbo}</b>${arg ? html`<span class="arg" title="${arg}">${arg}</span>` : ""}${extra ? html`<span class="x" title="${extra}">${extra}</span>` : ""}${it.error ? html`<span class="tag-err">${ico("x")}falló</span>` : ""}`;
   if (it.detalle) {
     const k = `h-${i}`, n = it.detalle.split("\n").filter(Boolean).length;
@@ -1907,7 +2211,7 @@ function htmlAccion(it, i, b) {
 function htmlOrigen(it, i) {
   const k = `o-${i}`;
   const quien = it.clase === "tarea" ? botPorNombre(String(it.etiqueta).replace(/^Encargo de /, "")) : null;
-  const icono = quien ? av(quien, 22, { s: "idle" }) : html`<span class="oi">${ico({ tarea: "flag", resultados: "team", rutina: "clock", reunion: "meet" }[it.clase] || "dot", "s")}</span>`;
+  const icono = quien ? av(quien, 22, { s: "idle" }) : html`<span class="oi">${ico({ tarea: "flag", resultados: "team", rutina: "clock", reunion: "meet", mensajeria: "burbuja" }[it.clase] || "dot", "s")}</span>`;
   const titulo = it.clase === "rutina" ? `Rutina «${it.etiqueta}»` : it.etiqueta;
   const det = it.clase !== "resultados" && it.clase !== "rutina" && it.detalle ? String(it.detalle).split("\n")[0] : "";
   return html`<details class="deleg" data-k="${k}" ${si(S.abiertos.has(k), "open")}><summary>${icono}<span class="dq"><b>${titulo}</b>${det ? html` · <span class="q">«${det}»</span>` : ""}</span><time>${hora(it.fecha)}</time>${ico("down", "s chev")}</summary>
@@ -1936,7 +2240,7 @@ function pintarVivo() {
 }
 function iconoFirma(firma) {
   const h = String(firma).split(":")[0];
-  return { bash: "term", editor: "file", rutinas: "clock", reunion: "meet", externo: "mail", conexion: "mail" }[h] || "shield";
+  return { bash: "term", editor: "file", rutinas: "clock", reunion: "meet", externo: "mail", conexion: "mail", mensajes: "burbuja" }[h] || "shield";
 }
 function tarjetaAprobacion(a, otros = 0) {
   const b = bot(a.botId);
@@ -2077,7 +2381,7 @@ function tablaEquipo() {
   const pillTabla = (b) => { const s = est(b); return s === "wait" ? html`<span class="pill a"><i class="d a"></i>Espera aprobación</span>` : s === "work" ? html`<span class="pill w"><i class="d w"></i>Trabajando</span>` : html`<span class="pill l"><i class="d l"></i>Libre</span>`; };
   return html`<div class="tblw"><table class="tbl"><colgroup>${COLS.map(([, , w]) => html`<col ${si(w, `style="width:${w}"`)}>`)}</colgroup>
     <thead><tr>${COLS.map(([k, t]) => html`<th scope="col" class="${k === "tareas" || k === "gasto" ? "t-r" : ""} ${COL_OPC.has(k) ? "c-opt" : ""}" aria-sort="${col === k ? (dir > 0 ? "ascending" : "descending") : "none"}"><button data-a="eq-orden" data-col="${k}" data-k="th-${k}">${t}${col === k ? (dir > 0 ? " ↑" : " ↓") : ""}</button></th>`)}</tr></thead>
-    <tbody>${xs.map((b) => { const m = equipoDe(b); return html`<tr><td><a class="tc-who" href="#/chats/${b.id}">${av(b, 26)}<span class="tx"><b>${b.nombre}</b><small>${b.titulo}</small></span></a></td><td class="c-opt"><span class="tteam"><i style="--h:var(--h-${m ? hue.get(m.id) : "ink"})"></i>${m ? (m.id === b.id ? "Lidera" : m.nombre) : "Con vos"}</span></td><td>${pillTabla(b)}</td><td class="now-c c-opt" title="${b.accion || ""}">${b.accion || (est(b) === "idle" ? "—" : "")}</td><td class="t-r c-opt">${b.tareasAbiertas || "—"}</td><td class="t-r c-opt">${b.gastoHoy ? usd(b.gastoHoy) : "—"}</td></tr>`; })}</tbody></table></div>
+    <tbody>${xs.map((b) => { const m = equipoDe(b); return html`<tr><td><a class="tc-who" href="#/chats/${b.id}">${av(b, 26)}<span class="tx"><b>${b.nombre}</b><small>${glifo(b.icono, "xs")}${b.titulo}</small></span></a></td><td class="c-opt"><span class="tteam"><i style="--h:var(--h-${m ? hue.get(m.id) : "ink"})"></i>${m ? (m.id === b.id ? "Lidera" : m.nombre) : "Con vos"}</span></td><td>${pillTabla(b)}</td><td class="now-c c-opt" title="${b.accion || ""}">${b.accion || (est(b) === "idle" ? "—" : "")}</td><td class="t-r c-opt">${b.tareasAbiertas || "—"}</td><td class="t-r c-opt">${b.gastoHoy ? usd(b.gastoHoy) : "—"}</td></tr>`; })}</tbody></table></div>
     ${!xs.length ? html`<p class="muted" style="padding:12px 4px">Nadie coincide.</p>` : ""}`;
 }
 function htmlTablero() {
@@ -2479,6 +2783,7 @@ function pintarPerfil() {
   pintar(el, html`<form class="form-card" data-f="perfil" aria-label="Perfil de ${b.nombre}">
     <div class="g2"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="40" value="${b.nombre}"></label><label class="fld"><span>Puesto</span><input class="inp" name="titulo" required maxlength="80" value="${b.titulo}"></label></div>
     <label class="fld"><span>Descripción del trabajo</span><textarea class="inp" name="descripcion" required maxlength="4000" rows="5">${b.descripcion}</textarea><small>Qué hace, cómo y qué entrega. Es lo que ${b.nombre} lee para saber su trabajo.</small></label>
+    <details class="mas" data-k="pf-ico" ${si(S.abiertos.has("pf-ico"), "open")}><summary>${ico("right", "s")}Ícono <span id="pf-ico">${prevIcono(b.icono)}</span></summary><div><fieldset class="fld"><legend class="sr">Ícono de ${b.nombre}</legend>${pickerIconos(b.icono || null, "pf-ico")}</fieldset></div></details>
     <div class="g2"><fieldset class="fld"><legend>Cargo</legend><div class="segc"><label><input type="radio" name="cargo" value="miembro" ${si(b.cargo !== "manager", "checked")}>Miembro</label><label><input type="radio" name="cargo" value="manager" ${si(b.cargo === "manager", "checked")}>Manager</label></div>${tieneEquipo ? html`<small>Tiene ${plural(directos(b.id).length, "persona", "personas")} a cargo: para quitarle el cargo, primero reasignalas.</small>` : html`<small>Un manager reparte trabajo entre su equipo y facilita reuniones.</small>`}</fieldset>
       <label class="fld"><span>Reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${opcionesJefe(b).map((m) => html`<option value="${m.id}" ${si(b.reportaA === m.id, "selected")}>${m.nombre} · ${m.titulo}</option>`)}</select><small>Su manager le encarga trabajo y recibe sus resultados.</small></label></div>
     <fieldset class="fld"><legend>Esfuerzo</legend><div class="segc"><label><input type="radio" name="esfuerzo" value="low" ${si(esf === "low", "checked")}>Económico</label><label><input type="radio" name="esfuerzo" value="" ${si(esf === "" || esf === "medium", "checked")}>Normal</label><label><input type="radio" name="esfuerzo" value="high" ${si(esf === "high" || esf === "xhigh" || esf === "max", "checked")}>Cuidadoso</label></div><small>Económico gasta menos y responde antes; Cuidadoso piensa más (y cuesta más).</small></fieldset>
@@ -2638,72 +2943,149 @@ function nombresLibres(n, extra = []) {
   while (out.length < n) { for (const x of S.nombres) { if (out.length >= n) break; const y = `${x} ${i}`; if (!usados.has(norm(y))) { out.push(y); usados.add(norm(y)); } } i++; }
   return out;
 }
-const CE = { tpl: 0, n: 5, nombres: [], manager: "" };
+const CE = { tpl: null, cant: [] };
+const lugaresLibres = () => Math.max(0, (S.limites?.maxBots || 50) - S.bots.length);
+const topeEquipo = () => Math.min(S.limites?.maxEquipo || 30, lugaresLibres());
+const minus1 = (t) => String(t || "").charAt(0).toLowerCase() + String(t || "").slice(1);
+const btnCerrar = () => html`<button type="button" class="ib" data-a="cerrar-dlg" aria-label="Cerrar">${ico("x")}</button>`;
+// Composición de una plantilla de equipo, en chips: «Gerente comercial · 2 analistas de prospección…»
+function composicion(t, cant = null) {
+  return html`<span>${glifo(t.manager.icono)}${t.manager.titulo}</span>${t.miembros.map((m, i) => { const n = cant ? cant[i] : m.cantidad; return html`<span>${glifo(m.icono)}<b>${n}</b> ${n === 1 ? minus1(m.titulo) : m.plural || minus1(m.titulo)}</span>`; })}`;
+}
 function abrirCrearEquipo() {
   const tpls = S.plantillasEquipo;
   if (!tpls.length) return toast("No hay plantillas de equipo.", "err");
-  const lugares = 50 - S.bots.length - 1;
-  if (lugares < 1) return toast("Llegaste al máximo de compañeros.", "err");
-  CE.tpl = 0; CE.n = Math.min(5, lugares);
-  const ns = nombresLibres(CE.n + 1);
-  CE.manager = ns[0]; CE.nombres = ns.slice(1);
-  const t = tpls[0];
+  if (lugaresLibres() < 2) return toast(`Llegaste al máximo de ${S.limites.maxBots} compañeros.`, "err");
+  abrirDialogo(html`<section class="dlg-f" aria-labelledby="dlg-t">
+    <div class="dlg-hd"><div><span class="micro">Nueva órbita</span><h2 id="dlg-t">Crear equipo</h2><p class="lead">Un manager que reparte el trabajo y los puestos que lo hacen. Elegí uno y en el paso siguiente ajustás cuántos de cada puesto.</p></div>${btnCerrar()}</div>
+    <div class="eqts">${tpls.map((t) => html`<button type="button" class="eqt" data-a="ce-elegir" data-id="${t.id}"><span class="gl" aria-hidden="true">${glifo(t.icono)}</span><b>${t.nombre}<small>${plural(t.total, "compañero", "compañeros")}</small></b><p>${t.resumen}</p><span class="comp-l">${composicion(t)}</span></button>`)}</div>
+  </section>`);
+}
+function abrirEquipoPaso2(id) {
+  const t = S.plantillasEquipo.find((x) => x.id === id);
+  if (!t) return;
+  CE.tpl = t;
+  CE.cant = t.miembros.map((m) => Math.max(1, Math.min(MAX_PUESTO, m.cantidad)));
+  // Si no entra en los lugares que quedan, se achica desde el último puesto.
+  for (let i = CE.cant.length - 1; i >= 0 && 1 + CE.cant.reduce((a, b) => a + b, 0) > topeEquipo(); i--) while (CE.cant[i] > 1 && 1 + CE.cant.reduce((a, b) => a + b, 0) > topeEquipo()) CE.cant[i]--;
   const jefes = S.bots.filter((b) => b.cargo === "manager").sort(porNombre);
+  const manager = nombresLibres(1)[0];
   abrirDialogo(html`<form class="dlg-f" data-f="crear-equipo"><div class="dlg-2"><div style="display:flex;flex-direction:column;gap:14px;min-width:0">
-    <div><span class="micro">Nueva órbita</span><h2 id="dlg-t">Crear equipo</h2><p class="lead">Un manager y sus compañeros, listos de una vez. Después podés ajustar a cada uno.</p></div>
-    <fieldset class="fld"><legend>Plantilla</legend><div class="tpl">${tpls.map((x, i) => html`<label><input type="radio" name="tpl" value="${i}" data-c="ce-tpl" ${si(i === 0, "checked")}><b>${x.nombre}</b><small>${x.manager.titulo} + ${x.miembro.plural || x.miembro.titulo.toLowerCase()}</small></label>`)}</div></fieldset>
-    <div class="g2"><label class="fld"><span>Manager</span><input class="inp" name="mNombre" required maxlength="40" value="${CE.manager}" data-i="ce-prev"></label><label class="fld"><span>Puesto del manager · nombre del equipo</span><input class="inp" name="mTitulo" required maxlength="80" value="${t.manager.titulo}" data-i="ce-prev"></label></div>
-    <div class="stepper"><button type="button" class="ib" data-a="ce-n" data-d="-1" aria-label="Uno menos">${ico("minus", "s")}</button><input type="number" name="n" min="1" max="${Math.min(29, lugares)}" value="${CE.n}" data-i="ce-n" aria-label="Compañeros además del manager"><button type="button" class="ib" data-a="ce-n" data-d="1" aria-label="Uno más">${ico("plus", "s")}</button><span class="lb">compañeros además del manager · reportan a <b id="ce-m">${CE.manager}</b></span></div>
-    <div class="g2"><label class="fld"><span>Puesto de cada uno</span><input class="inp" name="miTitulo" required maxlength="80" value="${t.miembro.titulo}" data-i="ce-prev"></label><label class="fld"><span>El equipo reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${jefes.map((m) => html`<option value="${m.id}">${m.nombre} · ${m.titulo}</option>`)}</select></label></div>
-    <details class="mas"><summary>${ico("right", "s")}Nombres y descripciones</summary><div>
-      <div><span class="fld"><span style="font-size:12.5px;font-weight:500;color:var(--tx2)">Nombres (salen de una lista, sin repetir a los que ya están)</span></span><div class="nombres" id="ce-nombres">${CE.nombres.map((n, i) => html`<input class="inp" name="nom${i}" value="${n}" maxlength="40" aria-label="Nombre ${i + 1}" data-i="ce-nombre">`)}</div></div>
-      <label class="fld"><span>Qué hace cada compañero</span><textarea class="inp" name="miDesc" rows="3" required>${t.miembro.descripcion}</textarea></label>
-      <label class="fld"><span>Qué hace el manager</span><textarea class="inp" name="mDesc" rows="3" required>${t.manager.descripcion}</textarea></label></div></details>
+    <div class="dlg-hd"><div><button type="button" class="btn ghost sm vuelta" data-a="ce-volver">${ico("left", "s")}Equipos</button><h2 id="dlg-t">${t.nombre}</h2><p class="lead">${t.resumen}</p></div>${btnCerrar()}</div>
+    <fieldset class="fld"><legend>Quiénes lo forman</legend><div class="pes">
+      <div class="pe mgr"><span class="gl" aria-hidden="true">${glifo(t.manager.icono)}</span><label class="pt"><b>Manager · ${t.manager.titulo}</b><small>Reparte el trabajo y te entrega el resultado.</small><input class="inp" name="mNombre" required maxlength="40" value="${manager}" data-i="ce-prev" aria-label="Nombre del manager"></label><span class="tag">1</span></div>
+      ${t.miembros.map((m, i) => html`<div class="pe"><span class="gl" aria-hidden="true">${glifo(m.icono)}</span><span class="pt"><b id="ce-pt-${i}">${m.titulo}</b><small>${m.descripcion}</small></span><span class="stp" role="group" aria-labelledby="ce-pt-${i}"><button type="button" class="ib" data-a="ce-cant" data-n="${i}" data-d="-1" aria-label="Uno menos: ${m.titulo}">${ico("minus", "s")}</button><input type="number" inputmode="numeric" name="cant${i}" min="1" max="${MAX_PUESTO}" value="${CE.cant[i]}" data-i="ce-cant" data-n="${i}" aria-label="Cuántos: ${m.titulo}"><button type="button" class="ib" data-a="ce-cant" data-n="${i}" data-d="1" aria-label="Uno más: ${m.titulo}">${ico("plus", "s")}</button></span></div>`)}
+    </div></fieldset>
+    <p class="tot-eq" id="ce-tot" role="status"></p>
+    <label class="fld"><span>El equipo reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${jefes.map((m) => html`<option value="${m.id}">${m.nombre} · ${m.titulo}</option>`)}</select></label>
+    <details class="mas"><summary>${ico("right", "s")}Más opciones</summary><div>
+      <label class="fld"><span>Puesto del manager · nombre del equipo</span><input class="inp" name="mTitulo" required maxlength="80" value="${t.manager.titulo}" data-i="ce-prev"></label></div></details>
     <label class="chk"><input type="checkbox" class="sw" name="carpetaLibre" checked><span>Pueden escribir en la carpeta del equipo sin preguntar<small>Comandos y archivos fuera de esa carpeta siguen pidiendo tu aprobación.</small></span></label>
     <p class="err" role="alert"></p>
   </div><div class="prev" aria-hidden="true" id="ce-prev"></div></div>
-  <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri" id="ce-ok">Crear ${CE.n + 1} compañeros</button></div></form>`);
+  <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri" id="ce-ok">Crear</button></div></form>`);
   pintarPrevEquipo();
 }
+const MAX_PUESTO = 29;
+const totalEquipo = () => 1 + CE.cant.reduce((a, b) => a + b, 0);
 function pintarPrevEquipo() {
-  const f = $("#dlg form");
-  if (!f) return;
+  const f = $("#dlg form[data-f=crear-equipo]");
+  if (!f || !CE.tpl) return;
+  const t = CE.tpl;
   const mn = f.mNombre.value.trim() || "Manager";
-  const nombres = $$("#ce-nombres input").map((x) => x.value.trim() || "?");
-  const m = { id: "ce-m", nombre: mn, cargo: "manager" };
-  const ms = nombres.map((n, i) => ({ id: `ce-${i}`, nombre: n, cargo: "miembro" }));
+  const total = totalEquipo(), tope = topeEquipo();
+  // Los mismos nombres que va a elegir el motor (misma lista y mismo orden).
+  const nombres = nombresLibres(total - 1, [mn]);
+  const ms = [];
+  let k = 0;
+  t.miembros.forEach((p, i) => { for (let j = 0; j < CE.cant[i]; j++) ms.push({ id: `ce-${k}`, nombre: nombres[k++], cargo: "miembro", titulo: p.titulo }); });
   hue.set("ce-m", HUES[(S.bots.filter((b) => b.cargo === "manager").length) % HUES.length]);
   ms.forEach((x) => hue.set(x.id, hue.get("ce-m")));
-  pintar($("#ce-prev"), html`${orbita(av(m, 40, { s: "idle" }), ms, 200, { fantasma: true })}<p>Así queda la órbita nueva</p><ul>${[`${mn} · ${f.mTitulo.value}`, ...nombres.map((n) => `${n} · ${f.miTitulo.value}`)].slice(0, 12).map((x) => html`<li>${x}</li>`)}${nombres.length > 11 ? html`<li>y ${nombres.length - 11} más</li>` : ""}</ul>`);
-  $("#ce-m").textContent = mn;
-  $("#ce-ok").textContent = `Crear ${nombres.length + 1} compañeros`;
+  const lista = [`${mn} · ${f.mTitulo.value}`, ...ms.map((x) => `${x.nombre} · ${x.titulo}`)];
+  pintar($("#ce-prev"), html`${orbita(av({ id: "ce-m", nombre: mn, cargo: "manager" }, 40, { s: "idle" }), ms, 200, { fantasma: true })}<p>Así queda la órbita nueva</p><ul>${lista.slice(0, 12).map((x) => html`<li>${x}</li>`)}${lista.length > 12 ? html`<li>y ${lista.length - 12} más</li>` : ""}</ul>`);
+  const pasa = total > tope;
+  const tot = $("#ce-tot");
+  tot.className = `tot-eq ${pasa ? "tope" : ""}`;
+  tot.innerHTML = html`<span>Total: <b>${plural(total, "compañero", "compañeros")}</b> (1 manager + ${total - 1})</span><span>${pasa ? (tope < (S.limites.maxEquipo || 30) ? `Quedan ${lugaresLibres()} lugares en Gravity` : `Máximo ${tope} por equipo`) : `Máximo ${tope}${tope < (S.limites.maxEquipo || 30) ? " (lugares libres)" : " por equipo"}`}</span>`.s;
+  for (const [i, n] of CE.cant.entries()) {
+    const menos = f.querySelector(`[data-a=ce-cant][data-n="${i}"][data-d="-1"]`), mas = f.querySelector(`[data-a=ce-cant][data-n="${i}"][data-d="1"]`);
+    if (menos) menos.disabled = n <= 1;
+    if (mas) mas.disabled = n >= MAX_PUESTO || total >= tope;
+  }
+  const ok = $("#ce-ok");
+  ok.textContent = `Crear ${plural(total, "compañero", "compañeros")}`;
+  ok.disabled = pasa;
 }
-function cambiarN(n) {
-  const f = $("#dlg form");
-  const max = Number(f.n.max);
-  n = Math.max(1, Math.min(max, Math.round(Number(n) || 1)));
-  f.n.value = n;
-  const actuales = $$("#ce-nombres input").map((x) => x.value.trim());
-  let nuevos = actuales.slice(0, n);
-  if (nuevos.length < n) nuevos = nuevos.concat(nombresLibres(n - nuevos.length, [f.mNombre.value, ...nuevos]));
-  $("#ce-nombres").innerHTML = nuevos.map((x, i) => html`<input class="inp" name="nom${i}" value="${x}" maxlength="40" aria-label="Nombre ${i + 1}" data-i="ce-nombre">`.s).join("");
+function cambiarCant(i, n, escribiendo = false) {
+  const f = $("#dlg form[data-f=crear-equipo]");
+  if (!f) return;
+  n = Math.round(Number(n));
+  if (!Number.isFinite(n)) return;
+  n = Math.max(1, Math.min(MAX_PUESTO, n));
+  CE.cant[i] = n;
+  if (!escribiendo || String(n) !== f[`cant${i}`].value) f[`cant${i}`].value = n;
   pintarPrevEquipo();
 }
 
-// ---- nuevo compañero
+// ---- nuevo compañero: catálogo de puestos (paso 1) y datos (paso 2)
+const NB = { q: "", cat: "" };
+const NOMBRE_ICONO = { brujula: "Brújula", camion: "Camión", codigo: "Código", grafico: "Gráfico", maletin: "Maletín", megafono: "Megáfono" };
+const nombreIcono = (n) => NOMBRE_ICONO[n] || n.charAt(0).toUpperCase() + n.slice(1);
 function abrirNuevoBot(plantilla = null) {
-  const p = plantilla ?? null;
+  if (lugaresLibres() < 1) return toast(`Llegaste al máximo de ${S.limites.maxBots} compañeros.`, "err");
+  if (plantilla) return abrirFormBot(plantilla);
+  const nCat = new Set(S.plantillas.map((p) => p.categoria)).size;
+  abrirDialogo(html`<section class="dlg-f" aria-labelledby="dlg-t">
+    <div class="dlg-hd"><div><span class="micro">Nuevo compañero</span><h2 id="dlg-t">Elegí un puesto</h2><p class="lead">${S.plantillas.length} puestos listos para trabajar. Después le cambiás el nombre, el puesto o lo que hace.</p></div>${btnCerrar()}</div>
+    <div class="cat-top">
+      <label class="field">${ico("search", "s")}<input type="search" placeholder="Buscar: ventas, contable, videos…" aria-label="Buscar un puesto" aria-controls="nb-lista" data-i="nb-buscar" data-k="nb-buscar" autocomplete="off" enterkeyhint="search" value="${NB.q}"></label>
+      <div class="cat-chips" role="group" aria-label="Filtrar por categoría">${[["", "Todos"], ...S.categorias.map((c) => [c, c])].map(([k, t]) => html`<button type="button" class="chip" data-a="nb-cat" data-v="${k}" aria-pressed="${NB.cat === k}">${t}</button>`)}</div>
+      <p class="cat-n" id="nb-n" role="status" aria-live="polite">${plural(S.plantillas.length, "puesto", "puestos")} en ${plural(nCat, "categoría", "categorías")}</p>
+    </div>
+    <div id="nb-lista"></div>
+  </section>`);
+  pintarCatalogo(false);
+}
+function pintarCatalogo(anunciar = true) {
+  const el = $("#nb-lista");
+  if (!el) return;
+  const q = norm(NB.q.trim());
+  let xs = S.plantillas.filter((p) => !NB.cat || p.categoria === NB.cat);
+  if (q) {
+    const peso = (p) => (norm(p.titulo).includes(q) ? 0 : norm(`${p.nombre} ${p.categoria}`).includes(q) ? 1 : norm(p.descripcion).includes(q) ? 2 : 9);
+    xs = xs.filter((p) => peso(p) < 9).sort((a, b) => peso(a) - peso(b));
+  }
+  const tarjeta = (p) => html`<button type="button" class="pst" data-a="nb-elegir" data-id="${p.id}"><span class="gl" aria-hidden="true">${glifo(p.icono) || html`<b>${iniciales(p.titulo)}</b>`}</span><b>${p.titulo} <span>· ${p.nombre}</span></b><small>${p.descripcion}</small></button>`;
+  const cero = html`<div class="psts" style="margin-top:10px"><button type="button" class="pst cero" data-a="nb-cero"><span class="gl" aria-hidden="true">${ico("plus")}</span><b>Empezar de cero</b><small>Escribís vos el nombre, el puesto y lo que hace.</small></button></div>`;
+  let cuerpo;
+  if (!xs.length) cuerpo = html`<div class="vacio" style="margin-top:4px">Ningún puesto coincide${NB.cat ? ` en «${NB.cat}»` : ""}. Probá con otra palabra o empezá de cero.</div>`;
+  else if (!q && !NB.cat) cuerpo = S.categorias.filter((c) => xs.some((p) => p.categoria === c)).map((c) => html`<section class="pst-g" aria-label="${c}"><h3>${c}</h3><div class="psts">${xs.filter((p) => p.categoria === c).map(tarjeta)}</div></section>`);
+  else cuerpo = html`<div class="psts">${xs.map(tarjeta)}</div>`;
+  pintar(el, html`${cuerpo}${cero}`);
+  if (anunciar) $("#nb-n").textContent = q || NB.cat ? `${plural(xs.length, "puesto", "puestos")}${NB.cat ? ` en ${NB.cat}` : ""}` : `${plural(S.plantillas.length, "puesto", "puestos")} en ${plural(S.categorias.length, "categoría", "categorías")}`;
+}
+function pickerIconos(actual, prev = "nb-ico") {
+  const xs = (S.iconos || []).filter(hayGlifo);
+  return html`<div class="icos">
+    <label title="Sin ícono: la inicial"><input type="radio" name="icono" value="" data-c="ico-sel" data-prev="${prev}" ${si(!actual, "checked")}><span class="ini" aria-hidden="true">Aa</span><span class="sr">Sin ícono (la inicial)</span></label>
+    ${xs.map((n) => html`<label title="${nombreIcono(n)}"><input type="radio" name="icono" value="${n}" data-c="ico-sel" data-prev="${prev}" ${si(actual === n, "checked")}>${glifo(n)}<span class="sr">${nombreIcono(n)}</span></label>`)}</div>`;
+}
+const prevIcono = (n) => (glifo(n) ? html`<span class="gl sm" aria-hidden="true">${glifo(n)}</span>` : html`<span class="gl sm" aria-hidden="true"><span class="ini" style="font:600 11px var(--font)">Aa</span></span>`);
+function abrirFormBot(p = null) {
   const jefes = S.bots.filter((b) => b.cargo === "manager").sort(porNombre);
   const nombre = p ? (S.bots.some((b) => norm(b.nombre) === norm(p.nombre)) ? nombresLibres(1)[0] : p.nombre) : "";
-  abrirDialogo(html`<form class="dlg-f" data-f="nuevo-bot"><div><span class="micro">Nuevo compañero</span><h2 id="dlg-t">Sumá a alguien</h2><p class="lead">Nombre, puesto y una descripción del trabajo. Elegí una plantilla para empezar más rápido.</p></div>
-    <div class="cx-acc" role="group" aria-label="Plantillas">${S.plantillas.map((x, i) => html`<button type="button" class="chip" data-a="nb-plantilla" data-i="${i}">${x.titulo}</button>`)}</div>
-    <div class="g2"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="40" value="${nombre}" autofocus></label><label class="fld"><span>Puesto</span><input class="inp" name="titulo" required maxlength="80" value="${p?.titulo || ""}"></label></div>
-    <label class="fld"><span>Descripción del trabajo</span><textarea class="inp" name="descripcion" required maxlength="4000" rows="4">${p?.descripcion || ""}</textarea></label>
+  abrirDialogo(html`<form class="dlg-f" data-f="nuevo-bot">
+    <div class="dlg-hd"><div><span class="micro">Nuevo compañero</span><h2 id="dlg-t">${p ? `Sumá a ${nombre}` : "Sumá a alguien"}</h2></div>${btnCerrar()}</div>
+    ${p ? html`<div class="elegido"><span class="gl" aria-hidden="true">${glifo(p.icono)}</span><span><b>${p.titulo}</b><small>${p.categoria}</small></span><button type="button" class="btn ghost sm" data-a="nb-volver">Otro puesto</button></div>`
+      : html`<button type="button" class="btn ghost sm vuelta" data-a="nb-volver">${ico("left", "s")}Ver los puestos</button>`}
+    <div class="g2"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="40" value="${nombre}" ${si(!p, "autofocus")}></label><label class="fld"><span>Puesto</span><input class="inp" name="titulo" required maxlength="80" value="${p?.titulo || ""}"></label></div>
+    <label class="fld"><span>Qué hace</span><textarea class="inp" name="descripcion" required maxlength="4000" rows="${p ? 5 : 4}" placeholder="Qué hace, cómo y qué entrega.">${p?.descripcion || ""}</textarea><small>Es lo que el compañero lee para saber su trabajo: ajustalo a tu negocio.</small></label>
+    <details class="mas"><summary>${ico("right", "s")}Ícono <span id="nb-ico">${prevIcono(p?.icono)}</span></summary><div><fieldset class="fld"><legend class="sr">Ícono del compañero</legend>${pickerIconos(p?.icono || null, "nb-ico")}</fieldset></div></details>
     <div class="g2"><fieldset class="fld"><legend>Cargo</legend><div class="segc"><label><input type="radio" name="cargo" value="miembro" checked>Miembro</label><label><input type="radio" name="cargo" value="manager">Manager</label></div></fieldset>
       <label class="fld"><span>Reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${jefes.map((m) => html`<option value="${m.id}">${m.nombre} · ${m.titulo}</option>`)}</select></label></div>
     <label class="chk"><input type="checkbox" class="sw" name="puedeEnviarAfuera"><span>Puede enviar mensajes afuera<small>Emails y mensajes con tus apps conectadas; igual te pide aprobación.</small></span></label>
     <p class="err" role="alert"></p>
-    <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear compañero</button></div></form>`, true);
+    <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear compañero</button></div></form>`);
 }
 
 // ---- nueva reunión
@@ -2773,13 +3155,19 @@ const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = tex
 const A = {
   "crear-equipo": () => abrirCrearEquipo(),
   "nuevo-bot": () => abrirNuevoBot(),
-  "sumar-plantilla": (t) => abrirNuevoBot(S.plantillas[+t.dataset.i]),
-  "nb-plantilla": (t) => { const p = S.plantillas[+t.dataset.i], f = t.closest("form"); if (!f.nombre.value.trim()) f.nombre.value = S.bots.some((b) => norm(b.nombre) === norm(p.nombre)) ? nombresLibres(1)[0] : p.nombre; f.titulo.value = p.titulo; f.descripcion.value = p.descripcion; },
+  "sumar-plantilla": (t) => abrirNuevoBot(S.plantillas.find((p) => p.id === t.dataset.id)),
+  "ver-puestos": () => { NB.q = ""; NB.cat = ""; abrirNuevoBot(); },
+  "nb-cat": (t) => { NB.cat = t.dataset.v; for (const c of $$("[data-a=nb-cat]")) c.setAttribute("aria-pressed", String(c.dataset.v === NB.cat)); pintarCatalogo(); $("#nb-lista")?.closest(".dlg-f")?.scrollTo({ top: 0 }); },
+  "nb-elegir": (t) => abrirFormBot(S.plantillas.find((p) => p.id === t.dataset.id)),
+  "nb-cero": () => abrirFormBot(null),
+  "nb-volver": () => abrirNuevoBot(),
+  "ce-elegir": (t) => abrirEquipoPaso2(t.dataset.id),
+  "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "cerrar-dlg": () => cerrarDialogo(),
   "cerrar-dlg-ir": (t) => { cerrarDialogo(); ir(t.dataset.h); },
   mas: () => abrirMas(),
-  "ce-n": (t) => cambiarN(Number($("#dlg form").n.value) + Number(t.dataset.d)),
+  "ce-cant": (t) => { const i = +t.dataset.n; cambiarCant(i, (CE.cant[i] || 1) + Number(t.dataset.d)); },
   filtro: (t) => { S.filtro = t.dataset.v; pintarSide(); },
   orden: () => { S.orden = S.orden === "estado" ? "nombre" : "estado"; guardarLocal("gravity-orden", S.orden); pintarSide(); },
   plegar: (t) => { const id = t.dataset.id; S.plegados.has(id) ? S.plegados.delete(id) : S.plegados.add(id); guardarLocal("gravity-plegados", [...S.plegados]); pintarSide(); },
@@ -2905,7 +3293,7 @@ const F = {
   async perfil(f) {
     const b = bot(S.botId);
     const d = new FormData(f);
-    const cuerpo = { nombre: d.get("nombre"), titulo: d.get("titulo"), descripcion: d.get("descripcion"), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on", esfuerzo: d.get("esfuerzo") || null };
+    const cuerpo = { nombre: d.get("nombre"), titulo: d.get("titulo"), descripcion: d.get("descripcion"), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on", esfuerzo: d.get("esfuerzo") || null, icono: d.get("icono") || null };
     const boton = f.querySelector("button:not([type=button])");
     boton.setAttribute("aria-busy", "true");
     try {
@@ -2919,15 +3307,22 @@ const F = {
     } catch (err) { f.querySelector(".err").textContent = err.message; } finally { boton.removeAttribute("aria-busy"); }
   },
   async "crear-equipo"(f) {
-    const t = S.plantillasEquipo[+(f.querySelector("input[name=tpl]:checked")?.value || 0)];
-    const nombres = $$("#ce-nombres input").map((x) => x.value.trim()).filter(Boolean);
-    const vistos = new Set();
-    for (const n of [f.mNombre.value.trim(), ...nombres]) { if (vistos.has(norm(n))) return errDlg(`El nombre «${n}» está repetido.`); vistos.add(norm(n)); }
+    const t = CE.tpl;
+    if (!t) return;
+    const cant = t.miembros.map((_, i) => Math.max(1, Math.min(MAX_PUESTO, Math.round(Number(f[`cant${i}`].value) || 1))));
+    CE.cant = cant;
+    const total = totalEquipo();
+    if (total > topeEquipo()) return errDlg(total > (S.limites.maxEquipo || 30) ? `Un equipo puede tener hasta ${S.limites.maxEquipo || 30} compañeros contando al manager.` : `Quedan ${lugaresLibres()} lugares: achicá el equipo.`);
+    const mNombre = f.mNombre.value.trim(), mTitulo = f.mTitulo.value.trim();
+    const manager = {};
+    if (mNombre) manager.nombre = mNombre;
+    if (mTitulo && mTitulo !== t.manager.titulo) manager.titulo = mTitulo;
     const cuerpo = {
-      manager: { nombre: f.mNombre.value.trim(), titulo: f.mTitulo.value.trim(), descripcion: f.mDesc.value.trim() || t.manager.descripcion },
+      plantilla: t.id,
+      manager,
       reportaA: f.reportaA.value || null,
-      miembros: nombres.map((n) => ({ nombre: n, titulo: f.miTitulo.value.trim(), descripcion: f.miDesc.value.trim() || t.miembro.descripcion })),
       carpetaLibre: f.carpetaLibre.checked,
+      puestos: t.miembros.map((m, i) => ({ titulo: m.titulo, descripcion: m.descripcion, cantidad: cant[i], icono: m.icono ?? null })),
     };
     const boton = $("#ce-ok");
     boton.setAttribute("aria-busy", "true");
@@ -2942,13 +3337,15 @@ const F = {
   },
   async "nuevo-bot"(f) {
     const d = new FormData(f);
-    const cuerpo = { nombre: d.get("nombre").trim(), titulo: d.get("titulo").trim(), descripcion: d.get("descripcion").trim(), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on" };
+    const cuerpo = { nombre: d.get("nombre").trim(), titulo: d.get("titulo").trim(), descripcion: d.get("descripcion").trim(), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on", icono: d.get("icono") || null };
+    const boton = f.querySelector("button:not([type=button])");
+    boton?.setAttribute("aria-busy", "true");
     try {
       const b = await api("POST", "/api/bots", cuerpo);
       cerrarDialogo();
       await cargarEstado();
       ir(`#/chats/${b.id}`);
-    } catch (err) { errDlg(err.message); }
+    } catch (err) { errDlg(err.message); } finally { boton?.removeAttribute("aria-busy"); }
   },
   async reunion(f) {
     const d = new FormData(f);
@@ -3011,7 +3408,7 @@ const C = {
   "sel-todo": (t) => { S.sel = new Set(t.checked ? S.aprobaciones.map((a) => a.id) : []); pintarBandejas(); },
   "sel-grupo": (t) => { for (const a of S.aprobaciones.filter((x) => grupoDe(x) === t.dataset.firma)) t.checked ? S.sel.add(a.id) : S.sel.delete(a.id); pintarBandejas(); },
   "eq-sel": (t) => { S.eqSel = t.value; pintarEquipo(); },
-  "ce-tpl": (t) => { const p = S.plantillasEquipo[+t.value], f = t.form; f.mTitulo.value = p.manager.titulo; f.miTitulo.value = p.miembro.titulo; f.mDesc.value = p.manager.descripcion; f.miDesc.value = p.miembro.descripcion; pintarPrevEquipo(); },
+  "ico-sel": (t) => { const el = document.getElementById(t.dataset.prev); if (el) el.innerHTML = prevIcono(t.value || null).s; },
   "reu-fac": (t) => { const b = bot(t.value), f = t.form; if (/^Daily de /.test(f.titulo.value) || !f.titulo.value.trim()) f.titulo.value = `Daily de ${nombreEquipo(directos(b.id).length ? b : equipoDe(b) || b)}`; pintarParticipantes(); },
   "reu-pmodo": () => pintarParticipantes(),
   "reu-tipo": (t) => { const f = t.form; if (t.value === "discusion" && /^Daily de /.test(f.titulo.value)) f.titulo.value = f.titulo.value.replace(/^Daily de /, "Discusión de "); if (t.value === "standup" && /^Discusión de /.test(f.titulo.value)) f.titulo.value = f.titulo.value.replace(/^Discusión de /, "Daily de "); },
@@ -3025,9 +3422,9 @@ const I = {
   "eq-buscar": (t) => { S.eqBusqueda = t.value; pintarEquipo(); },
   ta: (t) => { S.borrador[S.botId] = t.value; autoAlto(t); },
   mta: (t) => autoAlto(t),
-  "ce-n": (t) => { if (t.value !== "") cambiarN(t.value); },
+  "ce-cant": (t) => { if (t.value !== "") cambiarCant(+t.dataset.n, t.value, true); },
+  "nb-buscar": (t) => { NB.q = t.value; pintarCatalogo(); },
   "ce-prev": () => pintarPrevEquipo(),
-  "ce-nombre": () => pintarPrevEquipo(),
   "mem-edit": (t) => S.memSucias.add(t.dataset.ruta),
   "compu-filtro": (t) => { S.compuFiltro = t.value; pintarCompu(); },
 };
@@ -3097,6 +3494,10 @@ async function cargarEstado() {
   const v0 = verAps;
   const d = await api("GET", "/api/estado");
   for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local"]) S[k] = d[k];
+  // Catálogo (servidores viejos no lo traen: se arma con lo que haya).
+  S.categorias = d.categorias || [...new Set(S.plantillas.map((p) => p.categoria).filter(Boolean))];
+  S.iconos = d.iconos || [];
+  S.limites = { maxBots: d.limites?.maxBots || 50, maxEquipo: d.limites?.maxEquipo || 30 };
   for (const [id, c] of cambiosAps) {
     if (c.ver <= v0) { cambiosAps.delete(id); continue; }
     if (c.a && !S.aprobaciones.some((x) => x.id === id)) S.aprobaciones.push(c.a);
@@ -3109,7 +3510,7 @@ async function cargarEstado() {
   if (!S.cargado || primera) { S.cargado = true; primera = false; navegar(); return; }
   if (S.ruta.vista === "chats" && S.botId && !bot(S.botId)) { S.botId = null; ir("#/chats"); return; }
   if (S.ruta.vista === "chats" && !S.botId && S.bots.length && !angosto()) { navegar(); return; }
-  programar("rail", "side", "cab", "cmp", "vivo", "ctx", "equipo", "bandeja", "reuniones", "ajustes", "perfil");
+  programar("rail", "side", "cab", "cmp", "vivo", "ctx", "equipo", "bandeja", "reuniones", "ajustes", "perfil", "msj", "compartido");
   if (S.ruta.vista === "chats" && !$("#bh") && S.botId) montarMain();
 }
 let recarga = null;
