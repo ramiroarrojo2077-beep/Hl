@@ -156,7 +156,7 @@ class Escucha : NotificationListenerService() {
             val mensajes = crudos.map { b ->
                 val de = b.getCharSequence(KEY_SENDER)?.toString()
                     ?: (b.getBundle(KEY_SENDER_PERSON)?.getCharSequence("name")?.toString())
-                val texto = b.getCharSequence(Notification.MessagingStyle.Message.KEY_TEXT)?.toString() ?: ""
+                val texto = b.getCharSequence(KEY_TEXT)?.toString() ?: ""
                 val hora = b.getLong(KEY_TIMESTAMP, System.currentTimeMillis())
                 // En MessagingStyle, los mensajes propios no traen remitente (o es el nombre propio).
                 val propio = de.isNullOrBlank() || (yo != null && de == yo)
@@ -311,6 +311,8 @@ class Escucha : NotificationListenerService() {
 
     private companion object {
         // Claves del Bundle de cada mensaje de MessagingStyle (API 24+); estables y públicas en el SDK.
+        // Claves de los mensajes de MessagingStyle: Message.KEY_TEXT es oculta en el SDK público.
+        const val KEY_TEXT = "text"
         const val KEY_TIMESTAMP = "time"
         const val KEY_SENDER = "sender"
         const val KEY_SENDER_PERSON = "sender_person"
