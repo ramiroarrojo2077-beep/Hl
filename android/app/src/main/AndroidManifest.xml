@@ -46,6 +46,12 @@
                 android:value="Motor local de asistentes de IA que trabajan en segundo plano y corren rutinas programadas por el usuario" />
         </service>
 
+        <!-- Alarma de las rutinas: no exportado, solo la dispara la propia app. -->
+        <receiver
+            android:name=".DespertadorRutina"
+            android:exported="false"
+            android:process=":motor" />
+
         <!-- Exportado solo para recibir los avisos del sistema (arranque y actualización, que otras apps no pueden mandar). -->
         <receiver
             android:name=".Despertador"

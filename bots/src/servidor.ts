@@ -1,7 +1,7 @@
 import http from "node:http";
 import { readFile, readdir, stat, writeFile, mkdir, rm } from "node:fs/promises";
 import { readFileSync, writeFileSync } from "node:fs";
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
 import { resolvePath } from "@anthropic-ai/sdk/tools/agent-toolset/node";
@@ -808,6 +808,14 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
   verificarOrigen(req);
 
   if (req.method === "GET" && (await servirPublico(res, url.pathname))) return;
+  // La app de Android comprueba que en el puerto está este motor (y no otra app) antes de mandar el token.
+  if (req.method === "GET" && url.pathname === "/api/hola" && TOKEN_APP) {
+    const reto = url.searchParams.get("reto") ?? "";
+    if (!/^[0-9a-f]{16,128}$/.test(reto)) throw new ErrorHttp(400, "Reto inválido.");
+    res.writeHead(200, { "Content-Type": "text/plain", "Cache-Control": "no-store" });
+    res.end(createHmac("sha256", TOKEN_APP).update(reto).digest("hex"));
+    return;
+  }
   if (!tokenAppValido(req)) throw new ErrorHttp(401, "Acceso no autorizado.");
 
   // Fuera de esta computadora hace falta clave y sesión.

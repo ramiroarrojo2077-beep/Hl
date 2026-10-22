@@ -12,9 +12,19 @@ import android.content.Intent
 class Despertador : BroadcastReceiver() {
     override fun onReceive(contexto: Context, intent: Intent) {
         when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED, DESPERTAR -> Unit
-            else -> return
+            Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> despertarMotor(contexto)
         }
+    }
+}
+
+/** La alarma de las rutinas. No exportado: solo lo dispara la alarma de la propia app. */
+class DespertadorRutina : BroadcastReceiver() {
+    override fun onReceive(contexto: Context, intent: Intent) {
+        despertarMotor(contexto)
+    }
+}
+
+private fun despertarMotor(contexto: Context) {
         if (Gravity.apagadoAMano(contexto) || !Clave.lista(contexto)) return
         val motor = Motor.instancia
         if (motor != null) {
@@ -27,9 +37,4 @@ class Despertador : BroadcastReceiver() {
             // Android no dejó arrancar un servicio desde segundo plano (pasa con alarmas aproximadas
             // sin la excepción de batería). Arranca la próxima vez que abras la app.
         }
-    }
-
-    companion object {
-        const val DESPERTAR = "ar.gravity.app.DESPERTAR_RUTINA"
-    }
 }

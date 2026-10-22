@@ -45,8 +45,6 @@ import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import kotlin.math.abs
 
@@ -199,19 +197,8 @@ class MainActivity : Activity() {
         }
     }
 
-    /** El manifiesto es público: si responde, el motor está escuchando. */
-    private fun motorResponde(): Boolean = try {
-        val conexion = URL("${Gravity.DIRECCION}/manifest.webmanifest").openConnection() as HttpURLConnection
-        conexion.connectTimeout = 1_000
-        conexion.readTimeout = 2_000
-        try {
-            conexion.responseCode == 200
-        } finally {
-            conexion.disconnect()
-        }
-    } catch (e: Exception) {
-        false
-    }
+    /** Responde y es nuestro motor (firma el reto con el token): recién ahí se le manda la cookie. */
+    private fun motorResponde(): Boolean = Gravity.motorAutentico(this)
 
     private fun abrirGravity() {
         val cookie = "gravity_app=${Gravity.token(this)}; Path=/; HttpOnly; SameSite=Strict"
@@ -295,7 +282,9 @@ class MainActivity : Activity() {
 
         override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
             // 401: la cookie no llegó o el token cambió. Se vuelve a poner.
-            if (request.isForMainFrame && esDelMotor(request.url) && errorResponse.statusCode == 401) errorPendiente = true
+            // 502-504: la página de "sin conexión" del service worker con el motor caído.
+            val codigo = errorResponse.statusCode
+            if (request.isForMainFrame && esDelMotor(request.url) && (codigo == 401 || codigo in 502..504)) errorPendiente = true
         }
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
@@ -396,7 +385,8 @@ class MainActivity : Activity() {
     // ---------------------------------------------------------------- Paneles
 
     private fun configurarPaneles() {
-        botonReintentar.setOnClickListener { arrancar(reiniciar = true) }
+        // Sin matar un motor que quizás sigue arrancando: el reinicio forzado está en el menú.
+        botonReintentar.setOnClickListener { arrancar(reiniciar = false) }
         botonClaveDesdeEstado.setOnClickListener { mostrarPanelClave() }
         findViewById<Button>(R.id.botonGuardarClave).setOnClickListener { guardarClave() }
         enlaceConsola.setOnClickListener {
@@ -426,10 +416,12 @@ class MainActivity : Activity() {
         botonReintentar.visibility = if (girando) View.GONE else View.VISIBLE
         botonClaveDesdeEstado.visibility = if (girando) View.GONE else View.VISIBLE
         panelEstado.visibility = View.VISIBLE
+        manija.visibility = View.GONE
     }
 
     private fun ocultarEstado() {
         panelEstado.visibility = View.GONE
+        if (cargada && panelClave.visibility != View.VISIBLE) manija.visibility = View.VISIBLE
     }
 
     private fun mostrarPanelClave() {
@@ -521,7 +513,7 @@ class MainActivity : Activity() {
 
     /** Una sola vez: sin esto, Android duerme al motor con la pantalla apagada. */
     private fun ofrecerBateria() {
-        if (isFinishing || sinRestriccionDeBateria() || preferencias.getBoolean("ofrecio_bateria", false)) return
+        if (isFinishing || isDestroyed || sinRestriccionDeBateria() || preferencias.getBoolean("ofrecio_bateria", false)) return
         preferencias.edit().putBoolean("ofrecio_bateria", true).apply()
         AlertDialog.Builder(this)
             .setTitle(R.string.bateria_titulo)
@@ -699,6 +691,7 @@ class MainActivity : Activity() {
 
     override fun onDestroy() {
         espera++
+        principal.removeCallbacksAndMessages(null)
         callbackArchivos?.onReceiveValue(null)
         callbackArchivos = null
         if (!rendererCaido) {

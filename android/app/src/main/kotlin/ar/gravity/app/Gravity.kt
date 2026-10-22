@@ -3,7 +3,12 @@ package ar.gravity.app
 import android.content.Context
 import java.io.File
 import java.io.RandomAccessFile
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
 import java.security.SecureRandom
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * Lo que comparten la pantalla (proceso principal) y el motor (proceso ":motor").
@@ -28,6 +33,31 @@ object Gravity {
         val nuevo = bytes.joinToString("") { "%02x".format(it) }
         escribir(archivo, nuevo)
         return nuevo
+    }
+
+    /**
+     * true si en el puerto local está nuestro motor: le manda un reto al azar y verifica que lo firme
+     * con el token (HMAC-SHA256). Así otra app que ocupe el puerto no se queda con el token.
+     */
+    fun motorAutentico(contexto: Context): Boolean = try {
+        val reto = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
+        val conexion = URL("$DIRECCION/api/hola?reto=$reto").openConnection() as HttpURLConnection
+        conexion.connectTimeout = 1_000
+        conexion.readTimeout = 3_000
+        try {
+            if (conexion.responseCode != 200) {
+                false
+            } else {
+                val firma = conexion.inputStream.bufferedReader().use { it.readText() }.trim()
+                val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(token(contexto).toByteArray(), "HmacSHA256")) }
+                val esperada = mac.doFinal(reto.toByteArray()).joinToString("") { "%02x".format(it) }
+                MessageDigest.isEqual(esperada.toByteArray(), firma.toByteArray())
+            }
+        } finally {
+            conexion.disconnect()
+        }
+    } catch (e: Exception) {
+        false
     }
 
     fun escribir(archivo: File, texto: String) {

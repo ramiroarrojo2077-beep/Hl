@@ -29,7 +29,7 @@
     <string name="estado_reiniciando">Reiniciando el motor…</string>
     <string name="estado_fallo_titulo">El motor no arrancó</string>
     <string name="estado_fallo">Probá reiniciarlo. Si sigue igual, revisá la clave. Abajo están las últimas líneas del registro.</string>
-    <string name="reintentar">Reiniciar el motor</string>
+    <string name="reintentar">Reintentar</string>
     <string name="cambiar_clave">Cambiar la clave</string>
     <string name="motor_no_arranca">Android no dejó prender el motor. Abrí Gravity de nuevo.</string>
 

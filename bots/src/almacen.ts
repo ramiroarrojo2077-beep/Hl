@@ -242,29 +242,38 @@ function leerJson<T>(archivo: string, porDefecto: T): T {
 
 // Escritura atómica: si el proceso se corta a mitad, el archivo anterior queda intacto.
 function escribirJsonYa(archivo: string, datos: unknown): void {
-  const temporal = `${archivo}.${process.pid}.tmp`;
+  // Otro nombre que la escritura diferida: si una está en curso al apagar, no pisa su temporal.
+  const temporal = `${archivo}.${process.pid}.ya.tmp`;
   writeFileSync(temporal, JSON.stringify(datos));
   renameSync(temporal, archivo);
 }
 
 // Escritura diferida: junta los cambios de 250 ms y escribe una sola vez, sin trabar el servidor.
 const pendientesEscritura = new Map<string, { datos: () => unknown; timer: NodeJS.Timeout }>();
+// Escrituras diferidas ya lanzadas que todavía no terminaron: al apagar se escriben de nuevo, completas.
+const enCurso = new Map<string, () => unknown>();
 
 function programarEscritura(archivo: string, datos: () => unknown): void {
   const previo = pendientesEscritura.get(archivo);
   if (previo) clearTimeout(previo.timer);
   const timer = setTimeout(() => {
     pendientesEscritura.delete(archivo);
+    enCurso.set(archivo, datos);
     const temporal = `${archivo}.${process.pid}.tmp`;
     writeFile(temporal, JSON.stringify(datos()))
       .then(() => rename(temporal, archivo))
-      .catch((err) => console.error(`No se pudo guardar ${archivo}:`, err));
+      .catch((err) => console.error(`No se pudo guardar ${archivo}:`, err))
+      .finally(() => {
+        if (enCurso.get(archivo) === datos) enCurso.delete(archivo);
+      });
   }, 250);
   pendientesEscritura.set(archivo, { datos, timer });
 }
 
 // Escribe ya todo lo pendiente (al apagar el servidor).
 export function vaciarEscrituras(): void {
+  for (const [archivo, datos] of enCurso) if (!pendientesEscritura.has(archivo)) escribirJsonYa(archivo, datos());
+  enCurso.clear();
   for (const [archivo, p] of pendientesEscritura) {
     clearTimeout(p.timer);
     escribirJsonYa(archivo, p.datos());

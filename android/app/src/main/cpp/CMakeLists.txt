@@ -20,3 +20,5 @@ set_target_properties(node PROPERTIES IMPORTED_LOCATION ${NODE_DIR}/bin/${ANDROI
 add_library(gravity_nodo SHARED gravity_nodo.cpp)
 target_include_directories(gravity_nodo PRIVATE ${NODE_DIR}/include/node)
 target_link_libraries(gravity_nodo node log)
+# Alineada a 16 KB para los celulares con páginas de memoria de 16 KB.
+target_link_options(gravity_nodo PRIVATE "-Wl,-z,max-page-size=16384")

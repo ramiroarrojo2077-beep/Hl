@@ -55,6 +55,9 @@ class Motor : Service() {
     private var avisadas = 0
     private var ultimoTexto = ""
 
+    /** El motor respondió pasado el primer minuto: el arranque salió bien. */
+    private var sano = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -83,10 +86,22 @@ class Motor : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Android exige mostrar la notificación apenas arranca un servicio en primer plano.
         val aviso = notificacion(ultimoTexto.ifEmpty { getString(R.string.motor_arrancando) })
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(ID_MOTOR, aviso, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(ID_MOTOR, aviso)
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(ID_MOTOR, aviso, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(ID_MOTOR, aviso)
+            }
+        } catch (e: IllegalStateException) {
+            // Android 12+: relanzó el servicio (START_STICKY) con la app en segundo plano y no deja pasarlo
+            // a primer plano. No se crashea: se cierra y una alarma exacta (si se puede) lo vuelve a prender.
+            if (!nodeArrancado) {
+                if (Build.VERSION.SDK_INT < 31 || getSystemService(AlarmManager::class.java).canScheduleExactAlarms()) {
+                    programarAlarma(System.currentTimeMillis() + 60_000)
+                }
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
         }
 
         when (intent?.action) {
@@ -96,8 +111,12 @@ class Motor : Service() {
                 return START_NOT_STICKY
             }
             ACCION_REINICIAR -> {
-                terminar()
-                return START_NOT_STICKY
+                // Con el motor parado no hay nada que reiniciar: se prende directo.
+                if (nodeArrancado) {
+                    terminar()
+                    return START_NOT_STICKY
+                }
+                Fallos.olvidar(this)
             }
             ACCION_DESPERTAR -> mantenerDespierto(3 * 60_000L)
             ACCION_INICIAR -> Fallos.olvidar(this)
@@ -139,6 +158,9 @@ class Motor : Service() {
         nodeArrancado = true
         arranque = SystemClock.elapsedRealtime()
         val contexto = applicationContext
+        // Si Node se cae, cierra el proceso con exit() y no vuelve acá: todo arranque cuenta como fallo
+        // hasta que el motor responda pasado el primer minuto (ver revisar()).
+        Fallos.anotar(contexto)
         // Node necesita una pila grande: el hilo principal de Node en una compu tiene 8 MB.
         Thread(null, {
             val registro = Gravity.registro(contexto)
@@ -156,7 +178,6 @@ class Motor : Service() {
                     // Sin registro no queda nada más que hacer.
                 }
             }
-            if (SystemClock.elapsedRealtime() - arranque < 60_000) Fallos.anotar(contexto)
             // Node no se puede arrancar dos veces en el mismo proceso: se cierra este y Android
             // vuelve a levantar el servicio (salvo que lo hayas apagado).
             Process.killProcess(Process.myPid())
@@ -274,6 +295,10 @@ class Motor : Service() {
             revisarPronto(if (reciente) 2_000 else 30_000)
             return
         }
+        if (!sano && SystemClock.elapsedRealtime() - arranque >= 60_000) {
+            sano = true
+            Fallos.olvidar(this)
+        }
         val proxima = estado.proximaRutina
         when {
             estado.ocupado -> despierto.acquire(10 * 60_000L)
@@ -290,6 +315,8 @@ class Motor : Service() {
     private class Estado(val ocupado: Boolean, val trabajando: Int, val aprobaciones: Int, val proximaRutina: Long?)
 
     private fun consultar(): Estado? = try {
+        // Antes de mandar el token se comprueba que del otro lado esté nuestro motor y no otra app.
+        if (!Gravity.motorAutentico(this)) throw IllegalStateException("no es el motor")
         val conexion = URL("${Gravity.DIRECCION}/api/motor").openConnection() as HttpURLConnection
         conexion.connectTimeout = 3_000
         conexion.readTimeout = 5_000
@@ -319,7 +346,7 @@ class Motor : Service() {
         val pedido = PendingIntent.getBroadcast(
             this,
             0,
-            Intent(this, Despertador::class.java).setAction(Despertador.DESPERTAR),
+            Intent(this, DespertadorRutina::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         if (cuando == null) {
