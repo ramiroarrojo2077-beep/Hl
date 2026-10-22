@@ -22,7 +22,11 @@ Abrí http://127.0.0.1:3001, sumá un compañero sugerido o creá el tuyo, y esc
 
 ## Qué hace
 
-- **Compañeros**: nombre, puesto y una descripción del trabajo. Hay cinco sugeridos (investigación, precios y proveedores, programación, redacción y monitoreo). En la lista se ve quién está trabajando, quién espera tu aprobación y quién tiene novedades.
+- **Compañeros**: nombre, puesto y una descripción del trabajo. Hay 36 puestos listos en 9 categorías (investigación y datos, ventas y clientes, marketing y redes, contenido y diseño, finanzas, operaciones y compras, tecnología, legal y personas, asistencia personal). En la lista se ve quién está trabajando, quién espera tu aprobación y quién tiene novedades.
+- **Equipos**: un manager que reparte el trabajo y compañeros que lo hacen, con tareas, plazos, presupuesto y reuniones (dailies o discusiones con acta). Hay 11 equipos armados, 7 con puestos distintos (marketing digital, ventas, atención al cliente, e-commerce, lanzamiento, redes y administración). Hasta 30 compañeros trabajando a la vez.
+- **Mensajes (en el celular)**: Gravity lee los mensajes de WhatsApp, WhatsApp Business, Instagram, Messenger, TikTok y Telegram desde las notificaciones y los compañeros contestan con la acción "Responder". Cada conversación tiene un modo: leer, atender (clientes, con derivación a vos) o charlar (se suman a un grupo cuando vos lo ordenás).
+- **Videos**: con la clave de Gemini, los compañeros analizan videos de YouTube y los que compartís desde el celular ("Compartir con Gravity").
+- **Conexiones**: Gmail, Microsoft 365, otro correo y apps MCP, opcionales; lo que manda algo afuera pide aprobación.
 - **Chat**: la respuesta llega en vivo, con notas de progreso y cada búsqueda, comando o archivo que el compañero toca. Si le escribís mientras trabaja, el mensaje queda en cola. **Detener** corta lo que está haciendo.
 - **Computadora**: una carpeta compartida por todos los compañeros (por defecto `~/gravity/computadora`). Cada compañero tiene su propia terminal persistente ahí y herramientas para leer, escribir, editar y buscar archivos. La pestaña Computadora muestra los archivos y los últimos comandos.
 - **Web**: búsqueda y lectura de páginas.
@@ -70,6 +74,11 @@ En `BOTS_DATOS`:
 - `src/agente.ts`: el bucle de cada compañero con Claude, la cola de mensajes y las aprobaciones.
 - `src/herramientas.ts`: herramientas de los bots (terminal, archivos y memoria del SDK de Anthropic, más rutinas y habilidades) y qué requiere aprobación.
 - `src/rutinas.ts`: horarios y el programador.
+- `src/equipo.ts`, `src/reuniones.ts`: equipos, tareas delegadas y reuniones.
+- `src/mensajeria.ts`: WhatsApp y redes por las notificaciones del celular.
+- `src/videos.ts`: análisis de videos con Gemini.
+- `src/proveedores.ts`: modelos gratis (Gemini con respaldo de Groq o Mistral) detrás de la misma interfaz.
+- `src/conexiones.ts`: Gmail, Microsoft 365, correo y MCP.
 - `src/vista.ts`: convierte el historial en lo que muestra el chat.
 - `src/almacen.ts`: persistencia en archivos JSON.
 - `public/index.html`: la interfaz.
@@ -78,4 +87,4 @@ En `BOTS_DATOS`:
 
 ## Lo que todavía no tiene
 
-Comparado con el original: escritorio gráfico con navegador controlable ("tomar el control"), chats grupales, plugins (Gmail, Slack, Notion), email propio, voz, adjuntos y apps nativas. La lista completa está en `../replica/features.csv`.
+Comparado con el original: escritorio gráfico con navegador controlable ("tomar el control"), email propio y voz. La lista completa está en `../replica/features.csv`.

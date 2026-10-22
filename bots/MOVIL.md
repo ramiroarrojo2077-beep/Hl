@@ -22,6 +22,24 @@ Requisitos: Android 8 o más nuevo, celular de 64 bits (arm64; casi todos desde 
 - No hay gasto en dólares: el contador de Ajustes queda en 0.
 - Con modelos gratis los compañeros son menos finos que con Claude, sobre todo en tareas largas con muchas herramientas.
 
+## WhatsApp y redes
+
+Gravity lee los mensajes que te llegan por **WhatsApp, WhatsApp Business, Instagram, Messenger, TikTok y Telegram** desde las notificaciones del celular, y los compañeros contestan con la acción "Responder" de la notificación, como las apps de autorrespuesta. No hace falta ninguna API ni servidor.
+
+1. Botón ⋮ de la app > **Leer WhatsApp y redes** > permití el acceso a notificaciones para Gravity.
+2. En **Mensajes** van apareciendo las conversaciones. Abrí una, elegí un compañero y el modo:
+   - **Leer**: la guarda; el compañero la puede consultar y, si quiere mandar algo, te pide aprobación.
+   - **Atender**: contesta solo (pensado para clientes en WhatsApp Business). Si no sabe o el cliente pide una persona, te la pasa con un aviso.
+   - **Charlar**: cuando vos lo ordenás, se suma a la charla (sirve para grupos) hasta la hora que elijas y con un tope de mensajes por hora.
+3. Los mensajes del compañero salen firmados como asistente para que nadie crea que escribiste vos.
+
+Límites: solo ve lo que llega como notificación (no el historial viejo) y solo puede responder mientras la notificación está; si la borraste, te avisa que contestes desde la app. WhatsApp no permite oficialmente automatizar cuentas: usalo con moderación.
+
+## Videos y "Compartir con Gravity"
+
+- Desde cualquier app (galería, YouTube, Instagram, TikTok, el navegador): **Compartir > Gravity**. Elegís a qué compañero se lo pasás y qué querés que haga.
+- Con la clave de Gemini, los compañeros **miran y analizan videos**: los de YouTube directo por el enlace, y los demás compartiéndolos (Instagram y TikTok no dejan bajar los videos por el enlace). Por ejemplo: gancho de los primeros segundos, ritmo, texto en pantalla, audio, llamada a la acción y qué mejorar.
+
 ## Cómo trabaja en segundo plano
 
 - El motor corre como **servicio en primer plano**: vas a ver una notificación fija "Gravity está prendido" con lo que están haciendo (por ejemplo, "Trabajando: 3 compañeros"). Cerrar la app o tocar Atrás **no** lo apaga.
