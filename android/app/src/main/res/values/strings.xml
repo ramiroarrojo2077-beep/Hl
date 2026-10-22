@@ -74,4 +74,19 @@
     <string name="descarga_fallo">No se pudo empezar la descarga.</string>
     <string name="sin_app_enlace">No hay ninguna app para abrir este enlace.</string>
     <string name="sin_app_archivos">No hay ninguna app para elegir archivos.</string>
+
+    <!-- Leer WhatsApp y redes por las notificaciones -->
+    <string name="menu_mensajeria">Leer WhatsApp y redes</string>
+    <string name="activado">(activado)</string>
+    <string name="mensajeria_titulo">Leer WhatsApp y redes</string>
+    <string name="mensajeria_explicacion">Para que tus compañeros vean los mensajes de WhatsApp, Instagram, Messenger y las demás, y puedan responder cuando vos lo pidas, Android tiene que dejar que Gravity lea las notificaciones. En la pantalla que se abre, activá Gravity. Los mensajes quedan en este celular; nada se sube a ningún lado.</string>
+    <string name="mensajeria_abrir">Abrir ajustes</string>
+    <string name="mensajeria_sin_ajuste">Buscalo en Ajustes &gt; Apps &gt; Acceso especial &gt; Acceso a notificaciones y activá Gravity.</string>
+    <string name="mensajeria_servicio">Lectura de mensajes de Gravity</string>
+    <string name="msj_sin_accion">Abrí la conversación en el celular: no hay notificación para responder</string>
+    <string name="msj_envio_fallo">No se pudo mandar la respuesta desde la notificación.</string>
+
+    <!-- Compartir con Gravity -->
+    <string name="compartir_label">Compartir con Gravity</string>
+    <string name="compartir_fallo">No se pudo compartir con Gravity. Probá de nuevo con la app abierta.</string>
 </resources>

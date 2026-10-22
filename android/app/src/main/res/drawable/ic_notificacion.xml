@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ícono de la notificación del motor: la marca de Gravity en blanco, 24 dp. -->
+<!-- Ícono de la notificación del motor: el mono de 24, dibujado sobre la grilla de 24 con trazo 3 (todos los bordes en dp enteros). Blanco puro: Android lo tiñe. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="32"
-    android:viewportHeight="32">
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- órbita y travesaño -->
     <path
-        android:pathData="M18.69,9.16 A13.4,5.6 -24 0,1 22.88,18.58 M13.31,22.84 A13.4,5.6 -24 0,1 9.12,13.42"
+        android:pathData="M11.5 3.5A8 8 0 1 0 19.5 11.5H11.5"
         android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineCap="round" />
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- el manager -->
     <path
-        android:pathData="M11,16 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z"
+        android:pathData="M8 11.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0Z"
         android:fillColor="#FFFFFFFF" />
+    <!-- el compañero -->
     <path
-        android:pathData="M24.83,9.47 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0 Z"
+        android:pathData="M15 5.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0Z"
         android:fillColor="#FFFFFFFF" />
 </vector>

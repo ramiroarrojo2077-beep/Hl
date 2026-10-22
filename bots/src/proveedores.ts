@@ -11,15 +11,15 @@ import { createHash, randomBytes } from "node:crypto";
 
 type Json = Record<string, unknown>;
 
-const GEMINI_BASE = (process.env.GEMINI_API_BASE ?? "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, "");
+export const GEMINI_BASE = (process.env.GEMINI_API_BASE ?? "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, "");
 const GROQ_BASE = (process.env.GROQ_API_BASE ?? "https://api.groq.com/openai/v1").replace(/\/$/, "");
 const MISTRAL_BASE = (process.env.MISTRAL_API_BASE ?? "https://api.mistral.ai/v1").replace(/\/$/, "");
-const CLAVE_GEMINI = process.env.GEMINI_API_KEY ?? "";
+export const CLAVE_GEMINI = process.env.GEMINI_API_KEY ?? "";
 const CLAVE_GROQ = process.env.GROQ_API_KEY ?? "";
 const CLAVE_MISTRAL = process.env.MISTRAL_API_KEY ?? "";
 // "-latest" apunta siempre al último Flash de Google; Flash-Lite tiene un cupo diario aparte y más grande.
 // Si un nombre no existe (404) se pasa al siguiente, así que conviven el alias y los nombres fijos.
-const MODELOS_GEMINI = (process.env.GRAVITY_GEMINI_MODELOS ?? "gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest,gemini-2.5-flash-lite")
+export const MODELOS_GEMINI = (process.env.GRAVITY_GEMINI_MODELOS ?? "gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest,gemini-2.5-flash-lite")
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
@@ -90,7 +90,7 @@ interface Respuesta {
   modelo: string;
 }
 
-class ErrorProveedor extends Error {
+export class ErrorProveedor extends Error {
   readonly status: number;
   /** Segundos que pide esperar el proveedor, si dijo. */
   readonly esperar: number | null;
@@ -372,7 +372,7 @@ async function pedirGemini(p: Pedido, modelo: string, signal?: AbortSignal | nul
   return { bloques, fin, entrada, salida, modelo: version };
 }
 
-function errorGemini(status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
+export function errorGemini(status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
   const e = (cuerpo.error as Json) ?? {};
   const mensaje = String(e.message ?? `Gemini respondió ${status}`);
   const detalles = JSON.stringify(e.details ?? "");
@@ -538,14 +538,15 @@ function errorCompatible(c: Compatible, status: number, cuerpo: Json, cabeceras:
 
 // ---------------------------------------------------------------- HTTP
 
-async function postJson(
+export async function postJson(
   url: string,
   cuerpo: Json,
   cabeceras: Record<string, string>,
   signal: AbortSignal | null | undefined,
   aError: (status: number, cuerpo: Json, cabeceras: Headers) => ErrorProveedor,
+  esperaMs = ESPERA_RED_MS,
 ): Promise<Json> {
-  const limite = AbortSignal.timeout(ESPERA_RED_MS);
+  const limite = AbortSignal.timeout(esperaMs);
   let res: Response;
   try {
     res = await fetch(url, {

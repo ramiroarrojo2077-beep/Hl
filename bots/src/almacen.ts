@@ -41,6 +41,8 @@ export interface Bot {
   esfuerzo: Esfuerzo | null;
   // Solo managers: carpeta del equipo en la computadora, relativa a ella y terminada en "/".
   carpetaEquipo: string | null;
+  // Glifo del puesto (ver ICONOS en plantillas.ts); null = sin glifo.
+  icono: string | null;
 }
 
 export type Horario =
@@ -89,10 +91,10 @@ export interface Habilidad {
 export type Alcance = { tipo: "global" } | { tipo: "bot"; botId: string } | { tipo: "equipo"; managerId: string };
 
 // Regla "siempre permitir". bash: el programa (ej. "ls"); editor: "*" o una carpeta terminada en "/";
-// externo: "<conexión>:<acción>"; el resto: "*".
+// externo: "<conexión>:<acción>"; mensajes: la clave de la conversación; el resto: "*".
 export interface Regla {
   id: string;
-  herramienta: "bash" | "editor" | "rutinas" | "reunion" | "externo";
+  herramienta: "bash" | "editor" | "rutinas" | "reunion" | "externo" | "mensajes";
   patron: string;
   alcance: Alcance;
   creada: string;
@@ -120,7 +122,7 @@ export interface Nota {
 // y nunca leyendo el texto.
 export interface Origen {
   indice: number;
-  tipo: "rutina" | "tarea" | "resultados" | "reunion";
+  tipo: "rutina" | "tarea" | "resultados" | "reunion" | "mensajeria";
   etiqueta: string;
   detalle: string;
   fecha: string;
@@ -253,7 +255,7 @@ const pendientesEscritura = new Map<string, { datos: () => unknown; timer: NodeJ
 // Escrituras diferidas ya lanzadas que todavía no terminaron: al apagar se escriben de nuevo, completas.
 const enCurso = new Map<string, () => unknown>();
 
-function programarEscritura(archivo: string, datos: () => unknown): void {
+export function programarEscritura(archivo: string, datos: () => unknown): void {
   const previo = pendientesEscritura.get(archivo);
   if (previo) clearTimeout(previo.timer);
   const timer = setTimeout(() => {
@@ -306,6 +308,7 @@ for (const b of estado.bots) {
   b.puedeEnviarAfuera ??= b.cargo === "manager";
   b.esfuerzo ??= null;
   b.carpetaEquipo ??= null;
+  b.icono ??= null;
 }
 for (const r of estado.reglas) r.alcance ??= { tipo: "global" };
 for (const r of estado.rutinas) {
@@ -337,7 +340,7 @@ const COLORES = ["#63D3B1", "#9DA9FF", "#C9A9FF", "#F0A6CA", "#7DD9F2", "#B5E48C
 export const listarBots = (): Bot[] => estado.bots;
 export const buscarBot = (id: string): Bot | undefined => estado.bots.find((b) => b.id === id);
 
-export type DatosBot = Pick<Bot, "nombre" | "titulo" | "descripcion"> & Partial<Pick<Bot, "cargo" | "reportaA" | "puedeEnviarAfuera" | "esfuerzo" | "color">>;
+export type DatosBot = Pick<Bot, "nombre" | "titulo" | "descripcion"> & Partial<Pick<Bot, "cargo" | "reportaA" | "puedeEnviarAfuera" | "esfuerzo" | "color" | "icono">>;
 
 export function crearBot(datos: DatosBot, guardar = true): Bot {
   const cargo = datos.cargo ?? "miembro";
@@ -356,6 +359,7 @@ export function crearBot(datos: DatosBot, guardar = true): Bot {
     puedeEnviarAfuera: datos.puedeEnviarAfuera ?? cargo === "manager",
     esfuerzo: datos.esfuerzo ?? null,
     carpetaEquipo: cargo === "manager" ? carpetaDeEquipo(datos.nombre, id) : null,
+    icono: datos.icono ?? null,
   };
   estado.bots.push(bot);
   if (guardar) guardarEstado();

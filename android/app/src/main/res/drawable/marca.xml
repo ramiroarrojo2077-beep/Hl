@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Logo de Gravity para la interfaz. Generado con la misma geometria que bots/public/iconos/gravity.svg. -->
+<!-- Marca de Gravity, "G en órbita" (grilla de 32): tres cuartos de órbita que bajan al centro como el travesaño de una G, el manager al centro y un compañero cian a la 1:30. Misma geometría que bots/public/iconos/gravity.svg. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="32dp"
     android:height="32dp"
     android:viewportWidth="32"
     android:viewportHeight="32">
+    <!-- órbita y travesaño -->
     <path
-        android:pathData="M18.69,9.16 A13.4,5.6 -24 0,1 22.88,18.58 M13.31,22.84 A13.4,5.6 -24 0,1 9.12,13.42"
-        android:strokeColor="#FFAAB3C8"
-        android:strokeWidth="1.6"
-        android:strokeLineCap="round" />
+        android:pathData="M16 6A10 10 0 1 0 26 16H16"
+        android:strokeColor="@color/texto"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- el manager -->
     <path
-        android:pathData="M11,16 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z"
-        android:fillColor="#FFE8ECF5" />
+        android:pathData="M12 16a4 4 0 1 0 8 0a4 4 0 1 0 -8 0Z"
+        android:fillColor="@color/texto" />
+    <!-- el compañero -->
     <path
-        android:pathData="M24.83,9.47 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0 Z"
-        android:fillColor="#FF6CD3F0" />
+        android:pathData="M20 9a3 3 0 1 0 6 0a3 3 0 1 0 -6 0Z"
+        android:fillColor="@color/cian" />
 </vector>

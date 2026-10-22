@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.DownloadManager
+import android.app.NotificationManager
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -206,7 +208,12 @@ class MainActivity : Activity() {
         CookieManager.getInstance().setCookie(Gravity.DIRECCION, cookie) {
             CookieManager.getInstance().flush()
             errorPendiente = false
-            if (cargada && !web.url.isNullOrEmpty()) web.reload() else web.loadUrl("${Gravity.DIRECCION}/")
+            val compartido = rutaCompartida()
+            when {
+                compartido != null -> web.loadUrl(compartido)
+                cargada && !web.url.isNullOrEmpty() -> web.reload()
+                else -> web.loadUrl("${Gravity.DIRECCION}/")
+            }
             cargada = true
             ocultarEstado()
             manija.visibility = View.VISIBLE
@@ -524,6 +531,42 @@ class MainActivity : Activity() {
             .show()
     }
 
+    // ---------------------------------------------------------------- Leer WhatsApp y redes
+
+    /** true si Gravity tiene permiso para leer las notificaciones (escucha de mensajería). */
+    private fun accesoNotificaciones(): Boolean = try {
+        if (Build.VERSION.SDK_INT >= 27) {
+            getSystemService(NotificationManager::class.java)
+                .isNotificationListenerAccessGranted(ComponentName(this, Escucha::class.java))
+        } else {
+            val activos = Settings.Secure.getString(contentResolver, "enabled_notification_listeners") ?: ""
+            activos.split(":").any { ComponentName.unflattenFromString(it)?.packageName == packageName }
+        }
+    } catch (e: Exception) {
+        false
+    }
+
+    private fun pedirAccesoNotificaciones() {
+        if (accesoNotificaciones()) {
+            abrirAjustesNotificaciones()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.mensajeria_titulo)
+            .setMessage(R.string.mensajeria_explicacion)
+            .setPositiveButton(R.string.mensajeria_abrir) { _, _ -> abrirAjustesNotificaciones() }
+            .setNegativeButton(R.string.ahora_no, null)
+            .show()
+    }
+
+    private fun abrirAjustesNotificaciones() {
+        try {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        } catch (e: ActivityNotFoundException) {
+            avisar(getString(R.string.mensajeria_sin_ajuste))
+        }
+    }
+
     @SuppressLint("BatteryLife")
     private fun pedirSinRestriccion() {
         try {
@@ -606,13 +649,17 @@ class MainActivity : Activity() {
         menu.menu.add(0, MENU_RECARGAR, 0, R.string.menu_recargar)
         menu.menu.add(0, MENU_REINICIAR, 1, R.string.menu_reiniciar)
         menu.menu.add(0, MENU_CLAVE, 2, R.string.menu_clave)
-        if (!sinRestriccionDeBateria()) menu.menu.add(0, MENU_BATERIA, 3, R.string.menu_bateria)
-        menu.menu.add(0, MENU_APAGAR, 4, R.string.menu_apagar)
+        val etiquetaMensajeria = getString(R.string.menu_mensajeria) +
+            if (accesoNotificaciones()) " " + getString(R.string.activado) else ""
+        menu.menu.add(0, MENU_MENSAJERIA, 3, etiquetaMensajeria)
+        if (!sinRestriccionDeBateria()) menu.menu.add(0, MENU_BATERIA, 4, R.string.menu_bateria)
+        menu.menu.add(0, MENU_APAGAR, 5, R.string.menu_apagar)
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_RECARGAR -> if (!rendererCaido) web.reload()
                 MENU_REINICIAR -> arrancar(reiniciar = true)
                 MENU_CLAVE -> mostrarPanelClave()
+                MENU_MENSAJERIA -> pedirAccesoNotificaciones()
                 MENU_BATERIA -> pedirSinRestriccion()
                 MENU_APAGAR -> confirmarApagado()
                 else -> return@setOnMenuItemClickListener false
@@ -669,6 +716,24 @@ class MainActivity : Activity() {
 
     // ---------------------------------------------------------------- Ciclo de vida
 
+    /** Lo que compartiste a Gravity (Compartir) con la app ya abierta: se abre esa pantalla. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (cargada && !rendererCaido) {
+            rutaCompartida()?.let { web.loadUrl(it) }
+        }
+    }
+
+    /** URL de /#/compartido/<id> si el intent trae ese extra (consumiéndolo), o null. */
+    private fun rutaCompartida(): String? {
+        val id = intent?.getStringExtra(Compartir.EXTRA_COMPARTIDO) ?: return null
+        // Se consume para que una recarga o un recreate no vuelvan a abrir lo mismo.
+        intent?.removeExtra(Compartir.EXTRA_COMPARTIDO)
+        if (id.isBlank()) return null
+        return "${Gravity.DIRECCION}/#/compartido/${Uri.encode(id)}"
+    }
+
     override fun onResume() {
         super.onResume()
         Gravity.marcarVisible(this, true)
@@ -715,6 +780,7 @@ class MainActivity : Activity() {
         const val MENU_RECARGAR = 1
         const val MENU_REINICIAR = 2
         const val MENU_CLAVE = 3
+        const val MENU_MENSAJERIA = 6
         const val MENU_BATERIA = 4
         const val MENU_APAGAR = 5
     }

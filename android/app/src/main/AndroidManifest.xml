@@ -46,6 +46,46 @@
                 android:value="Motor local de asistentes de IA que trabajan en segundo plano y corren rutinas programadas por el usuario" />
         </service>
 
+        <!-- Lee WhatsApp y las redes por las notificaciones. En el proceso del motor para compartir
+             el token. Exportado con el permiso del sistema: solo Android se liga a este servicio. -->
+        <service
+            android:name=".Escucha"
+            android:exported="true"
+            android:label="@string/mensajeria_servicio"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:process=":motor">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Recibe lo que compartís a Gravity desde otras apps. Translúcida: trabaja y abre la app. -->
+        <activity
+            android:name=".Compartir"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/compartir_label"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
         <!-- Alarma de las rutinas: no exportado, solo la dispara la propia app. -->
         <receiver
             android:name=".DespertadorRutina"

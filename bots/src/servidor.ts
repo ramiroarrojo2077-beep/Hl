@@ -61,8 +61,32 @@ import { estadoCupo, ajustarLimite } from "./cupo.ts";
 import { hoy, resumenGasto } from "./gasto.ts";
 import { describirHorario, iniciarProgramador, normalizarHorario, proximaEjecucion } from "./rutinas.ts";
 import { vistaConversacion } from "./vista.ts";
-import { NOMBRES, PLANTILLAS, PLANTILLAS_EQUIPO } from "./plantillas.ts";
+import { CATEGORIAS, ICONOS, MAX_MIEMBROS_EQUIPO, NOMBRES, PLANTILLAS, PLANTILLAS_EQUIPO } from "./plantillas.ts";
 import { actualizarConexion, borrarConexion, catalogo, crearConexion, listarConexiones, probarConexion, quitarBotDeConexiones } from "./conexiones.ts";
+import {
+  TOPE_MAXIMO,
+  activarMensajeria,
+  borrarChat,
+  buscarChat,
+  buscarCompartido,
+  cambiarApp,
+  configurarChat,
+  crearCompartido,
+  escribirComoUsuario,
+  estadoMensajeria,
+  listarChats,
+  listarCompartidos,
+  marcarLeido,
+  mensajeDeCompartido,
+  quitarBotDeMensajeria,
+  recibir,
+  resultadoSaliente,
+  tomarSalientes,
+  vistaChat,
+  type Compartido,
+  type Saliente,
+} from "./mensajeria.ts";
+import { pedidoPorDefecto, pistaCompartido } from "./videos.ts";
 import { bus, emitir } from "./eventos.ts";
 
 const PUERTO = Number(process.env.BOTS_PUERTO ?? 3001);
@@ -91,6 +115,7 @@ const DatosBot = z.object({
   reportaA: z.string().nullish(),
   puedeEnviarAfuera: z.boolean().optional(),
   esfuerzo: z.enum(["low", "medium", "high", "xhigh", "max"]).nullish(),
+  icono: z.string().trim().regex(/^[a-z0-9-]{1,30}$/).nullish(),
 });
 const DatosHorario = z.object({
   tipo: z.string(),
@@ -113,11 +138,29 @@ const DatosHabilidad = z.object({
   descripcion: z.string().trim().max(300).default(""),
   instrucciones: z.string().trim().min(1).max(20000),
 });
-const Persona = z.object({ nombre: z.string().trim().min(1).max(40), titulo: z.string().trim().min(1).max(80), descripcion: z.string().trim().min(1).max(4000) });
+const Nombre = z.string().trim().min(1).max(40);
+const Titulo = z.string().trim().min(1).max(80);
+const Descripcion = z.string().trim().min(1).max(4000);
+const IconoBot = z.string().trim().regex(/^[a-z0-9-]{1,30}$/).nullish();
+const Persona = z.object({ nombre: Nombre, titulo: Titulo, descripcion: Descripcion, icono: IconoBot });
+// Ver NuevoEquipo en equipo.ts: `miembros` (cada persona), `puestos` (con cantidad) o solo `plantilla`.
 const DatosEquipo = z.object({
-  manager: Persona,
+  plantilla: z.string().trim().min(1).max(60).optional(),
+  manager: z.object({ nombre: Nombre.optional(), titulo: Titulo.optional(), descripcion: Descripcion.optional(), icono: IconoBot }).optional(),
   reportaA: z.string().nullish(),
-  miembros: z.array(Persona).max(29),
+  miembros: z.array(Persona).max(MAX_MIEMBROS_EQUIPO).optional(),
+  puestos: z
+    .array(
+      z.object({
+        titulo: Titulo,
+        descripcion: Descripcion,
+        cantidad: z.number().int().min(1).max(MAX_MIEMBROS_EQUIPO),
+        nombres: z.array(Nombre).max(MAX_MIEMBROS_EQUIPO).optional(),
+        icono: IconoBot,
+      }),
+    )
+    .max(MAX_MIEMBROS_EQUIPO)
+    .optional(),
   carpetaLibre: z.boolean().default(true),
 });
 const DatosReunion = z.object({
@@ -412,6 +455,9 @@ ruta("GET", "/api/estado", async ({ local }) => {
     aprobaciones: listarAprobaciones(),
     plantillas: PLANTILLAS,
     plantillasEquipo: PLANTILLAS_EQUIPO,
+    categorias: CATEGORIAS,
+    iconos: ICONOS,
+    limites: { maxBots: MAX_BOTS, maxEquipo: MAX_MIEMBROS_EQUIPO + 1 },
     nombres: NOMBRES,
     config: CONFIG,
     ajustes: { ...resto, tieneClave: !!claveHash || !!claveEnv, claveEnv: !!claveEnv },
@@ -450,7 +496,7 @@ ruta("POST", "/api/bots", async ({ cuerpo }) => {
   const d = validar(DatosBot, await cuerpo());
   const error = validarJefe(null, d.reportaA ?? null);
   if (error) throw new ErrorHttp(400, error);
-  const bot = crearBot({ ...d, reportaA: d.reportaA ?? null, esfuerzo: d.esfuerzo ?? null });
+  const bot = crearBot({ ...d, reportaA: d.reportaA ?? null, esfuerzo: d.esfuerzo ?? null, icono: d.icono ?? null });
   emitir("bots");
   return vistaBot(bot);
 });
@@ -481,6 +527,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     reportaA: reportaA ?? null,
     puedeEnviarAfuera: d.puedeEnviarAfuera ?? bot.puedeEnviarAfuera,
     esfuerzo: d.esfuerzo === undefined ? bot.esfuerzo : d.esfuerzo,
+    icono: d.icono === undefined ? bot.icono : d.icono,
   });
   if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);
   guardarEstado();
@@ -494,6 +541,7 @@ ruta("DELETE", "/api/bots/:id", async ({ params }) => {
   for (const t of listarTareas()) if (t.paraId === bot.id && abierta(t)) cancelarTarea(t.id, `${bot.nombre} fue eliminado.`);
   borrarBot(bot.id);
   quitarBotDeConexiones(bot.id);
+  quitarBotDeMensajeria(bot.id);
   await cerrarHerramientas(bot.id);
   emitir("bots");
   return { ok: true };
@@ -785,6 +833,132 @@ ruta("GET", "/api/computadora/archivo", async ({ url, res }) => {
   const archivo = await rutaSegura(COMPUTADORA, url.searchParams.get("ruta") ?? "");
   await enviarArchivo(res, archivo, url.searchParams.has("descargar"));
   return undefined;
+});
+
+// ---- Mensajería por las notificaciones del celular (ver mensajeria.ts) ----
+// La app de Android manda lo que llega, toma las respuestas listas y avisa cómo salió cada envío.
+
+const Paquete = z.string().trim().max(200).regex(/^[A-Za-z]\w*(\.\w+)+$/, "Paquete de Android inválido.");
+const DatosEntrante = z.object({
+  app: Paquete,
+  appNombre: z.string().trim().max(60).default(""),
+  clave: z.string().min(3).max(300),
+  conversacion: z.string().trim().max(200).default(""),
+  esGrupo: z.boolean().default(false),
+  puedeResponder: z.boolean().default(false),
+  mensajes: z.array(z.object({ de: z.string().max(200).default(""), texto: z.string().max(20_000), hora: z.number().finite(), propio: z.boolean().default(false) })).max(100),
+});
+const DatosChat = z.object({
+  botId: z.string().nullable(),
+  modo: z.enum(["leer", "atender", "charlar", "apagado"]),
+  // ISO o milisegundos; sin hasta, charlar dura 2 horas (null = sin fin).
+  hasta: z.union([z.string().max(40), z.number()]).nullish(),
+  maxPorHora: z.number().int().min(1).max(TOPE_MAXIMO).nullish(),
+  firmar: z.boolean().optional(),
+});
+const DatosCompartido = z.object({
+  tipo: z.enum(["texto", "enlace", "archivo"]),
+  // La app manda hasta 100.000 caracteres; se guardan los primeros 20.000.
+  texto: z.string().max(100_000).nullish(),
+  url: z.string().max(4000).nullish(),
+  ruta: z.string().max(500).nullish(),
+  nombre: z.string().max(300).nullish(),
+  mime: z.string().max(100).nullish(),
+});
+
+// Las claves llevan "|", espacios y acentos: en la ruta van con encodeURIComponent (o se usa el id de 16 letras).
+const CLAVE_CHAT = "([^/]+)";
+function chatDe(param: string) {
+  let ref: string;
+  try {
+    ref = decodeURIComponent(param);
+  } catch {
+    throw new ErrorHttp(400, "Clave mal codificada.");
+  }
+  const c = buscarChat(ref);
+  if (!c) throw new ErrorHttp(404, "No existe esa conversación.");
+  return c;
+}
+
+ruta("POST", "/api/mensajeria/entrante", async ({ cuerpo }) => {
+  const d = validar(DatosEntrante, await cuerpo());
+  return malPedido(() => recibir(d));
+});
+
+ruta("GET", "/api/mensajeria/salientes", async () => tomarSalientes());
+
+ruta("POST", "/api/mensajeria/salientes/:id/resultado", async ({ params, cuerpo }) => {
+  const { ok, error } = validar(z.object({ ok: z.boolean(), error: z.string().max(500).nullish() }), await cuerpo());
+  if (!resultadoSaliente(params[0]!, ok, error ?? null)) throw new ErrorHttp(404, "No existe ese envío.");
+  return { ok: true };
+});
+
+ruta("GET", "/api/mensajeria/estado", async () => estadoMensajeria());
+
+ruta("PUT", "/api/mensajeria/estado", async ({ cuerpo }) => activarMensajeria(validar(z.object({ activa: z.boolean() }), await cuerpo()).activa));
+
+ruta("PUT", "/api/mensajeria/apps", async ({ cuerpo }) => {
+  const d = validar(z.object({ paquete: Paquete, activa: z.boolean(), nombre: z.string().trim().min(1).max(60).optional() }), await cuerpo());
+  return malPedido(() => cambiarApp(d.paquete, d.activa, d.nombre));
+});
+
+ruta("GET", "/api/mensajeria/conversaciones", async () => listarChats());
+
+ruta("GET", `/api/mensajeria/conversaciones/${CLAVE_CHAT}`, async ({ params, url }) => {
+  const c = chatDe(params[0]!);
+  const vista = vistaChat(c.id, Math.min(200, Math.max(1, Number(url.searchParams.get("cantidad")) || 200)));
+  marcarLeido(c);
+  return vista;
+});
+
+ruta("PUT", `/api/mensajeria/conversaciones/${CLAVE_CHAT}`, async ({ params, cuerpo }) => {
+  const c = chatDe(params[0]!);
+  const d = validar(DatosChat, await cuerpo());
+  malPedido(() => configurarChat(c.id, d));
+  return vistaChat(c.id, 50);
+});
+
+ruta("DELETE", `/api/mensajeria/conversaciones/${CLAVE_CHAT}`, async ({ params }) => {
+  borrarChat(chatDe(params[0]!).id);
+  return { ok: true };
+});
+
+ruta("POST", `/api/mensajeria/conversaciones/${CLAVE_CHAT}/escribir`, async ({ params, cuerpo }) => {
+  const c = chatDe(params[0]!);
+  const { texto } = validar(z.object({ texto: z.string().trim().min(1).max(4000) }), await cuerpo());
+  const s = malPedido(() => escribirComoUsuario(c.id, texto)) as Saliente;
+  return { id: s.id, estado: s.estado };
+});
+
+// ---- Compartido desde otras apps (la app copia los archivos en compartidos/ de la computadora) ----
+
+function compartidoDe(id: string): Compartido {
+  const c = buscarCompartido(id);
+  if (!c) throw new ErrorHttp(404, "No existe eso compartido.");
+  return c;
+}
+
+ruta("POST", "/api/compartido", async ({ cuerpo }) => {
+  const d = validar(DatosCompartido, await cuerpo());
+  const c = malPedido(() => crearCompartido(d)) as Compartido;
+  return { id: c.id };
+});
+
+ruta("GET", "/api/compartidos", async () => listarCompartidos());
+
+ruta("GET", "/api/compartido/:id", async ({ params }) => compartidoDe(params[0]!));
+
+// Se lo pasa a un bot como mensaje del usuario, con el pedido (opcional) y lo compartido como contenido externo.
+ruta("POST", "/api/compartido/:id/enviar", async ({ params, cuerpo }) => {
+  const c = compartidoDe(params[0]!);
+  // El pedido llega como `texto` (contrato con la app) o `pedido`; sin pedido, un video o audio va con uno por defecto.
+  const { botId, pedido, texto } = validar(
+    z.object({ botId: z.string(), pedido: z.string().trim().max(8000).nullish(), texto: z.string().trim().max(8000).nullish() }),
+    await cuerpo(),
+  );
+  const bot = botDe(botId);
+  enviarMensaje(bot.id, mensajeDeCompartido(c, bot.id, pedido || texto || pedidoPorDefecto(c)) + pistaCompartido(c));
+  return { ok: true };
 });
 
 ruta("GET", "/api/eventos", async ({ req, res }) => {

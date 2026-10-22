@@ -5,10 +5,10 @@
 // - /api/* nunca pasa por la caché (ni por este service worker).
 // Al cambiar algo de este archivo, subí VERSION para que se borren las cachés viejas.
 
-const VERSION = "1";
+const VERSION = "2";
 const PREFIJO = "gravity-";
 const CACHE_ESTATICOS = `${PREFIJO}estaticos-v${VERSION}`;
-const PRECARGA = ["/iconos/gravity-192.png", "/iconos/gravity.svg"];
+const PRECARGA = ["/iconos/gravity-192.png", "/iconos/gravity.svg", "/iconos/favicon.svg"];
 
 const PAGINA_SIN_CONEXION = `<!doctype html>
 <html lang="es-AR">
@@ -42,9 +42,9 @@ const PAGINA_SIN_CONEXION = `<!doctype html>
 <body>
 <main>
   <svg viewBox="0 0 32 32" aria-hidden="true">
-    <path d="M18.69,9.16 A13.4,5.6 -24 0,1 22.88,18.58 M13.31,22.84 A13.4,5.6 -24 0,1 9.12,13.42" fill="none" stroke="var(--tx2)" stroke-width="1.6" stroke-linecap="round"/>
-    <circle cx="16" cy="16" r="5" fill="var(--tx)"/>
-    <circle cx="27.33" cy="9.47" r="2.5" fill="var(--ion)"/>
+    <path d="M16 6A10 10 0 1 0 26 16H16" fill="none" stroke="var(--tx)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="16" cy="16" r="4" fill="var(--tx)"/>
+    <circle cx="23" cy="9" r="3" fill="var(--ion)"/>
   </svg>
   <h1>No llego a tu Gravity</h1>
   <p>Revisá que la compu esté prendida, que Gravity esté abierto y que tengas conexión (o Tailscale prendido).</p>

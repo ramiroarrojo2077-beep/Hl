@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <title>Gravity</title>
+  <style>.c16{display:none}@media (max-width:24px){.c32{display:none}.c16{display:inline}}</style>
+  <defs>
+    <radialGradient id="fondo" cx="16" cy="9.375" r="26.875" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1A2441"/>
+      <stop offset="0.55" stop-color="#0D1322"/>
+      <stop offset="1" stop-color="#070A12"/>
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="7.2" fill="url(#fondo)"/>
+  <path d="M16 6A10 10 0 1 0 26 16H16" fill="none" stroke="#E8ECF5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="c32" d="M12 16a4 4 0 1 0 8 0a4 4 0 1 0 -8 0Z" fill="#E8ECF5"/>
+  <path class="c16" d="M12.5 16a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0Z" fill="#E8ECF5"/>
+  <path d="M20 9a3 3 0 1 0 6 0a3 3 0 1 0 -6 0Z" fill="#6CD3F0"/>
+</svg>

@@ -26,6 +26,7 @@ import {
   type Tarea,
 } from "./almacen.ts";
 import { emitir } from "./eventos.ts";
+import { MAX_MIEMBROS_EQUIPO, NOMBRES, PLANTILLAS_EQUIPO } from "./plantillas.ts";
 
 const MAX_ABIERTAS_POR_BOT = 3;
 const MAX_ABIERTAS_TOTAL = 90;
@@ -361,24 +362,109 @@ export function crearTareas(
 
 // ---- Crear un equipo entero de una vez ----
 
+interface Persona {
+  nombre: string;
+  titulo: string;
+  descripcion: string;
+  icono?: string | null;
+}
+
+// Un puesto con N personas iguales; los nombres que falten salen de NOMBRES.
+export interface PuestoNuevo {
+  titulo: string;
+  descripcion: string;
+  cantidad: number;
+  nombres?: string[];
+  icono?: string | null;
+}
+
+// Tres formas de pedir los miembros, combinables: `miembros` con cada persona (formato de siempre),
+// `puestos` con cantidades (equipos mixtos) o `plantilla` sola (usa los puestos de la plantilla).
+// Del manager alcanza con lo que falte de la plantilla; sin nombre se le asigna uno libre.
 export interface NuevoEquipo {
-  manager: { nombre: string; titulo: string; descripcion: string };
+  plantilla?: string;
+  manager?: Partial<Persona>;
   reportaA: string | null;
-  miembros: { nombre: string; titulo: string; descripcion: string }[];
+  miembros?: Persona[];
+  puestos?: PuestoNuevo[];
   carpetaLibre: boolean;
 }
 
+const clave = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+// Nombres de la lista que nadie usa; si se acaban, sigue con "Ana 2", "Bruno 2"…
+function nombresLibres(n: number, usados: Set<string>): string[] {
+  const salida: string[] = [];
+  for (let vuelta = 1; salida.length < n; vuelta++) {
+    for (const base of NOMBRES) {
+      if (salida.length >= n) break;
+      const nombre = vuelta === 1 ? base : `${base} ${vuelta}`;
+      if (usados.has(clave(nombre))) continue;
+      usados.add(clave(nombre));
+      salida.push(nombre);
+    }
+  }
+  return salida;
+}
+
+// Resuelve el pedido a personas concretas (sin crear nada). Lanza Error con un mensaje para el usuario.
+export function armarEquipo(d: NuevoEquipo): { manager: Persona; miembros: Persona[] } {
+  const tpl = d.plantilla ? PLANTILLAS_EQUIPO.find((t) => t.id === d.plantilla) : undefined;
+  if (d.plantilla && !tpl) throw new Error(`No existe la plantilla de equipo «${d.plantilla}».`);
+  const titulo = d.manager?.titulo ?? tpl?.manager.titulo;
+  const descripcion = d.manager?.descripcion ?? tpl?.manager.descripcion;
+  if (!titulo || !descripcion) throw new Error("Falta el puesto o la descripción del manager.");
+  const icono = d.manager?.icono !== undefined ? d.manager.icono : (tpl?.manager.icono ?? null);
+
+  const explicitos = d.miembros ?? [];
+  const puestos: PuestoNuevo[] = d.puestos ?? (d.miembros ? [] : (tpl?.miembros ?? []));
+  for (const p of puestos) {
+    if ((p.nombres?.length ?? 0) > p.cantidad) throw new Error(`El puesto «${p.titulo}» tiene más nombres que lugares (${p.cantidad}).`);
+  }
+  const total = explicitos.length + puestos.reduce((n, p) => n + p.cantidad, 0);
+  if (total > MAX_MIEMBROS_EQUIPO) {
+    throw new Error(`Un equipo puede tener hasta ${MAX_MIEMBROS_EQUIPO + 1} compañeros contando al manager; este tiene ${total + 1}.`);
+  }
+
+  // Los nombres que vienen escritos no se pueden repetir dentro del equipo.
+  const pedidos = [d.manager?.nombre, ...explicitos.map((m) => m.nombre), ...puestos.flatMap((p) => p.nombres ?? [])].filter((n): n is string => !!n);
+  const vistos = new Set<string>();
+  for (const n of pedidos) {
+    if (vistos.has(clave(n))) throw new Error(`El nombre «${n}» está repetido en el equipo.`);
+    vistos.add(clave(n));
+  }
+  // Los que se asignan solos tampoco chocan con compañeros que ya existen.
+  const usados = new Set([...listarBots().map((b) => clave(b.nombre)), ...vistos]);
+  const faltan = (d.manager?.nombre ? 0 : 1) + puestos.reduce((n, p) => n + p.cantidad - (p.nombres?.length ?? 0), 0);
+  const libres = nombresLibres(faltan, usados);
+
+  const manager: Persona = { nombre: d.manager?.nombre ?? libres.shift()!, titulo, descripcion, icono };
+  const miembros: Persona[] = [
+    ...explicitos,
+    ...puestos.flatMap((p) =>
+      Array.from({ length: p.cantidad }, (_, i) => ({ nombre: p.nombres?.[i] ?? libres.shift()!, titulo: p.titulo, descripcion: p.descripcion, icono: p.icono ?? null })),
+    ),
+  ];
+  return { manager, miembros };
+}
+
 export function crearEquipo(d: NuevoEquipo): { manager: Bot; miembros: Bot[] } {
-  if (listarBots().length + 1 + d.miembros.length > MAX_BOTS) {
+  const equipo = armarEquipo(d);
+  if (listarBots().length + 1 + equipo.miembros.length > MAX_BOTS) {
     throw new Error(`Con este equipo pasarías los ${MAX_BOTS} compañeros. Quedan ${MAX_BOTS - listarBots().length} lugares.`);
   }
   const error = validarJefe(null, d.reportaA);
   if (error) throw new Error(error);
-  if (d.reportaA && jefes(d.reportaA).length + 2 >= 3 && d.miembros.length) {
+  if (d.reportaA && jefes(d.reportaA).length + 2 >= 3 && equipo.miembros.length) {
     throw new Error("Ese manager ya está en el tercer nivel: su equipo no puede tener otro nivel debajo.");
   }
-  const manager = crearBot({ ...d.manager, cargo: "manager", reportaA: d.reportaA, esfuerzo: "medium" }, false);
-  const miembros = d.miembros.map((m) => crearBot({ ...m, cargo: "miembro", reportaA: manager.id, esfuerzo: "low" }, false));
+  const manager = crearBot({ ...equipo.manager, cargo: "manager", reportaA: d.reportaA, esfuerzo: "medium" }, false);
+  const miembros = equipo.miembros.map((m) => crearBot({ ...m, cargo: "miembro", reportaA: manager.id, esfuerzo: "low" }, false));
   mkdirSync(path.join(COMPUTADORA, manager.carpetaEquipo!), { recursive: true });
   // Por defecto el equipo escribe en su carpeta sin pedir permiso: es donde vive su trabajo.
   if (d.carpetaLibre) agregarRegla("editor", manager.carpetaEquipo!, { tipo: "equipo", managerId: manager.id });
