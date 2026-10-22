@@ -5,10 +5,10 @@
 // - /api/* nunca pasa por la caché (ni por este service worker).
 // Al cambiar algo de este archivo, subí VERSION para que se borren las cachés viejas.
 
-const VERSION = "2";
+const VERSION = "3";
 const PREFIJO = "gravity-";
 const CACHE_ESTATICOS = `${PREFIJO}estaticos-v${VERSION}`;
-const PRECARGA = ["/iconos/gravity-192.png", "/iconos/gravity.svg", "/iconos/favicon.svg"];
+const PRECARGA = ["/iconos/gravity-192.png", "/iconos/gravity.svg", "/iconos/favicon.svg", "/iconos/favicon-32.png", "/iconos/favicon-16.png"];
 
 const PAGINA_SIN_CONEXION = `<!doctype html>
 <html lang="es-AR">

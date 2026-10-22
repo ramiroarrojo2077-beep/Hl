@@ -537,14 +537,14 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .cat-top{position:sticky;top:-22px;z-index:2;background:var(--s1);margin:0 -22px;padding:6px 22px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
 .cat-top .field{height:40px}
 .cat-top .field input{font-size:14px}
-.cat-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -22px;padding:2px 22px}
+.cat-chips{display:flex;gap:6px;flex-wrap:wrap}
 .cat-chips::-webkit-scrollbar{display:none}
 .cat-chips .chip{height:30px;padding:0 12px;font-size:12.5px;flex:none}
 .cat-n{font-size:12px;color:var(--tx3)}
 .pst-g h3{font:600 12.5px var(--font);color:var(--tx3);margin:6px 2px 8px}
 .pst-g+.pst-g{margin-top:10px}
 .psts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.pst{display:grid;grid-template-columns:38px minmax(0,1fr);gap:2px 12px;align-items:start;padding:10px 12px 11px 10px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:left;min-height:64px;color:var(--tx)}
+.pst{display:grid;grid-template-columns:38px minmax(0,1fr);gap:2px 12px;align-items:start;align-content:start;padding:10px 12px 11px 10px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:left;min-height:64px;color:var(--tx)}
 .pst:hover{border-color:var(--line2);background:var(--s3)}
 .pst>.gl{grid-row:1/3}
 .pst b{font-weight:600;font-size:13.5px;line-height:1.3}
@@ -553,7 +553,7 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .pst.cero{border-style:dashed;background:transparent}
 .pst.cero .gl{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line2);border-radius:50%}
 .elegido{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:14px;background:var(--s2);border:1px solid var(--line)}
-.elegido>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.elegido>span:not(.gl){flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .elegido b{font-weight:600;font-size:14px}
 .elegido small{color:var(--tx3);font-size:12.5px}
 .icos{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:5px}
@@ -567,7 +567,7 @@ details.mas>summary .gl{margin-left:4px}
 
 /* crear equipo: plantillas con su composición */
 .eqts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.eqt{display:grid;grid-template-columns:38px minmax(0,1fr);gap:3px 12px;align-items:start;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:left;color:var(--tx)}
+.eqt{display:grid;grid-template-columns:38px minmax(0,1fr);gap:3px 12px;align-items:start;align-content:start;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:left;color:var(--tx)}
 .eqt:hover{border-color:var(--line2);background:var(--s3)}
 .eqt>.gl{grid-row:1/4}
 .eqt b{font-weight:600;font-size:14px;display:flex;align-items:baseline;gap:8px;justify-content:space-between}
@@ -758,6 +758,9 @@ td.t-r{color:var(--tx2);font-variant-numeric:tabular-nums}
 /* diálogos */
 dialog.dlg{border:1px solid var(--line2);border-radius:20px;background:var(--s1);color:var(--tx);box-shadow:var(--shadow);padding:0;width:min(760px,calc(100% - 24px));max-height:calc(100dvh - 32px)}
 dialog.dlg.chico{width:min(480px,calc(100% - 24px))}
+/* hojas de catálogo: alto fijo, así no salta al filtrar */
+dialog.dlg.alto{height:min(780px,calc(100dvh - 32px))}
+dialog.dlg.alto .dlg-f{height:100%;max-height:none}
 dialog.dlg::backdrop{background:var(--scrim)}
 .dlg-f{display:flex;flex-direction:column;gap:14px;padding:22px;max-height:calc(100dvh - 34px);overflow:auto}
 .dlg-f:focus{outline:none}
@@ -1016,7 +1019,7 @@ a.deriv:hover{background:color-mix(in oklab,var(--sig) 16%,transparent)}
 .apps{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--s2);overflow:hidden}
 .apps label{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer;min-height:52px;font-size:13.5px}
 .apps label:first-child{border-top:0}
-.apps label>span{flex:1;min-width:0;display:flex;flex-direction:column}
+.apps label>span:not(.gl){flex:1;min-width:0;display:flex;flex-direction:column}
 .apps label small{font-size:12px;color:var(--tx3)}
 .apps label.todo{background:var(--s1)}
 .msj-vacio{display:flex;flex-direction:column;gap:14px;padding:6px 4px 18px}
@@ -1026,7 +1029,7 @@ a.deriv:hover{background:color-mix(in oklab,var(--sig) 16%,transparent)}
 .msj-vacio .pasos b{font-weight:600}
 .mhint{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--tx3);line-height:1.45}
 .mhint .i{flex:none;margin-top:1px}
-.mthread .tin{gap:8px}
+.mtin{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
 .ms{display:flex;flex-direction:column;gap:3px;max-width:min(82%,560px);min-width:0}
 .ms .q{font:600 12px/1.3 var(--font);color:var(--tx2);display:flex;align-items:center;gap:6px;padding:0 4px;flex-wrap:wrap}
 .ms .q .av>i,.ms .q .av::after{display:none}
@@ -1058,15 +1061,17 @@ a.deriv:hover{background:color-mix(in oklab,var(--sig) 16%,transparent)}
 .modos b{font-weight:600;font-size:13.5px}
 .modos small{grid-column:2;font-size:12.5px;color:var(--tx3);line-height:1.4}
 .cfg{display:flex;flex-direction:column;gap:14px}
+.box>.cfg{margin-top:10px}
 .cfg .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .cfg-n{font-size:12.5px;color:var(--tx2);display:flex;flex-direction:column;gap:4px}
 
 /* compartido desde otra app del celular */
 .cp-prev{border-radius:16px;border:1px solid var(--line);background:var(--s1);overflow:hidden}
 .cp-media{display:block;width:100%;max-height:min(440px,52vh);object-fit:contain;background:#000}
+img.cp-media{background:var(--s3)}
 audio.cp-media{background:none;max-height:none;padding:12px}
 .cp-info{display:flex;align-items:center;gap:12px;padding:12px 14px;min-width:0}
-.cp-info>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.cp-info>span:not(.gl){flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .cp-info b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp-info small{color:var(--tx3);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp-info a.lnk{word-break:break-all}
@@ -1192,7 +1197,7 @@ audio.cp-media{background:none;max-height:none;padding:12px}
   /* catálogo y equipos: una columna, buscador fijo arriba de la hoja */
   .psts,.eqts{grid-template-columns:minmax(0,1fr)}
   .cat-top{top:-8px;margin:0 -16px;padding:6px 16px 10px}
-  .cat-chips{margin:0 -16px;padding:2px 16px}
+  .cat-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px}
   .pst{min-height:68px}
   .stp .ib{width:36px;height:36px}
   .stp input{width:32px}
@@ -1206,6 +1211,8 @@ audio.cp-media{background:none;max-height:none;padding:12px}
   .mt1 b{font-size:15px}
   .mt2{font-size:13px}
   .msj-est,.derivs{margin-left:12px;margin-right:12px}
+  .side-h.msj-h{padding:14px 10px 10px 16px}
+  .side-h.msj-h h1{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;font-size:20px;letter-spacing:-.02em}
   /* cabecera del compañero */
   .bh{padding:10px 10px 8px 4px;gap:6px}
   .bh-deco{display:none}
@@ -1317,6 +1324,7 @@ audio.cp-media{background:none;max-height:none;padding:12px}
   /* diálogos: hojas que suben desde abajo */
   dialog.dlg,dialog.dlg.chico{margin:auto 0 0;width:100%;max-width:100%;max-height:92dvh;border-radius:22px 22px 0 0;border-bottom:0;border-left:0;border-right:0;padding-bottom:env(safe-area-inset-bottom)}
   dialog.dlg[open]{animation:sube .24s cubic-bezier(.2,.8,.2,1)}
+  dialog.dlg.alto{height:92dvh}
   .dlg-f{max-height:calc(92dvh - env(safe-area-inset-bottom));padding:8px 16px 18px}
   .dlg-f::before{content:"";flex:none;align-self:center;width:36px;height:4px;border-radius:2px;background:var(--line2);margin-bottom:4px}
   .dlg-f .acts{bottom:-18px}
@@ -1487,7 +1495,10 @@ function toast(texto, tipo = "", enlace = null) {
   sp.textContent = texto;
   t.append(sp);
   if (enlace) { const a = document.createElement("a"); a.href = enlace.href; a.textContent = enlace.texto; a.addEventListener("click", () => t.remove()); t.append(a); }
-  $("#toasts").append(t);
+  // Como mucho tres a la vez: el más viejo se va (en el celular taparían la pantalla).
+  const cont = $("#toasts");
+  while (cont.children.length >= 3) cont.firstElementChild.remove();
+  cont.append(t);
   setTimeout(() => t.remove(), tipo === "err" ? 6500 : tipo === "sig" ? 9000 : 3800);
 }
 const fallo = (err) => { console.warn(err); toast(err?.message || "Algo falló.", "err"); };
@@ -1570,7 +1581,7 @@ const S = {
   memoria: null, memSucias: new Set(),
   conexiones: undefined,
   // mensajes: estado de la escucha, lista de conversaciones, la abierta y lo compartido desde el celular
-  msjEstado: null, chats: null, chat: null, chatId: null, msjAppsAbiertas: false,
+  msjEstado: null, chats: null, chat: null, chatId: null, msjPegado: true, msjBorrador: {},
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
@@ -1785,7 +1796,7 @@ function navegar() {
     if (id) guardarLocal("gravity-bot", id);
   }
   if (r.vista === "mensajes") {
-    if (r.id !== S.chatId) S.chat = null;
+    if (r.id !== S.chatId) { S.chat = null; S.cfgSucio = null; }
     S.chatId = r.id;
   }
   S.ruta = { ...r };
@@ -2420,6 +2431,7 @@ function etiquetaFirma(a) {
   if (h === "editor") return resto === "*" || !resto ? "Escribir archivos" : `Escribir en ${resto}`;
   if (h === "rutinas") return "Cambios en rutinas";
   if (h === "reunion") return "Reuniones";
+  if (h === "mensajes") return `Mensajes a ${String(a.titulo).replace(/^Mandar un mensaje a /, "")}`;
   return a.regla ? a.regla.charAt(0).toUpperCase() + a.regla.slice(1) : a.titulo;
 }
 // Pedidos que van juntos en la bandeja (y que «seleccionar el grupo» marca de una).
@@ -2835,6 +2847,385 @@ function pintarConexiones() {
   pintar(el, html`${cab}${aviso}${conectadas}${sumar}`);
 }
 
+// ================================================================ mensajes (WhatsApp y redes por las notificaciones del celular)
+const MODOS_MSJ = [
+  ["leer", "Leer", "Guarda los mensajes y el compañero la puede consultar. Mandar algo pide tu aprobación."],
+  ["atender", "Atender", "Contesta solo a clientes y te la pasa si no sabe o si piden hablar con una persona."],
+  ["charlar", "Charlar", "Se suma a la charla porque vos se lo pedís, hasta la hora que digas y con un tope por hora."],
+  ["apagado", "Apagado", "No se escucha esta conversación."],
+];
+const VERBO_MODO = { leer: "lee", atender: "atiende", charlar: "charla" };
+const TOPE_MODO = { atender: 30, charlar: 12 };
+// Glifos genéricos por app (no logos de marcas).
+function icoApp(paquete, c = "") {
+  const p = String(paquete || "");
+  if (/instagram/.test(p)) return ico("camara", c);
+  if (/telegram/.test(p)) return ico("send", c);
+  if (/musically|trill|youtube/.test(p)) return glifo("video", c);
+  if (/katana|pages/.test(p)) return glifo("personas", c);
+  if (/orca/.test(p)) return ico("chat", c);
+  return ico("burbuja", c);
+}
+const rutaChat = (id) => `#/mensajes/${encodeURIComponent(id)}`;
+const apiChat = (id, extra = "") => `/api/mensajeria/conversaciones/${encodeURIComponent(id)}${extra}`;
+function horaMsj(ms) {
+  const d = new Date(ms);
+  if (isNaN(d)) return "";
+  if (mismoDia(d, new Date())) return fmtH.format(d);
+  if (mismoDia(d, new Date(Date.now() - 864e5))) return "ayer";
+  return `${d.getDate()} ${MESES[d.getMonth()]}`;
+}
+function diaLargo(ms) {
+  const d = new Date(ms);
+  if (mismoDia(d, new Date())) return "Hoy";
+  if (mismoDia(d, new Date(Date.now() - 864e5))) return "Ayer";
+  return `${DIAS[d.getDay()].replace(/^./, (c) => c.toUpperCase())} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+}
+const mavChat = (c, cls = "") => html`<span class="mav ${cls}" aria-hidden="true">${c.esGrupo ? glifo("personas") : iniciales(c.conversacion || c.appNombre)}</span>`;
+const quienDeriva = (c) => bot(c.derivada?.botId || c.botId)?.nombre || "Tu compañero";
+const textoDerivada = (c) => `${quienDeriva(c)} te pasa la charla con ${c.conversacion || "esta conversación"}: ${minus1(c.derivada?.motivo || "necesita que la sigas vos.").replace(/\.$/, "")}`;
+
+let msjCarga = null;
+async function cargarMensajeria(silencioso = false) {
+  if (msjCarga) { msjCarga.otra = true; return; }
+  const ctl = { otra: false };
+  msjCarga = ctl;
+  try {
+    do {
+      ctl.otra = false;
+      const [e, xs] = await Promise.all([api("GET", "/api/mensajeria/estado"), api("GET", "/api/mensajeria/conversaciones")]);
+      S.msjEstado = e;
+      S.chats = Array.isArray(xs) ? xs : [];
+    } while (ctl.otra);
+  } catch (err) {
+    S.chats ??= [];
+    if (!silencioso && S.ruta.vista === "mensajes") fallo(err);
+  } finally { msjCarga = null; }
+  programar("rail", "msj");
+}
+async function cargarCompartidos() {
+  try { const xs = await api("GET", "/api/compartidos"); S.compartidos = Array.isArray(xs) ? xs : []; } catch { S.compartidos ??= []; }
+  programar("msj");
+}
+const cargandoChat = new Map();
+async function cargarChat(id) {
+  if (cargandoChat.has(id)) { cargandoChat.get(id).otra = true; return; }
+  const ctl = { otra: false };
+  cargandoChat.set(id, ctl);
+  try {
+    do {
+      ctl.otra = false;
+      const c = await api("GET", apiChat(id));
+      if (S.chatId !== id) break;
+      S.chat = c;
+      const r = S.chats?.find((x) => x.id === c.id);
+      if (r) { const { mensajes, salientes, ...resumen } = c; Object.assign(r, resumen, { noLeidos: 0 }); }
+    } while (ctl.otra);
+  } catch (err) { if (S.chatId === id) S.chat = { id, error: err.message, status: err.status }; } finally { cargandoChat.delete(id); }
+  programar("msj-chat", "rail");
+}
+
+function montarMensajes() {
+  const vista = $("#vista");
+  vista.classList.add("v-msj");
+  vista.classList.toggle("sin-chat", !S.chatId);
+  if (!$("#msj-side")) {
+    vista.innerHTML = html`<aside class="side" id="msj-side" aria-label="Conversaciones">
+      <div class="side-h msj-h"><h1>Mensajes <span id="msj-n"></span></h1><button class="btn out" data-a="msj-apps" aria-haspopup="dialog">${ico("sliders", "s")}Apps</button></div>
+      <div id="msj-top"></div>
+      <div class="side-scroll" id="msj-lista"></div></aside>
+      <main class="main" id="msj-main"></main>
+      <aside class="ctx" id="msj-ctx" aria-label="Quién maneja la conversación"></aside>`.s;
+  }
+  pintarMsjLista();
+  montarMsjChat();
+  cargarMensajeria();
+  if (S.compartidos == null) cargarCompartidos();
+}
+function htmlApps() {
+  const e = S.msjEstado;
+  if (!e) return html`<div class="carga">Cargando…</div>`;
+  return html`<div class="apps">
+    <label class="todo"><span class="gl sm" aria-hidden="true">${ico("burbuja")}</span><span>Escuchar mensajes<small>${e.activa ? "Prendido: guarda lo que llega a las apps marcadas" : "Apagado: no se guarda nada nuevo"}</small></span><input type="checkbox" class="sw" data-c="msj-activa" data-k="msj-activa" ${si(e.activa, "checked")}></label>
+    ${(e.apps || []).map((a) => html`<label><span class="gl sm" aria-hidden="true">${icoApp(a.paquete)}</span><span>${a.nombre}<small>${a.paquete}</small></span><input type="checkbox" class="sw" data-c="msj-app" data-paquete="${a.paquete}" data-k="app-${a.paquete}" aria-label="Escuchar ${a.nombre} (${a.paquete})" ${si(a.activa, "checked")} ${si(!e.activa, "disabled")}></label>`)}</div>`;
+}
+function htmlComoActivar() {
+  return html`<ol class="pasos"><li>En la app de Gravity, tocá el botón <b>⋮</b> &gt; <b>Leer WhatsApp y redes</b>.</li><li>Permití el <b>acceso a notificaciones</b> para Gravity.</li><li>Cuando te escriban, la conversación aparece acá y le asignás un compañero.</li></ol>`;
+}
+const notaExterno = () => html`<p class="mhint">${ico("shield", "s")}<span>Lo que escriben otras personas es contenido externo: tus compañeros lo leen como dato, nunca como órdenes. Mandar un mensaje pide tu aprobación, salvo que les digas que atiendan o charlen.</span></p>`;
+function pintarMsjLista() {
+  const el = $("#msj-lista");
+  if (!el) return;
+  const xs = S.chats, e = S.msjEstado;
+  $("#msj-n").textContent = xs?.length || "";
+  const ders = derivadas();
+  const nApps = (e?.apps || []).filter((a) => a.activa).length;
+  pintar($("#msj-top"), html`${e && xs?.length ? html`<div class="msj-est" role="status"><i class="d ${e.activa ? "w" : "l"}"></i><span><b>${e.activa ? "Escuchando" : "En pausa"}</b> · ${plural(nApps, "app", "apps")}${e.pendientes ? ` · ${plural(e.pendientes, "mensaje por salir", "mensajes por salir")}` : ""}</span><input type="checkbox" class="sw" data-c="msj-activa" data-k="msj-activa-top" aria-label="Escuchar mensajes" ${si(e.activa, "checked")}></div>` : ""}
+    ${ders.length ? html`<div class="derivs" role="alert">${ders.map((c) => html`<a class="deriv" href="${rutaChat(c.id)}" data-k="dv-${c.id}">${ico("warn", "s")}<span>${textoDerivada(c)}</span></a>`)}</div>` : ""}`);
+  if (xs == null) { pintar(el, html`<div class="carga">Cargando…</div>`); return; }
+  const cps = (S.compartidos || []).slice(0, 8);
+  const secCp = cps.length ? html`<div class="lbl"><span class="micro">Compartido desde el celular</span></div>${cps.map(filaCompartido)}` : "";
+  if (!xs.length) {
+    pintar(el, html`<div class="msj-vacio"><h2>Tus chats de WhatsApp y redes, acá</h2><p>Gravity lee las notificaciones del celular: un compañero puede leer una conversación, atender a tus clientes o sumarse a un grupo cuando vos se lo pedís. Todo queda en el celular.</p>${htmlComoActivar()}${notaExterno()}<span class="micro">Apps que escucha</span>${htmlApps()}</div>${secCp}`);
+    return;
+  }
+  const grupos = new Map();
+  for (const c of xs) { const k = c.appNombre || c.app; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(c); }
+  pintar(el, html`${[...grupos].map(([app, cs]) => html`<section aria-label="${app}"><h2 class="mgrp-h"><span class="gl" aria-hidden="true">${icoApp(cs[0].app)}</span>${app} <span>${cs.length}</span></h2>${cs.map(filaChat)}</section>`)}${secCp}`);
+}
+function pillAsignacion(c) {
+  const b = bot(c.botId);
+  if (c.derivada) return html`<span class="pill a"><i class="d a"></i><span>Te la pasó ${quienDeriva(c)}</span></span>`;
+  if (c.modo === "apagado") return html`<span class="pill n"><span>Apagada</span></span>`;
+  if (!b) return "";
+  return html`<span class="pill ${c.automatica ? "w" : "l"}"><i class="d ${c.automatica ? "w" : "l"}"></i><span>${b.nombre} ${VERBO_MODO[c.modo] || c.modo}${c.automatica && c.hasta ? ` hasta ${hora(c.hasta)}` : ""}</span></span>`;
+}
+function filaChat(c) {
+  const on = c.id === S.chatId;
+  const u = c.ultimo;
+  // Lo que mandó un compañero ya viene firmado («Ada (asistente IA): …»): no se repite el nombre.
+  const firmado = u?.autor && u.autor !== "usuario" && /^[^:\n]{1,60} \(asistente IA\): /.test(u.texto || "");
+  const quien = !u || firmado ? "" : u.autor === "usuario" || (u.propio && !u.autor) ? "Vos: " : u.autor ? `${bot(u.autor)?.nombre || "Compañero"}: ` : c.esGrupo && u.de ? `${u.de}: ` : "";
+  const nl = c.noLeidos && !on;
+  const asig = pillAsignacion(c);
+  return html`<a class="mrow ${on ? "on" : ""} ${nl ? "nl" : ""}" href="${rutaChat(c.id)}" data-k="mr-${c.id}" ${si(on, 'aria-current="page"')}>${mavChat(c)}<span class="mtx"><span class="mt1"><b>${c.conversacion || "Sin nombre"}</b>${c.esGrupo ? html`<span class="tag">Grupo</span>` : ""}</span><span class="mt2">${quien}${u?.texto || "Sin mensajes"}</span>${asig ? html`<span class="mt3">${asig}</span>` : ""}</span><span class="mrt">${u ? html`<time>${horaMsj(u.hora)}</time>` : ""}${nl ? html`<span class="un" aria-label="${plural(c.noLeidos, "mensaje sin leer", "mensajes sin leer")}">${c.noLeidos}</span>` : ""}</span></a>`;
+}
+function filaCompartido(c) {
+  const [i, t] = c.tipo === "enlace" ? ["link", c.url] : c.tipo === "texto" ? ["file", c.texto] : [String(c.mime || "").startsWith("image/") ? "image" : String(c.mime || "").startsWith("video/") ? "play" : String(c.mime || "").startsWith("audio/") ? "audio" : "file", c.nombre || c.ruta];
+  const para = (c.enviadoA || []).map((id) => bot(id)?.nombre).filter(Boolean);
+  return html`<a class="cprow" href="#/compartido/${encodeURIComponent(c.id)}"><span class="gl" aria-hidden="true">${ico(i)}</span><span style="min-width:0"><b>${t || "Compartido"}</b><small>${diaHora(c.creado)}${para.length ? ` · se lo pasaste a ${listaY(para)}` : " · sin mandar"}</small></span></a>`;
+}
+
+function montarMsjChat() {
+  const main = $("#msj-main");
+  if (!main) return;
+  const id = S.chatId;
+  $("#vista").classList.toggle("sin-chat", !id);
+  if (!id) {
+    main.dataset.chat = "";
+    const hay = S.chats?.length;
+    pintar(main, html`<div class="hola"><div class="hola-in">${orbita(html`<span class="mav lg" aria-hidden="true">${ico("burbuja")}</span>`, [], 170, { label: "" })}<h1>${hay ? "Elegí una conversación" : "Todavía no llegó ningún mensaje"}</h1><p>${hay ? "Asignale un compañero y elegí cómo la maneja: leer, atender a clientes o sumarse a una charla." : "Activá la lectura de notificaciones en la app de Gravity y las conversaciones van a ir apareciendo acá."}</p>
+      <div class="cfg-n" style="text-align:left;max-width:440px">${MODOS_MSJ.slice(0, 3).map(([, t, d]) => html`<p><b style="color:var(--tx)">${t}:</b> ${minus1(d)}</p>`)}</div></div></div>`);
+    pintar($("#msj-ctx"), "");
+    return;
+  }
+  if (main.dataset.chat !== id) {
+    main.dataset.chat = id;
+    main.innerHTML = html`<header class="bh" id="msj-bh"></header><div id="msj-asig"></div><div class="thread mthread" id="msj-thread" tabindex="-1"><div class="mtin" id="msj-hist" aria-live="off"></div></div><div id="msj-cmp"></div>`.s;
+    $("#msj-thread").addEventListener("scroll", (e) => { const t = e.currentTarget; S.msjPegado = t.scrollHeight - t.scrollTop - t.clientHeight < 80; }, { passive: true });
+    S.msjPegado = true;
+    $("#msj-cmp").innerHTML = "";
+    if (!S.chat || S.chat.id !== id) cargarChat(id);
+  }
+  pintarMsjChat();
+}
+function pintarMsjChat() {
+  const main = $("#msj-main");
+  if (!main || !S.chatId || main.dataset.chat !== S.chatId) return;
+  const c = S.chat?.id === S.chatId ? S.chat : null;
+  const r = S.chats?.find((x) => x.id === S.chatId) || c;
+  if (c?.error) {
+    pintar($("#msj-bh"), html`<a class="ib back" href="#/mensajes" aria-label="Volver a mensajes">${ico("left")}</a>`);
+    pintar($("#msj-hist"), html`<div class="vacio-p" style="margin-top:20px"><b>${c.status === 404 ? "Esa conversación ya no está" : "No se pudo abrir la conversación"}</b><span>${c.error}</span><a class="btn out sm" href="#/mensajes">Volver a Mensajes</a></div>`);
+    pintar($("#msj-asig"), ""); pintar($("#msj-ctx"), ""); $("#msj-cmp").innerHTML = "";
+    return;
+  }
+  if (!r) { pintar($("#msj-hist"), html`<div class="carga">Cargando la conversación…</div>`); return; }
+  const b = bot(r.botId);
+  pintar($("#msj-bh"), html`<a class="ib back" href="#/mensajes" aria-label="Volver a mensajes">${ico("left")}</a>
+    <div class="bh-id">${mavChat(r, "lg")}<div style="min-width:0">
+      <div class="bh-name"><h2>${r.conversacion || "Sin nombre"}</h2></div>
+      <div class="bh-meta"><span class="pst-ic">${icoApp(r.app, "xs")}<span>${r.appNombre}</span></span><span class="dotsep"></span><span>${r.esGrupo ? "Grupo" : "Persona"}</span></div>
+    </div></div>
+    <div class="bh-act"><button class="btn ghost sm" data-a="msj-borrar" data-id="${r.id}" data-k="msj-borrar">${ico("trash", "s")}<span class="t">Borrar</span></button></div>
+    <div class="bh-m"><button class="ib" data-a="msj-borrar" data-id="${r.id}" data-k="msj-borrar-m" aria-label="Borrar la conversación" title="Borrar la conversación">${ico("trash")}</button></div>`);
+  // Resumen de quién la maneja (en pantallas angostas; en la compu va el panel de la derecha).
+  const resumen = r.derivada ? html`<span>${ico("warn", "s")}<em>${textoDerivada(r)}</em></span>`
+    : r.modo === "apagado" ? html`<span><i class="d l"></i><em><b>Apagada</b>: no se escucha</em></span>`
+    : b ? html`<span><i class="d ${r.automatica ? "w" : "l"}"></i><em><b>${b.nombre}</b> ${VERBO_MODO[r.modo] || r.modo}${r.automatica && r.hasta ? ` hasta las ${hora(r.hasta)}` : ""}</em></span>`
+    : html`<span><i class="d l"></i><em>Nadie la maneja: solo se guarda</em></span>`;
+  pintar($("#msj-asig"), html`<div class="asig-bar ${r.derivada ? "sig" : ""}">${resumen}<button class="btn ${r.derivada ? "sig" : "out"} sm" data-a="msj-config" data-k="msj-config" aria-haspopup="dialog">${r.derivada ? "Resolver" : b || r.modo === "apagado" ? "Cambiar" : "Asignar"}</button></div>`);
+  // El panel de la derecha no se repinta mientras lo estás editando (un mensaje nuevo no te borra los cambios).
+  if (S.cfgSucio !== r.id && (!$("#dlg").open || !$("#dlg form[data-f=msj-config]"))) {
+    const ctx = $("#msj-ctx");
+    if (!(ctx.contains(document.activeElement) && document.activeElement.matches("input,select,textarea"))) pintar(ctx, html`<section class="box"><span class="micro">Quién la maneja</span>${formChat(r)}</section><section class="box">${notaExterno()}</section>`);
+  }
+  // Hilo
+  if (!c) { pintar($("#msj-hist"), html`<div class="carga">Cargando la conversación…</div>`); }
+  else {
+    const pegado = S.msjPegado;
+    pintar($("#msj-hist"), htmlMensajes(c));
+    if (pegado) { const t = $("#msj-thread"); t.scrollTop = t.scrollHeight; }
+  }
+  // Compositor: se arma una vez por conversación y por estado de «Responder».
+  const cmp = $("#msj-cmp");
+  const firma = `${r.id}:${r.puedeResponder}:${r.modo}:${b?.id || ""}`;
+  if (cmp.dataset.firma !== firma) {
+    const borrador = $("#xta")?.value ?? S.msjBorrador?.[r.id] ?? "";
+    cmp.dataset.firma = firma;
+    const hint = !r.puedeResponder ? "Ahora no se puede responder desde acá: la notificación no tiene «Responder». Contestá desde la app."
+      : r.modo === "atender" && b ? `Sale desde tu cuenta. Si escribís vos, ${b.nombre} se calla 30 minutos acá.` : "Sale desde tu cuenta, por la notificación del celular.";
+    cmp.innerHTML = html`<form class="cmp" data-f="msj-escribir" data-id="${r.id}"><div class="cmp-box"><div class="cmp-bar">
+      <textarea id="xta" data-k="xta" rows="1" data-i="xta" aria-label="Escribir en ${r.conversacion || "la conversación"}" placeholder="${r.puedeResponder ? "Escribí vos…" : "No se puede responder ahora"}" ${si(!r.puedeResponder, "disabled")}></textarea>
+      <button class="btn pri sm env" type="submit" aria-label="Enviar" ${si(!r.puedeResponder, "disabled")}>${ico("send", "s")}<span class="t">Enviar</span></button></div><p class="hint ${r.puedeResponder ? "" : "w"}">${hint}</p></div></form>`.s;
+    const ta = $("#xta");
+    ta.value = borrador;
+    autoAlto(ta);
+  }
+}
+function htmlMensajes(c) {
+  const items = (c.mensajes || []).map((m) => ({ t: m.hora, m }));
+  for (const s of c.salientes || []) {
+    if (((s.estado === "pendiente" || s.estado === "enviando") && s.n == null) || s.estado === "error") items.push({ t: Date.parse(s.creado), s });
+  }
+  items.sort((a, b) => a.t - b.t);
+  if (!items.length) return html`<div class="chat-vacio"><b>Sin mensajes todavía</b><p>Cuando llegue algo a esta conversación lo vas a ver acá.</p></div>`;
+  const out = [];
+  if (items.some((x) => x.m && !x.m.propio && !x.m.autor)) out.push(html`<p class="ext-nota">${ico("shield", "s")}Lo que escriben otras personas es contenido externo</p>`);
+  let dia = "", previo = "";
+  // El nombre va solo cuando cambia quién habla (o el día).
+  const cabeza = (k, contenido) => { const ver = k !== previo; previo = k; return ver ? contenido : ""; };
+  for (const { t, m, s } of items) {
+    const d = diaLargo(t);
+    if (d !== dia) { dia = d; previo = ""; out.push(html`<p class="dia-sep">${d}</p>`); }
+    if (s) {
+      const b = bot(s.autor);
+      const quien = s.autor === "usuario" ? "Vos" : b?.nombre || "Compañero";
+      const q = cabeza(`s:${s.autor}`, html`<span class="q">${quien}</span>`);
+      out.push(s.estado === "error"
+        ? html`<div class="ms ${s.autor === "usuario" ? "yo" : "bot"} fallo">${q}<div class="bb">${s.texto}</div><span class="est" role="note">${ico("x", "xs")}No salió: ${s.error || "error"}</span></div>`
+        : html`<div class="ms ${s.autor === "usuario" ? "yo" : "bot"} pend">${q}<div class="bb">${s.texto}</div><span class="est">${s.estado === "enviando" ? "Saliendo por el celular…" : "Esperando al celular…"}</span></div>`);
+      continue;
+    }
+    if (m.autor && m.autor !== "usuario") {
+      const b = bot(m.autor);
+      out.push(html`<div class="ms bot">${cabeza(`s:${m.autor}`, html`<span class="q">${b ? av(b, 18, { s: "idle" }) : ""}${m.autorNombre || b?.nombre || "Compañero"}<span class="ia">IA</span></span>`)}<div class="bb">${m.texto}</div><time>${horaMsj(m.hora)}</time></div>`);
+    } else if (m.propio || m.autor === "usuario") {
+      out.push(html`<div class="ms yo">${cabeza("s:usuario", html`<span class="q">Vos</span>`)}<div class="bb">${m.texto}</div><time>${horaMsj(m.hora)}${m.autor === "usuario" ? " · desde Gravity" : ""}</time></div>`);
+    } else {
+      const nombre = m.de || c.conversacion;
+      out.push(html`<div class="ms ext">${cabeza(`e:${nombre}`, html`<span class="q">${nombre}</span>`)}<div class="bb"><span class="sr">${nombre} (contenido externo): </span>${m.texto}</div><time>${horaMsj(m.hora)}</time></div>`);
+    }
+  }
+  return out;
+}
+// Hora "HH:MM" → la próxima vez que llega esa hora (hoy o mañana), en ISO.
+function horaAIso(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || "").trim());
+  if (!m) return null;
+  const d = new Date();
+  d.setHours(+m[1], +m[2], 0, 0);
+  if (d <= new Date()) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+}
+const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+function formChat(c) {
+  const bots = [...S.bots].sort((a, b) => (b.cargo === "manager") - (a.cargo === "manager") || porNombre(a, b));
+  const auto = c.modo === "atender" || c.modo === "charlar";
+  const hasta = c.hasta && auto ? hhmm(new Date(c.hasta)) : "";
+  const b = bot(c.botId);
+  const estado = [];
+  if (!c.puedeResponder) estado.push("Ahora no se puede responder: la notificación no tiene «Responder». Vuelve cuando la otra persona escriba.");
+  if (c.automatica) estado.push(`${plural(c.enviosHora || 0, "mensaje enviado", "mensajes enviados")} en la última hora, de ${c.maxPorHora}.`);
+  if (c.calladoHasta) estado.push(`${b?.nombre || "El compañero"} se calla hasta las ${hora(c.calladoHasta)} porque escribiste vos.`);
+  return html`<form class="cfg" data-f="msj-config" data-id="${c.id}">
+    ${c.derivada ? html`<div class="callout sig" role="note">${ico("warn", "s")}<span>${textoDerivada(c)}. Si se la devolvés, sigue respondiendo.</span></div>` : ""}
+    <label class="fld"><span>Compañero</span><select class="inp" name="botId" data-c="msj-bot"><option value="">Nadie: solo se guarda</option>${bots.map((x) => html`<option value="${x.id}" ${si(x.id === c.botId, "selected")}>${x.nombre} · ${x.titulo}</option>`)}</select></label>
+    <fieldset class="fld"><legend>Cómo la maneja</legend><div class="modos">${MODOS_MSJ.map(([k, t, d]) => html`<label><input type="radio" class="rd" name="modo" value="${k}" data-c="msj-modo" ${si(c.modo === k, "checked")}><b>${t}</b><small>${d}</small></label>`)}</div></fieldset>
+    <div class="g2 cfg-auto" ${si(!auto, "hidden")}><label class="fld"><span>Hasta las</span><input class="inp" type="time" name="hasta" value="${hasta}"><small>Vacío: sin hora de fin.</small></label><label class="fld"><span>Tope por hora</span><input class="inp" type="number" name="maxPorHora" min="1" max="60" step="1" value="${c.maxPorHora || TOPE_MODO[c.modo] || 30}" inputmode="numeric"><small>Mensajes como mucho.</small></label></div>
+    <label class="chk cfg-firma" ${si(c.modo === "apagado", "hidden")}><input type="checkbox" class="sw" name="firmar" ${si(c.firmar !== false, "checked")}><span>Firmar los mensajes<small>Salen como «${b?.nombre || "Nombre"} (asistente IA): …», para que nadie crea que escribiste vos.</small></span></label>
+    ${estado.length ? html`<div class="cfg-n">${estado.map((x) => html`<p>${x}</p>`)}</div>` : ""}
+    <p class="err" role="alert"></p>
+    <div class="acts">${c.derivada && b ? html`<button type="button" class="btn out" data-a="msj-devolver" data-id="${c.id}">Devolvérsela a ${b.nombre}</button>` : ""}<button class="btn pri">Guardar</button></div>
+  </form>`;
+}
+function abrirConfigChat() {
+  const r = S.chats?.find((x) => x.id === S.chatId) || S.chat;
+  if (!r || r.error) return;
+  abrirDialogo(html`<section class="dlg-f" aria-labelledby="dlg-t"><div class="dlg-hd"><div><span class="micro">${r.appNombre} · ${r.conversacion}</span><h2 id="dlg-t">Quién la maneja</h2></div>${btnCerrar()}</div>${formChat(r)}</section>`, true);
+}
+function abrirAppsMsj() {
+  abrirDialogo(html`<section class="dlg-f" aria-labelledby="dlg-t"><div class="dlg-hd"><div><span class="micro">Mensajes</span><h2 id="dlg-t">Apps que escucha</h2><p class="lead">Gravity guarda lo que llega a estas apps por las notificaciones del celular.</p></div>${btnCerrar()}</div><div id="apps-dlg">${htmlApps()}</div><details class="mas"><summary>${ico("right", "s")}Cómo activarlo en el celular</summary><div>${htmlComoActivar()}</div></details>${notaExterno()}</section>`, true);
+}
+function pintarAppsAbiertas() {
+  const a = $("#apps-dlg");
+  if (a) pintar(a, htmlApps());
+  programar("msj");
+}
+
+// ================================================================ compartido desde otra app del celular
+async function montarCompartido(id) {
+  const vista = $("#vista");
+  vista.innerHTML = `<div class="pag"><div class="pag-in angosta" id="cp"></div></div>`;
+  if (S.compartido?.id !== id) S.compartido = null;
+  pintarCompartido();
+  try {
+    const c = await api("GET", `/api/compartido/${encodeURIComponent(id)}`);
+    if (S.ruta.vista !== "compartido" || S.ruta.id !== id) return;
+    S.compartido = c;
+  } catch (err) { S.compartido = { id, error: err.message }; }
+  pintarCompartido();
+}
+const esYoutube = (u) => /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i.test(u || "");
+const esRedVideo = (u) => /^https?:\/\/([\w-]+\.)?(tiktok\.com|instagram\.com|facebook\.com|fb\.watch)\//i.test(u || "");
+function clasePorMime(c) {
+  const m = String(c.mime || "").toLowerCase(), n = String(c.ruta || c.nombre || "").toLowerCase();
+  if (m.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif)$/.test(n)) return "imagen";
+  if (m.startsWith("video/") || /\.(mp4|mov|webm|mkv|3gp)$/.test(n)) return "video";
+  if (m.startsWith("audio/") || /\.(mp3|m4a|ogg|opus|wav|aac)$/.test(n)) return "audio";
+  return "archivo";
+}
+function sugerenciasCompartido(c) {
+  const k = c.tipo === "archivo" ? clasePorMime(c) : null;
+  if (k === "video" || esYoutube(c.url) || esRedVideo(c.url)) return ["Analizá este video: gancho, ritmo, texto en pantalla y cómo mejorarlo", "Resumime el video en cinco puntos", "Proponé tres videos parecidos para mi cuenta"];
+  if (k === "audio") return ["Escuchá este audio y resumime qué dice", "Armame una respuesta para este audio"];
+  if (k === "imagen") return ["Escribí el texto para publicar esta imagen en redes", "Guardala en la carpeta del equipo con un nombre claro"];
+  if (k === "archivo") return ["Leé este archivo y resumime lo importante", "Revisalo y decime qué hay que corregir"];
+  if (c.tipo === "enlace") return ["Leé este enlace y resumime lo importante", "¿Nos sirve? Decime pros y contras"];
+  return ["Leé esto y decime qué hacemos", "Armame una respuesta para esto"];
+}
+function pintarCompartido() {
+  const el = $("#cp");
+  if (!el) return;
+  const c = S.compartido;
+  const cab = (t, p) => html`<header class="pag-h"><div class="tt"><span class="micro">Compartido desde el celular</span><h1>${t}</h1>${p ? html`<p>${p}</p>` : ""}</div></header>`;
+  if (!c) { pintar(el, html`${cab("Compartido")}<div class="carga">Cargando…</div>`); return; }
+  if (c.error) { pintar(el, html`${cab("Compartido")}<div class="vacio-p" style="margin-top:16px"><b>No se encontró</b><span>${c.error}</span><a class="btn out sm" href="#/mensajes">Ir a Mensajes</a></div>`); return; }
+  if (el.contains(document.activeElement) && document.activeElement.matches("textarea,select")) return;
+  // Si se repinta (llegó un evento), se conserva lo que ya elegiste o escribiste.
+  const fv = $("#cp form[data-f=compartir]");
+  const antes = fv && fv.dataset.id === c.id ? { botId: fv.botId?.value, texto: fv.texto?.value } : null;
+  const k = c.tipo === "archivo" ? clasePorMime(c) : c.tipo;
+  const titulo = { imagen: "Una imagen", video: "Un video", audio: "Un audio", archivo: "Un archivo", enlace: esYoutube(c.url) || esRedVideo(c.url) ? "Un video" : "Un enlace", texto: "Un texto" }[k] || "Compartido";
+  const url = c.ruta ? `/api/computadora/archivo?ruta=${encodeURIComponent(c.ruta)}` : "";
+  let media = "";
+  if (k === "imagen") media = html`<img class="cp-media" src="${url}" alt="${c.nombre || "Imagen compartida"}">`;
+  else if (k === "video") media = html`<video class="cp-media" src="${url}" controls preload="metadata" playsinline aria-label="${c.nombre || "Video compartido"}"></video>`;
+  else if (k === "audio") media = html`<audio class="cp-media" src="${url}" controls preload="metadata" aria-label="${c.nombre || "Audio compartido"}"></audio>`;
+  let host = "";
+  try { host = c.url ? new URL(c.url).hostname.replace(/^www\./, "") : ""; } catch {}
+  const info = c.tipo === "archivo"
+    ? html`<div class="cp-info"><span class="gl" aria-hidden="true">${ico({ imagen: "image", video: "play", audio: "audio" }[k] || "file")}</span><span><b>${c.nombre || c.ruta}</b><small>${[c.mime, c.tamano != null ? tamano(c.tamano) : "", diaHora(c.creado)].filter(Boolean).join(" · ")}</small></span><a class="btn out sm" href="${url}&descargar=1" download>${ico("download", "s")}<span class="t">Bajar</span></a></div>`
+    : c.tipo === "enlace" ? html`<div class="cp-info"><span class="gl" aria-hidden="true">${esYoutube(c.url) || esRedVideo(c.url) ? glifo("video") : ico("link")}</span><span><b>${esYoutube(c.url) ? "Video de YouTube" : host || "Enlace"}</b><small><a class="lnk" href="${/^https?:\/\//i.test(c.url) ? c.url : "#"}" target="_blank" rel="noopener noreferrer">${c.url}</a></small></span></div>`
+    : html`<div class="cp-info"><span class="gl" aria-hidden="true">${ico("file")}</span><span><b>Texto</b><small>${plural((c.texto || "").length, "carácter", "caracteres")} · ${diaHora(c.creado)}</small></span></div>`;
+  const texto = c.texto && c.texto !== c.url ? html`<div class="cp-txt">${c.texto}</div>` : "";
+  const sugs = sugerenciasCompartido(c);
+  const bots = [...S.bots].sort((a, b) => (b.cargo === "manager") - (a.cargo === "manager") || porNombre(a, b));
+  const ultimo = antes?.botId || leerLocal("gravity-cp-bot");
+  const elegido = bot(ultimo) ? ultimo : bots[0]?.id;
+  const ya = (c.enviadoA || []).map((id) => bot(id)?.nombre).filter(Boolean);
+  pintar(el, html`${cab(titulo, "Elegí a qué compañero se lo pasás y, si querés, qué tiene que hacer.")}
+    <div class="cp-prev" style="margin-top:16px">${media}${info}${texto}</div>
+    ${bots.length ? html`<form class="cp-form" data-f="compartir" data-id="${c.id}">
+      <label class="fld"><span>¿Para quién?</span><select class="inp" name="botId" data-c="cp-bot" data-k="cp-bot" required>${bots.map((b) => html`<option value="${b.id}" ${si(b.id === elegido, "selected")}>${b.nombre} · ${b.titulo}</option>`)}</select></label>
+      <label class="fld"><span>¿Qué querés que haga? <span class="muted">(opcional)</span></span><textarea class="inp" name="texto" rows="3" maxlength="8000" data-k="cp-texto" placeholder="${sugs[0]}">${antes?.texto || ""}</textarea></label>
+      <div class="sug" role="group" aria-label="Sugerencias">${sugs.map((x) => html`<button type="button" class="chip" data-a="cp-sug" data-t="${x}">${x}</button>`)}</div>
+      ${ya.length ? html`<p class="mhint">${ico("check", "s")}<span>Ya se lo pasaste a ${listaY(ya)}.</span></p>` : ""}
+      <p class="err" role="alert"></p>
+      <div class="acts" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><a class="btn ghost" href="#/mensajes">Ahora no</a><button class="btn pri" id="cp-ok">${ico("send", "s")}<span>Mandar a ${bot(elegido)?.nombre || "tu compañero"}</span></button></div>
+    </form>` : html`<div class="vacio-p" style="margin-top:16px"><b>Primero sumá un compañero</b><span>Lo compartido queda guardado: volvé acá cuando tengas a alguien.</span><button class="btn pri sm" data-a="nuevo-bot">${ico("plus", "s")}Nuevo compañero</button></div>`}`);
+}
+
 // ================================================================ ajustes
 function pintarAjustes() {
   const el = $("#aj");
@@ -2960,6 +3351,7 @@ function abrirCrearEquipo() {
     <div class="dlg-hd"><div><span class="micro">Nueva órbita</span><h2 id="dlg-t">Crear equipo</h2><p class="lead">Un manager que reparte el trabajo y los puestos que lo hacen. Elegí uno y en el paso siguiente ajustás cuántos de cada puesto.</p></div>${btnCerrar()}</div>
     <div class="eqts">${tpls.map((t) => html`<button type="button" class="eqt" data-a="ce-elegir" data-id="${t.id}"><span class="gl" aria-hidden="true">${glifo(t.icono)}</span><b>${t.nombre}<small>${plural(t.total, "compañero", "compañeros")}</small></b><p>${t.resumen}</p><span class="comp-l">${composicion(t)}</span></button>`)}</div>
   </section>`);
+  dlg().classList.add("alto");
 }
 function abrirEquipoPaso2(id) {
   const t = S.plantillasEquipo.find((x) => x.id === id);
@@ -3034,19 +3426,19 @@ const nombreIcono = (n) => NOMBRE_ICONO[n] || n.charAt(0).toUpperCase() + n.slic
 function abrirNuevoBot(plantilla = null) {
   if (lugaresLibres() < 1) return toast(`Llegaste al máximo de ${S.limites.maxBots} compañeros.`, "err");
   if (plantilla) return abrirFormBot(plantilla);
-  const nCat = new Set(S.plantillas.map((p) => p.categoria)).size;
   abrirDialogo(html`<section class="dlg-f" aria-labelledby="dlg-t">
     <div class="dlg-hd"><div><span class="micro">Nuevo compañero</span><h2 id="dlg-t">Elegí un puesto</h2><p class="lead">${S.plantillas.length} puestos listos para trabajar. Después le cambiás el nombre, el puesto o lo que hace.</p></div>${btnCerrar()}</div>
     <div class="cat-top">
-      <label class="field">${ico("search", "s")}<input type="search" placeholder="Buscar: ventas, contable, videos…" aria-label="Buscar un puesto" aria-controls="nb-lista" data-i="nb-buscar" data-k="nb-buscar" autocomplete="off" enterkeyhint="search" value="${NB.q}"></label>
+      <label class="field">${ico("search", "s")}<input type="search" placeholder="Buscar: ventas, contable, videos…" aria-label="Buscar un puesto" aria-controls="nb-lista" data-i="nb-buscar" data-k="nb-buscar" autocomplete="off" enterkeyhint="search" value="${NB.q}" autofocus></label>
       <div class="cat-chips" role="group" aria-label="Filtrar por categoría">${[["", "Todos"], ...S.categorias.map((c) => [c, c])].map(([k, t]) => html`<button type="button" class="chip" data-a="nb-cat" data-v="${k}" aria-pressed="${NB.cat === k}">${t}</button>`)}</div>
-      <p class="cat-n" id="nb-n" role="status" aria-live="polite">${plural(S.plantillas.length, "puesto", "puestos")} en ${plural(nCat, "categoría", "categorías")}</p>
+      <p class="cat-n" id="nb-n" role="status" aria-live="polite"></p>
     </div>
     <div id="nb-lista"></div>
   </section>`);
-  pintarCatalogo(false);
+  dlg().classList.add("alto");
+  pintarCatalogo();
 }
-function pintarCatalogo(anunciar = true) {
+function pintarCatalogo() {
   const el = $("#nb-lista");
   if (!el) return;
   const q = norm(NB.q.trim());
@@ -3062,7 +3454,7 @@ function pintarCatalogo(anunciar = true) {
   else if (!q && !NB.cat) cuerpo = S.categorias.filter((c) => xs.some((p) => p.categoria === c)).map((c) => html`<section class="pst-g" aria-label="${c}"><h3>${c}</h3><div class="psts">${xs.filter((p) => p.categoria === c).map(tarjeta)}</div></section>`);
   else cuerpo = html`<div class="psts">${xs.map(tarjeta)}</div>`;
   pintar(el, html`${cuerpo}${cero}`);
-  if (anunciar) $("#nb-n").textContent = q || NB.cat ? `${plural(xs.length, "puesto", "puestos")}${NB.cat ? ` en ${NB.cat}` : ""}` : `${plural(S.plantillas.length, "puesto", "puestos")} en ${plural(S.categorias.length, "categoría", "categorías")}`;
+  $("#nb-n").textContent = q || NB.cat ? `${plural(xs.length, "puesto", "puestos")}${NB.cat ? ` en ${NB.cat}` : ""}` : `${plural(S.plantillas.length, "puesto", "puestos")} en ${plural(S.categorias.length, "categoría", "categorías")}`;
 }
 function pickerIconos(actual, prev = "nb-ico") {
   const xs = (S.iconos || []).filter(hayGlifo);
@@ -3078,7 +3470,7 @@ function abrirFormBot(p = null) {
     <div class="dlg-hd"><div><span class="micro">Nuevo compañero</span><h2 id="dlg-t">${p ? `Sumá a ${nombre}` : "Sumá a alguien"}</h2></div>${btnCerrar()}</div>
     ${p ? html`<div class="elegido"><span class="gl" aria-hidden="true">${glifo(p.icono)}</span><span><b>${p.titulo}</b><small>${p.categoria}</small></span><button type="button" class="btn ghost sm" data-a="nb-volver">Otro puesto</button></div>`
       : html`<button type="button" class="btn ghost sm vuelta" data-a="nb-volver">${ico("left", "s")}Ver los puestos</button>`}
-    <div class="g2"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="40" value="${nombre}" ${si(!p, "autofocus")}></label><label class="fld"><span>Puesto</span><input class="inp" name="titulo" required maxlength="80" value="${p?.titulo || ""}"></label></div>
+    <div class="g2"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="40" value="${nombre}" autofocus></label><label class="fld"><span>Puesto</span><input class="inp" name="titulo" required maxlength="80" value="${p?.titulo || ""}"></label></div>
     <label class="fld"><span>Qué hace</span><textarea class="inp" name="descripcion" required maxlength="4000" rows="${p ? 5 : 4}" placeholder="Qué hace, cómo y qué entrega.">${p?.descripcion || ""}</textarea><small>Es lo que el compañero lee para saber su trabajo: ajustalo a tu negocio.</small></label>
     <details class="mas"><summary>${ico("right", "s")}Ícono <span id="nb-ico">${prevIcono(p?.icono)}</span></summary><div><fieldset class="fld"><legend class="sr">Ícono del compañero</legend>${pickerIconos(p?.icono || null, "nb-ico")}</fieldset></div></details>
     <div class="g2"><fieldset class="fld"><legend>Cargo</legend><div class="segc"><label><input type="radio" name="cargo" value="miembro" checked>Miembro</label><label><input type="radio" name="cargo" value="manager">Manager</label></div></fieldset>
@@ -3146,7 +3538,8 @@ function abrirBotsConexion(id) {
 }
 function abrirMas() {
   const g = S.gasto || {};
-  const xs = [["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const vivas = reunionesVivas().length;
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -3154,7 +3547,7 @@ const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = tex
 // ================================================================ acciones (delegación de eventos)
 const A = {
   "crear-equipo": () => abrirCrearEquipo(),
-  "nuevo-bot": () => abrirNuevoBot(),
+  "nuevo-bot": () => { NB.q = ""; NB.cat = ""; abrirNuevoBot(); },
   "sumar-plantilla": (t) => abrirNuevoBot(S.plantillas.find((p) => p.id === t.dataset.id)),
   "ver-puestos": () => { NB.q = ""; NB.cat = ""; abrirNuevoBot(); },
   "nb-cat": (t) => { NB.cat = t.dataset.v; for (const c of $$("[data-a=nb-cat]")) c.setAttribute("aria-pressed", String(c.dataset.v === NB.cat)); pintarCatalogo(); $("#nb-lista")?.closest(".dlg-f")?.scrollTo({ top: 0 }); },
@@ -3222,6 +3615,29 @@ const A = {
   "aceptar-reunion": (t) => conCarga(t, async () => { const r = await api("POST", `/api/reuniones/${S.reunion.id}/aceptar`, {}); toast(`Se repartieron ${plural(r.tareas?.length ?? 0, "tarea", "tareas")}.`); S.reunion.accionesPropuestas = false; pintarSala(); }),
   mencion: (t) => { const ta = $("#mta"); if (!ta) return; const m = `@${t.dataset.n} `; if (!ta.value.includes(m)) ta.value = `${m}${ta.value}`; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); autoAlto(ta); },
   "cx-recargar": () => { S.conexiones = undefined; pintarConexiones(); cargarConexiones(); },
+  "msj-apps": () => abrirAppsMsj(),
+  "msj-config": () => abrirConfigChat(),
+  "msj-borrar": async (t) => {
+    const c = S.chats?.find((x) => x.id === t.dataset.id) || S.chat;
+    if (!c) return;
+    if (await confirmar(`¿Borrar «${c.conversacion || "la conversación"}»?`, "Se borra lo guardado en Gravity (en el celular no cambia nada). Si vuelve a llegar un mensaje, aparece de nuevo sin asignar.", "Borrar", true)) await conCarga(null, async () => {
+      await api("DELETE", apiChat(c.id));
+      S.chats = (S.chats || []).filter((x) => x.id !== c.id);
+      S.chat = null;
+      toast("Conversación borrada.");
+      ir("#/mensajes");
+      programar("rail", "msj");
+    });
+  },
+  "msj-devolver": (t) => conCarga(t, async () => {
+    const c = S.chats?.find((x) => x.id === t.dataset.id) || S.chat;
+    await api("PUT", apiChat(c.id), { botId: c.botId, modo: c.modo, firmar: c.firmar });
+    S.cfgSucio = null;
+    cerrarDialogo();
+    toast(`${bot(c.botId)?.nombre || "Tu compañero"} sigue con la conversación.`);
+    await Promise.all([cargarChat(c.id), cargarMensajeria(true)]);
+  }),
+  "cp-sug": (t) => { const ta = t.closest("form")?.texto; if (!ta) return; ta.value = t.dataset.t; ta.focus(); },
   "cx-nueva": (t) => abrirConectar(t.dataset.tipo),
   "cx-bots": (t) => abrirBotsConexion(t.dataset.id),
   "cx-probar": (t) => conCarga(t, async () => { const r = await api("POST", `/api/conexiones/${t.dataset.id}/probar`, {}); toast(r.mensaje || (r.ok ? "Funciona." : "No respondió."), r.ok ? "" : "err"); cargarConexiones(); }),
@@ -3380,6 +3796,57 @@ const F = {
     try { const r = await api("POST", `/api/reuniones/${S.reunion.id}/mensajes`, { texto }); S.feedPegado = true; S.reunion = r; pintarSala(); }
     catch (err) { ta.value = texto; fallo(err); }
   },
+  async "msj-config"(f) {
+    const id = f.dataset.id;
+    const d = new FormData(f);
+    const modo = d.get("modo"), botId = d.get("botId") || null;
+    const err = f.querySelector(".err");
+    const auto = modo === "atender" || modo === "charlar";
+    if (auto && !botId) { err.textContent = `Elegí un compañero para ${modo === "atender" ? "atender" : "charlar"}.`; return; }
+    const cuerpo = { botId: modo === "apagado" ? null : botId, modo, firmar: f.firmar ? f.firmar.checked : true };
+    if (auto) {
+      cuerpo.hasta = horaAIso(d.get("hasta"));
+      const tope = Math.round(Number(d.get("maxPorHora")));
+      if (tope && (tope < 1 || tope > 60)) { err.textContent = "El tope por hora va de 1 a 60."; return; }
+      cuerpo.maxPorHora = tope && tope !== TOPE_MODO[modo] ? tope : null;
+    }
+    const boton = f.querySelector("button:not([type=button])");
+    boton.setAttribute("aria-busy", "true");
+    try {
+      await api("PUT", apiChat(id), cuerpo);
+      S.cfgSucio = null;
+      err.textContent = "";
+      if (f.closest("dialog")) cerrarDialogo();
+      document.activeElement?.blur?.();
+      const b = bot(botId);
+      toast(modo === "apagado" ? "Conversación apagada." : b ? `${b.nombre} ${VERBO_MODO[modo]} esta conversación.` : "Guardado: solo se guardan los mensajes.");
+      await Promise.all([cargarChat(id), cargarMensajeria(true)]);
+    } catch (e) { err.textContent = e.message; } finally { boton.removeAttribute("aria-busy"); }
+  },
+  async "msj-escribir"(f) {
+    const ta = $("#xta"), id = f.dataset.id;
+    const texto = ta.value.trim();
+    if (!texto) return;
+    ta.value = ""; S.msjBorrador[id] = ""; autoAlto(ta);
+    S.msjPegado = true;
+    try { await api("POST", apiChat(id, "/escribir"), { texto }); await cargarChat(id); }
+    catch (err) { ta.value = texto; S.msjBorrador[id] = texto; fallo(err); }
+  },
+  async compartir(f) {
+    const d = new FormData(f);
+    const botId = d.get("botId"), texto = String(d.get("texto") || "").trim();
+    const b = bot(botId);
+    if (!b) return;
+    const boton = $("#cp-ok");
+    boton.setAttribute("aria-busy", "true");
+    try {
+      await api("POST", `/api/compartido/${encodeURIComponent(f.dataset.id)}/enviar`, texto ? { botId, texto } : { botId });
+      guardarLocal("gravity-cp-bot", botId);
+      S.compartidos = null;
+      toast(`Se lo pasaste a ${b.nombre}.`);
+      ir(`#/chats/${botId}`);
+    } catch (err) { f.querySelector(".err").textContent = err.message; } finally { boton.removeAttribute("aria-busy"); }
+  },
   async conectar(f) {
     const tipo = f.dataset.tipo;
     const t = S.conexiones.tipos.find((x) => x.tipo === tipo);
@@ -3416,12 +3883,28 @@ const C = {
   "rut-tipo": (t) => { const f = t.form, v = t.value; $(".h-dia", f).hidden = v !== "semanal"; $(".h-hora", f).hidden = v === "intervalo"; $(".h-min", f).hidden = v !== "intervalo"; },
   "rut-reu": (t) => { const f = t.form; $(".rut-reu", f).hidden = !t.checked; $(".rut-lbl", f).textContent = t.checked ? "Agenda" : "Instrucciones"; },
   tema: (t) => { guardarLocal("gravity-tema", t.value); aplicarTema(); },
+  "msj-activa": async (t) => { try { S.msjEstado = await api("PUT", "/api/mensajeria/estado", { activa: t.checked }); toast(t.checked ? "Gravity vuelve a escuchar los mensajes." : "Gravity dejó de escuchar los mensajes."); } catch (err) { t.checked = !t.checked; fallo(err); } pintarAppsAbiertas(); },
+  "msj-app": async (t) => { try { S.msjEstado = await api("PUT", "/api/mensajeria/apps", { paquete: t.dataset.paquete, activa: t.checked }); } catch (err) { t.checked = !t.checked; fallo(err); } pintarAppsAbiertas(); },
+  "msj-modo": (t) => {
+    const f = t.form, m = t.value, auto = m === "atender" || m === "charlar";
+    for (const x of $$(".cfg-auto", f)) x.hidden = !auto;
+    $(".cfg-firma", f).hidden = m === "apagado";
+    // El tope por defecto cambia con el modo (si no lo tocaste).
+    const tope = f.maxPorHora;
+    if (tope && Object.values(TOPE_MODO).includes(Number(tope.value)) && TOPE_MODO[m]) tope.value = TOPE_MODO[m];
+    if (m === "charlar" && !f.hasta.value) f.hasta.value = hhmm(new Date(Date.now() + 2 * 3600e3));
+    if (auto && !f.botId.value) f.querySelector(".err").textContent = "Elegí también el compañero.";
+    else f.querySelector(".err").textContent = "";
+  },
+  "msj-bot": (t) => { const f = t.form; if (t.value) f.querySelector(".err").textContent = ""; const sm = $(".cfg-firma small", f); if (sm) sm.textContent = `Salen como «${bot(t.value)?.nombre || "Nombre"} (asistente IA): …», para que nadie crea que escribiste vos.`; },
+  "cp-bot": (t) => { const s_ = $("#cp-ok span"); if (s_) s_.textContent = `Mandar a ${bot(t.value)?.nombre || "tu compañero"}`; },
 };
 const I = {
   buscar: (t) => { S.busqueda = t.value; pintar($("#side-lista"), htmlLista()); },
   "eq-buscar": (t) => { S.eqBusqueda = t.value; pintarEquipo(); },
   ta: (t) => { S.borrador[S.botId] = t.value; autoAlto(t); },
   mta: (t) => autoAlto(t),
+  xta: (t) => { S.msjBorrador[S.chatId] = t.value; autoAlto(t); },
   "ce-cant": (t) => { if (t.value !== "") cambiarCant(+t.dataset.n, t.value, true); },
   "nb-buscar": (t) => { NB.q = t.value; pintarCatalogo(); },
   "ce-prev": () => pintarPrevEquipo(),
@@ -3438,6 +3921,8 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("change", (e) => { const t = e.target.closest("[data-c]"); if (t && C[t.dataset.c]) intentar(C[t.dataset.c])(t, e); });
 document.addEventListener("input", (e) => { const t = e.target.closest("[data-i]"); if (t && I[t.dataset.i]) I[t.dataset.i](t, e); });
+// Formulario de asignación de una conversación con cambios sin guardar.
+for (const ev of ["input", "change"]) document.addEventListener(ev, (e) => { const f = e.target.closest?.("#msj-ctx form[data-f=msj-config]"); if (f) S.cfgSucio = f.dataset.id; });
 document.addEventListener("submit", (e) => { const f = e.target.closest("form[data-f]"); if (!f) return; e.preventDefault(); if (F[f.dataset.f]) intentar(F[f.dataset.f])(f, e); });
 document.addEventListener("toggle", (e) => {
   const d = e.target;
@@ -3446,7 +3931,7 @@ document.addEventListener("toggle", (e) => {
 }, true);
 document.addEventListener("keydown", (e) => {
   const t = e.target;
-  if ((t.id === "ta" || t.id === "mta") && e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); t.form.requestSubmit(); return; }
+  if ((t.id === "ta" || t.id === "mta" || t.id === "xta") && e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); t.form.requestSubmit(); return; }
   if (e.key === "/" && !e.ctrlKey && !e.metaKey && !t.closest("input,textarea,select,[contenteditable]") && !dlg().open) {
     const q = $("#buscar") || $("[data-k=eq-buscar]");
     if (q && q.offsetParent) { e.preventDefault(); q.focus(); q.select(); }
@@ -3481,6 +3966,9 @@ function repintar() {
   if ((v === "equipo" || v === "aprobaciones") && p.has("bandeja")) pintarBandejas();
   if (v === "reuniones" && p.has("reuniones")) S.ruta.id ? pintarSala() : pintarReuniones();
   if (v === "ajustes" && p.has("ajustes")) pintarAjustes();
+  if (v === "mensajes" && p.has("msj")) { pintarMsjLista(); montarMsjChat(); }
+  else if (v === "mensajes" && p.has("msj-chat")) { pintarMsjLista(); pintarMsjChat(); }
+  if (v === "compartido" && p.has("compartido")) pintarCompartido();
 }
 
 // ================================================================ datos y eventos en vivo
@@ -3552,7 +4040,7 @@ function conectar() {
   const es = new EventSource("/api/eventos");
   const datos = (e) => { try { return JSON.parse(e.data); } catch { return {}; } };
   const on = (tipo, fn) => es.addEventListener(tipo, (e) => { try { fn(datos(e)); } catch (err) { console.warn(err); } });
-  es.addEventListener("open", () => { S.stream = {}; S.corte = {}; recargarPronto(); if (S.botId && S.ruta.vista === "chats" && S.pestana === "chat") cargarConv(S.botId); });
+  es.addEventListener("open", () => { S.stream = {}; S.corte = {}; recargarPronto(); cargarMensajeria(true); if (S.chatId && S.ruta.vista === "mensajes") cargarChat(S.chatId); if (S.botId && S.ruta.vista === "chats" && S.pestana === "chat") cargarConv(S.botId); });
   es.addEventListener("error", () => { if (es.readyState === EventSource.CLOSED) setTimeout(conectar, 3000); });
   on("estado", (d) => {
     const b = bot(d.botId);
@@ -3608,6 +4096,27 @@ function conectar() {
   on("gasto", (g) => { S.gasto = g; programar("rail", "avisos", "ajustes"); });
   on("cupo", (c) => { S.cupo = c; programar("avisos"); });
   on("conexiones", () => { if (S.ruta.vista === "conexiones") cargarConexiones(); });
+  // Mensajería: lista y conversación abierta al día; las derivaciones avisan en naranja.
+  let tMsj = null;
+  const tChat = new Map();
+  const recargarMsj = () => { clearTimeout(tMsj); tMsj = setTimeout(() => cargarMensajeria(true), 250); };
+  const recargarChat = (id) => { if (!id || id !== S.chatId || S.ruta.vista !== "mensajes") return; clearTimeout(tChat.get(id)); tChat.set(id, setTimeout(() => cargarChat(id), 200)); };
+  on("mensajeria", (d) => {
+    recargarMsj();
+    if (d.motivo === "borrada" && d.id === S.chatId && S.ruta.vista === "mensajes") { S.chat = null; toast("Esa conversación se borró."); ir("#/mensajes"); return; }
+    if (d.motivo !== "leido") recargarChat(d.id);
+  });
+  on("mensajeria-apps", (e) => { S.msjEstado = e; pintarAppsAbiertas(); });
+  on("mensajeria-saliente", (d) => { recargarChat(d.chatId); if (d.estado === "error" && d.chatId === S.chatId && S.ruta.vista === "mensajes" && d.error) toast(`No salió el mensaje: ${d.error}`, "err"); });
+  on("mensajeria-derivada", (d) => {
+    const quien = bot(d.botId)?.nombre || "Tu compañero";
+    const texto = `${quien} te pasa la charla con ${d.conversacion || "una conversación"}: ${minus1(d.motivo || "").replace(/\.$/, "")}`;
+    toast(texto, "sig", { href: rutaChat(d.id), texto: "Ver" });
+    notificar(`${quien} te pasa una charla`, `${d.appNombre ? `${d.appNombre} · ` : ""}${d.conversacion}: ${d.motivo}`, `gravity-deriv-${d.id}`);
+    recargarMsj();
+    recargarChat(d.id);
+  });
+  on("compartido", () => { if (S.compartidos !== null || S.ruta.vista === "mensajes") cargarCompartidos(); });
 }
 
 // relojes
@@ -3627,7 +4136,7 @@ let anchoAntes = angosto();
 window.addEventListener("resize", () => { const a = angosto(); if (a !== anchoAntes) { anchoAntes = a; if (S.ruta.vista === "chats") navegar(); } });
 
 (async () => {
-  try { await cargarEstado(); }
+  try { await cargarEstado(); cargarMensajeria(true); }
   catch (err) { $("#vista").innerHTML = html`<div class="hola"><div class="hola-in"><h1>No se pudo cargar Gravity</h1><p>${err.message}</p><button class="btn pri" onclick="location.reload()">Reintentar</button></div></div>`.s; }
   conectar();
 })();
