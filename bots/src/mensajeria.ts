@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
-import { COMPUTADORA, DATOS, agregarNota, ahora, buscarBot, nuevoId, programarEscritura, subarbol, type Bot } from "./almacen.ts";
+import { COMPUTADORA, DATOS, agregarNota, ahora, ajustes, buscarBot, crearBot, listarBots, nuevoId, programarEscritura, subarbol, type Bot } from "./almacen.ts";
+import { PLANTILLAS } from "./plantillas.ts";
 import { externo } from "./conexiones.ts";
 import { emitir } from "./eventos.ts";
 
@@ -330,6 +331,23 @@ function nuevoChat(d: Entrante): Chat {
   return c;
 }
 
+/** El compañero que contesta solo los mensajes: el de atención al cliente si hay, si no el primero; si no hay ninguno, se crea. */
+function botDeMensajes(): Bot {
+  const bots = listarBots();
+  const atencion = bots.find((b) => /atenci|cliente|ventas/i.test(b.titulo)) ?? bots[0];
+  if (atencion) return atencion;
+  const p = PLANTILLAS.find((x) => /atenci/i.test(x.titulo)) ?? PLANTILLAS[0]!;
+  const bot = crearBot({ nombre: p.nombre, titulo: p.titulo, descripcion: p.descripcion, icono: p.icono ?? null, puedeEnviarAfuera: true });
+  emitir("bots");
+  return bot;
+}
+
+/** Respuesta automática: chats de a dos en "atender"; grupos en "charlar" (participa cuando aporta, con tope por hora). */
+function asignarSolo(c: Chat): void {
+  if (!ajustes().autoResponder || c.botId || c.modo !== "leer") return;
+  Object.assign(c, { botId: botDeMensajes().id, modo: c.esGrupo ? "charlar" : "atender", hasta: null, presentarse: false });
+}
+
 export function recibir(d: Entrante): { ok: true; nuevos: number; ignorado?: string } {
   if (!estado.activa) return { ok: true, nuevos: 0, ignorado: "La mensajería está apagada." };
   const app = estado.apps.find((a) => a.paquete === d.app);
@@ -339,6 +357,7 @@ export function recibir(d: Entrante): { ok: true; nuevos: number; ignorado?: str
   if (c?.modo === "apagado") return { ok: true, nuevos: 0, ignorado: "Esa conversación está apagada." };
   c ??= nuevoChat(d);
   Object.assign(c, { appNombre: d.appNombre || app.nombre, conversacion: d.conversacion || c.conversacion, esGrupo: d.esGrupo, puedeResponder: d.puedeResponder });
+  asignarSolo(c);
 
   const nuevos: Mensaje[] = [];
   for (const m of [...d.mensajes].sort((a, b) => a.hora - b.hora)) {

@@ -525,6 +525,8 @@ function rutaEnComputadora(ruta: string): string | null {
 const recortar = (s: string, n = 4000) => (s.length > n ? `${s.slice(0, n)}\n… (${s.length - n} caracteres más)` : s);
 
 export function necesitaAprobacion(nombre: string, entrada: Record<string, unknown>, bot: Bot): PedidoAprobacion | null {
+  // El usuario eligió que todo se apruebe solo (Ajustes). Los topes por hora de mensajería siguen valiendo.
+  if (ajustes().autoAprobar) return null;
   if (nombre === "bash") {
     const comando = String(entrada.command ?? "");
     if (!comando.trim()) return null; // solo reinicia la terminal

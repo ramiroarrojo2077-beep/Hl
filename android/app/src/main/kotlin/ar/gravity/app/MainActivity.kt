@@ -519,16 +519,23 @@ class MainActivity : Activity() {
     private fun sinRestriccionDeBateria(): Boolean =
         getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
 
-    /** Una sola vez: sin esto, Android duerme al motor con la pantalla apagada. */
+    /**
+     * Permisos sin pasos de más, una vez cada uno: primero el diálogo del sistema para trabajar con la
+     * pantalla apagada y, al volver, la pantalla de acceso a notificaciones (para contestar WhatsApp y
+     * redes solo). Android no deja darle este último permiso a una app sin que lo actives vos.
+     */
     private fun ofrecerBateria() {
-        if (isFinishing || isDestroyed || sinRestriccionDeBateria() || preferencias.getBoolean("ofrecio_bateria", false)) return
-        preferencias.edit().putBoolean("ofrecio_bateria", true).apply()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.bateria_titulo)
-            .setMessage(R.string.bateria_explicacion)
-            .setPositiveButton(R.string.bateria_permitir) { _, _ -> pedirSinRestriccion() }
-            .setNegativeButton(R.string.ahora_no, null)
-            .show()
+        if (isFinishing || isDestroyed || panelClave.visibility == View.VISIBLE) return
+        if (!sinRestriccionDeBateria() && !preferencias.getBoolean("ofrecio_bateria", false)) {
+            preferencias.edit().putBoolean("ofrecio_bateria", true).apply()
+            pedirSinRestriccion()
+            return
+        }
+        if (!accesoNotificaciones() && !preferencias.getBoolean("abrio_escucha", false)) {
+            preferencias.edit().putBoolean("abrio_escucha", true).apply()
+            avisar(getString(R.string.mensajeria_activar_aviso))
+            abrirAjustesNotificaciones()
+        }
     }
 
     // ---------------------------------------------------------------- Leer WhatsApp y redes
@@ -736,6 +743,8 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        // Al volver del diálogo de batería sigue con el acceso a notificaciones.
+        if (cargada) principal.postDelayed({ ofrecerBateria() }, 800)
         Gravity.marcarVisible(this, true)
         if (rendererCaido) return
         web.onResume()

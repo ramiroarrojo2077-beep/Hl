@@ -108,6 +108,10 @@ export interface Ajustes {
   // Dólares extra permitidos para un día puntual ("Seguir hoy hasta…").
   extra: { dia: string; usd: number } | null;
   claveHash: string | null;
+  // Sin pedir permiso: los compañeros ejecutan, escriben y mandan sin esperar tu aprobación.
+  autoAprobar: boolean;
+  // Cada conversación nueva de WhatsApp o redes la atiende sola un compañero, sin asignar nada.
+  autoResponder: boolean;
 }
 
 export interface Nota {
@@ -290,6 +294,9 @@ const AJUSTES_INICIALES: Ajustes = {
   pausa: false,
   extra: null,
   claveHash: null,
+  // Apagado de fábrica: se prende en Ajustes > Automático.
+  autoAprobar: process.env.BOTS_AUTO_APROBAR === "1",
+  autoResponder: process.env.BOTS_AUTO_RESPONDER !== "0",
 };
 
 const estado: Estado = leerJson(ESTADO, {} as Estado);

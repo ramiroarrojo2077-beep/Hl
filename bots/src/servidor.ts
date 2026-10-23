@@ -746,7 +746,7 @@ ruta("DELETE", "/api/reglas/:id", async ({ params }) => {
 
 ruta("PUT", "/api/ajustes", async ({ cuerpo }) => {
   const d = validar(
-    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000) }).partial(),
+    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean() }).partial(),
     await cuerpo(),
   );
   const a = cambiarAjustes(d);
