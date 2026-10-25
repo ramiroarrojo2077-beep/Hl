@@ -33,7 +33,10 @@ const MAX_SALIENTES = 300;
 const MAX_COMPARTIDOS = 100;
 const CONTEXTO = 20;
 // Mensajes que llegan juntos se contestan en un solo turno: se espera este silencio (y como mucho el máximo).
-const AGRUPAR_MS = Number(process.env.GRAVITY_MSJ_AGRUPAR_MS ?? 4000);
+const AGRUPAR_MS = Number(process.env.GRAVITY_MSJ_AGRUPAR_MS ?? 1500);
+// Un saliente que no se pudo mandar porque la notificación ya no tenía "Responder" se reintenta con la
+// próxima notificación de esa conversación, hasta este tiempo.
+const REINTENTAR_MS = 15 * 60_000;
 const AGRUPAR_MAX_MS = 20_000;
 export const TOPE_ATENDER = 30;
 export const TOPE_CHARLAR = 12;
@@ -114,6 +117,7 @@ export interface Saliente {
   creado: string;
   tomado: string | null;
   terminado: string | null;
+  reintentos?: number;
   // Número del mensaje en la conversación, si la notificación ya lo mostró antes de la confirmación de la app.
   n?: number;
 }
@@ -256,6 +260,33 @@ const ordenar = (c: Chat) => c.mensajes.sort((a, b) => a.hora - b.hora || a.n - 
 
 export const salientesPendientes = () => salientes.filter((s) => s.estado === "pendiente");
 
+// La app espera los salientes con un pedido que queda abierto (sin sondear): se la despierta apenas hay uno.
+let despertadores: (() => void)[] = [];
+function despertarApp(): void {
+  const ds = despertadores;
+  despertadores = [];
+  for (const d of ds) d();
+}
+
+/** Lo que la app puede mandar ya: pendientes de conversaciones cuya última notificación tiene "Responder". */
+const entregables = () => salientesPendientes().filter((s) => buscarChat(s.clave)?.puedeResponder !== false);
+
+/** Espera hasta `ms` a que haya algo para mandar y lo entrega (vacío si no llegó nada). */
+export async function esperarSalientes(ms: number): Promise<{ id: string; clave: string; texto: string }[]> {
+  if (!entregables().length && ms > 0) {
+    await new Promise<void>((resolve) => {
+      const reloj = setTimeout(listo, ms);
+      function listo() {
+        clearTimeout(reloj);
+        despertadores = despertadores.filter((d) => d !== listo);
+        resolve();
+      }
+      despertadores.push(listo);
+    });
+  }
+  return tomarSalientes();
+}
+
 export function estadoMensajeria() {
   return { activa: estado.activa, apps: estado.apps, pendientes: salientesPendientes().length };
 }
@@ -345,7 +376,8 @@ function botDeMensajes(): Bot {
 /** Respuesta automática: chats de a dos en "atender"; grupos en "charlar" (participa cuando aporta, con tope por hora). */
 function asignarSolo(c: Chat): void {
   if (!ajustes().autoResponder || c.botId || c.modo !== "leer") return;
-  Object.assign(c, { botId: botDeMensajes().id, modo: c.esGrupo ? "charlar" : "atender", hasta: null, presentarse: false });
+  // En grupos habla como uno más, con un tope más alto que el de "charlar" a mano.
+  Object.assign(c, { botId: botDeMensajes().id, modo: c.esGrupo ? "charlar" : "atender", hasta: null, presentarse: false, maxPorHora: c.esGrupo ? 30 : null });
 }
 
 export function recibir(d: Entrante): { ok: true; nuevos: number; ignorado?: string } {
@@ -357,6 +389,8 @@ export function recibir(d: Entrante): { ok: true; nuevos: number; ignorado?: str
   if (c?.modo === "apagado") return { ok: true, nuevos: 0, ignorado: "Esa conversación está apagada." };
   c ??= nuevoChat(d);
   Object.assign(c, { appNombre: d.appNombre || app.nombre, conversacion: d.conversacion || c.conversacion, esGrupo: d.esGrupo, puedeResponder: d.puedeResponder });
+  // Llegó una notificación con "Responder": lo que quedó esperando para esta conversación ya puede salir.
+  if (d.puedeResponder && salientesPendientes().some((s) => s.clave === c!.clave)) despertarApp();
   asignarSolo(c);
 
   const nuevos: Mensaje[] = [];
@@ -500,7 +534,7 @@ export function turnoDeMensajeria(botId: string, ref: string): { texto: string; 
           `El usuario te pidió que te sumes a esta conversación${c.esGrupo ? " de grupo" : ""} de ${c.appNombre}${hasta}. Tus mensajes salen desde la cuenta del usuario.${firma}`,
           presentarse
             ? `Te acabás de sumar: presentate en un mensaje corto con \`mensajes\` (accion "enviar", clave «${c.clave}»): quién sos, que sos un asistente de IA del usuario y hasta cuándo vas a estar.`
-            : `Participá con \`mensajes\` (accion "enviar", clave «${c.clave}») solo cuando tengas algo que aportar: te nombran o te preguntan, o podés ayudar con un dato concreto. No contestes cada mensaje ni repitas lo que ya se dijo; si no hace falta hablar, no envíes nada.`,
+            : `Hablá en la conversación con \`mensajes\` (accion "enviar", clave «${c.clave}») como un integrante más: contestá saludos, preguntas, pedidos y lo que te digan a vos, opiná y sumá datos cuando el tema da para eso, y seguí la charla con naturalidad. Quedate callado solo con lo que no pide respuesta (stickers, "jaja", "ok", o una charla entre otros que no te incluye) y no repitas lo que ya se dijo.`,
           "Mensajes cortos y naturales, en el idioma y el tono de la conversación. Si te preguntan, decí que sos un asistente de IA del usuario: nunca te hagas pasar por él.",
           `Si te piden algo que tiene que decidir el usuario, usá \`mensajes\` (accion "derivar") con el motivo.`,
           ...comun,
@@ -528,6 +562,7 @@ function crearSaliente(c: Chat, texto: string, autor: string): Saliente {
   const s: Saliente = { id: `s_${nuevoId()}`, clave: c.clave, texto: texto.slice(0, 4000), autor, estado: "pendiente", error: null, creado: ahora(), tomado: null, terminado: null };
   salientes.push(s);
   guardarSalientes();
+  despertarApp();
   emitir("mensajeria-saliente", { id: s.id, clave: s.clave, chatId: c.id, estado: s.estado });
   avisar(c, "saliente");
   return s;
@@ -535,7 +570,7 @@ function crearSaliente(c: Chat, texto: string, autor: string): Saliente {
 
 /** Para la app: las respuestas aprobadas listas para mandar. Quedan "enviando" hasta que informe el resultado. */
 export function tomarSalientes(): { id: string; clave: string; texto: string }[] {
-  const listos = salientesPendientes();
+  const listos = entregables();
   for (const s of listos) Object.assign(s, { estado: "enviando", tomado: ahora() });
   if (listos.length) guardarSalientes();
   return listos.map(({ id, clave, texto }) => ({ id, clave, texto }));
@@ -572,6 +607,19 @@ function terminarSaliente(s: Saliente, ok: boolean, error: string | null): void 
 export function resultadoSaliente(id: string, ok: boolean, error: string | null): boolean {
   const s = salientes.find((x) => x.id === id);
   if (!s) return false;
+  // Sin "Responder" en la notificación (WhatsApp la cambió o la abriste): vuelve a la cola y sale con la
+  // próxima notificación de esa conversación, en vez de perderse.
+  const sinAccion = !ok && /responder|acci[oó]n|notificaci/i.test(error ?? "");
+  if (sinAccion && s.estado === "enviando" && Date.now() - Date.parse(s.creado) < REINTENTAR_MS && (s.reintentos ?? 0) < 5) {
+    Object.assign(s, { estado: "pendiente", reintentos: (s.reintentos ?? 0) + 1, tomado: null });
+    guardarSalientes();
+    const c = buscarChat(s.clave);
+    if (c) {
+      c.puedeResponder = false;
+      guardarChat(c);
+    }
+    return true;
+  }
   if (s.estado === "pendiente" || s.estado === "enviando") terminarSaliente(s, ok, error);
   return true;
 }

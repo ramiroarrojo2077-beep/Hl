@@ -41,7 +41,8 @@ class Escucha : NotificationListenerService() {
     /** Acción "Responder" de la última notificación de cada conversación (clave = "paquete|conversacion"). */
     private class Responder(val pendiente: PendingIntent, val entradas: Array<RemoteInput>)
 
-    private val acciones = LinkedHashMap<String, Responder>()
+    // La usan el hilo de las notificaciones y el de salientes.
+    private val acciones: MutableMap<String, Responder> = java.util.Collections.synchronizedMap(LinkedHashMap())
 
     /** Firmas (de|texto|hora) ya mandadas por conversación, para no repetir al actualizarse la notificación. */
     private val vistos = object : LinkedHashMap<String, LinkedHashSet<String>>() {
@@ -57,18 +58,28 @@ class Escucha : NotificationListenerService() {
 
     private lateinit var hilo: HandlerThread
     private lateinit var red: Handler
+    // Hilo aparte para esperar las respuestas: el pedido queda abierto hasta 25 s y no tiene que frenar
+    // el envío de los mensajes que llegan.
+    private lateinit var hiloSalida: HandlerThread
+    private lateinit var salida: Handler
+
+    @Volatile
     private var sondeoProgramado = false
 
     override fun onCreate() {
         super.onCreate()
         hilo = HandlerThread("escucha-red").apply { start() }
         red = Handler(hilo.looper)
+        hiloSalida = HandlerThread("escucha-salientes").apply { start() }
+        salida = Handler(hiloSalida.looper)
     }
 
     override fun onDestroy() {
         if (this::hilo.isInitialized) {
             red.removeCallbacksAndMessages(null)
             hilo.quitSafely()
+            salida.removeCallbacksAndMessages(null)
+            hiloSalida.quitSafely()
         }
         super.onDestroy()
     }
@@ -199,9 +210,11 @@ class Escucha : NotificationListenerService() {
             if (entradas.isEmpty()) continue
             val pendiente = accion.actionIntent ?: continue
             this.acciones[clave] = Responder(pendiente, entradas)
-            while (this.acciones.size > 100) {
-                val vieja = this.acciones.keys.iterator().next()
-                this.acciones.remove(vieja)
+            synchronized(this.acciones) {
+                while (this.acciones.size > 100) {
+                    val vieja = this.acciones.keys.iterator().next()
+                    this.acciones.remove(vieja)
+                }
             }
             return
         }
@@ -209,38 +222,43 @@ class Escucha : NotificationListenerService() {
 
     // ---------------------------------------------------------------- Salientes
 
-    /** Agenda una pasada de salientes y, mientras haya acciones guardadas, repite cada ~3 s. */
+    /**
+     * Mientras haya acciones de responder guardadas, deja un pedido abierto al motor: la respuesta de un
+     * compañero sale apenas está lista, sin esperar a la próxima vuelta de un sondeo.
+     */
     private fun sondearSalientes() {
         if (sondeoProgramado) return
         sondeoProgramado = true
-        red.post { bucleSalientes() }
+        salida.post { bucleSalientes() }
     }
 
     private fun bucleSalientes() {
         sondeoProgramado = false
         if (acciones.isEmpty() || !activa) return
-        procesarSalientes()
+        val bien = procesarSalientes()
         if (acciones.isNotEmpty()) {
             sondeoProgramado = true
-            red.postDelayed({ bucleSalientes() }, 3_000)
+            if (bien) salida.post { bucleSalientes() } else salida.postDelayed({ bucleSalientes() }, 2_000)
         }
     }
 
-    private fun procesarSalientes() {
-        val respuesta = MotorLocal.pedir(this, "GET", "/api/mensajeria/salientes") ?: return
-        if (!respuesta.ok) return
+    /** false si el motor no respondió (se reintenta en un rato). */
+    private fun procesarSalientes(): Boolean {
+        val respuesta = MotorLocal.pedir(this, "GET", "/api/mensajeria/salientes?esperar=25", esperaMs = 30_000) ?: return false
+        if (!respuesta.ok) return false
         val lista = try {
             JSONArray(respuesta.cuerpo)
         } catch (e: Exception) {
-            return
+            return false
         }
         for (i in 0 until lista.length()) {
-            val salida = lista.optJSONObject(i) ?: continue
-            val id = salida.optString("id").takeIf { it.isNotEmpty() } ?: continue
-            val clave = salida.optString("clave")
-            val texto = salida.optString("texto")
+            val item = lista.optJSONObject(i) ?: continue
+            val id = item.optString("id").takeIf { it.isNotEmpty() } ?: continue
+            val clave = item.optString("clave")
+            val texto = item.optString("texto")
             enviarRespuesta(id, clave, texto)
         }
+        return true
     }
 
     private fun enviarRespuesta(id: String, clave: String, texto: String) {

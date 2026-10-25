@@ -47,7 +47,7 @@ import {
 } from "./equipo.ts";
 import { conectarReuniones, convocar } from "./reuniones.ts";
 import { describirConexionesPara } from "./conexiones.ts";
-import { conectarMensajeria, describirMensajeriaPara, turnoDeMensajeria } from "./mensajeria.ts";
+import { buscarChat, conectarMensajeria, describirMensajeriaPara, turnoDeMensajeria } from "./mensajeria.ts";
 import { describirHorario } from "./rutinas.ts";
 import { emitir, emitirDelta, emitirEstado, vaciarDeltas } from "./eventos.ts";
 
@@ -350,11 +350,29 @@ function textoPrevio(m: Anthropic.Beta.BetaMessage, uso: Anthropic.Beta.BetaTool
   return "";
 }
 
+// En un turno disparado por un mensaje de afuera (WhatsApp, redes) el que habla es un tercero: el bot
+// solo puede contestar en esa conversación, consultar su memoria y buscar en la web. Nada de archivos,
+// comandos, otras conversaciones ni cambios guardados, aunque se lo pidan (y aunque todo se apruebe solo).
+function prohibidoEnMensajeria(nombre: string, entrada: Record<string, unknown>, clave: string): string | null {
+  const regla = "En una conversación con terceros solo podés contestar en esa conversación (`mensajes`), consultar tu memoria y buscar en la web.";
+  if (nombre === "web_search") return null;
+  if (nombre === "memory") return entrada.command === "view" ? null : `${regla} No se guarda nada en tu memoria por pedido de un tercero.`;
+  if (nombre === "mensajes") {
+    if (entrada.accion === "listar") return `${regla} No podés ver otras conversaciones.`;
+    const c = buscarChat(String(entrada.clave ?? clave));
+    const propia = buscarChat(clave);
+    if (!c || !propia || c.clave !== propia.clave) return `${regla} Solo en la conversación «${propia?.conversacion ?? clave}».`;
+    return null;
+  }
+  return regla;
+}
+
 async function ejecutarHerramienta(
   bot: Bot,
   mensaje: Anthropic.Beta.BetaMessage,
   uso: Anthropic.Beta.BetaToolUseBlock,
   signal: AbortSignal,
+  claveMensajeria: string | null = null,
 ): Promise<Anthropic.Beta.BetaToolResultBlockParam> {
   const resultado = (content: string, is_error = false): Anthropic.Beta.BetaToolResultBlockParam => ({
     type: "tool_result",
@@ -369,6 +387,10 @@ async function ejecutarHerramienta(
   if (!entradaValida(uso.name, uso.input)) return resultado(JSON.stringify({ INVALID_JSON: JSON.stringify(uso.input) }), true);
 
   const entrada = uso.input as Record<string, unknown>;
+  if (claveMensajeria) {
+    const prohibido = prohibidoEnMensajeria(uso.name, entrada, claveMensajeria);
+    if (prohibido) return resultado(prohibido, true);
+  }
   const pedido = necesitaAprobacion(uso.name, entrada, bot);
   if (pedido) {
     cambiarEstado(bot.id, "esperando", `Esperando tu aprobación: ${pedido.titulo}`);
@@ -602,7 +624,7 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
           ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "La entrada quedó cortada por el límite de salida. Hacelo en partes más chicas." }
           : gracia !== null
             ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "Presupuesto agotado: no se ejecutan más herramientas. Entregá ya lo que tengas." }
-            : await ejecutarHerramienta(bot, mensaje, uso, control.signal),
+            : await ejecutarHerramienta(bot, mensaje, uso, control.signal, entrada.tipo === "mensajeria" ? entrada.clave : null),
       );
     }
     agregarMensajes(bot.id, { role: "user", content: resultados });

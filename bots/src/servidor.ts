@@ -81,6 +81,7 @@ import {
   quitarBotDeMensajeria,
   recibir,
   resultadoSaliente,
+  esperarSalientes,
   tomarSalientes,
   vistaChat,
   type Compartido,
@@ -885,7 +886,8 @@ ruta("POST", "/api/mensajeria/entrante", async ({ cuerpo }) => {
   return malPedido(() => recibir(d));
 });
 
-ruta("GET", "/api/mensajeria/salientes", async () => tomarSalientes());
+// ?esperar=N: la app deja el pedido abierto hasta N segundos y se le responde apenas hay algo para mandar.
+ruta("GET", "/api/mensajeria/salientes", async ({ url }) => esperarSalientes(Math.min(25, Math.max(0, Number(url.searchParams.get("esperar")) || 0)) * 1000));
 
 ruta("POST", "/api/mensajeria/salientes/:id/resultado", async ({ params, cuerpo }) => {
   const { ok, error } = validar(z.object({ ok: z.boolean(), error: z.string().max(500).nullish() }), await cuerpo());
