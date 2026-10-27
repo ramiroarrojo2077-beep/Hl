@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 
-frames_dir, tl_path, wav, srt, out = sys.argv[1:6]
+frames_dir, tl_path, wav, subs, out = sys.argv[1:6]   # subs: archivo .ass (subtítulos quemados)
 vbit = sys.argv[6] if len(sys.argv) > 6 else '3700k'
 tl = json.load(open(tl_path))
 items = tl['timeline']
@@ -25,15 +25,15 @@ for i in range(1, len(items)):
     nxt = 'x%d' % i
     filt.append('[%s][v%d]xfade=transition=%s:duration=%.4f:offset=%.4f[%s]' % (cur, i, trans, dur, it['start'], nxt))
     cur = nxt
-filt.append('[%s]fade=t=in:st=0:d=0.8,fade=t=out:st=%.3f:d=1.5[vout]' % (cur, total - 1.5))
+filt.append("[%s]ass='%s',fade=t=in:st=0:d=0.8,fade=t=out:st=%.3f:d=1.5[vout]" % (cur, subs.replace("'", "\\'"), total - 1.5))
 na = len(items)
 filt.append('[%d:a]loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[aout]' % na)
 fc = ';'.join(filt)
-common = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-stats'] + inputs + ['-i', wav, '-i', srt, '-filter_complex', fc,
-          '-map', '[vout]', '-map', '[aout]', '-map', '%d:s' % (na + 1)]
+common = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-stats'] + inputs + ['-i', wav, '-filter_complex', fc,
+          '-map', '[vout]', '-map', '[aout]']
 venc = ['-c:v', 'libx264', '-preset', 'slow', '-b:v', vbit, '-maxrate', '6000k', '-bufsize', '9000k', '-profile:v', 'high', '-level', '4.1',
         '-pix_fmt', 'yuv420p', '-r', '30', '-g', '60']
-aenc = ['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-c:s', 'mov_text', '-metadata:s:s:0', 'language=spa',
+aenc = ['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2',
         '-metadata:s:a:0', 'language=spa', '-metadata', 'title=Separación Magnética — Ciencia en Acción', '-movflags', '+faststart', '-t', '%.3f' % total]
 p1 = common + venc + ['-pass', '1', '-passlogfile', out + '.log', '-an', '-sn', '-f', 'mp4', '/dev/null']
 p1 = [a for a in p1]

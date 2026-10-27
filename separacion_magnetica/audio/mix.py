@@ -354,6 +354,85 @@ def music(total, energy):
 
 
 # ---------------------------------------------------------------------------
+# subtítulos
+# ---------------------------------------------------------------------------
+
+MAX_LINE = 42
+
+
+def wrap2(txt):
+    if len(txt) <= MAX_LINE:
+        return txt
+    words = txt.split()
+    best, bi = 1e9, 1
+    for i in range(1, len(words)):
+        l1 = len(' '.join(words[:i]))
+        l2 = len(' '.join(words[i:]))
+        sc = max(l1, l2) + (0 if l1 <= l2 + 6 else 3)
+        if sc < best:
+            best, bi = sc, i
+    return ' '.join(words[:bi]) + '\n' + ' '.join(words[bi:])
+
+
+def split_cue(a, b, txt):
+    """Divide una línea de narración en bloques de <= 2 líneas, cortando en puntuación."""
+    import re
+    parts = re.split(r'(?<=[\.\?\!:;,])\s+', txt)
+    chunks, cur = [], ''
+    for p in parts:
+        cand = (cur + ' ' + p).strip()
+        if len(cand) <= MAX_LINE * 2 - 4 or not cur:
+            cur = cand
+        else:
+            chunks.append(cur)
+            cur = p
+    if cur:
+        chunks.append(cur)
+    out = []
+    for c in chunks:
+        while len(c) > MAX_LINE * 2:
+            w = c.split()
+            half = len(w) // 2
+            out.append(' '.join(w[:half]))
+            c = ' '.join(w[half:])
+        out.append(c)
+    total = sum(len(c) for c in out)
+    t = a
+    res = []
+    for c in out:
+        d = (b - a) * len(c) / total
+        res.append((t, t + d + (0.25 if c is out[-1] else 0.0), wrap2(c)))
+        t += d
+    return res
+
+
+def write_ass(path, cues):
+    head = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Sub,Montserrat SemiBold,50,&H00FFFFFF,&H00FFFFFF,&H00141414,&H96000000,0,0,0,0,100,100,0.5,0,1,2.6,1.4,2,160,160,34,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    def ts(x):
+        h = int(x // 3600)
+        m = int(x % 3600 // 60)
+        s_ = x % 60
+        return '%d:%02d:%05.2f' % (h, m, s_)
+    with open(path, 'w') as fh:
+        fh.write(head)
+        for a, b, txt in cues:
+            fh.write('Dialogue: 0,%s,%s,Sub,,0,0,0,,{\\fad(120,120)}%s\n' % (ts(a), ts(b), txt.replace('\n', '\\N')))
+
+
+# ---------------------------------------------------------------------------
 # mezcla
 # ---------------------------------------------------------------------------
 
@@ -493,15 +572,21 @@ def main():
     peak = np.abs(mix).max()
     mix = mix / peak * 0.89
     sf.write(os.path.join(out_dir, 'mezcla.wav'), mix.astype(np.float32), SR, subtype='PCM_24')
-    # subtítulos
+    # subtítulos: bloques de hasta 2 líneas, tiempos proporcionales al largo del texto
+    cues = []
+    for a, b, txt in subs:
+        for (ca, cb, ct) in split_cue(a, b, txt):
+            cues.append((ca, cb, ct))
+
     def fmt(x):
         h = int(x // 3600)
         m = int(x % 3600 // 60)
         s_ = x % 60
         return '%02d:%02d:%06.3f' % (h, m, s_)
     with open(os.path.join(out_dir, 'subtitulos.srt'), 'w') as fh:
-        for i, (a, b, txt) in enumerate(subs, 1):
-            fh.write('%d\n%s --> %s\n%s\n\n' % (i, fmt(a).replace('.', ','), fmt(b + 0.2).replace('.', ','), txt))
+        for i, (a, b, txt) in enumerate(cues, 1):
+            fh.write('%d\n%s --> %s\n%s\n\n' % (i, fmt(a).replace('.', ','), fmt(b).replace('.', ','), txt))
+    write_ass(os.path.join(out_dir, 'subtitulos.ass'), cues)
     json.dump(dict(total=total, timeline=timeline), open(os.path.join(out_dir, 'timeline.json'), 'w'), indent=1, ensure_ascii=False)
     print('ok', total)
 
