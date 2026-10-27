@@ -315,7 +315,11 @@ def _shell_material(name, color, grey, kind):
     mul2 = nb.n('ShaderNodeMath', _operation='MULTIPLY', _use_clamp=True)
     nb.link(mul.outputs[0], mul2.inputs[0])
     mul2.inputs[1].default_value = 2.6
-    nb.link(mul2.outputs[0], p.inputs['Alpha'])
+    stp = nb.n('ShaderNodeMath', _operation='GREATER_THAN')
+    stp.name = 'alpha_step'
+    nb.link(mul2.outputs[0], stp.inputs[0])
+    stp.inputs[1].default_value = 0.45
+    nb.link(stp.outputs[0], p.inputs['Alpha'])  # alfa binaria: sin ruido de tramado a 1 muestra
     nb.output(p.outputs['BSDF'])
     mat.surface_render_method = 'DITHERED'
     return mat

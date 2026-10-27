@@ -1,0 +1,36 @@
+[
+ {
+  "scene": "E1a",
+  "xfade": 0.0
+ },
+ {
+  "scene": "E1b",
+  "xfade": 1.0,
+  "type": "fadewhite"
+ },
+ {
+  "scene": "E2",
+  "xfade": 0.0333,
+  "type": "fade"
+ },
+ {
+  "scene": "E3",
+  "xfade": 0.0333,
+  "type": "fade"
+ },
+ {
+  "scene": "E4",
+  "xfade": 1.0,
+  "type": "fade"
+ },
+ {
+  "scene": "E5",
+  "xfade": 0.8,
+  "type": "fadeblack"
+ },
+ {
+  "scene": "E6",
+  "xfade": 1.0,
+  "type": "fade"
+ }
+]
