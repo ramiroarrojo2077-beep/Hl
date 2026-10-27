@@ -125,7 +125,7 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     (col or bpy.context.scene.collection).objects.link(t)
     t.parent = root
     t.rotation_euler = (math.pi / 2, 0, math.pi)
-    t.location = (0, 0.002, 0.012 if sub else 0)
+    t.location = (0, 0.010, 0.012 if sub else 0)
     cu.materials.append(tm)
     t.visible_shadow = False
     mats = [tm]
@@ -143,7 +143,7 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
         (col or bpy.context.scene.collection).objects.link(s2)
         s2.parent = root
         s2.rotation_euler = (math.pi / 2, 0, math.pi)
-        s2.location = (0, 0.002, -size * 0.55)
+        s2.location = (0, 0.010, -size * 0.55)
         cu2.materials.append(sm)
         s2.visible_shadow = False
         mats.append(sm)
@@ -153,14 +153,14 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     pm = panel_material(name + '_panel')
     pnl = _rounded_rect(name + '_panel', w, h, size * 0.25, col, pm)
     pnl.parent = root
-    pnl.location = (0, 0.006, 0.012 * (0 if not sub else 0) - (size * 0.25 if sub else 0))
+    pnl.location = (0, 0.0, -(size * 0.25 if sub else 0))
     pnl.rotation_euler = (0, 0, math.pi)
     mats.append(pm)
     # barra de color a la izquierda
     bm = fade_material(name + '_bar', color, 4.0)
     bar = _rounded_rect(name + '_bar', size * 0.12, h * 0.8, size * 0.04, col, bm)
     bar.parent = root
-    bar.location = (w / 2 - size * 0.2, 0.004, pnl.location.z)
+    bar.location = (w / 2 - size * 0.2, 0.005, pnl.location.z)
     bar.rotation_euler = (0, 0, math.pi)
     mats.append(bm)
     # línea guía + punto en el ancla
