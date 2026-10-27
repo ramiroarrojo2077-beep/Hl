@@ -66,6 +66,9 @@ class Escucha : NotificationListenerService() {
     @Volatile
     private var sondeoProgramado = false
 
+    /** Envíos hechos que esperan ver un cambio en la notificación de esa conversación (clave -> id del saliente). */
+    private val sinConfirmar = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     override fun onCreate() {
         super.onCreate()
         hilo = HandlerThread("escucha-red").apply { start() }
@@ -88,6 +91,11 @@ class Escucha : NotificationListenerService() {
         refrescarEstado(forzar = true)
     }
 
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        // Tras contestar desde la notificación, WhatsApp la actualiza o la saca: eso confirma el envío.
+        red.post { claveDe(sbn)?.let { confirmar(it) } }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         // El trabajo pesado (leer extras, red) va al hilo aparte: acá solo se agenda.
         red.post { procesar(sbn) }
@@ -107,8 +115,9 @@ class Escucha : NotificationListenerService() {
             val extras = notif.extras ?: return
 
             val estilo = extraerConversacion(extras)
-            val conversacion = estilo.conversacion.ifBlank { nombres[paquete] ?: paquete }
+            val conversacion = limpiarTitulo(estilo.conversacion).ifBlank { nombres[paquete] ?: paquete }
             val clave = "$paquete|$conversacion"
+            confirmar(clave)
 
             guardarAccion(clave, notif)
             val puedeResponder = acciones.containsKey(clave)
@@ -150,6 +159,23 @@ class Escucha : NotificationListenerService() {
         } catch (e: Exception) {
             // Una notificación rara no debe tirar abajo el servicio.
         }
+    }
+
+    /** WhatsApp pone el título como "Juan (3 mensajes)": sin el contador la clave de la conversación no cambia. */
+    private fun limpiarTitulo(t: String): String =
+        t.replace(Regex("\\s*\\(\\d+\\s*(mensajes?|messages?|nuevos?|new)[^)]*\\)\\s*$", RegexOption.IGNORE_CASE), "").trim()
+
+    private fun claveDe(sbn: StatusBarNotification): String? {
+        val paquete = sbn.packageName ?: return null
+        if (paquete !in escuchadas) return null
+        val extras = sbn.notification?.extras ?: return null
+        val conversacion = limpiarTitulo(extraerConversacion(extras).conversacion).ifBlank { nombres[paquete] ?: paquete }
+        return "$paquete|$conversacion"
+    }
+
+    private fun confirmar(clave: String) {
+        val id = sinConfirmar.remove(clave) ?: return
+        informarResultado(id, true, null)
     }
 
     private class Mensaje(val de: String, val texto: String, val hora: Long, val propio: Boolean)
@@ -203,7 +229,10 @@ class Escucha : NotificationListenerService() {
 
     /** Guarda (o reemplaza) la acción de responder de la conversación, si la notificación trae una. */
     private fun guardarAccion(clave: String, notif: Notification) {
-        val acciones = notif.actions ?: return
+        val acciones = (notif.actions ?: return).sortedBy {
+            // La acción "Responder" de verdad primero (WhatsApp tiene también "Marcar como leído", etc.).
+            if (Build.VERSION.SDK_INT >= 28 && it.semanticAction == Notification.Action.SEMANTIC_ACTION_REPLY) 0 else 1
+        }
         for (accion in acciones) {
             if (Build.VERSION.SDK_INT >= 29 && accion.isContextual) continue
             val entradas = accion.remoteInputs ?: continue
@@ -261,7 +290,25 @@ class Escucha : NotificationListenerService() {
         return true
     }
 
+    /** Toma la acción de la notificación que está hoy en la barra: una guardada de antes puede ser letra muerta. */
+    private fun refrescarAccion(clave: String) {
+        try {
+            for (sbn in activeNotifications ?: return) {
+                if (claveDe(sbn) != clave) continue
+                val notif = sbn.notification ?: continue
+                if (notif.flags and Notification.FLAG_GROUP_SUMMARY != 0) continue
+                guardarAccion(clave, notif)
+                return
+            }
+            // Ya no hay notificación de esa conversación: la acción guardada no sirve.
+            acciones.remove(clave)
+        } catch (e: Exception) {
+            // Si no se puede consultar la barra, se intenta con la que había.
+        }
+    }
+
     private fun enviarRespuesta(id: String, clave: String, texto: String) {
+        refrescarAccion(clave)
         val responder = acciones[clave]
         if (responder == null) {
             informarResultado(id, false, getString(R.string.msj_sin_accion))
@@ -282,13 +329,19 @@ class Escucha : NotificationListenerService() {
             if (Build.VERSION.SDK_INT >= 28) {
                 RemoteInput.setResultsSource(relleno, RemoteInput.SOURCE_FREE_FORM_INPUT)
             }
+            sinConfirmar[clave] = id
             responder.pendiente.send(this, 0, relleno)
-            informarResultado(id, true, null)
+            // El ok recién se informa cuando la notificación cambia; si no pasa nada, se avisa y se reintenta.
+            salida.postDelayed({
+                if (sinConfirmar.remove(clave, id)) informarResultado(id, false, getString(R.string.msj_sin_confirmar))
+            }, 12_000)
         } catch (e: PendingIntent.CanceledException) {
             // La conversación ya no está abierta en la barra: no sirve más esta acción.
+            sinConfirmar.remove(clave, id)
             acciones.remove(clave)
             informarResultado(id, false, getString(R.string.msj_sin_accion))
         } catch (e: Exception) {
+            sinConfirmar.remove(clave, id)
             informarResultado(id, false, getString(R.string.msj_envio_fallo))
         }
     }

@@ -90,4 +90,5 @@
     <string name="compartir_label">Compartir con Gravity</string>
     <string name="compartir_fallo">No se pudo compartir con Gravity. Probá de nuevo con la app abierta.</string>
     <string name="mensajeria_activar_aviso">Activá Gravity en esta lista: así contesta WhatsApp y redes solo.</string>
+    <string name="msj_sin_confirmar">No se confirmó el envío: la notificación no cambió.</string>
 </resources>

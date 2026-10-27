@@ -609,15 +609,18 @@ export function resultadoSaliente(id: string, ok: boolean, error: string | null)
   if (!s) return false;
   // Sin "Responder" en la notificación (WhatsApp la cambió o la abriste): vuelve a la cola y sale con la
   // próxima notificación de esa conversación, en vez de perderse.
-  const sinAccion = !ok && /responder|acci[oó]n|notificaci/i.test(error ?? "");
-  if (sinAccion && s.estado === "enviando" && Date.now() - Date.parse(s.creado) < REINTENTAR_MS && (s.reintentos ?? 0) < 5) {
+  const sinConfirmar = !ok && /confirm/i.test(error ?? "");
+  const sinAccion = !ok && !sinConfirmar && /responder|acci[oó]n|notificaci/i.test(error ?? "");
+  // Sin confirmar: se reintenta enseguida, pero una sola vez (si salió y no se vio, no se repite en loop).
+  if ((sinConfirmar || sinAccion) && s.estado === "enviando" && Date.now() - Date.parse(s.creado) < REINTENTAR_MS && (s.reintentos ?? 0) < (sinConfirmar ? 1 : 5)) {
     Object.assign(s, { estado: "pendiente", reintentos: (s.reintentos ?? 0) + 1, tomado: null });
     guardarSalientes();
     const c = buscarChat(s.clave);
-    if (c) {
+    if (c && !sinConfirmar) {
       c.puedeResponder = false;
       guardarChat(c);
     }
+    if (sinConfirmar) despertarApp();
     return true;
   }
   if (s.estado === "pendiente" || s.estado === "enviando") terminarSaliente(s, ok, error);
@@ -903,7 +906,14 @@ setInterval(() => {
   const t = Date.now();
   for (const s of salientes) {
     if (s.estado === "pendiente" && t - Date.parse(s.creado) > VENCE_PENDIENTE_MS) terminarSaliente(s, false, "La app del celular no lo tomó a tiempo (¿está abierta Gravity y con acceso a las notificaciones?).");
-    else if (s.estado === "enviando" && t - Date.parse(s.tomado ?? s.creado) > VENCE_ENVIANDO_MS) terminarSaliente(s, false, "La app del celular no confirmó el envío.");
+    else if (s.estado === "enviando" && t - Date.parse(s.tomado ?? s.creado) > VENCE_ENVIANDO_MS) {
+      // La app lo tomó y no dijo nada (se cerró el servicio): una vuelta más antes de darlo por perdido.
+      if ((s.reintentos ?? 0) < 2) {
+        Object.assign(s, { estado: "pendiente", reintentos: (s.reintentos ?? 0) + 1, tomado: null });
+        guardarSalientes();
+        despertarApp();
+      } else terminarSaliente(s, false, "La app del celular no confirmó el envío.");
+    }
   }
 }, 60_000).unref();
 
