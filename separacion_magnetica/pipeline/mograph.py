@@ -26,8 +26,8 @@ _font = None
 def font():
     global _font
     if _font is None:
-        for p in ('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-                  '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf'):
+        for p in ('/usr/share/fonts/truetype/montserrat/Montserrat-SemiBold.ttf',
+                  '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'):
             try:
                 _font = bpy.data.fonts.load(p, check_existing=True)
                 break
