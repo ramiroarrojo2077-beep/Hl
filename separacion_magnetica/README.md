@@ -32,11 +32,12 @@ python -m venv venv && ./venv/bin/pip install bpy==5.2.3 numpy scipy pillow pipe
 export SM_LIB=build/lib SM_BUILD=build
 for s in scientist worker_a worker_b; do ./venv/bin/python pipeline/build_character_lib.py $s build/lib/$s.blend; done
 for e in e1a e1b e2 e2b e3 e4 e4b e5 e6; do ./venv/bin/python pipeline/shot_$e.py; done          # genera build/scenes/*.blend
-./venv/bin/python pipeline/render_scene.py build/scenes/E2.blend build/frames/E2 1 1350  # (idem cada escena)
+SM_MAX_FRAMES=45 SM_MAX_RSS_MB=4700 ./venv/bin/python pipeline/render_scene.py build/scenes/E2.blend build/frames/E2 1 1350  # (idem cada escena;
+#   sale con código 3 al llegar al tope de cuadros o de memoria: relanzar hasta que devuelva 0)
 ./venv/bin/python audio/narracion.py <modelos_tts> build/narr
 ./venv/bin/python audio/sfx_events.py build/scenes build/steps.json
 ./venv/bin/python audio/mix.py build/narr build/scenes build/steps.json build/out
-python edit/montaje.py build/frames build/out/timeline.json build/out/mezcla.wav build/out/subtitulos.srt Separacion_Magnetica_3D_Final.mp4
+python edit/montaje.py build/frames build/out/timeline.json build/out/mezcla.wav build/out/subtitulos.ass Separacion_Magnetica_3D_Final.mp4
 ```
 
 Los archivos `.blend` de cada escena se regeneran de forma determinística con los scripts.
