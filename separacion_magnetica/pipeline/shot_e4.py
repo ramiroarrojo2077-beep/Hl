@@ -272,8 +272,8 @@ def main():
              cams['C3'], F(16.4), F(21.0), mg, size=0.08, color=MG.CYAN)
     MG.label('lbl_mix', 'RESIDUOS MEZCLADOS', (-4.0, 0.0, PL.BELT_Z + 0.1), (-3.6, -0.7, PL.BELT_Z + 0.6),
              cams['C2'], F(7.0), F(12.8), mg, size=0.07, color=MG.ORANGE, sub='acero · aluminio · plástico')
-    MG.label('lbl_cont', 'Aluminio y plástico siguen en la cinta', (3.5, 0.0, PL.BELT_Z + 0.1), (4.2, -1.0, PL.BELT_Z + 0.9),
-             cams['C4'], F(25.5), None, mg, size=0.08, color=MG.ORANGE)
+    MG.label('lbl_cont', 'ALUMINIO Y PLÁSTICO', (3.5, 0.0, PL.BELT_Z + 0.1), (3.6, -1.0, PL.BELT_Z + 0.95),
+             cams['C4'], F(25.5), None, mg, size=0.08, color=MG.ORANGE, sub='siguen en la cinta')
     MG.arrow('arr_steel', (PL.MAG_X, 0.6, PL.XBELT_Z - 0.2), (PL.MAG_X, 2.0, PL.XBELT_Z - 0.2), mg, MG.CYAN, radius=0.025, f_in=F(22.0))
     MG.arrow('arr_rest', (1.0, 0.0, PL.BELT_Z + 0.35), (4.5, 0.0, PL.BELT_Z + 0.35), mg, MG.ORANGE, radius=0.025, f_in=F(24.5))
     for lid, t in (('E4_01', 0.8), ('E4_02', 6.6), ('E4_03', 13.4), ('E4_04', 21.2)):
