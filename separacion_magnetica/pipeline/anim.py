@@ -472,7 +472,7 @@ class Walk:
                 if t <= tc0:
                     return self._plant(pp, pa)
                 u = min((t - tc0) / (tc1 - tc0), 1.0)
-                return self._swing(pp, pa, pb, u, h=0.035, toe_off=False)
+                return self._swing(pp, pa, pb, u, h=0.02, toe_off=False)
             # apoyo simétrico respecto de la cadera (el pie apoya ~0.55 paso adelante y despega ~0.65 paso atrás)
             w0 = pb - 1.35 * d
             w1 = pb - 0.55 * d
@@ -493,14 +493,14 @@ class Walk:
         pl_r = self.plants('R')
         return 'L' if pl_l[-2] > pl_r[-2] else 'R'
 
-    TOE_OFF = 0.45   # ángulo del pie al despegar (rad)
+    TOE_OFF = 0.3    # ángulo del pie al despegar (rad)
 
     def _plant(self, plant_pos, s, pitch=0.0):
         p = plant_pos(s)
         yaw = yaw_from_dir(self.path.tangent(s))
         return np.array([p[0], p[1], 0.0]), yaw, pitch
 
-    def _swing(self, plant_pos, sa, sb, u, h=0.055, toe_off=True):
+    def _swing(self, plant_pos, sa, sb, u, h=0.025, toe_off=True):
         ue = ease_io(u, 1.6)
         pa = plant_pos(sa)
         pb = plant_pos(sb)

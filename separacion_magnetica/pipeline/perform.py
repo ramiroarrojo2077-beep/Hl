@@ -165,9 +165,9 @@ class Performer:
         d = np.array(target[:2]) - self.cur_pos
         return self.turn(t0, t1, yaw_from_dir(d))
 
-    def walk(self, t0, t1, pts, step=0.66):
+    def walk(self, t0, t1, pts, step=0.62):
         # paso máximo acorde al largo de pierna (con pasos largos la pierna de atrás no llega al piso)
-        step = min(step, 0.66)
+        step = min(step, 0.62)
         pts = [tuple(self.cur_pos)] + [tuple(p[:2]) for p in pts]
         d0 = np.array(pts[1]) - np.array(pts[0])
         y0 = yaw_from_dir(d0)
@@ -369,9 +369,9 @@ class Performer:
             off = R['upperleg01.' + side].translation - R0
             hj = hip_xy + q @ Vector((off.x, off.y, 0.0))
             dxy = math.hypot(p.x - hj.x, p.y - hj.y)
-            Lm = self._leg_len(side) * 0.992
+            Lm = self._leg_len(side) * 0.997
             # solo los pies apoyados limitan la cadera; en el vuelo la rodilla se dobla
-            relax = 0.25 * smoothstep(0.0, 0.03, fp[2])
+            relax = 0.25 * smoothstep(0.0, 0.006, fp[2])
             if dxy < Lm:
                 vals.append(p.z + math.sqrt(Lm * Lm - dxy * dxy) - off.z + relax)
             else:
