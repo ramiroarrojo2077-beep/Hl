@@ -123,6 +123,9 @@ def narration(sc, line_id, t):
 
 
 def save(sc, name):
+    import mograph
+    mograph.fit_labels(sc)
+    mograph.separate_labels(sc)
     os.makedirs(os.path.join(BUILD, 'scenes'), exist_ok=True)
     meta = dict(name=name, frames=sc.frame_end, narration=json.loads(sc['narration']))
     with open(os.path.join(BUILD, 'scenes', name + '.json'), 'w') as fh:

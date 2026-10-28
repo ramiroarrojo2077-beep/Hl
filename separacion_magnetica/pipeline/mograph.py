@@ -143,6 +143,10 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     root = bpy.data.objects.new(name, None)
     (col or bpy.context.scene.collection).objects.link(root)
     root.location = panel_pos
+    # datos para fit_labels(): cámara destino y ventana visible
+    root['lbl_cam'] = cam.name
+    root['lbl_in'] = int(f_in)
+    root['lbl_out'] = int(f_out) if f_out else int(bpy.context.scene.frame_end)
     tc = root.constraints.new('DAMPED_TRACK') if False else root.constraints.new('TRACK_TO')
     tc.target = cam
     tc.track_axis = 'TRACK_NEGATIVE_Y' if False else 'TRACK_Y'
@@ -160,7 +164,7 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     (col or bpy.context.scene.collection).objects.link(t)
     t.parent = root
     t.rotation_euler = (math.pi / 2, 0, math.pi)
-    t.location = (0, 0.010, 0.012 if sub else 0)
+    t.location = (0, 0.010, size * 0.24 if sub else 0)   # proporcional al tamaño (en etiquetas chicas el título quedaba fuera del panel)
     cu.materials.append(tm)
     t.visible_shadow = False
     mats = [tm]
@@ -206,7 +210,9 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     sp = cv.splines.new('POLY')
     sp.points.add(1)
     sp.points[0].co = (*anchor, 1)
-    sp.points[1].co = (*panel_pos, 1)
+    root['lbl_drop'] = h / 2 + (size * 0.25 if sub else 0.0)
+    root['lbl_k'] = 1.0
+    sp.points[1].co = (*(Vector(panel_pos) - Vector((0, 0, root['lbl_drop']))), 1)   # la guía llega al borde inferior del panel
     lead = bpy.data.objects.new(name + '_lead', cv)
     (col or bpy.context.scene.collection).objects.link(lead)
     cv.materials.append(lm)
@@ -235,6 +241,304 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     if flat:
         flat_to_camera(root, cam, f_in - 1, (f_out or bpy.context.scene.frame_end) + 1)
     return root
+
+
+def _label_parts(root):
+    parts = list(root.children)
+    for suf in ('_lead', '_dot'):
+        o = bpy.data.objects.get(root.name + suf)
+        if o:
+            parts.append(o)
+    return parts
+
+
+def fit_labels(sc, margin=0.035, sub_zone=0.2, max_w=0.4):
+    """Revisión automática de etiquetas, al guardar cada plano:
+    1) cada etiqueta se ve solo mientras está activa la cámara para la que fue pensada
+       (antes quedaban líneas guía sueltas después de un corte);
+    2) si en su cámara queda cortada por el borde o sobre la zona de subtítulos, se desplaza
+       en el plano de la imagen hasta quedar entera y por encima de los subtítulos."""
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    marks = sorted([(m.frame, m.camera) for m in sc.timeline_markers if m.camera], key=lambda k: k[0])
+
+    def active(f):
+        c = marks[0][1] if marks else sc.camera
+        for fr, cm in marks:
+            if fr <= f:
+                c = cm
+        return c
+
+    for root in [o for o in bpy.data.objects if o.get('lbl_cam')]:
+        cam = bpy.data.objects.get(root['lbl_cam'])
+        if cam is None:
+            continue
+        f0, f1 = max(1, root['lbl_in']), min(sc.frame_end, root['lbl_out'] + 12)
+        parts = _label_parts(root)
+        # 1) solo en su cámara
+        state = None
+        for f in range(1, sc.frame_end + 1):
+            on = active(f) is cam
+            if on != state:
+                for o in parts:
+                    o.hide_render = not on
+                    o.keyframe_insert('hide_render', frame=f)
+                state = on
+        # 2) encuadre
+        frames = [f for f in range(f0, f1 + 1, 3) if active(f) is cam]
+        pnl = bpy.data.objects.get(root.name + '_panel')
+        if not frames or pnl is None:
+            continue
+        # 2a) tamaño máximo en pantalla (~40 % del ancho): en planos macro la etiqueta quedaba gigante
+        wmax = 0.0
+        for f in frames[::2]:
+            sc.frame_set(f)
+            cs = [w2c(sc, cam, pnl.matrix_world @ Vector(c)) for c in pnl.bound_box]
+            if min(c.z for c in cs) > 0:
+                wmax = max(wmax, max(c.x for c in cs) - min(c.x for c in cs))
+        if wmax > max_w:
+            _scale_label_keys(root, max_w / wmax)
+            bpy.context.view_layer.update()
+        for _ in range(3):
+            dxs, dys = [], []
+            for f in frames:
+                sc.frame_set(f)
+                cs = [w2c(sc, cam, pnl.matrix_world @ Vector(c)) for c in pnl.bound_box]
+                if min(c.z for c in cs) <= 0:
+                    continue
+                xmin, xmax = min(c.x for c in cs), max(c.x for c in cs)
+                ymin, ymax = min(c.y for c in cs), max(c.y for c in cs)
+                dxs.append(margin - xmin if xmin < margin else ((1 - margin) - xmax if xmax > 1 - margin else 0.0))
+                dys.append(sub_zone - ymin if ymin < sub_zone else ((1 - margin) - ymax if ymax > 1 - margin else 0.0))
+            if not dxs:
+                break
+            dx = max(dxs, key=abs)
+            dy = max(dys, key=abs)
+            if abs(dx) < 1e-3 and abs(dy) < 1e-3:
+                break
+            sc.frame_set(frames[len(frames) // 2])
+            R = cam.matrix_world.to_3x3()
+            right, up = (R @ Vector((1, 0, 0))).normalized(), (R @ Vector((0, 1, 0))).normalized()
+            p = root.matrix_world.translation.copy()
+            c0 = w2c(sc, cam, p)
+            kx = (w2c(sc, cam, p + right * 0.01).x - c0.x) / 0.01
+            ky = (w2c(sc, cam, p + up * 0.01).y - c0.y) / 0.01
+            if abs(kx) < 1e-6 or abs(ky) < 1e-6:
+                break
+            root.location = root.location + right * (dx / kx * 1.05) + up * (dy / ky * 1.05)
+            lead = bpy.data.objects.get(root.name + '_lead')
+            if lead:
+                lead.data.splines[0].points[1].co = (*_lead_end(root), 1)
+            bpy.context.view_layer.update()
+        # 3) si con la cámara en movimiento no hay posición fija que sirva, la etiqueta acompaña
+        #    a la cámara: se ubica cuadro a cuadro junto a lo que señala, dentro del encuadre
+        if cam.data.dof.use_dof:
+            # planos macro con poca profundidad de campo: la etiqueta va en el plano de foco (si no, sale borrosa)
+            ff = [f for f in range(f0, f1 + 1) if active(f) is cam]
+            sc.frame_set(ff[len(ff) // 2])
+            d0 = w2c(sc, cam, root.matrix_world.translation).z
+            fd = cam.data.dof.focus_distance
+            if d0 > 1e-4:
+                _scale_label_keys(root, fd / d0)
+            _label_follow(sc, cam, root, pnl, ff, margin, sub_zone, focus=True)
+            continue
+        if _label_bad(sc, cam, pnl, frames, margin, sub_zone):
+            ff = [f for f in range(f0, f1 + 1) if active(f) is cam]
+            _label_follow(sc, cam, root, pnl, ff, margin, sub_zone)
+            r = _occlusion_ratio(sc, cam, pnl, frames[::2])
+            if r < 0.97:
+                _scale_label_keys(root, r * 0.9)
+                _label_follow(sc, cam, root, pnl, ff, margin, sub_zone, depth_k=r * 0.9)
+            continue
+        # 4) si algún objeto de la escena la tapa, acercarla a la cámara (mismo tamaño aparente)
+        r = _occlusion_ratio(sc, cam, pnl, frames[::2])
+        if r < 0.97:
+            k = r * 0.9
+            sc.frame_set(frames[len(frames) // 2])
+            cpos = cam.matrix_world.translation.copy()
+            root.location = cpos + (root.location - cpos) * k
+            _scale_label_keys(root, k)
+            lead = bpy.data.objects.get(root.name + '_lead')
+            if lead:
+                lead.data.splines[0].points[1].co = (*_lead_end(root), 1)
+            bpy.context.view_layer.update()
+
+
+def _is_overlay(ob):
+    if ob is None:
+        return True
+    if ob.name.startswith('lbl_') or ob.name.startswith('arr_') or ob.name.startswith('title'):
+        return True
+    return any(c.name.startswith('MoGraph') for c in ob.users_collection)
+
+
+def _occlusion_ratio(sc, cam, pnl, frames):
+    """Fracción de la distancia cámara→etiqueta a la que aparece el primer objeto que la tapa (1 = libre)."""
+    best = 1.0
+    for f in frames:
+        sc.frame_set(f)
+        dg = bpy.context.evaluated_depsgraph_get()
+        o0 = cam.matrix_world.translation.copy()
+        bb = [pnl.matrix_world @ Vector(c) for c in pnl.bound_box]
+        lbb = [Vector(c) for c in pnl.bound_box]
+        lo = Vector((min(c.x for c in lbb), min(c.y for c in lbb), min(c.z for c in lbb)))
+        hi = Vector((max(c.x for c in lbb), max(c.y for c in lbb), max(c.z for c in lbb)))
+        pts = []
+        for i in range(5):
+            for j in range(3):
+                u, v = 0.08 + 0.84 * i / 4, 0.15 + 0.7 * j / 2
+                # rejilla sobre la cara del panel (plano local de mayor extensión)
+                loc = Vector((lo.x + (hi.x - lo.x) * u, lo.y + (hi.y - lo.y) * (u if (hi.y - lo.y) > (hi.z - lo.z) else 0.5),
+                              lo.z + (hi.z - lo.z) * v))
+                pts.append(pnl.matrix_world @ loc)
+        for pt in pts:
+            d = pt - o0
+            dist = d.length
+            dn = d / dist
+            o = o0.copy()
+            for _ in range(8):
+                rem = dist - (o - o0).length
+                if rem <= 0.002:
+                    break
+                hit, loc, n, i, ob, m = sc.ray_cast(dg, o, dn, distance=rem)
+                if not hit:
+                    break
+                if _is_overlay(ob) or ob.hide_render:
+                    o = loc + dn * 0.002
+                    continue
+                best = min(best, (loc - o0).length / dist)
+                break
+    return best
+
+
+def separate_labels(sc, pad=0.015):
+    """Si dos etiquetas fijas de la misma cámara se superponen en pantalla al mismo tiempo,
+    desplaza la segunda hacia abajo (o arriba si no entra) en el plano de la imagen."""
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    roots = [o for o in bpy.data.objects if o.get('lbl_cam') and not (o.animation_data and o.animation_data.action
+             and any(fc.data_path == 'location' for l in o.animation_data.action.layers for st in l.strips
+                     for cb in st.channelbags for fc in cb.fcurves))]
+    roots.sort(key=lambda o: o['lbl_in'])
+    for i, b in enumerate(roots):
+        for a in roots[:i]:
+            if a['lbl_cam'] != b['lbl_cam']:
+                continue
+            lo, hi = max(a['lbl_in'], b['lbl_in']), min(a['lbl_out'], b['lbl_out'])
+            if hi <= lo:
+                continue
+            cam = bpy.data.objects[b['lbl_cam']]
+            sc.frame_set((lo + hi) // 2)
+            pa, pb = bpy.data.objects.get(a.name + '_panel'), bpy.data.objects.get(b.name + '_panel')
+            if not pa or not pb:
+                continue
+            ca = [w2c(sc, cam, pa.matrix_world @ Vector(c)) for c in pa.bound_box]
+            cb_ = [w2c(sc, cam, pb.matrix_world @ Vector(c)) for c in pb.bound_box]
+            ax0, ax1, ay0, ay1 = min(c.x for c in ca), max(c.x for c in ca), min(c.y for c in ca), max(c.y for c in ca)
+            bx0, bx1, by0, by1 = min(c.x for c in cb_), max(c.x for c in cb_), min(c.y for c in cb_), max(c.y for c in cb_)
+            if bx1 < ax0 or bx0 > ax1 or by1 < ay0 or by0 > ay1:
+                continue
+            dy = (ay0 - pad) - by1 if (by0 + by1) / 2 < (ay0 + ay1) / 2 else (ay1 + pad) - by0
+            if by0 + dy < 0.2:
+                dy = (ay1 + pad) - by0
+            R = cam.matrix_world.to_3x3()
+            up = (R @ Vector((0, 1, 0))).normalized()
+            p = b.matrix_world.translation.copy()
+            c0 = w2c(sc, cam, p)
+            ky = (w2c(sc, cam, p + up * 0.01).y - c0.y) / 0.01
+            if abs(ky) > 1e-6:
+                b.location = b.location + up * (dy / ky)
+                lead = bpy.data.objects.get(b.name + '_lead')
+                if lead:
+                    lead.data.splines[0].points[1].co = (*_lead_end(b), 1)
+                bpy.context.view_layer.update()
+
+
+def _label_bad(sc, cam, pnl, frames, margin, sub_zone):
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    for f in frames:
+        sc.frame_set(f)
+        cs = [w2c(sc, cam, pnl.matrix_world @ Vector(c)) for c in pnl.bound_box]
+        if min(c.z for c in cs) <= 0:
+            return True
+        if min(c.x for c in cs) < margin * 0.5 or max(c.x for c in cs) > 1 - margin * 0.5:
+            return True
+        if min(c.y for c in cs) < sub_zone * 0.9 or max(c.y for c in cs) > 1 - margin * 0.5:
+            return True
+    return False
+
+
+def _lead_end(root, loc=None):
+    loc = Vector(root.location if loc is None else loc)
+    return loc - Vector((0, 0, root.get('lbl_drop', 0.0) * root.get('lbl_k', 1.0)))
+
+
+def _scale_label_keys(root, k):
+    root['lbl_k'] = root.get('lbl_k', 1.0) * k
+    ad = root.animation_data
+    if ad and ad.action:
+        for layer in ad.action.layers:
+            for strip in layer.strips:
+                for cb in strip.channelbags:
+                    for fc in cb.fcurves:
+                        if fc.data_path == 'scale':
+                            for kp in fc.keyframe_points:
+                                kp.co.y *= k
+                                kp.handle_left.y *= k
+                                kp.handle_right.y *= k
+    else:
+        root.scale = root.scale * k
+
+
+def _label_follow(sc, cam, root, pnl, frames, margin, sub_zone, depth_k=1.0, focus=False):
+    from bpy_extras.object_utils import world_to_camera_view as w2c
+    dot = bpy.data.objects.get(root.name + '_dot')
+    lead = bpy.data.objects.get(root.name + '_lead')
+    if not frames or dot is None:
+        return
+    anchor = dot.matrix_world.translation.copy()
+    sc.frame_set(frames[0])
+    a0 = w2c(sc, cam, anchor)
+    p0 = w2c(sc, cam, root.matrix_world.translation)
+    off = Vector((p0.x - a0.x, p0.y - a0.y))
+    if off.length < 0.08:
+        off = Vector((0.0, 0.14))
+    depth = p0.z * depth_k
+    if depth_k != 1.0:
+        off = Vector((p0.x - a0.x, p0.y - a0.y)) if root.get('lbl_off') is None else Vector(root['lbl_off'])
+    root['lbl_off'] = (off.x, off.y)
+    for f in frames:
+        sc.frame_set(f)
+        a = w2c(sc, cam, anchor)
+        if focus:
+            depth = cam.data.dof.focus_distance
+        for _ in range(2):
+            cs = [w2c(sc, cam, pnl.matrix_world @ Vector(c)) for c in pnl.bound_box]
+            c = w2c(sc, cam, root.matrix_world.translation)
+            hx = max(abs(k.x - c.x) for k in cs) + 0.01
+            hy = max(abs(k.y - c.y) for k in cs) + 0.01
+            x = min(max(a.x + off.x, margin + hx + 0.01), 1 - margin - hx - 0.01)
+            y = min(max(a.y + off.y, sub_zone + hy), 1 - margin - hy)
+            vf = cam.data.view_frame(scene=sc)          # esquinas: sup-der, inf-der, inf-izq, sup-izq
+            tr, br, bl, tl = vf
+
+            def place(yy):
+                pl = bl + (br - bl) * x + (tl - bl) * yy
+                pl = pl * (depth / -pl.z)
+                w = cam.matrix_world @ pl
+                root.location = w
+                bpy.context.view_layer.update()
+                return w
+            w = place(y)
+            if focus:
+                # en foco no se puede adelantar: si algo la tapa (p. ej. el vidrio del recipiente), subirla
+                ymax = 1 - margin - hy - 0.03
+                while y < ymax and _occlusion_ratio(sc, cam, pnl, [f]) < 0.98:
+                    y = min(y + 0.03, ymax)
+                    w = place(y)
+        root.keyframe_insert('location', frame=f)
+        if lead:
+            pt = lead.data.splines[0].points[1]
+            pt.co = (*_lead_end(root, w), 1)
+            pt.keyframe_insert('co', frame=f)
 
 
 # ---------------------------------------------------------------------------

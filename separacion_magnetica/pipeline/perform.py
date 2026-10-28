@@ -202,6 +202,16 @@ class Performer:
         self.poses[side].append((t, dict(weights)))
         self.poses[side].sort(key=lambda k: k[0])
 
+    @staticmethod
+    def tip_to_wrist(side, tip, fdir, pdir):
+        """Posición de muñeca para que la punta del índice (pose 'point') quede en 'tip'.
+        Medido sobre el rig: la punta queda ~0.193 m a lo largo de los dedos, ~0.042 m hacia la palma y ~0.017 m de lado."""
+        f = Vector(fdir).normalized()
+        pn = Vector(pdir) - f * Vector(pdir).dot(f)
+        pn = pn.normalized() if pn.length > 1e-6 else Vector((0, 0, -1))
+        lat = f.cross(pn) * (0.017 if side == 'R' else -0.017)
+        return Vector(tip) - f * 0.193 - pn * 0.042 - lat
+
     def look_at(self, t, target, head=1.0):
         """target: punto mundo, 'fwd' (al frente) o callable(t)."""
         self.looks.append((t, target, head))

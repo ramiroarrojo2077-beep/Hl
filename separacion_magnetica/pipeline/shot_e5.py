@@ -292,6 +292,35 @@ def main():
     ro.parent = slew
     ro.matrix_parent_inverse = Matrix.Identity(4)
     ro.location = (0.75, -1.4, 1.3 - 0.0)
+    # palancas de mando bajo las manos del operador (la derecha acompaña el movimiento de la mano)
+    cab_o = Vector((0.75, -1.4, 1.3))
+    pfd = Vector((1, 0, -0.3)).normalized()
+    stick_keys = {'L': [(0.0, Vector((0.32, 0.2, 0.82)))], 'R': [(0.0, Vector((0.32, -0.2, 0.82)))]}
+    for k in range(10):
+        t = k * 2.8
+        stick_keys['R'] += [(t + 1.4, Vector((0.34, -0.2, 0.84))), (t + 2.8, Vector((0.31, -0.22, 0.81)))]
+    for side, keys in stick_keys.items():
+        palm0 = keys[0][1] + pfd * 0.085
+        base = palm0 - Vector((0, 0, 0.17))
+        pod = PR.box('joy_base_' + side, (0.09, 0.09, 0.05), cab_o + base + Vector((0, 0, -0.02)), None, PR.M('black_plastic'), bevel=0.006)
+        pod.parent = slew
+        pod.matrix_parent_inverse = Matrix.Identity(4)
+        pod.location = cab_o + base + Vector((0, 0, -0.02))
+        piv = bpy.data.objects.new('joy_pivot_' + side, None)
+        bpy.context.scene.collection.objects.link(piv)
+        piv.parent = slew
+        piv.location = cab_o + base
+        piv.rotation_mode = 'QUATERNION'
+        stick = PR.cyl('joy_stick_' + side, 0.007, 0.15, Vector((0, 0, 0)), None, PR.M('steel'))
+        knob = PR.sphere('joy_knob_' + side, 0.022, Vector((0, 0, 0.165)), None, PR.M('black_plastic'), scale=(1, 1, 1.3))
+        for o in (stick, knob):
+            o.parent = piv
+        kbj = KeyBuffer(piv)
+        for t, w in keys:
+            d = (w + pfd * 0.085) - base
+            q = Vector((0, 0, 1)).rotation_difference(d.normalized())
+            kbj.key_vec('rotation_quaternion', F(t), q)
+        kbj.write()
     # ---- científico en la zona segura (con casco y chaleco)
     rig, objs = cast.load('scientist', safety=True)
     A = anim.Actor(rig)

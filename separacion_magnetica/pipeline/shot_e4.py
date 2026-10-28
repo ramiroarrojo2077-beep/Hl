@@ -13,7 +13,7 @@ from shotlib import F
 import cast, anim, perform, mograph as MG, sets_plant as PL, props as PR
 from props import M
 from anim import KeyBuffer
-from util import ease_io, principled
+from util import emission_mat, ease_io, principled
 
 DUR = 31.0
 
@@ -204,11 +204,33 @@ def main():
     P.expression(21.4, 'focus')
     P.hand('L', 21.0, 'rest')
     P.hand_pose('L', 21.0, {'relaxed': 1})
-    P.hand('L', 21.9, ('world', st + Vector((0.08, -0.12, 0.08)), Vector((-0.2, 0.9, -0.4)), Vector((0, 0.3, -1))))
+    # la punta del índice toca la superficie de la pantalla (inclinada 25°) y la pantalla responde
+    a25 = math.radians(25)
+    scr_c = Vector((1.6, -1.785, 1.085))
+    scr_n = Vector((0, -math.sin(a25), math.cos(a25)))
+    scr_u = Vector((0, math.cos(a25), math.sin(a25)))
+    surf = scr_c + scr_n * 0.005
+    T1 = surf + Vector((0.12, 0, 0)) + scr_u * 0.04
+    T2 = surf + Vector((-0.1, 0, 0)) - scr_u * 0.03
+    fd, pdl = Vector((-0.2, 0.9, -0.4)), Vector((0, 0.3, -1))
+    tw = lambda p: ('world', P.tip_to_wrist('L', p, fd, pdl), fd, pdl)
+    P.hand('L', 21.9, tw(T1 + scr_n * 0.07))
     P.hand_pose('L', 21.8, {'point': 1})
-    P.hand('L', 22.4, ('world', st + Vector((0.06, -0.09, 0.045)), Vector((-0.2, 0.9, -0.4)), Vector((0, 0.3, -1))))
-    P.hand('L', 23.2, ('world', st + Vector((-0.08, -0.06, 0.05)), Vector((-0.2, 0.9, -0.4)), Vector((0, 0.3, -1))))
-    P.hand('L', 24.2, ('world', st + Vector((-0.08, -0.12, 0.12)), Vector((-0.2, 0.9, -0.4)), Vector((0, 0.3, -1))))
+    P.hand('L', 22.4, tw(T1 - scr_n * 0.002))
+    P.hand('L', 22.7, tw(T1 + scr_n * 0.03))
+    P.hand('L', 23.2, tw(T2 - scr_n * 0.002))
+    P.hand('L', 23.5, tw(T2 + scr_n * 0.03))
+    P.hand('L', 24.2, tw(T2 + scr_n * 0.12))
+    # botones de la pantalla que se iluminan al tocarlos
+    for k, (T, tt) in enumerate(((T1, 22.4), (T2, 23.2))):
+        bt = PR.cyl('st_touch%d' % k, 0.022, 0.002, T + scr_n * 0.0005, col, None)
+        bt.rotation_euler = (a25, 0, 0)
+        em = emission_mat('st_touch%d_m' % k, '#7fe6ff', 0.6)
+        bt.data.materials.append(em)
+        node = em.node_tree.nodes['Emission'].inputs['Strength']
+        for f, v in ((F(tt) - 1, 0.6), (F(tt) + 1, 9.0), (F(tt) + 8, 3.0)):
+            node.default_value = v
+            node.keyframe_insert('default_value', frame=f)
     P.hand('L', 25.2, 'rest')
     P.hand_pose('L', 25.4, {'relaxed': 1})
     P.lean.add(21.0, 0.0).add(21.9, 0.12).add(24.4, 0.12).add(25.2, 0.0)
@@ -218,25 +240,65 @@ def main():
     # operarios de fondo
     rw, ow = cast.load('worker_a', 'opA')
     Aw = anim.Actor(rw)
-    Pw = perform.Performer(Aw, pos=(-6.5, 1.15), yaw=math.pi)
+    Pw = perform.Performer(Aw, pos=(-6.5, 0.8), yaw=math.pi)
     Pw.look_at(0.0, (-6.5, 0.0, 1.2))
-    Pw.lean.add(0, 0.18)
+    Pw.lean.add(0, 0.24)
+    # la operaria saca botellas plásticas reales de la cinta y las tira al contenedor (antes cerraba la mano en el aire)
+    picks = []
+    q_lay = Quaternion((0, 1, 0), math.pi / 2)          # botella acostada a lo largo de la cinta
     for k in range(12):
         t = 0.5 + k * 2.4
+        tg, tr = t + 1.0, t + 2.0
+        pick = Vector((-6.55, 0.42, PL.BELT_Z + 0.04))
+        g = Aw.grasp_frame('R', pick, (1, 0, 0), Vector((0, -0.6, -1)), radius=0.04)
         Pw.hand('R', t, 'rest')
-        Pw.hand('R', t + 0.8, ('world', Vector((-6.55, 0.35, PL.BELT_Z + 0.08)), Vector((0, -1, -0.6)), Vector((0, 0, -1))))
+        Pw.hand('R', t + 0.75, ('world', g[0] + Vector((0, 0, 0.08)), g[1], g[2]))
         Pw.hand_pose('R', t + 0.7, {'open': 1})
-        Pw.hand_pose('R', t + 1.0, {'grip': 1})
-        Pw.hand('R', t + 1.8, ('world', Vector((-7.1, 1.25, 1.05)), Vector((-0.5, 0.2, -0.8)), Vector((0, 0, -1))))
-        Pw.hand_pose('R', t + 2.0, {'open': 1})
+        Pw.hand('R', tg, ('world',) + tuple(g))
+        Pw.hand('R', tg + 0.12, ('world',) + tuple(g))
+        Pw.hand_pose('R', tg, {'grip': 1})
+        Pw.hand('R', t + 1.8, ('world', Vector((-7.0, 0.92, 1.2)), Vector((-0.7, 0.1, -0.7)), Vector((0, 0, -1))))
+        Pw.hand_pose('R', tr, {'open': 1})
+        bo = bpy.data.objects.new('pick%02d' % k, bot_me.copy())
+        bo.data.materials.append(pl_m[k % len(pl_m)])
+        col.objects.link(bo)
+        bo.rotation_mode = 'QUATERNION'
+        bo.visible_shadow = False
+        kb = KeyBuffer(bo)
+        # viaja sobre la cinta hasta el punto de agarre
+        for f in range(1, F(tg) + 1):
+            tt = (f - 1) / 30.0
+            kb.key_vec('location', f, pick - Vector((v * (tg - tt), 0, 0)))
+            kb.key_vec('rotation_quaternion', f, q_lay)
+        kb.write()
+        Pw.attach(bo, 'R', tg + 0.03, tr)
+        picks.append((bo, tr))
     Pw.bake(1, sc.frame_end)
+    # al soltarla cae dentro del contenedor y desaparece en su interior
+    bin_top = Vector((-7.25, 0.95, 1.06))
+    for bo, tr in picks:
+        fr = F(tr)
+        sc.frame_set(fr)
+        p0 = bo.matrix_world.translation.copy()
+        q0r = bo.matrix_world.to_quaternion()
+        kb = KeyBuffer(bo)
+        n = 9
+        for j in range(1, n + 1):
+            u = j / n
+            p = p0.lerp(bin_top, u)
+            p.z = p0.z + (bin_top.z - p0.z) * u * u
+            kb.key_vec('location', fr + j, p)
+            kb.key_vec('rotation_quaternion', fr + j, q0r)
+        kb.key_vec('scale', fr + n, (1, 1, 1))
+        kb.key_vec('scale', fr + n + 2, (0.001, 0.001, 0.001))
+        kb.write()
     rb, ob_ = cast.load('worker_b', 'opB')
     Ab = anim.Actor(rb)
     Pb = perform.Performer(Ab, pos=(-14.0, 6.0), yaw=math.radians(90))
     Pb.walk(1.0, 16.0, [(-2.0, 6.2), (4.0, 6.6)], step=0.66)
     Pb.turn(17.0, 17.8, math.pi)
     Pb.bake(1, sc.frame_end)
-    box_bin = PR.box('pick_bin', (0.6, 0.5, 0.5), (-7.2, 1.45, 0.25 + 0.55), col, principled('pickbin_m', '#2f7a4b', 0.5))
+    box_bin = PR.box('pick_bin', (0.6, 0.5, 0.5), (-7.25, 0.95, 0.25 + 0.55), col, principled('pickbin_m', '#2f7a4b', 0.5))
 
     # motion graphics
     mg = bpy.data.collections.new('MoGraph')
@@ -266,10 +328,10 @@ def main():
     fl.location = (PL.MAG_X, 0.0, PL.XBELT_Z + 0.15)
     fl.scale = (1.6, 1.6, 1.6)
     MG.grow(fl, F(15.2), F(16.6), flm, f_out=F(21.5))
-    MG.label('lbl_sep', 'SEPARADOR MAGNÉTICO DE BANDA', (PL.MAG_X, -0.3, PL.XBELT_Z + 0.4), (PL.MAG_X - 1.4, -1.0, PL.XBELT_Z + 0.75),
-             cams['C3'], F(14.0), F(21.0), mg, size=0.09, color=MG.RED, sub='imán permanente + banda transversal')
-    MG.label('lbl_steel', 'ACERO → separado', (PL.MAG_X, 0.3, PL.XBELT_Z - 0.05), (PL.MAG_X + 1.4, -0.9, PL.XBELT_Z + 0.35),
-             cams['C3'], F(16.4), F(21.0), mg, size=0.08, color=MG.CYAN)
+    MG.label('lbl_sep', 'SEPARADOR MAGNÉTICO', (PL.MAG_X, -0.3, PL.XBELT_Z + 0.4), (PL.MAG_X - 0.5, 0.3, PL.XBELT_Z + 0.7),
+             cams['C3'], F(14.0), F(21.0), mg, size=0.06, color=MG.RED, sub='de banda: imán + banda transversal')
+    MG.label('lbl_steel', 'ACERO', (PL.MAG_X, 0.3, PL.XBELT_Z - 0.05), (PL.MAG_X + 1.4, -0.9, PL.XBELT_Z + 0.35),
+             cams['C3'], F(16.4), F(21.0), mg, size=0.08, color=MG.CYAN, sub='separado de la cinta')
     MG.label('lbl_mix', 'RESIDUOS MEZCLADOS', (-4.0, 0.0, PL.BELT_Z + 0.1), (-3.6, -0.7, PL.BELT_Z + 0.6),
              cams['C2'], F(7.0), F(12.8), mg, size=0.07, color=MG.ORANGE, sub='acero · aluminio · plástico')
     MG.label('lbl_cont', 'ALUMINIO Y PLÁSTICO', (3.5, 0.0, PL.BELT_Z + 0.1), (3.6, -1.0, PL.BELT_Z + 0.95),
