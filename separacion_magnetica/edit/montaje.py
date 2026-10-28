@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 frames_dir, tl_path, wav, subs, out = sys.argv[1:6]   # subs: archivo .ass (subtítulos quemados)
-vbit = sys.argv[6] if len(sys.argv) > 6 else '3700k'
+vbit = sys.argv[6] if len(sys.argv) > 6 else '3000k'   # ~3:40 → <90 MB (límite de GitHub)
 tl = json.load(open(tl_path))
 items = tl['timeline']
 total = tl['total']
