@@ -3,7 +3,7 @@
 Video educativo animado en 3D sobre **separación magnética**, con un científico protagonista
 modelado, riggeado y animado que realiza los experimentos dentro de escenarios 3D.
 
-- **Entregable:** `Separacion_Magnetica_3D_Final.mp4` (H.264 1920×1080, 30 fps, AAC 48 kHz, ~3:40,
+- **Entregable:** `Separacion_Magnetica_3D_Final.mp4` (H.264 1920×1080, 30 fps, AAC 48 kHz, 3:38,
   9 secuencias, subtítulos en español quemados en la imagen) + `Separacion_Magnetica_3D_Final.srt`.
 - **Guion técnico / storyboard:** [`guion/guion_tecnico.md`](guion/guion_tecnico.md)
 - **Narración:** [`guion/narracion.json`](guion/narracion.json) (español rioplatense, voz es_AR).

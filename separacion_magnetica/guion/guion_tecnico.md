@@ -1,6 +1,6 @@
 # Separación magnética — Guion técnico y storyboard
 
-Video educativo animado 3D · español rioplatense · 1920×1080 · 30 fps · ~3:40
+Video educativo animado 3D · español rioplatense · 1920×1080 · 30 fps · 3:38
 
 Narración en off: voz es_AR "daniela" (Piper TTS). Protagonista: **Dr. Andrés Ferro**, físico de materiales (personaje 3D original, rig completo).
 
@@ -98,7 +98,7 @@ Patio de chatarra con pilas procedurales (~900 piezas), volquete, camión, galp�
 | t | Cámara | Acción | Gráficos | Narración |
 |---|---|---|---|---|
 | 0–7 | C1 aérea | El científico llega a la zona segura (detrás de las barreras, fuera del radio de trabajo) | — | E5_01 (0.8) |
-| 7–14 | C2 cabina/pluma | La grúa gira y se posiciona sobre la pila; baja el imán; **activa el electroimán** (12.2 s) | Brillo, líneas de campo, etiqueta **ELECTROIMÁN ACTIVADO** | E5_02 (7.4) |
+| 7–14 | C2 cabina/pluma | La grúa gira y se posiciona sobre la pila; baja el imán; **activa el electroimán** (12.2 s) y empieza a levantar la carga | Brillo, líneas de campo, etiqueta **ELECTROIMÁN ACTIVADO** (debajo del imán) | E5_02 (7.4) |
 | 14–23 | C3 general lateral | Levanta piezas de hierro/acero, gira 90°, baja sobre el volquete y **corta la corriente** (20.6 s): la carga cae | Etiquetas **hierro y acero**, **CORRIENTE OFF** | E5_03 (14.2) |
 | 23–28 | C4 plano medio del científico | Explica a cámara desde la zona segura | — | E5_04 (23.6) |
 
