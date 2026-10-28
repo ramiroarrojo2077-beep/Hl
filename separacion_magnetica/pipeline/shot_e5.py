@@ -343,8 +343,8 @@ def main():
     fl.location = (0, 0, -0.2)
     fl.scale = (1.6, 1.6, 1.6)
     MG.grow(fl, F(T['on']), F(T['on'] + 1.0), flm, f_out=F(T['off']))
-    MG.label('lbl_on', 'ELECTROIMÁN ACTIVADO', PILE + Vector((0, 0, 2.6)), PILE + Vector((-2.6, -2.8, 4.6)), cams['C2'],
-             F(T['on'] + 0.2), F(14.0), mg, size=0.32, color=MG.CYAN, sub='corriente ON → campo magnético')
+    MG.label('lbl_on', 'ELECTROIMÁN ACTIVADO', PILE + Vector((0, 0, 2.6)), PILE + Vector((-2.2, -2.8, 1.9)), cams['C2'],
+             F(T['on'] + 0.2), F(14.0), mg, size=0.26, color=MG.CYAN, sub='corriente ON → campo magnético')
     MG.label('lbl_off', 'CORRIENTE OFF', CONT + Vector((0, 0, 3.4)), CONT + Vector((3.0, -3.0, 5.6)), cams['C3'],
              F(T['off']), F(23.0), mg, size=0.4, color='#ff6b6b', sub='el campo desaparece y la carga cae')
     MG.label('lbl_carry', 'hierro y acero', PILE + Vector((-2.0, 4.5, 4.0)), Vector((2.0, 2.5, 7.0)), cams['C3'],
