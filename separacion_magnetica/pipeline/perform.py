@@ -56,7 +56,8 @@ class Turn:
         u = min(max((t - self.t0) / max(self.t1 - self.t0, 1e-6), 0), 1)
         # primer pie del lado hacia donde gira
         first = 'L' if self.yaw1 > self.yaw0 else 'R'
-        a, b = (0.0, 0.6) if side == first else (0.4, 1.0)
+        # un pie por vez (nunca los dos en el aire: si no, la cadera "salta")
+        a, b = (0.0, 0.5) if side == first else (0.5, 1.0)
         v = min(max((u - a) / (b - a), 0), 1)
         lat = self.sep if side == 'L' else -self.sep
 
@@ -68,7 +69,8 @@ class Turn:
         p1 = place(self.yaw1)
         ve = ease_io(v)
         p = _lerp(p0, p1, ve)
-        z = 0.012 * math.sin(math.pi * v)
+        # despegue mínimo: la pierna va recta y el pie pasa al ras gracias al talón de apoyo levantado
+        z = 0.001 * math.sin(math.pi * v)
         return np.array([p[0], p[1], z]), _lerp(self.yaw0, self.yaw1, ve), 0.0
 
 
@@ -87,12 +89,12 @@ class SideStep:
 
     def foot(self, side, t):
         u = min(max((t - self.t0) / max(self.t1 - self.t0, 1e-6), 0), 1)
-        a, b = (0.0, 0.6) if side == self.lead else (0.4, 1.0)
+        a, b = (0.0, 0.5) if side == self.lead else (0.5, 1.0)
         v = min(max((u - a) / (b - a), 0), 1)
         left = np.array([math.cos(self.yaw), math.sin(self.yaw)])
         lat = self.sep if side == 'L' else -self.sep
         p = self.p0 + (self.p1 - self.p0) * ease_io(v) + left * lat
-        return np.array([p[0], p[1], 0.012 * math.sin(math.pi * v)]), self.yaw, 0.0
+        return np.array([p[0], p[1], 0.001 * math.sin(math.pi * v)]), self.yaw, 0.0
 
 
 class WalkSeg:
@@ -392,7 +394,8 @@ class Performer:
             dxy = math.hypot(p.x - hj.x, p.y - hj.y)
             Lm = self._leg_len(side) * ext
             # solo los pies apoyados limitan la cadera; en el vuelo el pie pasa con la pierna recta
-            relax = 0.25 * smoothstep(0.0, 0.0005, fp[2])
+            other = feet['R' if side == 'L' else 'L'][0][2]
+            relax = 0.25 * smoothstep(0.0, 0.0005, fp[2]) * (1.0 - smoothstep(0.0, 0.0005, other))
             if dxy < Lm:
                 vals.append(p.z + math.sqrt(Lm * Lm - dxy * dxy) - off.z + relax)
             else:
@@ -452,12 +455,12 @@ class Performer:
             hip = Vector((pos[0], pos[1], hip_z)) + left * (sway + weight_shift)
             # piernas rectas: al caminar, el pie de apoyo levanta un poco el talón mientras la otra pierna
             # pasa (así la pierna que avanza no necesita doblar la rodilla para no rozar el piso)
-            if isinstance(seg, WalkSeg):
-                for sd, ot in (('L', 'R'), ('R', 'L')):
-                    sw = min(max(feet[ot][0][2] / 0.0005, 0.0), 1.0)
-                    if feet[sd][0][2] <= 0.0 and sw > 0:
-                        fp_, fy_, fpi_ = feet[sd]
-                        feet[sd] = (fp_, fy_, min(fpi_, -0.11 * sw))
+            # (vale para caminata, giros y pasos laterales)
+            for sd, ot in (('L', 'R'), ('R', 'L')):
+                sw = min(max(feet[ot][0][2] / 0.0005, 0.0), 1.0)
+                if feet[sd][0][2] <= 0.0 and sw > 0:
+                    fp_, fy_, fpi_ = feet[sd]
+                    feet[sd] = (fp_, fy_, min(fpi_, -0.11 * sw))
             # cadera a la altura de las piernas extendidas (antes quedaba 1-3 cm más baja y las rodillas
             # se veían dobladas, incluso parado); 'crouch' sigue doblando las rodillas a propósito
             # pelvis: inclinar levemente con el avance
@@ -466,8 +469,7 @@ class Performer:
             z_ext = self._walk_root_z(feet, Vector((hip.x, hip.y, 0.0)), q_root, R0.z + 0.05)
             hip.z = z_ext - self.crouch(t)
             self._hip_dz = hip.z - (R0.z + bob - self.crouch(t))
-            if isinstance(seg, WalkSeg):
-                feet = self._heel_fit(feet, hip, q_root)
+            feet = self._heel_fit(feet, hip, q_root)
             A.set_root(f, hip, r_yaw, lean=r_lean, sway=r_sway)
             # pies
             for side in 'LR':

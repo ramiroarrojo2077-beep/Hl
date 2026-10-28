@@ -138,8 +138,8 @@ def main():
     P.hand('R', 11.8, handR(lift))
     P.hand('R', 17.5, handR(lift + Vector((0.0, 0.0, 0.01))))
     P.side_step(6.2, 7.3, (0.16, sy))
-    P.lean.add(1.0, 0.04).add(2.4, 0.22).add(10.4, 0.22).add(11.8, 0.05)
-    P.crouch.add(2.0, 0.0).add(2.6, 0.03).add(10.4, 0.03).add(11.8, 0.0)
+    # inclinarse desde la cintura con las piernas rectas
+    P.lean.add(1.0, 0.04).add(2.4, 0.25).add(10.4, 0.25).add(11.8, 0.05)
     P.look_at(0.0, (0.3, -2.5, 1.5))
     P.expression(0.0, 'smile_soft')
     P.look_at(1.9, Vector((x0, BOARD_Y, BT)))

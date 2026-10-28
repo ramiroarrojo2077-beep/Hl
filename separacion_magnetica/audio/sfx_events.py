@@ -42,16 +42,26 @@ def main():
                 if bn not in ob.data.bones:
                     continue
                 R = ob.data.bones[bn].matrix_local
-                h0 = R.translation.z
                 path = 'pose.bones["%s"].location' % bn
-                prev_up = False
+                # paso = el pie se venía desplazando (>3 cm) y se detiene: sirve para caminata, giros y
+                # pasos laterales (con piernas rectas el pie casi no sube, así que no se mide la altura)
+                prev = None
+                moving = False
+                travel = 0.0
                 for f in range(1, sc.frame_end + 1):
                     loc = Vector([fc_eval(act, slot, path, i, f) for i in range(3)])
-                    z = (R.to_3x3() @ loc).z + h0
-                    up = z > h0 + 0.012
-                    if prev_up and not up:
-                        steps.append(dict(f=f, who=who, side=side))
-                    prev_up = up
+                    p = R.to_3x3() @ loc + R.translation
+                    if prev is not None:
+                        v = (p.xy - prev.xy).length
+                        if v > 0.004:
+                            moving = True
+                            travel += v
+                        elif moving and v < 0.0015:
+                            if travel > 0.03:
+                                steps.append(dict(f=f, who=who, side=side))
+                            moving = False
+                            travel = 0.0
+                    prev = p
         res[name] = dict(frames=sc.frame_end, steps=sorted(steps, key=lambda s: s['f']))
         print(name, len(steps), flush=True)
     json.dump(res, open(out, 'w'), indent=1)

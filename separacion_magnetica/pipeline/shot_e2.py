@@ -132,8 +132,8 @@ def main():
     P.hand('R', 18.0, W(handR(above)))
     low_z = sand_top + 0.016
     P.hand('R', 19.2, W(handR(Vector((DISH.x, DISH.y, low_z)))))
-    P.lean.add(16.6, 0.08).add(18.6, 0.3).add(23.0, 0.3).add(24.6, 0.12)
-    P.crouch.add(16.6, 0.0).add(18.6, 0.04).add(23.0, 0.04).add(24.6, 0.0)
+    # inclinarse desde la cintura con las piernas rectas (sin agacharse: las rodillas no se doblan)
+    P.lean.add(16.6, 0.08).add(18.6, 0.34).add(23.0, 0.34).add(24.6, 0.12)
     P.expression(18.6, 'focus')
     # barrido circular sobre la mezcla
     sweep_t0, sweep_t1 = 19.2, 22.4
