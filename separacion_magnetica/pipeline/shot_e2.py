@@ -67,7 +67,8 @@ def main():
     # mano izquierda presenta la mezcla con la palma hacia arriba
     P.hand('L', 0.6, 'rest')
     P.hand_pose('L', 0.6, {'relaxed': 1})
-    pres = (DISH + Vector((0.12, -0.02, 0.2)), Vector((-0.5, -1, -0.25)), Vector((0, -0.2, 1)))
+    # presenta la mezcla con la palma abierta AL COSTADO del recipiente (sin tocarla)
+    pres = (DISH + Vector((0.26, -0.04, 0.26)), Vector((-0.55, -0.8, -0.15)), Vector((-0.2, -0.3, 1)))
     P.hand('L', 1.6, W(pres))
     P.hand_pose('L', 1.6, {'open': 1})
     P.hand('L', 4.6, W((pres[0] + Vector((0.02, 0.0, -0.02)), pres[1], pres[2])))
@@ -76,10 +77,12 @@ def main():
     # mano derecha señala las limaduras
     P.hand('R', 5.8, 'rest')
     P.hand_pose('R', 5.8, {'relaxed': 1})
-    pt = DISH + Vector((-0.03, -0.02, 0.17))
-    P.hand('R', 6.8, W((pt, Vector((0.25, -0.5, -0.85)), Vector((0.3, 0, -1)))))
+    # señala las limaduras desde arriba: la punta del índice queda ~15 cm sobre la arena
+    pt = DISH + Vector((-0.13, 0.07, 0.36))
+    pdir = (DISH + Vector((0, -0.02, 0.03)) - pt).normalized()
+    P.hand('R', 6.8, W((pt, pdir, Vector((0.3, 0, -1)))))
     P.hand_pose('R', 6.8, {'point': 1})
-    P.hand('R', 9.6, W((pt + Vector((0.02, 0, 0.01)), Vector((0.25, -0.5, -0.85)), Vector((0.3, 0, -1)))))
+    P.hand('R', 9.6, W((pt + Vector((0.01, 0, 0.01)), pdir, Vector((0.3, 0, -1)))))
     P.look_at(8.6, (0.4, -2.6, 1.55))
     P.expression(8.8, 'smile')
     P.look_at(10.2, LAB.STAND + Vector((0, 0, 0.12)))

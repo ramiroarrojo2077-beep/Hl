@@ -70,8 +70,33 @@ def main():
     box('bld_core', (W, D, H), (0, 0, H / 2), col, PR.paint_mat('bld_white', '#e9ebea', 0.55, 0.05))
     facade('fac_front', -W / 2 + 1, W / 2 - 1, -D / 2 - 0.05, 1.0, H - 0.6, col, floors=3)
     # cuerpo de entrada saliente
-    box('entr_box', (10, 4, 6.0), (0, -D / 2 - 2.0, 3.0), col, PR.paint_mat('entr_dark', '#2a3540', 0.4, 0.05))
-    facade('fac_entr', -4.6, 4.6, -D / 2 - 4.05, 0.0, 5.2, col, floors=1, bay=1.5)
+    # cuerpo de entrada: vestíbulo hueco con hall iluminado detrás de las puertas
+    ed = PR.paint_mat('entr_dark', '#2a3540', 0.4, 0.05)
+    yf = -D / 2 - 4.05
+    box('entr_wall_l', (0.3, 4, 6.0), (-4.85, -D / 2 - 2.0, 3.0), col, ed)
+    box('entr_wall_r', (0.3, 4, 6.0), (4.85, -D / 2 - 2.0, 3.0), col, ed)
+    box('entr_roof', (10, 4, 0.4), (0, -D / 2 - 2.0, 5.8), col, ed)
+    # muro cortina con vano de puerta (2.5 m x 2.7 m) abierto en el centro
+    facade('fac_entr_l', -4.6, -1.3, yf, 0.0, 5.2, col, floors=1, bay=1.1)
+    facade('fac_entr_r', 1.3, 4.6, yf, 0.0, 5.2, col, floors=1, bay=1.1)
+    facade('fac_entr_t', -1.3, 1.3, yf, 2.75, 5.2, col, floors=1, bay=1.3)
+    box('door_jamb_l', (0.1, 0.25, 2.75), (-1.3, yf - 0.05, 1.375), col, M('brushed'))
+    box('door_jamb_r', (0.1, 0.25, 2.75), (1.3, yf - 0.05, 1.375), col, M('brushed'))
+    # hall interior
+    box('lobby_floor', (9.4, 4.4, 0.05), (0, -D / 2 - 2.0, 0.025), col, principled('lobby_floor_m', '#d9d6cf', 0.25, coat=0.3, noise_color=0.05))
+    box('lobby_back', (9.4, 0.1, 5.6), (0, -D / 2 + 0.05, 2.8), col, principled('lobby_back_m', '#eef0f1', 0.6))
+    box('lobby_ceiling', (9.4, 4.4, 0.05), (0, -D / 2 - 2.0, 5.55), col, principled('lobby_ceil_m', '#f4f5f5', 0.8))
+    for k, x in enumerate((-3.0, 0.0, 3.0)):
+        p = box('lobby_led%d' % k, (2.2, 0.3, 0.02), (x, -D / 2 - 2.0, 5.52), col, emission_mat('lobby_led_e', '#fff6e6', 6.0))
+        p.visible_shadow = False
+    box('lobby_desk', (3.0, 0.8, 1.05), (0, -D / 2 - 0.9, 0.525), col, principled('desk_m', '#f2f2f0', 0.35, coat=0.4), bevel=0.05)
+    box('lobby_desk_top', (3.1, 0.9, 0.05), (0, -D / 2 - 0.9, 1.07), col, M('wood'))
+    box('lobby_stripe', (9.3, 0.02, 0.18), (0, -D / 2 - 0.01, 2.2), col, M('wall_accent'))
+    t2 = text3d('lobby_sign', 'LABORATORIOS', (0, -D / 2 - 0.02, 3.2), 0.32, col, principled('lobby_sign_m', '#1f4e79', 0.4), extrude=0.02)
+    for k, x in enumerate((-3.6, 3.6)):
+        cyl('lobby_pot%d' % k, 0.3, 0.6, (x, -D / 2 - 1.0, 0.05), col, principled('pot_l', '#3c3f43', 0.5))
+        sphere('lobby_plant%d' % k, 0.55, (x, -D / 2 - 1.0, 1.1), col, principled('plant_l', '#3f7a3a', 0.7, noise_color=0.3), seg=12, ring=8)
+    PR.point_light('lobby_light', (0, -D / 2 - 2.2, 4.6), 900, radius=1.5, color=(1.0, 0.96, 0.9), shadow=False, col=col)
     canopy = box('canopy', (14, 7, 0.4), (0, -D / 2 - 3.5, 6.2), col, PR.paint_mat('canopy_m', '#f2f3f3', 0.4, 0.03))
     for x in (-6.5, 6.5):
         cyl('canopy_col%d' % (x > 0), 0.2, 6.0, (x, -D / 2 - 6.6, 0), col, M('brushed'))
