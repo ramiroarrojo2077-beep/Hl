@@ -41,8 +41,14 @@ p1 = [a for a in p1]
 p1 = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-stats'] + inputs + ['-filter_complex', ';'.join(filt[:-1]), '-map', '[vout]'] + venc + \
      ['-pass', '1', '-passlogfile', out + '.log', '-an', '-f', 'mp4', '/dev/null']
 p2 = common + venc + ['-pass', '2', '-passlogfile', out + '.log'] + aenc + [out]
-print('PASS 1', flush=True)
-subprocess.run(p1, check=True)
-print('PASS 2', flush=True)
-subprocess.run(p2, check=True)
+if os.environ.get('SM_FAST'):
+    # una sola pasada (más rápida) con tope de bitrate
+    vfast = [('medium' if v == 'slow' else v) for v in venc]
+    print('PASS UNICA', flush=True)
+    subprocess.run(common + vfast + aenc + [out], check=True)
+else:
+    print('PASS 1', flush=True)
+    subprocess.run(p1, check=True)
+    print('PASS 2', flush=True)
+    subprocess.run(p2, check=True)
 print('OK', out)
