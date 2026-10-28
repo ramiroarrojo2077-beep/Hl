@@ -1,0 +1,278 @@
+1
+00:00:01,600 --> 00:00:05,435
+En este complejo científico se estudia
+un fenómeno que usamos todos los días,
+
+2
+00:00:05,435 --> 00:00:06,831
+casi sin darnos cuenta.
+
+3
+00:00:08,800 --> 00:00:12,835
+El doctor Andrés Ferro, físico de
+materiales, llega a su laboratorio.
+
+4
+00:00:17,200 --> 00:00:20,435
+Sobre la mesa lo espera una mezcla
+de arena y limaduras de hierro.
+
+5
+00:00:20,435 --> 00:00:23,185
+¿Cómo separarlas, sin tocar
+los granos uno por uno?
+
+6
+00:00:25,600 --> 00:00:29,830
+La respuesta está en el magnetismo. Hoy
+vamos a conocer la separación magnética.
+
+7
+00:00:33,467 --> 00:00:37,544
+Primero, los materiales. La arena está
+formada sobre todo por granos de cuarzo,
+
+8
+00:00:37,544 --> 00:00:39,085
+que no responden al imán.
+
+9
+00:00:39,167 --> 00:00:42,195
+Las limaduras, en cambio, son
+pequeños fragmentos de hierro:
+
+10
+00:00:42,195 --> 00:00:43,808
+un material ferromagnético.
+
+11
+00:00:44,167 --> 00:00:47,102
+El doctor toma un imán cubierto
+con una funda de plástico.
+
+12
+00:00:47,102 --> 00:00:50,288
+La funda le va a permitir
+retirar el hierro con facilidad.
+
+13
+00:00:50,567 --> 00:00:53,848
+Al acercarlo a la mezcla, el campo
+magnético atrae a las limaduras:
+
+14
+00:00:53,848 --> 00:00:56,645
+se mueven hacia el imán y
+quedan pegadas a la funda.
+
+15
+00:00:57,367 --> 00:01:00,113
+La arena, en cambio, se
+queda en el recipiente.
+
+16
+00:01:00,367 --> 00:01:03,570
+Ahora lleva el imán sobre una
+bandeja vacía y lo saca de la funda.
+
+17
+00:01:03,570 --> 00:01:06,684
+Sin el campo magnético cerca,
+el hierro se desprende y cae.
+
+18
+00:01:11,367 --> 00:01:15,592
+Resultado: dos materiales separados.
+Arena de un lado, hierro del otro.
+
+19
+00:01:17,867 --> 00:01:20,532
+Probemos ahora con
+objetos de todos los días.
+
+20
+00:01:20,567 --> 00:01:24,611
+Los clips, el clavo y el tornillo, que
+son de acero, saltan hacia el imán.
+
+21
+00:01:24,667 --> 00:01:26,106
+En cambio, el cable de cobre,
+
+22
+00:01:26,106 --> 00:01:29,731
+la bolita de papel de aluminio y
+la tapita de plástico no se mueven.
+
+23
+00:01:30,367 --> 00:01:33,943
+Esa diferencia es justamente la
+base de la separación magnética.
+
+24
+00:01:36,533 --> 00:01:39,921
+¿Por qué pasa esto? Alrededor de
+todo imán hay un campo magnético,
+
+25
+00:01:39,921 --> 00:01:42,275
+que podemos representar con estas líneas.
+
+26
+00:01:42,933 --> 00:01:44,070
+El hierro, el níquel,
+
+27
+00:01:44,070 --> 00:01:47,839
+el cobalto y muchos aceros son
+atraídos con fuerza por ese campo.
+
+28
+00:01:49,133 --> 00:01:52,546
+Pero no todos los metales reaccionan
+igual. El aluminio y el cobre,
+
+29
+00:01:52,546 --> 00:01:55,699
+igual que el plástico, no son
+atraídos por un imán común.
+
+30
+00:01:56,333 --> 00:01:59,553
+Así, la separación magnética
+divide una mezcla en dos partes:
+
+31
+00:01:59,553 --> 00:02:02,388
+la fracción magnética y
+la fracción no magnética.
+
+32
+00:02:02,733 --> 00:02:07,465
+El mismo principio se aplica a gran
+escala. Estamos en una planta de reciclaje.
+
+33
+00:02:08,533 --> 00:02:12,481
+Por esta cinta transportadora avanzan
+residuos mezclados: latas de acero,
+
+34
+00:02:12,481 --> 00:02:14,895
+latas de aluminio y envases de plástico.
+
+35
+00:02:15,333 --> 00:02:18,116
+Sobre la cinta trabaja un
+separador magnético de banda.
+
+36
+00:02:18,116 --> 00:02:21,957
+Su imán atrae los objetos de acero
+y los levanta del flujo de residuos.
+
+37
+00:02:23,133 --> 00:02:26,499
+La banda los traslada hacia un costado
+y los deja caer en un contenedor.
+
+38
+00:02:26,499 --> 00:02:30,583
+El aluminio y el plástico siguen por la
+cinta hacia otras etapas de clasificación.
+
+39
+00:02:33,033 --> 00:02:36,137
+Al final de la línea hay otro
+separador: una polea magnética,
+
+40
+00:02:36,137 --> 00:02:38,931
+que atrapa las piezas de
+acero que todavía quedan.
+
+41
+00:02:39,433 --> 00:02:42,595
+Los materiales no magnéticos
+salen despedidos hacia adelante.
+
+42
+00:02:42,595 --> 00:02:46,120
+El acero queda pegado a la banda,
+gira con la polea y cae más atrás,
+
+43
+00:02:46,120 --> 00:02:47,614
+en su propio contenedor.
+
+44
+00:02:50,433 --> 00:02:53,519
+En una chatarrería, la protagonista
+es una grúa con electroimán:
+
+45
+00:02:53,519 --> 00:02:56,613
+un imán que se enciende y se
+apaga con corriente eléctrica.
+
+46
+00:02:57,033 --> 00:02:58,151
+Desde una zona segura,
+
+47
+00:02:58,151 --> 00:03:00,335
+el doctor observa cómo
+el operador ubica la
+
+48
+00:03:00,335 --> 00:03:02,972
+grúa sobre la chatarra
+y activa el electroimán.
+
+49
+00:03:03,833 --> 00:03:06,028
+Las piezas de hierro y
+acero quedan sujetas.
+
+50
+00:03:06,028 --> 00:03:09,370
+La grúa las traslada hasta el
+contenedor, y al cortar la corriente,
+
+51
+00:03:09,370 --> 00:03:11,665
+el campo desaparece y la carga se libera.
+
+52
+00:03:13,233 --> 00:03:16,908
+Es el mismo principio del
+laboratorio, pero con toneladas de metal.
+
+53
+00:03:17,433 --> 00:03:20,270
+De vuelta en el laboratorio,
+repasemos los tres ejemplos:
+
+54
+00:03:20,270 --> 00:03:21,464
+separar hierro de arena,
+
+55
+00:03:21,464 --> 00:03:24,500
+clasificar residuos y mover
+chatarra con un electroimán.
+
+56
+00:03:25,233 --> 00:03:29,118
+En todos los casos, la separación
+magnética permite recuperar materiales,
+
+57
+00:03:29,118 --> 00:03:32,136
+clasificar residuos y
+aprovecharlos en la industria.
+
+58
+00:03:33,233 --> 00:03:35,708
+Separación magnética: ciencia en acción.
+
