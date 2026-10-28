@@ -197,7 +197,7 @@ def main():
     cams['C1'] = c.bake(1, F(2.8))
     c = SL.CameraRig('C2', [(2.6, (-0.36, -0.12, 1.02), (-0.22, BOARD_Y, BT + 0.02), 32), (10.6, (0.24, -0.12, 1.02), (0.2, BOARD_Y, BT + 0.02), 32)], fstop=4.0)
     cams['C2'] = c.bake(F(2.5), F(10.8))
-    c = SL.CameraRig('C3', [(10.6, (0.15, -1.2, 1.38), (0.08, 0.42, 1.08), 36), (18.5, (0.15, -1.5, 1.45), (0.08, 0.42, 1.12), 34)])
+    c = SL.CameraRig('C3', [(10.6, (0.22, -1.45, 1.6), (0.12, 0.45, 1.37), 34), (18.5, (0.22, -1.7, 1.63), (0.12, 0.45, 1.37), 32)])
     cams['C3'] = c.bake(F(10.5), F(18.5))
     SL.cut(0.0, cams['C1'])
     SL.cut(2.6, cams['C2'])
@@ -222,8 +222,8 @@ def main():
         anchor = Vector((x + (0.03 if magnetic else 0.0), BOARD_Y, BOARD_Z + 0.01))
         MG.label('lbl_%s' % kind, txt, anchor, anchor + Vector((0.0, -0.07, 0.06)), cams['C2'], F(t_pass + 0.2), F(10.6), mg,
                  size=0.012, color=colr)
-    MG.label('lbl_res', 'El imán separa el acero del resto', lift + Vector((0, 0, -0.03)), lift + Vector((0.3, -0.25, 0.12)), cams['C3'],
-             F(12.6), None, mg, size=0.03, color=MG.CYAN)
+    MG.label('lbl_res', 'EL IMÁN SEPARA EL ACERO', lift + Vector((0, 0, -0.03)), Vector((0.7, 0.2, 1.5)), cams['C3'],
+             F(12.6), None, mg, size=0.04, color=MG.CYAN, sub='el resto queda en la tabla')
     for lid, t in (('E2b_01', 0.4), ('E2b_02', 3.1), ('E2b_03', 7.2), ('E2b_04', 12.9)):
         SL.narration(sc, lid, t)
     SL.save(sc, 'E2b')
