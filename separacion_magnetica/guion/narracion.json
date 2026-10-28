@@ -6,62 +6,176 @@
       "id": "E1",
       "titulo": "Introducción cinematográfica",
       "lineas": [
-        {"id": "E1_01", "texto": "En este complejo científico se estudia un fenómeno que usamos todos los días, casi sin darnos cuenta."},
-        {"id": "E1_02", "texto": "El doctor Andrés Ferro, físico de materiales, llega a su laboratorio."},
-        {"id": "E1_03", "texto": "Sobre la mesa lo espera una mezcla de arena y limaduras de hierro. ¿Cómo separarlas, sin tocar los granos uno por uno?"},
-        {"id": "E1_04", "texto": "La respuesta está en el magnetismo. Hoy vamos a conocer la separación magnética."}
+        {
+          "id": "E1_01",
+          "texto": "En este complejo científico se estudia un fenómeno que usamos todos los días, casi sin darnos cuenta."
+        },
+        {
+          "id": "E1_02",
+          "texto": "El doctor Andrés Ferro, físico de materiales, llega a su laboratorio."
+        },
+        {
+          "id": "E1_03",
+          "texto": "Sobre la mesa lo espera una mezcla de arena y limaduras de hierro. ¿Cómo separarlas, sin tocar los granos uno por uno?"
+        },
+        {
+          "id": "E1_04",
+          "texto": "La respuesta está en el magnetismo. Hoy vamos a conocer la separación magnética."
+        }
       ]
     },
     {
       "id": "E2",
       "titulo": "Experimento de laboratorio",
       "lineas": [
-        {"id": "E2_01", "texto": "Primero, los materiales. La arena está formada sobre todo por granos de cuarzo, que no responden al imán."},
-        {"id": "E2_02", "texto": "Las limaduras, en cambio, son pequeños fragmentos de hierro: un material ferromagnético."},
-        {"id": "E2_03", "texto": "El doctor toma un imán cubierto con una funda de plástico. La funda le va a permitir retirar el hierro con facilidad."},
-        {"id": "E2_04", "texto": "Al acercarlo a la mezcla, el campo magnético atrae a las limaduras: se mueven hacia el imán y quedan pegadas a la funda."},
-        {"id": "E2_05", "texto": "La arena, en cambio, se queda en el recipiente."},
-        {"id": "E2_06", "texto": "Ahora lleva el imán sobre una bandeja vacía y lo saca de la funda. Sin el campo magnético cerca, el hierro se desprende y cae."},
-        {"id": "E2_07", "texto": "Resultado: dos materiales separados. Arena de un lado, hierro del otro."}
+        {
+          "id": "E2_01",
+          "texto": "Primero, los materiales. La arena está formada sobre todo por granos de cuarzo, que no responden al imán."
+        },
+        {
+          "id": "E2_02",
+          "texto": "Las limaduras, en cambio, son pequeños fragmentos de hierro: un material ferromagnético."
+        },
+        {
+          "id": "E2_03",
+          "texto": "El doctor toma un imán cubierto con una funda de plástico. La funda le va a permitir retirar el hierro con facilidad."
+        },
+        {
+          "id": "E2_04",
+          "texto": "Al acercarlo a la mezcla, el campo magnético atrae a las limaduras: se mueven hacia el imán y quedan pegadas a la funda."
+        },
+        {
+          "id": "E2_05",
+          "texto": "La arena, en cambio, se queda en el recipiente."
+        },
+        {
+          "id": "E2_06",
+          "texto": "Ahora lleva el imán sobre una bandeja vacía y lo saca de la funda. Sin el campo magnético cerca, el hierro se desprende y cae."
+        },
+        {
+          "id": "E2_07",
+          "texto": "Resultado: dos materiales separados. Arena de un lado, hierro del otro."
+        }
+      ]
+    },
+    {
+      "id": "E2b",
+      "titulo": "Prueba con objetos cotidianos",
+      "lineas": [
+        {
+          "id": "E2b_01",
+          "texto": "Probemos ahora con objetos de todos los días."
+        },
+        {
+          "id": "E2b_02",
+          "texto": "Los clips, el clavo y el tornillo, que son de acero, saltan hacia el imán."
+        },
+        {
+          "id": "E2b_03",
+          "texto": "En cambio, el cable de cobre, la bolita de papel de aluminio y la tapita de plástico no se mueven."
+        },
+        {
+          "id": "E2b_04",
+          "texto": "Esa diferencia es justamente la base de la separación magnética."
+        }
       ]
     },
     {
       "id": "E3",
       "titulo": "Explicación científica (holograma)",
       "lineas": [
-        {"id": "E3_01", "texto": "¿Por qué pasa esto? Alrededor de todo imán hay un campo magnético, que podemos representar con estas líneas."},
-        {"id": "E3_02", "texto": "El hierro, el níquel, el cobalto y muchos aceros son atraídos con fuerza por ese campo."},
-        {"id": "E3_03", "texto": "Pero no todos los metales reaccionan igual. El aluminio y el cobre, igual que el plástico, no son atraídos por un imán común."},
-        {"id": "E3_04", "texto": "Así, la separación magnética divide una mezcla en dos partes: la fracción magnética y la fracción no magnética."}
+        {
+          "id": "E3_01",
+          "texto": "¿Por qué pasa esto? Alrededor de todo imán hay un campo magnético, que podemos representar con estas líneas."
+        },
+        {
+          "id": "E3_02",
+          "texto": "El hierro, el níquel, el cobalto y muchos aceros son atraídos con fuerza por ese campo."
+        },
+        {
+          "id": "E3_03",
+          "texto": "Pero no todos los metales reaccionan igual. El aluminio y el cobre, igual que el plástico, no son atraídos por un imán común."
+        },
+        {
+          "id": "E3_04",
+          "texto": "Así, la separación magnética divide una mezcla en dos partes: la fracción magnética y la fracción no magnética."
+        }
       ]
     },
     {
       "id": "E4",
       "titulo": "Planta de reciclaje industrial",
       "lineas": [
-        {"id": "E4_01", "texto": "El mismo principio se aplica a gran escala. Estamos en una planta de reciclaje."},
-        {"id": "E4_02", "texto": "Por esta cinta transportadora avanzan residuos mezclados: latas de acero, latas de aluminio y envases de plástico."},
-        {"id": "E4_03", "texto": "Sobre la cinta trabaja un separador magnético de banda. Su imán atrae los objetos de acero y los levanta del flujo de residuos."},
-        {"id": "E4_04", "texto": "La banda los traslada hacia un costado y los deja caer en un contenedor. El aluminio y el plástico siguen por la cinta hacia otras etapas de clasificación."}
+        {
+          "id": "E4_01",
+          "texto": "El mismo principio se aplica a gran escala. Estamos en una planta de reciclaje."
+        },
+        {
+          "id": "E4_02",
+          "texto": "Por esta cinta transportadora avanzan residuos mezclados: latas de acero, latas de aluminio y envases de plástico."
+        },
+        {
+          "id": "E4_03",
+          "texto": "Sobre la cinta trabaja un separador magnético de banda. Su imán atrae los objetos de acero y los levanta del flujo de residuos."
+        },
+        {
+          "id": "E4_04",
+          "texto": "La banda los traslada hacia un costado y los deja caer en un contenedor. El aluminio y el plástico siguen por la cinta hacia otras etapas de clasificación."
+        }
+      ]
+    },
+    {
+      "id": "E4b",
+      "titulo": "Polea magnética",
+      "lineas": [
+        {
+          "id": "E4b_01",
+          "texto": "Al final de la línea hay otro separador: una polea magnética, que atrapa las piezas de acero que todavía quedan."
+        },
+        {
+          "id": "E4b_02",
+          "texto": "Los materiales no magnéticos salen despedidos hacia adelante. El acero queda pegado a la banda, gira con la polea y cae más atrás, en su propio contenedor."
+        }
       ]
     },
     {
       "id": "E5",
       "titulo": "Chatarrería con electroimán",
       "lineas": [
-        {"id": "E5_01", "texto": "En una chatarrería, la protagonista es una grúa con electroimán: un imán que se enciende y se apaga con corriente eléctrica."},
-        {"id": "E5_02", "texto": "Desde una zona segura, el doctor observa cómo el operador ubica la grúa sobre la chatarra y activa el electroimán."},
-        {"id": "E5_03", "texto": "Las piezas de hierro y acero quedan sujetas. La grúa las traslada hasta el contenedor, y al cortar la corriente, el campo desaparece y la carga se libera."},
-        {"id": "E5_04", "texto": "Es el mismo principio del laboratorio, pero con toneladas de metal."}
+        {
+          "id": "E5_01",
+          "texto": "En una chatarrería, la protagonista es una grúa con electroimán: un imán que se enciende y se apaga con corriente eléctrica."
+        },
+        {
+          "id": "E5_02",
+          "texto": "Desde una zona segura, el doctor observa cómo el operador ubica la grúa sobre la chatarra y activa el electroimán."
+        },
+        {
+          "id": "E5_03",
+          "texto": "Las piezas de hierro y acero quedan sujetas. La grúa las traslada hasta el contenedor, y al cortar la corriente, el campo desaparece y la carga se libera."
+        },
+        {
+          "id": "E5_04",
+          "texto": "Es el mismo principio del laboratorio, pero con toneladas de metal."
+        }
       ]
     },
     {
       "id": "E6",
       "titulo": "Aplicaciones y resumen",
       "lineas": [
-        {"id": "E6_01", "texto": "De vuelta en el laboratorio, repasemos los tres ejemplos: separar hierro de arena, clasificar residuos y mover chatarra con un electroimán."},
-        {"id": "E6_02", "texto": "En todos los casos, la separación magnética permite recuperar materiales, clasificar residuos y aprovecharlos en la industria."},
-        {"id": "E6_03", "texto": "Separación magnética: ciencia en acción."}
+        {
+          "id": "E6_01",
+          "texto": "De vuelta en el laboratorio, repasemos los tres ejemplos: separar hierro de arena, clasificar residuos y mover chatarra con un electroimán."
+        },
+        {
+          "id": "E6_02",
+          "texto": "En todos los casos, la separación magnética permite recuperar materiales, clasificar residuos y aprovecharlos en la industria."
+        },
+        {
+          "id": "E6_03",
+          "texto": "Separación magnética: ciencia en acción."
+        }
       ]
     }
   ]

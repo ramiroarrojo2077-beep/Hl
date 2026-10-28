@@ -477,9 +477,21 @@ def main():
     amb.add(s, wind(d + 0.5) * 0.5)
     amb.add(s, birds(d, 10) * 0.6, pan=0.3)
     sfx.add(s + 7.2, door_slide() * 0.5)
-    for name in ('E1b', 'E2', 'E3', 'E6'):
+    for name in ('E1b', 'E2', 'E2b', 'E3', 'E6'):
         s, d = scene_rng(name)
         amb.add(s, room_tone(d + 0.5) * 0.7)
+    # E2b: objetos de acero saltando al imán
+    s, d = scene_rng('E2b')
+    for tt in (3.4, 3.6, 4.6, 5.6):
+        sfx.add(s + tt, metal_hit(0.2, 0.3) * 0.35)
+    # E4b: maquinaria, golpes de latas en los contenedores
+    s, d = scene_rng('E4b')
+    amb.add(s, machinery(d + 0.5) * 0.25)
+    amb.add(s, hum(d, 100, 0.05))
+    k = s + 0.6
+    while k < s + d:
+        sfx.add(k, metal_hit(rng.uniform(0.15, 0.3), 0.4) * 0.15, pan=rng.uniform(-0.3, 0.6))
+        k += rng.uniform(0.25, 0.6)
     s, d = scene_rng('E1b')
     sfx.add(s + 18.8, whoosh(1.4, 200, 4000) * 0.35)
     sfx.add(s + 19.6, shimmer(2.5, 880) * 0.25)
@@ -550,7 +562,7 @@ def main():
     # música con energía según escena y ducking bajo la voz
     def energy(t):
         if t < off['E4']:
-            return 0.15
+            return 0.15 if t < off['E2b'] else 0.25
         if t < off['E6']:
             return 0.65
         return 0.3

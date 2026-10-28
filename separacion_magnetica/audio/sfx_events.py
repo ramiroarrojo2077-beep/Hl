@@ -24,7 +24,7 @@ def fc_eval(act, slot, path, idx, frame):
 def main():
     scenes_dir, out = sys.argv[-2], sys.argv[-1]
     res = {}
-    for name in ('E1a', 'E1b', 'E2', 'E3', 'E4', 'E5', 'E6'):
+    for name in ('E1a', 'E1b', 'E2', 'E2b', 'E3', 'E4', 'E4b', 'E5', 'E6'):
         p = os.path.join(scenes_dir, name + '.blend')
         if not os.path.exists(p):
             continue

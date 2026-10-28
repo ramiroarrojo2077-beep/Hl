@@ -14,6 +14,11 @@
   "type": "fade"
  },
  {
+  "scene": "E2b",
+  "xfade": 0.5,
+  "type": "fade"
+ },
+ {
   "scene": "E3",
   "xfade": 0.0333,
   "type": "fade"
@@ -21,6 +26,11 @@
  {
   "scene": "E4",
   "xfade": 1.0,
+  "type": "fade"
+ },
+ {
+  "scene": "E4b",
+  "xfade": 0.5,
   "type": "fade"
  },
  {
