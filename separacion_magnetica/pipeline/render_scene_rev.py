@@ -1,7 +1,8 @@
 """Renderiza un rango de frames de una escena guardada a PNG.
 
-Con SM_MAX_FRAMES=N sale con código 3 tras N frames (el proceso de render acumula memoria;
-el script envoltorio lo relanza y continúa desde los frames que faltan).
+Con SM_MAX_FRAMES=N sale con código 3 tras N frames, o antes si la memoria residente supera
+SM_MAX_RSS_MB (el proceso de render acumula memoria; el script envoltorio lo relanza y continúa
+desde los frames que faltan).
 
 Uso: python render_scene.py escena.blend dir_salida f_ini f_fin [paso]
 """
@@ -9,6 +10,14 @@ import sys
 import os
 import time
 import bpy
+
+
+def rss_mb():
+    try:
+        with open('/proc/self/statm') as fh:
+            return int(fh.read().split()[1]) * os.sysconf('SC_PAGE_SIZE') / 1e6
+    except (OSError, ValueError):
+        return 0.0
 
 
 def claim(out, f):
@@ -34,6 +43,7 @@ sc = bpy.context.scene
 os.makedirs(out, exist_ok=True)
 sc.render.use_persistent_data = True
 max_frames = int(os.environ.get('SM_MAX_FRAMES', '0'))
+max_rss = float(os.environ.get('SM_MAX_RSS_MB', '4300'))
 done = 0
 for f in range(f1, f0 - 1, -1):
     p = os.path.join(out, 'f%05d.png' % f)
@@ -50,5 +60,5 @@ for f in range(f1, f0 - 1, -1):
     except OSError:
         pass
     done += 1
-    if max_frames and done >= max_frames:
+    if (max_frames and done >= max_frames) or (max_rss and rss_mb() > max_rss):
         sys.exit(3)
