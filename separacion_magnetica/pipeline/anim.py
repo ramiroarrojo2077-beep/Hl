@@ -467,15 +467,18 @@ class Walk:
         for k in range(len(pl) - 1):
             pa, pb = pl[k], pl[k + 1]
             if closing and k == len(pl) - 2:
-                tc0 = self.t1 - 0.12
-                tc1 = tc0 + 0.45
-                if t <= tc0:
-                    return self._plant(pp, pa)
-                u = min((t - tc0) / (tc1 - tc0), 1.0)
-                return self._swing(pp, pa, pb, u, h=0.02, toe_off=False)
-            # apoyo simétrico respecto de la cadera (el pie apoya ~0.55 paso adelante y despega ~0.65 paso atrás)
-            w0 = pb - 1.35 * d
-            w1 = pb - 0.55 * d
+                # paso de cierre: despega cuando la cadera pasó medio paso (igual que un paso normal),
+                # así el pie de atrás no queda clavado mientras el cuerpo sigue avanzando
+                sl = min(pa + 0.5 * d, pb - 1e-4)
+                if b <= sl:
+                    hr = 0.35 * d
+                    heel = smoothstep(sl - hr, sl, b) if pa > 0 else 0.0
+                    return self._plant(pp, pa, -self.TOE_OFF * heel)
+                # el pie avanza con la cadera (por progreso, no por reloj): nunca queda atrás fuera de alcance
+                u = 1.0 if t >= self.t1 else min((b - sl) / max(pb - sl, 1e-9), 1.0)
+                return self._swing(pp, pa, pb, u, h=0.001, toe_off=pa > 0)
+            w0 = pb - 1.5 * d     # piernas rectas: apoyo simétrico (0.5 paso adelante / 0.5 atrás)
+            w1 = pb - 0.5 * d
             if k == 0:
                 w0 = max(w0, -0.05 * d)
             if b < w0:
@@ -493,14 +496,14 @@ class Walk:
         pl_r = self.plants('R')
         return 'L' if pl_l[-2] > pl_r[-2] else 'R'
 
-    TOE_OFF = 0.3    # ángulo del pie al despegar (rad)
+    TOE_OFF = 0.18   # ángulo del pie al despegar (rad)
 
     def _plant(self, plant_pos, s, pitch=0.0):
         p = plant_pos(s)
         yaw = yaw_from_dir(self.path.tangent(s))
         return np.array([p[0], p[1], 0.0]), yaw, pitch
 
-    def _swing(self, plant_pos, sa, sb, u, h=0.025, toe_off=True):
+    def _swing(self, plant_pos, sa, sb, u, h=0.001, toe_off=True):
         ue = ease_io(u, 1.6)
         pa = plant_pos(sa)
         pb = plant_pos(sb)
@@ -514,9 +517,9 @@ class Walk:
             if toe_off:
                 pitch = -self.TOE_OFF * (1 - smoothstep(0.0, 0.45, u))
             else:
-                pitch = -0.2 * math.sin(math.pi * min(u * 1.6, 1.0))
+                pitch = 0.0   # primer paso: el pie sale plano (la pierna pasa recta, sin levantar el talón)
         else:
-            pitch = 0.25 * math.sin(math.pi * (u - 0.6) / 0.4)
+            pitch = 0.08 * math.sin(math.pi * (u - 0.6) / 0.4)
         return np.array([p[0], p[1], z]), yaw, pitch
 
     def body_state(self, t):

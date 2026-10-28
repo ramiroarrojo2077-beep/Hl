@@ -259,7 +259,7 @@ def _build_armature(human, name, col, offset):
         el = eb['lowerarm01.' + side].head
         pole.head = el + Vector((s * 0.3, 0.5, -0.05))
         pole.tail = pole.head + Vector((0, 0.05, 0))
-        pole.parent = root
+        pole.parent = None
         fk = arm.edit_bones.new('IK_foot.' + side)
         foot = eb['foot.' + side]
         fk.head = foot.head.copy()
@@ -270,7 +270,7 @@ def _build_armature(human, name, col, offset):
         kn = eb['lowerleg01.' + side].head
         kp.head = kn + Vector((0, -0.6, 0))
         kp.tail = kp.head + Vector((0, -0.05, 0))
-        kp.parent = root
+        kp.parent = None
     look = arm.edit_bones.new('look')
     hpos = eb['head'].head
     look.head = hpos + Vector((0, -1.5, 0.1))
