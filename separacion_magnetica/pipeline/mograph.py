@@ -103,8 +103,43 @@ def _rounded_rect(name, w, h, r, col, mat):
     return ob
 
 
-def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0.05, color=CYAN, sub=None):
-    """Etiqueta flotante: panel + texto + línea guía hacia 'anchor'. Mira siempre a la cámara."""
+def _cam_rot_at(cam, f):
+    """Rotación (euler) animada de la cámara en el frame f, leída de sus curvas."""
+    e = list(cam.rotation_euler)
+    ad = cam.animation_data
+    if ad and ad.action:
+        for layer in ad.action.layers:
+            for strip in layer.strips:
+                cb = strip.channelbag(ad.action_slot)
+                if cb is None:
+                    continue
+                for i in range(3):
+                    fc = cb.fcurves.find('rotation_euler', index=i)
+                    if fc:
+                        e[i] = fc.evaluate(f)
+    from mathutils import Euler
+    return Euler(e, cam.rotation_mode if cam.rotation_mode != 'QUATERNION' else 'XYZ')
+
+
+def flat_to_camera(root, cam, f0, f1):
+    """Reemplaza el TRACK_TO por una orientación paralela al plano de imagen (sin giro aparente
+    en etiquetas alejadas del centro cuando la cámara mira muy en picado)."""
+    for c in list(root.constraints):
+        root.constraints.remove(c)
+    # ejes de la etiqueta en coordenadas de cámara: X -> izquierda, Y -> hacia el espectador, Z -> arriba
+    R = Matrix(((-1, 0, 0), (0, 0, 1), (0, 1, 0)))
+    prev = None
+    for f in range(f0, f1 + 1):
+        m = _cam_rot_at(cam, f).to_matrix() @ R
+        e = m.to_euler('XYZ', prev) if prev else m.to_euler('XYZ')
+        prev = e
+        root.rotation_euler = e
+        root.keyframe_insert('rotation_euler', frame=f)
+
+
+def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0.05, color=CYAN, sub=None, flat=False):
+    """Etiqueta flotante: panel + texto + línea guía hacia 'anchor'. Mira siempre a la cámara
+    (flat=True: paralela al plano de imagen durante f_in..f_out)."""
     root = bpy.data.objects.new(name, None)
     (col or bpy.context.scene.collection).objects.link(root)
     root.location = panel_pos
@@ -197,6 +232,8 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     cv.keyframe_insert('bevel_factor_end', frame=f_in - 1)
     cv.bevel_factor_end = 1.0
     cv.keyframe_insert('bevel_factor_end', frame=f_in + 10)
+    if flat:
+        flat_to_camera(root, cam, f_in - 1, (f_out or bpy.context.scene.frame_end) + 1)
     return root
 
 

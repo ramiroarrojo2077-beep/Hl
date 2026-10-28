@@ -175,7 +175,7 @@ def main():
     cams = {}
     c = SL.CameraRig('C1', [(0.0, (11.4, -3.6, 2.6), (11.5, 0.0, 0.8), 26), (7.0, (11.8, -3.3, 2.45), (11.6, 0.0, 0.8), 28)])
     cams['C1'] = c.bake(1, F(7.2))
-    c = SL.CameraRig('C2', [(7.0, (11.7, -2.6, 1.4), (11.4, 0.0, 0.7), 40), (14.0, (11.9, -2.4, 1.35), (11.4, 0.0, 0.7), 42)])
+    c = SL.CameraRig('C2', [(7.0, (11.95, -2.75, 3.25), (11.85, 0.0, 0.62), 28), (14.0, (12.15, -2.55, 3.15), (11.85, 0.0, 0.62), 30)])
     cams['C2'] = c.bake(F(6.9), F(14.2))
     c = SL.CameraRig('C3', [(14.0, (11.6, -4.2, 1.75), (10.2, -1.6, 1.45), 32), (18.0, (11.9, -4.6, 1.85), (10.4, -1.4, 1.4), 30)])
     cams['C3'] = c.bake(F(13.9), F(DUR))
@@ -205,11 +205,11 @@ def main():
     MG.grow(fl, F(7.4), F(8.6), flm)
     MG.label('lbl_pulley', 'POLEA MAGNÉTICA', PC + Vector((0, -0.55, 0.1)), PC + Vector((-0.6, -0.9, 0.75)), cams['C1'], F(1.6), F(7.0), mg,
              size=0.09, color=MG.RED, sub='al final de la cinta')
-    MG.label('lbl_nm', 'NO MAGNÉTICOS: salen despedidos', FAR_BIN + Vector((-0.3, 0, 0.9)), FAR_BIN + Vector((0.3, -0.8, 1.55)),
-             cams['C2'], F(8.0), F(14.0), mg, size=0.06, color=MG.ORANGE)
-    MG.label('lbl_m', 'ACERO: sigue la banda y cae atrás', NEAR_BIN + Vector((0.2, 0, 0.5)), NEAR_BIN + Vector((-0.6, -0.7, 0.35)),
-             cams['C2'], F(9.6), F(14.0), mg, size=0.06, color=MG.CYAN)
-    MG.arrow('arr_nm', PC + Vector((0.35, -0.6, 0.45)), FAR_BIN + Vector((-0.2, -0.6, 1.0)), mg, MG.ORANGE, radius=0.015, f_in=F(8.2), f_out=F(14.0))
+    MG.label('lbl_nm', 'NO MAGNÉTICOS', FAR_BIN + Vector((-0.3, 0, 0.9)), Vector((12.55, -0.45, 1.8)),
+             cams['C2'], F(8.0), F(14.0), mg, size=0.09, color=MG.ORANGE, sub='salen despedidos', flat=True)
+    MG.label('lbl_m', 'ACERO', NEAR_BIN + Vector((0.2, 0, 0.5)), Vector((10.9, -0.35, 1.8)),
+             cams['C2'], F(9.6), F(14.0), mg, size=0.09, color=MG.CYAN, sub='sigue la banda y cae atrás', flat=True)
+    MG.arrow('arr_nm', PC + Vector((0.35, -0.6, 0.45)), Vector((12.3, -0.3, 1.2)), mg, MG.ORANGE, radius=0.015, f_in=F(8.2), f_out=F(14.0))
     MG.arrow('arr_m', PC + Vector((0.42, -0.6, -0.1)), NEAR_BIN + Vector((0.2, -0.6, 0.6)), mg, MG.CYAN, radius=0.015, f_in=F(9.8), f_out=F(14.0))
     for lid, t in (('E4b_01', 0.6), ('E4b_02', 7.0)):
         SL.narration(sc, lid, t)
