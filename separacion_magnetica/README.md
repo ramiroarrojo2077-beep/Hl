@@ -3,8 +3,8 @@
 Video educativo animado en 3D sobre **separación magnética**, con un científico protagonista
 modelado, riggeado y animado que realiza los experimentos dentro de escenarios 3D.
 
-- **Entregable:** `Separacion_Magnetica_3D_Final.mp4` (H.264 1920×1080, 30 fps, AAC 48 kHz, ~3:03,
-  subtítulos en español incrustados como pista de texto) + `Separacion_Magnetica_3D_Final.srt`.
+- **Entregable:** `Separacion_Magnetica_3D_Final.mp4` (H.264 1920×1080, 30 fps, AAC 48 kHz, ~3:40,
+  9 secuencias, subtítulos en español quemados en la imagen) + `Separacion_Magnetica_3D_Final.srt`.
 - **Guion técnico / storyboard:** [`guion/guion_tecnico.md`](guion/guion_tecnico.md)
 - **Narración:** [`guion/narracion.json`](guion/narracion.json) (español rioplatense, voz es_AR).
 
@@ -31,7 +31,7 @@ modelado, riggeado y animado que realiza los experimentos dentro de escenarios 3
 python -m venv venv && ./venv/bin/pip install bpy==5.2.3 numpy scipy pillow piper-tts sherpa-onnx soundfile
 export SM_LIB=build/lib SM_BUILD=build
 for s in scientist worker_a worker_b; do ./venv/bin/python pipeline/build_character_lib.py $s build/lib/$s.blend; done
-for e in e1a e1b e2 e3 e4 e5 e6; do ./venv/bin/python pipeline/shot_$e.py; done          # genera build/scenes/*.blend
+for e in e1a e1b e2 e2b e3 e4 e4b e5 e6; do ./venv/bin/python pipeline/shot_$e.py; done          # genera build/scenes/*.blend
 ./venv/bin/python pipeline/render_scene.py build/scenes/E2.blend build/frames/E2 1 1350  # (idem cada escena)
 ./venv/bin/python audio/narracion.py <modelos_tts> build/narr
 ./venv/bin/python audio/sfx_events.py build/scenes build/steps.json

@@ -1,6 +1,6 @@
 # Separación magnética — Guion técnico y storyboard
 
-Video educativo animado 3D · español rioplatense · 1920×1080 · 30 fps · ~3:03
+Video educativo animado 3D · español rioplatense · 1920×1080 · 30 fps · ~3:40
 
 Narración en off: voz es_AR "daniela" (Piper TTS). Protagonista: **Dr. Andrés Ferro**, físico de materiales (personaje 3D original, rig completo).
 
@@ -39,6 +39,20 @@ Utilería: cristalizador con arena y 320 limaduras individuales (objetos), imán
 | 27–37.5 | C6 plano detalle de manos | Paso lateral hasta la bandeja; la mano izquierda toma la funda, la derecha retira el imán; las limaduras caen (simulación con gravedad) y se apilan en la bandeja | — | E2_06 (27.4) |
 | 37.5–45 | C7 plano general frontal | Resultado; sonríe a cámara | Etiquetas **FRACCIÓN NO MAGNÉTICA** (arena) y **FRACCIÓN MAGNÉTICA** (hierro) | E2_07 (38.4) |
 
+**Transición:** fundido encadenado (0.5 s) → prueba con objetos.
+
+## E2b — Prueba con objetos cotidianos (18.5 s) · `shot_e2b.py`
+
+Sobre la mesada, una tabla de prueba con objetos de **acero** (clips, clavo, tornillo) y objetos **no magnéticos** (cable de cobre, bolita de papel de aluminio, tapita de plástico). El imán sigue dentro de su funda.
+
+| t | Cámara | Acción | Gráficos | Narración |
+|---|---|---|---|---|
+| 0–2.6 | C1 plano medio | Toma posición frente a la tabla con el imán enfundado | — | E2b_01 (0.4) |
+| 2.6–10.6 | C2 travelling lateral a ras de la tabla | Barre el imán de izquierda a derecha (paso lateral a mitad del recorrido): clips, clavo y tornillo saltan y quedan pegados a la funda; cobre, aluminio y plástico no se mueven | Líneas de campo del imán; etiquetas **ACERO: atraído** / **COBRE: no** / **ALUMINIO: no** / **PLÁSTICO: no** | E2b_02 (3.1), E2b_03 (7.2) |
+| 10.6–18.5 | C3 plano medio | Levanta el imán con las piezas de acero colgando y lo muestra | Etiqueta **El imán separa el acero del resto** | E2b_04 (12.9) |
+
+**Transición:** corte directo → mesa holográfica (mismo laboratorio).
+
 ## E3 — Explicación científica en la mesa holográfica (27 s) · `shot_e3.py`
 
 | t | Cámara | Acción | Gráficos | Narración |
@@ -62,6 +76,18 @@ Nave industrial con columnas, cerchas, claraboyas, luminarias; cinta transportad
 | 6.5–13 | C2 a ras de la cinta | Residuos mezclados avanzan: latas de acero y aluminio, botellas, cartón | Etiqueta **RESIDUOS MEZCLADOS** | E4_02 (6.6) |
 | 13–21 | C3 bajo el separador | Las latas de acero son levantadas por el imán y llevadas por la banda transversal; **corte interno**: la carcasa se vuelve transparente y muestra el imán | Líneas de campo, etiquetas **SEPARADOR MAGNÉTICO DE BANDA** y **ACERO → separado** | E4_03 (13.4) |
 | 21–31 | C4 sobre el científico en la consola | Las latas caen al contenedor; aluminio y plástico siguen; el científico opera la pantalla táctil | Flechas de trayecto y etiqueta | E4_04 (21.2) |
+
+**Transición:** fundido encadenado (0.5 s) → polea magnética.
+
+## E4b — Polea magnética (18 s) · `shot_e4b.py`
+
+Final de la misma línea de la planta: la cinta termina en una **polea magnética** (tambor imantado). Adelante, contenedor verde **NO MAGNÉTICOS**; más atrás, bajo la polea, contenedor azul **ACERO**, separados por un divisor.
+
+| t | Cámara | Acción | Gráficos | Narración |
+|---|---|---|---|---|
+| 0–7 | C1 general en picado | El científico (casco y chaleco) camina por el pasillo seguro, se detiene detrás de la baranda y señala la polea | Etiqueta **POLEA MAGNÉTICA** — al final de la cinta | E4b_01 (0.6) |
+| 7–14 | C2 lateral a la altura de la polea | Aluminio y plástico salen despedidos hacia adelante por inercia; las piezas de acero quedan adheridas a la banda, giran con la polea y caen atrás, en su contenedor. El científico señala cada trayectoria | Arcos de campo en el tambor, flechas de trayectoria, etiquetas **NO MAGNÉTICOS: salen despedidos** y **ACERO: sigue la banda y cae atrás** | E4b_02 (7.0) |
+| 14–18 | C3 plano medio del científico | Se gira hacia cámara y sonríe | — | |
 
 **Transición:** fundido a negro (0.8 s).
 
@@ -92,4 +118,4 @@ El personaje nunca se ubica bajo cargas suspendidas ni dentro del radio de giro.
 - Narración: `audio/narracion.py` (Piper es_AR), verificada con Whisper.
 - Música instrumental original procedural (pads, bajo, arpegio, pulso suave en escenas industriales) con ducking bajo la voz.
 - Efectos sintetizados y sincronizados con la animación: pisadas (extraídas de las curvas IK de los pies), metal, limaduras, funda, puertas, holograma, beeps, maquinaria, viento y pájaros, motor y giro hidráulico de la grúa, zumbido del electroimán, caída de chatarra.
-- Subtítulos SRT sincronizados (también incrustados como pista de texto en el MP4).
+- Subtítulos sincronizados: quemados en la imagen (Montserrat SemiBold, abajo al centro) y además entregados como `.srt`.
