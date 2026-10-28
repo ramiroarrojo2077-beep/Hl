@@ -337,9 +337,9 @@ def main():
     # señala la grúa y el contenedor
     P.hand('R', 16.0, 'rest')
     P.hand_pose('R', 16.0, {'relaxed': 1})
-    P.hand('R', 17.0, ('world', Vector((SCI[0] + 0.25, SCI[1] + 0.45, 1.5)), Vector((0.45, 0.85, 0.35)), Vector((0, 0, -1))))
+    P.hand('R', 17.0, ('world', Vector((SCI[0] + 0.38, SCI[1] + 0.36, 1.5)), Vector((0.45, 0.85, 0.35)), Vector((0, 0, -1))))
     P.hand_pose('R', 17.0, {'point': 1})
-    P.hand('R', 20.0, ('world', Vector((SCI[0] + 0.15, SCI[1] + 0.5, 1.45)), Vector((0.1, 1.0, 0.25)), Vector((0, 0, -1))))
+    P.hand('R', 20.0, ('world', Vector((SCI[0] + 0.35, SCI[1] + 0.38, 1.45)), Vector((0.1, 1.0, 0.25)), Vector((0, 0, -1))))
     P.hand('R', 21.2, 'rest')
     P.hand_pose('R', 21.2, {'relaxed': 1})
     P.face_dir(22.4, 23.0, (SCI[0] + 1.6, SCI[1] - 3.2))

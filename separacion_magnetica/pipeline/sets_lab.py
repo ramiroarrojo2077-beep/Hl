@@ -156,7 +156,7 @@ def build_corridor(col):
 DISH = Vector((0.12, 0.33, BENCH_TOP))
 TRAY = Vector((-0.18, 0.33, BENCH_TOP))
 STAND = Vector((-0.42, 0.40, BENCH_TOP))
-SAND_BOTTLE = Vector((0.48, 0.44, BENCH_TOP))
+SAND_BOTTLE = Vector((0.30, 0.47, BENCH_TOP))   # al alcance de la mano izquierda (inclinándose un poco)
 HANDLE_C = 0.165   # centro del mango (desde la base del imán)
 SLEEVE_GRIP = 0.085
 DISH_R = 0.095

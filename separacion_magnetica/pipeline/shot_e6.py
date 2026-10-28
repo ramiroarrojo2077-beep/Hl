@@ -258,9 +258,10 @@ def main():
     # actuación
     P.look_at(0.0, (0.0, 0.3, 1.0))
     P.expression(0.0, 'smile_soft')
-    P.lean.add(0.6, 0.0).add(1.2, 0.18).add(6.4, 0.18).add(7.4, 0.04)
+    P.lean.add(0.6, 0.0).add(1.2, 0.22).add(6.4, 0.22).add(7.4, 0.04)
     # mientras está inclinado, la mano libre se apoya en el borde de la mesada (antes colgaba y se metía en ella)
-    bench = {sd: ('world', Vector((sx + k * 0.3, 0.5, BT + 0.035)), Vector((k * 0.1, -1, -0.15)), Vector((0, 0, -1)))
+    # (al alcance del brazo: muñeca un poco alta y dedos inclinados hacia la mesada, que es lo que toca)
+    bench = {sd: ('world', Vector((sx + k * 0.26, 0.5, BT + 0.06)), Vector((k * 0.1, -1, -0.45)), Vector((0, 0, -1)))
              for sd, k in (('L', 1), ('R', -1))}
     P.hand('L', 0.6, 'rest')
     P.hand('L', 1.3, bench['L'])

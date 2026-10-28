@@ -70,7 +70,7 @@ def main():
     hintB = Vector((-0.6, -1.0, 0.0))
 
     def gL(base):
-        return W(A.grasp_frame('L', Vector(base) + Vector((0, 0, 0.038)), (0, 0, 1), hintB, radius=0.024))
+        return W(A.grasp_frame('L', Vector(base) + Vector((0, 0, 0.048)), (0, 0, 1), hintB, radius=0.024))
 
     show = Vector((0.32, 0.32, LAB.BENCH_TOP + 0.36))
     P.hand('L', 0.6, 'rest')
@@ -89,6 +89,8 @@ def main():
     P.hand('L', 5.8, gL(b0 + Vector((0.0, -0.02, 0.08))))
     P.hand('L', 6.4, 'rest')
     P.hand_pose('L', 6.4, {'relaxed': 1})
+    # para alcanzar la mesada se inclina desde la cintura (piernas rectas)
+    P.lean.add(1.2, 0.0).add(1.8, 0.3).add(2.4, 0.3).add(2.9, 0.04).add(4.7, 0.04).add(5.15, 0.3).add(5.6, 0.3).add(6.1, 0.0)
     P.look_at(1.2, b0 + Vector((0, 0, 0.04)))
     P.look_at(2.9, show + Vector((0, 0, 0.03)))
     P.look_at(3.7, (0.3, -2.5, 1.5))

@@ -85,7 +85,7 @@ def main():
     P.hand('R', 4.4, 'rest')
     P.hand_pose('R', 4.4, {'relaxed': 1})
     sw0 = HOLO + Vector((-0.24, 0.34, 0.2))
-    sw1 = HOLO + Vector((0.18, 0.3, 0.22))
+    sw1 = HOLO + Vector((0.0, 0.36, 0.22))   # termina al centro (antes cruzaba el cuerpo fuera de alcance)
     P.hand('R', 5.0, ('world', sw0, Vector((0.3, -1, -0.2)), Vector((0, 0, -1))))
     P.hand_pose('R', 5.0, {'open': 1})
     P.hand('R', 5.7, ('world', sw1, Vector((0.6, -1, -0.2)), Vector((0, 0, -1))))

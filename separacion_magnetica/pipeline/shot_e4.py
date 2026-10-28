@@ -187,14 +187,14 @@ def main():
     P.turn(9.2, 9.9, math.pi)
     P.look_at(9.6, (0.0, 0.0, 1.5))
     P.expression(10.0, 'curious')
-    # señala el separador
-    P.hand('R', 13.4, 'rest')
-    P.hand_pose('R', 13.4, {'relaxed': 1})
-    P.hand('R', 14.3, ('world', Vector((1.25, -1.75, 1.55)), Vector((-0.7, 0.7, 0.25)), Vector((0, 0, -1))))
-    P.hand_pose('R', 14.3, {'point': 1})
-    P.hand('R', 17.5, ('world', Vector((1.25, -1.72, 1.57)), Vector((-0.6, 0.75, 0.3)), Vector((0, 0, -1))))
-    P.hand('R', 18.4, 'rest')
-    P.hand_pose('R', 18.4, {'relaxed': 1})
+    # señala el separador (queda a su izquierda: señala con la mano izquierda, sin cruzar el cuerpo)
+    P.hand('L', 13.4, 'rest')
+    P.hand_pose('L', 13.4, {'relaxed': 1})
+    P.hand('L', 14.3, ('world', Vector((1.3, -1.82, 1.52)), Vector((-0.5, 0.8, 0.25)), Vector((0, 0, -1))))
+    P.hand_pose('L', 14.3, {'point': 1})
+    P.hand('L', 17.5, ('world', Vector((1.3, -1.8, 1.54)), Vector((-0.45, 0.82, 0.3)), Vector((0, 0, -1))))
+    P.hand('L', 18.4, 'rest')
+    P.hand_pose('L', 18.4, {'relaxed': 1})
     P.look_at(16.0, (0.0, 1.5, 1.7))
     P.expression(16.2, 'amazed')
     P.look_at(19.0, (0.0, 2.3, 1.0))
@@ -210,8 +210,9 @@ def main():
     scr_n = Vector((0, -math.sin(a25), math.cos(a25)))
     scr_u = Vector((0, math.cos(a25), math.sin(a25)))
     surf = scr_c + scr_n * 0.005
-    T1 = surf + Vector((0.12, 0, 0)) + scr_u * 0.04
-    T2 = surf + Vector((-0.1, 0, 0)) - scr_u * 0.03
+    # los dos botones del lado izquierdo de la pantalla (los toca la mano izquierda sin cruzar el cuerpo)
+    T1 = surf + Vector((-0.13, 0, 0)) + scr_u * 0.04
+    T2 = surf + Vector((-0.02, 0, 0)) - scr_u * 0.03
     fd, pdl = Vector((-0.2, 0.9, -0.4)), Vector((0, 0.3, -1))
     tw = lambda p: ('world', P.tip_to_wrist('L', p, fd, pdl), fd, pdl)
     P.hand('L', 21.9, tw(T1 + scr_n * 0.07))
@@ -240,7 +241,7 @@ def main():
     # operarios de fondo
     rw, ow = cast.load('worker_a', 'opA')
     Aw = anim.Actor(rw)
-    Pw = perform.Performer(Aw, pos=(-6.5, 0.8), yaw=math.pi)
+    Pw = perform.Performer(Aw, pos=(-6.5, 0.8), yaw=0.0)   # de frente a la cinta (mira hacia -Y)
     Pw.look_at(0.0, (-6.5, 0.0, 1.2))
     Pw.lean.add(0, 0.24)
     # la operaria saca botellas plásticas reales de la cinta y las tira al contenedor (antes cerraba la mano en el aire)
@@ -257,7 +258,7 @@ def main():
         Pw.hand('R', tg, ('world',) + tuple(g))
         Pw.hand('R', tg + 0.12, ('world',) + tuple(g))
         Pw.hand_pose('R', tg, {'grip': 1})
-        Pw.hand('R', t + 1.8, ('world', Vector((-7.0, 0.92, 1.2)), Vector((-0.7, 0.1, -0.7)), Vector((0, 0, -1))))
+        Pw.hand('R', t + 1.8, ('world', Vector((-7.0, 0.7, 1.24)), Vector((-0.7, 0.1, -0.7)), Vector((0, 0, -1))))
         Pw.hand_pose('R', tr, {'open': 1})
         bo = bpy.data.objects.new('pick%02d' % k, bot_me.copy())
         bo.data.materials.append(pl_m[k % len(pl_m)])
@@ -275,7 +276,7 @@ def main():
         picks.append((bo, tr))
     Pw.bake(1, sc.frame_end)
     # al soltarla cae dentro del contenedor y desaparece en su interior
-    bin_top = Vector((-7.25, 0.95, 1.06))
+    bin_top = Vector((-7.2, 0.85, 1.06))
     for bo, tr in picks:
         fr = F(tr)
         sc.frame_set(fr)
@@ -298,7 +299,7 @@ def main():
     Pb.walk(1.0, 16.0, [(-2.0, 6.2), (4.0, 6.6)], step=0.66)
     Pb.turn(17.0, 17.8, math.pi)
     Pb.bake(1, sc.frame_end)
-    box_bin = PR.box('pick_bin', (0.6, 0.5, 0.5), (-7.25, 0.95, 0.25 + 0.55), col, principled('pickbin_m', '#2f7a4b', 0.5))
+    box_bin = PR.box('pick_bin', (0.6, 0.5, 0.5), (-7.2, 0.85, 0.25 + 0.55), col, principled('pickbin_m', '#2f7a4b', 0.5))
 
     # motion graphics
     mg = bpy.data.collections.new('MoGraph')
