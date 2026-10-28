@@ -13,13 +13,13 @@ FPS = 30
 BUILD = os.environ.get('SM_BUILD', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'build'))
 
 
-def new_scene(name, duration_s, samples=1):
+def new_scene(name, duration_s, samples=3):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.name = name
     render_setup.setup(sc, samples=samples, res=(1280, 720), glare=False)
     sc.render.use_compositing = False
-    sc.render.filter_size = 2.0
+    sc.render.filter_size = 1.5   # con 3 muestras de antialiasing: bordes lisos sin titileo
     sc.frame_start = 1
     sc.frame_end = int(round(duration_s * FPS))
     sc['narration'] = '[]'

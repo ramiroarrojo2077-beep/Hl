@@ -273,18 +273,18 @@ def build_coat(info, col, mats):
 
     sco, sfaces, sused = helper_part(human, 'helper-skirt', off, skirt_pred)
     sb, sM = weights_matrix(human, list(sused))
-    # el faldón sigue menos a las piernas: mitad del peso de muslo pasa a la pelvis
+    # el faldón sigue en parte a las piernas (60 %): el resto del peso de muslo pasa a la pelvis
     leg = [i for i, b in enumerate(sb) if b.startswith('upperleg') or b.startswith('lowerleg')]
     spine5 = sb.index('spine05')
     rootb = sb.index('root')
     for i in leg:
-        moved = sM[:, i] * (0.6 if 'lowerleg' not in sb[i] else 1.0)
+        moved = sM[:, i] * (0.4 if 'lowerleg' not in sb[i] else 1.0)
         sM[:, i] -= moved
         sM[:, rootb] += moved * 0.7
         sM[:, spine5] += moved * 0.3
     sn = vertex_normals(sco, sfaces)
     depth = np.clip((hip_z + 0.1 - sco[:, 2]) / 0.5, 0, 1)
-    sco = sco + sn * (0.024 + 0.012 * depth)[:, None]
+    sco = sco + sn * (0.03 + 0.022 * depth)[:, None]
     # pliegues verticales (más marcados abajo y atrás)
     th = np.arctan2(sco[:, 0], sco[:, 1])
     fold = (0.5 + 0.5 * np.sin(th * 7 + 0.7) * np.sin(th * 3.0 + 1.3)) * depth * 0.012
@@ -775,8 +775,8 @@ def build_glasses(info, col, mats):
             lens_faces.append([base, base + 1 + i, base + 1 + (i + 1) % n])
     # puente
     sp = curve.splines.new('POLY')
-    br = [(eR[0] + 0.024, y_front, eR[2] + 0.008), (0, y_front - 0.003, eR[2] + 0.011),
-          (eL[0] - 0.024, y_front, eL[2] + 0.008)]
+    br = [(eR[0] + 0.024, y_front, eR[2] + 0.005), (0, y_front - 0.002, eR[2] + 0.006),
+          (eL[0] - 0.024, y_front, eL[2] + 0.005)]
     sp.points.add(2)
     for p, q in zip(sp.points, br):
         p.co = (*q, 1)
@@ -798,6 +798,7 @@ def build_glasses(info, col, mats):
         ob.parent = rig
         ob.parent_type = 'BONE'
         ob.parent_bone = 'head'
+        ob.visible_shadow = False   # la sombra del marco dibujaba arcos oscuros bajo los ojos
         hb = rig.data.bones['head']
         ob.matrix_parent_inverse = (rig.matrix_world @ hb.matrix_local @ Matrix.Translation((0, hb.length, 0))).inverted()
     return frame
@@ -824,7 +825,7 @@ def default_materials(prefix, style):
     mats['pen_black'] = principled(prefix + '_penblack', '#111111', rough=0.3, coat=0.6)
     mats['strap'] = principled(prefix + '_strap', '#2a1a10', rough=0.5)
     mats['frame'] = principled(prefix + '_frame', '#1b1b1d', rough=0.25, metal=0.6)
-    mats['lens'] = principled(prefix + '_lens', '#ffffff', rough=0.02, alpha=0.12, spec=1.0)
+    mats['lens'] = principled(prefix + '_lens', '#dfe6e8', rough=0.02, alpha=0.04, spec=0.6)
     mats['badge'] = badge_material(prefix + '_badgemat')
     mats['vest'] = fabric_material(prefix + '_vestmat', '#ff8a00' if style == 'labcoat' else '#ffb300', rough=0.6, weave_scale=700)
     mats['reflective'] = principled(prefix + '_reflect', '#d9dde0', rough=0.25, metal=0.6)

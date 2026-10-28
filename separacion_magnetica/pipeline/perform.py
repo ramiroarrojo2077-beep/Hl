@@ -129,6 +129,7 @@ class Performer:
         self.rnd = random.Random(seed)
         self.blinks = None
         self.head_w = 1.0
+        self._hip_dz = 0.0
 
     # ------------------------------------------------------------------ locomoción
     def _close(self, t):
@@ -164,7 +165,9 @@ class Performer:
         d = np.array(target[:2]) - self.cur_pos
         return self.turn(t0, t1, yaw_from_dir(d))
 
-    def walk(self, t0, t1, pts, step=0.68):
+    def walk(self, t0, t1, pts, step=0.66):
+        # paso máximo acorde al largo de pierna (con pasos largos la pierna de atrás no llega al piso)
+        step = min(step, 0.66)
         pts = [tuple(self.cur_pos)] + [tuple(p[:2]) for p in pts]
         d0 = np.array(pts[1]) - np.array(pts[0])
         y0 = yaw_from_dir(d0)
@@ -226,7 +229,7 @@ class Performer:
         R0 = A.rest['root'].translation
         sh = A.rest['upperarm01.' + side].translation
         sp = A.rest['spine05'].translation
-        hip = Vector((pos[0], pos[1], R0.z + bob - self.crouch(t)))
+        hip = Vector((pos[0], pos[1], R0.z + bob - self.crouch(t) + self._hip_dz))
         q = self.torso_rot(t, yaw)
         # el torso pivota en spine05
         v = q @ (sh - sp) + Quaternion((0, 0, 1), yaw) @ (sp - R0)
@@ -238,12 +241,14 @@ class Performer:
             (A.rest['wrist.' + side].translation - A.rest['lowerarm01.' + side].translation).length
         sh = self.shoulder_world(side, t, pos, yaw, bob)
         s = 1 if side == 'L' else -1
-        q = self.torso_rot(t, yaw)
+        # el brazo cuelga por gravedad: sigue el giro del torso pero no su inclinación (al inclinarse
+        # hacia adelante la mano queda delante de la cadera en lugar de meterse en la bata)
+        q = Quaternion((0, 0, 1), yaw + self.twist(t))
         breath = 0.004 * math.sin(t * 2 * math.pi * 0.23)
         swing = -foot_fw * 0.45 * amp
-        local = Vector((s * 0.075, -0.035 + swing, -arm_len * 0.975 + abs(swing) * 0.2 + breath))
+        local = Vector((s * 0.08, -0.04 + swing, -arm_len * 0.965 + abs(swing) * 0.2 + breath))
         p = sh + q @ local
-        fdir = q @ Vector((s * 0.02, -0.18 + swing * 0.6, -1.0))
+        fdir = q @ Vector((s * 0.03, -0.18 + swing * 0.6, -1.0))
         pdir = q @ Vector((-s * 1.0, 0.45, 0.0))
         return p, fdir, pdir
 
@@ -336,6 +341,45 @@ class Performer:
                 break
         return 0.0
 
+    def _ankle_target(self, side, fp, fpitch):
+        """Posición mundo del tobillo para el IK: pivota sobre el talón (pie hacia arriba) o sobre la punta (despegue)."""
+        ank_h = self.a.rest['foot.' + side].translation.z
+        p = Vector((fp[0], fp[1], fp[2] + ank_h))
+        if fpitch > 0:
+            p.z += 0.09 * math.sin(fpitch)
+        elif fpitch < 0:
+            p.z += 0.12 * math.sin(-fpitch)
+        return p
+
+    def _leg_len(self, side):
+        R = self.a.rest
+        return (R['lowerleg01.' + side].translation - R['upperleg01.' + side].translation).length + \
+            (R['foot.' + side].translation - R['lowerleg01.' + side].translation).length
+
+    def _walk_root_z(self, feet, hip_xy, yaw, z_pref):
+        """Altura de la raíz al caminar: la más alta posible (≈ pierna de apoyo casi recta) sin que
+        ningún pie quede fuera del alcance de la pierna. Produce el sube y baja natural de la cadera."""
+        R = self.a.rest
+        R0 = R['root'].translation
+        q = Quaternion((0, 0, 1), yaw)
+        vals = [z_pref]
+        for side in 'LR':
+            fp, fy, fpitch = feet[side]
+            p = self._ankle_target(side, fp, fpitch)
+            off = R['upperleg01.' + side].translation - R0
+            hj = hip_xy + q @ Vector((off.x, off.y, 0.0))
+            dxy = math.hypot(p.x - hj.x, p.y - hj.y)
+            Lm = self._leg_len(side) * 0.992
+            # solo los pies apoyados limitan la cadera; en el vuelo la rodilla se dobla
+            relax = 0.25 * smoothstep(0.0, 0.03, fp[2])
+            if dxy < Lm:
+                vals.append(p.z + math.sqrt(Lm * Lm - dxy * dxy) - off.z + relax)
+            else:
+                vals.append(p.z - off.z + relax)
+        k = 0.006   # mínimo suave (sin quiebres)
+        m = min(vals)
+        return m - k * math.log(sum(math.exp(-(v - m) / k) for v in vals))
+
     def hand_matrix_world(self, side, t, cache):
         return cache[(side, t)]
 
@@ -362,17 +406,20 @@ class Performer:
             left = Vector((math.cos(yaw), math.sin(yaw), 0))
             hip_z = R0.z - 0.012 + bob - self.crouch(t)
             hip = Vector((pos[0], pos[1], hip_z)) + left * (sway + weight_shift)
+            self._hip_dz = 0.0
+            if isinstance(seg, WalkSeg):
+                z_walk = self._walk_root_z(feet, Vector((hip.x, hip.y, 0.0)), yaw, R0.z + 0.004 - self.crouch(t))
+                z_new = hip_z + (z_walk - hip_z) * amp
+                z_new = min(z_new, self._walk_root_z(feet, Vector((hip.x, hip.y, 0.0)), yaw, 9.0))
+                self._hip_dz = z_new - hip_z
+                hip.z = z_new
             # pelvis: inclinar levemente con el avance
             A.set_root(f, A.mw @ hip if False else hip, yaw + 0.06 * math.sin(phase) * amp,
                        lean=0.03 * amp, sway=0.03 * math.sin(phase) * amp)
             # pies
             for side in 'LR':
                 fp, fy, fpitch = feet[side]
-                ank_h = A.rest['foot.' + side].translation.z
-                p = Vector((fp[0], fp[1], fp[2] + ank_h))
-                # pivote de talón/punta aproximado
-                if fpitch > 0:
-                    p.z += 0.09 * math.sin(fpitch)
+                p = self._ankle_target(side, fp, fpitch)
                 A.set_ik_foot(f, side, p, fy, -fpitch)
                 # polo de rodilla: adelante del pie
                 fwdv = Vector((math.sin(fy), -math.cos(fy), 0))

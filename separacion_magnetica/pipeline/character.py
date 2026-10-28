@@ -95,7 +95,7 @@ def _skin_material(name, tone, hair_col):
     lips = nb.n('ShaderNodeMix', _data_type='RGBA')
     nb.link(sep.outputs['Green'], lips.inputs['Factor'])
     nb.link(blush.outputs[2], lips.inputs[6])
-    lips.inputs[7].default_value = (base[0] * 0.78, base[1] * 0.42, base[2] * 0.42, 1)
+    lips.inputs[7].default_value = (base[0] * 0.8, base[1] * 0.56, base[2] * 0.52, 1)
     beard = nb.n('ShaderNodeMix', _data_type='RGBA')
     bf = nb.n('ShaderNodeMath', _operation='MULTIPLY')
     nb.link(sep.outputs['Blue'], bf.inputs[0])
@@ -112,8 +112,8 @@ def _skin_material(name, tone, hair_col):
     # Rugosidad: labios más brillantes, nariz/frente algo más
     rr = nb.n('ShaderNodeMath', _operation='MULTIPLY_ADD')
     nb.link(sep.outputs['Green'], rr.inputs[0])
-    rr.inputs[1].default_value = -0.12
-    rr.inputs[2].default_value = 0.5
+    rr.inputs[1].default_value = -0.05
+    rr.inputs[2].default_value = 0.52
     nb.link(rr.outputs[0], p.inputs['Roughness'])
     p.inputs['Specular IOR Level'].default_value = 0.45
     # Poros + microdetalle
@@ -180,9 +180,9 @@ def _eye_material(name):
     img = bpy.data.images.load(os.path.join(ASSETS, 'eyes', 'brown_eye.png'), check_existing=True)
     tex = nb.n('ShaderNodeTexImage', _image=img)
     nb.link(tex.outputs['Color'], p.inputs['Base Color'])
-    p.inputs['Roughness'].default_value = 0.05
-    p.inputs['Coat Weight'].default_value = 1.0
-    p.inputs['Coat Roughness'].default_value = 0.02
+    p.inputs['Roughness'].default_value = 0.25
+    p.inputs['Coat Weight'].default_value = 0.35
+    p.inputs['Coat Roughness'].default_value = 0.05
     p.inputs['Subsurface Weight'].default_value = 0.1
     nb.output(p.outputs['BSDF'])
     return mat
@@ -472,8 +472,18 @@ def build_character(name='Cientifico', style='scientist', col=None, seed=1):
     lash, _, _ = _build_mesh(human, ('helper-r-eyelashes-2', 'helper-l-eyelashes-2'), name + '_lashes', col)
     lco = np.array([v.co for v in lash.data.vertices]) - offset
     lash.data.vertices.foreach_set('co', lco.astype(np.float32).ravel())
+    # solo pestañas superiores (las inferiores se veían como un delineado oscuro)
+    eco = np.array([v.co for v in eyes.data.vertices])
+    ez = eco[:, 2].mean()
+    import bmesh as _bm
+    bm_ = _bm.new()
+    bm_.from_mesh(lash.data)
+    low = [f for f in bm_.faces if sum(v.co.z for v in f.verts) / len(f.verts) < ez - 0.001]
+    _bm.ops.delete(bm_, geom=low, context='FACES')
+    bm_.to_mesh(lash.data)
+    bm_.free()
     lash.data.materials.clear()
-    lash.data.materials.append(principled(name + '_lashmat', '#1a120c', rough=0.6, alpha=0.55))
+    lash.data.materials.append(principled(name + '_lashmat', '#1a120c', rough=0.6, alpha=0.5))
     _, lused, lremap = None, None, None
     lw = human.weights()
     lidx = sorted({v for i, g in enumerate(human.face_groups) if g in ('helper-r-eyelashes-2', 'helper-l-eyelashes-2') for v in human.faces[i]})

@@ -156,6 +156,7 @@ def build_corridor(col):
 DISH = Vector((0.12, 0.33, BENCH_TOP))
 TRAY = Vector((-0.18, 0.33, BENCH_TOP))
 STAND = Vector((-0.42, 0.40, BENCH_TOP))
+SAND_BOTTLE = Vector((0.48, 0.44, BENCH_TOP))
 HANDLE_C = 0.165   # centro del mango (desde la base del imán)
 SLEEVE_GRIP = 0.085
 DISH_R = 0.095
@@ -233,6 +234,15 @@ def build_experiment(col, seed=3, n_filings=320):
     lab_i = principled('label_iron', '#e9eef4', 0.6)
     P.jar('jar_sand', (-0.78, 0.3, BENCH_TOP), 0.04, 0.1, col, content='sand', label_mat=lab_s)
     P.jar('jar_iron', (-0.92, 0.22, BENCH_TOP), 0.035, 0.09, col, content='iron', label_mat=lab_i)
+    # frasquito con arena: el científico lo toma al presentar los materiales (E2)
+    sb = P.jar('sand_bottle', (SAND_BOTTLE.x, SAND_BOTTLE.y, BENCH_TOP), 0.022, 0.075, col, content='sand', label_mat=lab_s)
+    bpy.context.view_layer.update()
+    for n in ('sand_bottle_cap', 'sand_bottle_c', 'sand_bottle_label'):
+        ch = bpy.data.objects.get(n)
+        if ch:
+            ch.parent = sb
+            ch.matrix_parent_inverse = sb.matrix_world.inverted()
+    objs['sand_bottle'] = sb
     # resto de la mesada
     P.microscope('scope_main', (1.0, 0.25, BENCH_TOP), col, rot=math.radians(200))
     P.beaker('beaker_a', (-1.1, -0.05, BENCH_TOP), 0.04, 0.1, col, liquid='liquid_blue', fill=0.45)

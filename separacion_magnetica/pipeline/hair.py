@@ -147,7 +147,7 @@ def build_hair(info, col, color='#3a2c22', grey=0.25, beard=True, seed=3, densit
         # línea de nacimiento: alta en la frente, baja en la nuca
         front = np.clip((-y - 0.02) / 0.06, 0, 1)        # 1 en la frente
         back = np.clip((y - 0.0) / 0.07, 0, 1)            # 1 en la nuca
-        zline = 0.028 * front + (-0.03) * (1 - front) * (1 - back) + (-0.105) * back
+        zline = 0.014 * front + (-0.03) * (1 - front) * (1 - back) + (-0.105) * back
         # sienes: entradas leves
         temple = np.exp(-((x - 0.055) / 0.02) ** 2) * front * 0.012
         ok = z > zline + temple
@@ -173,7 +173,7 @@ def build_hair(info, col, color='#3a2c22', grey=0.25, beard=True, seed=3, densit
             out = np.maximum(out, ok.astype(float))
         return out
 
-    broots, bnrms = _tri_sample(co, tris, brow_mask, int(1600 * density), rnd)
+    broots, bnrms = _tri_sample(co, tris, brow_mask, int(2600 * density), rnd)
 
     def brow_dir(p, n):
         s = 1.0 if p[0] > 0 else -1.0
@@ -186,8 +186,8 @@ def build_hair(info, col, color='#3a2c22', grey=0.25, beard=True, seed=3, densit
 
     bstr = _grow(broots, bnrms, brow_dir, lambda p: 0.0075 + 0.003 * random.random(), bvh, 5,
                  lambda p, t: 0.0004 + 0.0012 * t, rnd, flat=1.0)
-    bm = hair_material(info['name'] + '_browmat', color, grey=grey * 0.6, root_dark=0.2)
-    objs.append(_curves_object(info['name'] + '_brows', bstr, 0.00009, 0.00004, col, bm))
+    bm = hair_material(info['name'] + '_browmat', color, grey=grey * 0.3, root_dark=0.5)
+    objs.append(_curves_object(info['name'] + '_brows', bstr, 0.0002, 0.00008, col, bm))
 
     # --- Barba corta: malla fina con textura de vello ----------------------------
     if beard:
@@ -199,7 +199,7 @@ def build_hair(info, col, color='#3a2c22', grey=0.25, beard=True, seed=3, densit
             under = (c[:, 1] > mouth[1] + 0.05) & (c[:, 2] < mouth[2] - 0.05)
             neck = c[:, 2] < mouth[2] - 0.075
             return (zone & ~lips & ~cheek_hi & ~nosez & ~under & ~neck).astype(float)
-        objs.append(_shell(info, col, co, beard_mask, H, color, grey * 1.1, kind='beard'))
+        objs.append(_shell(info, col, co, beard_mask, H, color, grey * 0.9, kind='beard'))
 
     rig = info['rig']
     hb = rig.data.bones['head']
@@ -301,7 +301,7 @@ def _shell_material(name, color, grey, kind):
     nb.link(grm.outputs[2], p.inputs['Base Color'])
     p.inputs['Roughness'].default_value = 0.5 if kind == 'hair' else 0.75
     p.inputs['Specular IOR Level'].default_value = 0.4
-    p.inputs['Sheen Weight'].default_value = 0.6
+    p.inputs['Sheen Weight'].default_value = 0.3
     p.inputs['Sheen Roughness'].default_value = 0.35
     p.inputs['Sheen Tint'].default_value = (0.8, 0.75, 0.7, 1)
     bump = nb.n('ShaderNodeBump', Strength=0.6 if kind == 'hair' else 0.4, Distance=0.002)
@@ -312,8 +312,16 @@ def _shell_material(name, color, grey, kind):
     mul = nb.n('ShaderNodeMath', _operation='MULTIPLY')
     nb.link(fa.outputs['Fac'], mul.inputs[0])
     nb.link(nz.outputs['Fac'], mul.inputs[1])
+    # sólido por dentro: el ruido solo recorta el borde (antes dejaba calvas y manchas)
+    inner = nb.n('ShaderNodeMath', _operation='MULTIPLY_ADD')
+    nb.link(fa.outputs['Fac'], inner.inputs[0])
+    inner.inputs[1].default_value = 2.2
+    inner.inputs[2].default_value = -0.8
+    mx = nb.n('ShaderNodeMath', _operation='MAXIMUM')
+    nb.link(mul.outputs[0], mx.inputs[0])
+    nb.link(inner.outputs[0], mx.inputs[1])
     mul2 = nb.n('ShaderNodeMath', _operation='MULTIPLY', _use_clamp=True)
-    nb.link(mul.outputs[0], mul2.inputs[0])
+    nb.link(mx.outputs[0], mul2.inputs[0])
     mul2.inputs[1].default_value = 2.6
     stp = nb.n('ShaderNodeMath', _operation='GREATER_THAN')
     stp.name = 'alpha_step'

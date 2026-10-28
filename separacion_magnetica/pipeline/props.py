@@ -329,7 +329,8 @@ def screen_material(name, kind='graph', color='#3fc1ff', strength=2.0, seed=0):
     sep = nb.n('ShaderNodeSeparateXYZ')
     nb.link(tc.outputs['Generated'], sep.inputs[0])
     # rejilla
-    w1 = nb.n('ShaderNodeTexWave', Scale=18.0, _wave_type='BANDS', _bands_direction='X', Distortion=0.0)
+    # rejilla y curva de trazo grueso: las líneas finas producían muaré y titileo en movimiento
+    w1 = nb.n('ShaderNodeTexWave', Scale=6.0, _wave_type='BANDS', _bands_direction='X', Distortion=0.0)
     nb.link(tc.outputs['Generated'], w1.inputs['Vector'])
     g1 = nb.n('ShaderNodeMath', _operation='GREATER_THAN')
     nb.link(w1.outputs['Fac'], g1.inputs[0])
@@ -337,7 +338,7 @@ def screen_material(name, kind='graph', color='#3fc1ff', strength=2.0, seed=0):
     # curva senoidal
     sw = nb.n('ShaderNodeMath', _operation='MULTIPLY')
     nb.link(sep.outputs['X'], sw.inputs[0])
-    sw.inputs[1].default_value = 18.0 + seed * 3
+    sw.inputs[1].default_value = 9.0 + seed * 1.5
     sn = nb.n('ShaderNodeMath', _operation='SINE')
     nb.link(sw.outputs[0], sn.inputs[0])
     sc = nb.n('ShaderNodeMath', _operation='MULTIPLY_ADD')
@@ -345,13 +346,13 @@ def screen_material(name, kind='graph', color='#3fc1ff', strength=2.0, seed=0):
     sc.inputs[1].default_value = 0.18
     sc.inputs[2].default_value = 0.5
     dz = nb.n('ShaderNodeMath', _operation='SUBTRACT')
-    nb.link(sep.outputs['Z'] if False else sep.outputs['Y'], dz.inputs[0])
+    nb.link(sep.outputs['Z'], dz.inputs[0])
     nb.link(sc.outputs[0], dz.inputs[1])
     ab = nb.n('ShaderNodeMath', _operation='ABSOLUTE')
     nb.link(dz.outputs[0], ab.inputs[0])
     lt = nb.n('ShaderNodeMath', _operation='LESS_THAN')
     nb.link(ab.outputs[0], lt.inputs[0])
-    lt.inputs[1].default_value = 0.02
+    lt.inputs[1].default_value = 0.035
     add = nb.n('ShaderNodeMath', _operation='MAXIMUM')
     nb.link(lt.outputs[0], add.inputs[0])
     g1m = nb.n('ShaderNodeMath', _operation='MULTIPLY')

@@ -472,16 +472,20 @@ class Walk:
                 if t <= tc0:
                     return self._plant(pp, pa)
                 u = min((t - tc0) / (tc1 - tc0), 1.0)
-                return self._swing(pp, pa, pb, u, h=0.045)
-            w0 = pb - 1.1 * d
-            w1 = pb - 0.3 * d
+                return self._swing(pp, pa, pb, u, h=0.035, toe_off=False)
+            # apoyo simétrico respecto de la cadera (el pie apoya ~0.55 paso adelante y despega ~0.65 paso atrás)
+            w0 = pb - 1.35 * d
+            w1 = pb - 0.55 * d
             if k == 0:
                 w0 = max(w0, -0.05 * d)
             if b < w0:
-                return self._plant(pp, pa)
+                # final del apoyo: el talón se levanta sobre la punta antes del despegue
+                hr = 0.35 * d
+                heel = smoothstep(w0 - hr, w0, b) if k > 0 or w0 > hr else 0.0
+                return self._plant(pp, pa, -self.TOE_OFF * heel)
             if b <= w1:
                 u = (b - w0) / max(w1 - w0, 1e-9)
-                return self._swing(pp, pa, pb, u)
+                return self._swing(pp, pa, pb, u, toe_off=(k > 0 or w0 > 0.35 * d))
         return self._plant(pp, pl[-1])
 
     def _closing_side(self):
@@ -489,12 +493,14 @@ class Walk:
         pl_r = self.plants('R')
         return 'L' if pl_l[-2] > pl_r[-2] else 'R'
 
-    def _plant(self, plant_pos, s):
+    TOE_OFF = 0.45   # ángulo del pie al despegar (rad)
+
+    def _plant(self, plant_pos, s, pitch=0.0):
         p = plant_pos(s)
         yaw = yaw_from_dir(self.path.tangent(s))
-        return np.array([p[0], p[1], 0.0]), yaw, 0.0
+        return np.array([p[0], p[1], 0.0]), yaw, pitch
 
-    def _swing(self, plant_pos, sa, sb, u, h=0.085):
+    def _swing(self, plant_pos, sa, sb, u, h=0.055, toe_off=True):
         ue = ease_io(u, 1.6)
         pa = plant_pos(sa)
         pb = plant_pos(sb)
@@ -504,7 +510,13 @@ class Walk:
         yb = yaw_from_dir(self.path.tangent(sb))
         dy = (yb - ya + math.pi) % (2 * math.pi) - math.pi
         yaw = ya + dy * ue
-        pitch = -0.35 * math.sin(math.pi * min(u * 1.6, 1.0)) if u < 0.6 else 0.25 * math.sin(math.pi * (u - 0.6) / 0.4)
+        if u < 0.6:
+            if toe_off:
+                pitch = -self.TOE_OFF * (1 - smoothstep(0.0, 0.45, u))
+            else:
+                pitch = -0.2 * math.sin(math.pi * min(u * 1.6, 1.0))
+        else:
+            pitch = 0.25 * math.sin(math.pi * (u - 0.6) / 0.4)
         return np.array([p[0], p[1], z]), yaw, pitch
 
     def body_state(self, t):
