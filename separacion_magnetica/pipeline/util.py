@@ -165,6 +165,9 @@ def set_material(ob, mat, slot_only=False):
 
 def add_modifier(ob, kind, name=None, **kw):
     m = ob.modifiers.new(name or kind, kind)
+    if kind == 'SOLIDIFY':
+        # límite de desplazamiento: sin él, en ciertas poses un vértice salía disparado y formaba una "púa"
+        m.thickness_clamp = 1.0
     for k, v in kw.items():
         setattr(m, k, v)
     return m

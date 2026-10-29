@@ -301,7 +301,7 @@ def build_coat(info, col, mats):
         raise RuntimeError('bone order mismatch')
     Mall = np.vstack([M, sM])
     coat = make_obj(info['name'] + '_coat', allco, allf, col, rig, bones, Mall, mats=[mats['coat']])
-    add_modifier(coat, 'SOLIDIFY', 'Solidify', thickness=0.0035, offset=-1.0, use_even_offset=True)
+    add_modifier(coat, 'SOLIDIFY', 'Solidify', thickness=0.0035, offset=-1.0, use_even_offset=False)   # 'even' disparaba vértices en la axila doblada
     add_modifier(coat, 'SUBSURF', 'Subsurf', levels=0, render_levels=1)
     coat.modifiers.move(len(coat.modifiers) - 1, len(coat.modifiers) - 1)
 

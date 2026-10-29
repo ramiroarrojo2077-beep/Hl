@@ -232,7 +232,7 @@ def main():
         lbl.visible_shadow = False
         lbl.parent = ob
         lbl.location = (0, -0.03, sz * 0.75)
-        MG.key_fade(lbl.data.materials[0], f_in, F(20.0))
+        MG.key_fade(lbl.data.materials[0], f_in, F(t0 + 1.1))   # se va al llegar al polo (no se encima con los otros)
     for i, (nm, kname, kind, sz, colr, off) in enumerate(nonatt):
         ob, mats = holo_obj('non_%d' % i, kind, sz, colr, col, MAGC + off)
         f_in = F(13.4 + i * 0.4)

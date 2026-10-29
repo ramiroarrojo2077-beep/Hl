@@ -309,7 +309,7 @@ def main():
     c = SL.CameraRig('C2', [(8.2, (0.0, -2.0, 1.68), (0.0, 0.4, 1.48), 30), (15.0, (0.0, -2.2, 1.7), (0.0, 0.4, 1.5), 30)])
     cams['C2'] = c.bake(F(8.1), F(15.2))
     # alejamiento final moderado: el científico sigue siendo protagonista y el título se lee
-    c = SL.CameraRig('C3', [(15.0, (0.0, -2.2, 1.7), (0.0, 0.4, 1.5), 30), (22.0, (0.25, -3.3, 1.85), (0.0, 0.5, 1.7), 30)])
+    c = SL.CameraRig('C3', [(15.0, (0.0, -2.2, 1.7), (0.0, 0.4, 1.5), 30), (22.0, (0.2, -2.9, 1.85), (0.0, 0.5, 1.72), 31)])
     cams['C3'] = c.bake(F(14.9), F(22.0))
     SL.cut(0.0, cams['C1'])
     SL.cut(8.2, cams['C2'])

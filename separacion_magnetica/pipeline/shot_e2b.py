@@ -230,7 +230,8 @@ def main():
         anchor = Vector((x + (0.03 if magnetic else 0.0), BOARD_Y, BOARD_Z + 0.01))
         # cada rótulo aparece cuando el imán pasa sobre ESE objeto y se va antes del siguiente: siempre queda claro
         # qué se está probando y los rótulos no se superponen
-        MG.label('lbl_%s' % ob.name, txt, anchor, anchor + Vector((0.0, -0.06, 0.075)), cams['C2'], F(t_pass + 0.1), F(t_pass + 1.6), mg,
+        # panel abajo, delante de la tabla: el imán pasa por arriba y no lo tapa
+        MG.label('lbl_%s' % ob.name, txt, anchor, anchor + Vector((-0.02, -0.11, -0.012)), cams['C2'], F(t_pass + 0.1), F(t_pass + 1.6), mg,
                  size=0.014, color=colr)
     MG.label('lbl_res', 'EL IMÁN SEPARA EL ACERO', lift + Vector((0, 0, -0.03)), Vector((0.7, 0.2, 1.5)), cams['C3'],
              F(12.6), None, mg, size=0.04, color=MG.CYAN, sub='el resto queda en la tabla')
