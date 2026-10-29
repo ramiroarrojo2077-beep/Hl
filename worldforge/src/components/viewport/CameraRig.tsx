@@ -61,11 +61,22 @@ export function CameraRig() {
     const spawn = Object.values(doc.entities).find((e) => e.type === "spawn");
     const center = new Vector3(0, 0, 0);
     let r = 80;
-    const blocks = Object.values(doc.entities).filter((e) => e.type === "building" || e.type === "block");
-    if (blocks.length) {
-      for (const b of blocks) center.add(new Vector3(b.transform.position[0], 0, b.transform.position[2]));
-      center.divideScalar(blocks.length);
-      r = Math.max(60, ...blocks.map((b) => Math.hypot(b.transform.position[0] - center.x, b.transform.position[2] - center.z))) ;
+    // Puntos de interés: edificios, manzanas y calles.
+    const pts: [number, number][] = [];
+    for (const e of Object.values(doc.entities)) {
+      if (e.type === "building" || e.type === "block") pts.push([e.transform.position[0], e.transform.position[2]]);
+      else if (e.type === "road") for (let k = 0; k < e.props.points.length; k += 4) pts.push(e.props.points[k]!);
+    }
+    if (pts.length) {
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const [x, z] of pts) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minZ = Math.min(minZ, z);
+        maxZ = Math.max(maxZ, z);
+      }
+      center.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2);
+      r = Math.max(50, Math.hypot(maxX - minX, maxZ - minZ) / 2);
     } else if (spawn) center.set(spawn.transform.position[0], 0, spawn.transform.position[2]);
     center.y = heightAt(doc.terrain, center.x, center.z);
     camera.position.set(center.x + r * 0.9, center.y + r * 0.75, center.z + r * 1.1);

@@ -114,7 +114,7 @@ export function SceneEnvironment() {
     if (weather.type === "storm" && Math.random() < dt * 0.25) flash.current = 1;
     flash.current = Math.max(0, flash.current - dt * 3.5);
     if (hemi.current) {
-      hemi.current.intensity = env.ambientIntensity * (0.25 + 0.75 * s.day) * (alien ? 1.1 : 1) + flash.current * 3;
+      hemi.current.intensity = env.ambientIntensity * (0.4 + 0.6 * s.day) * (alien ? 1.1 : 1) + flash.current * 3;
       hemi.current.color.copy(s.zenith).lerp(new Color("#ffffff"), 0.4);
       hemi.current.groundColor.set(alien ? "#5a2a18" : "#4a4033").multiplyScalar(0.4 + 0.6 * s.day);
     }
@@ -126,7 +126,7 @@ export function SceneEnvironment() {
     if (weather.type === "fog" || weather.type === "storm" || weather.type === "rain") fogColor.lerp(new Color("#8b9097").multiplyScalar(0.25 + 0.75 * s.day), 0.6);
     if (fog) {
       fog.color.copy(fogColor);
-      fog.density = env.fogDensity * (1 + weather.intensity * (weather.type === "clear" ? 0 : 1.2));
+      fog.density = env.fogDensity * (1 + weather.intensity * (weather.type === "clear" || weather.type === "cloudy" ? 0 : 0.5));
     }
     gl.toneMappingExposure = env.exposure * (1 - overcast * 0.15);
     if (skyRef.current) (skyRef.current.material as MeshBasicMaterial).color.copy(fogColor);

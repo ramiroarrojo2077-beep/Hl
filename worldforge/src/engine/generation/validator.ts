@@ -216,8 +216,8 @@ export function checkFeatures(doc: WorldDoc, features: readonly Feature[]): Feat
     storm: () => [doc.weather.type === "storm", doc.weather.type],
     sandstorm: () => [doc.weather.type === "sandstorm", doc.weather.type],
     night: () => [t >= 19.5 || t <= 5, `${t.toFixed(1)} h`],
-    sunset: () => [t >= 17.3 && t <= 19.8, `${t.toFixed(1)} h`],
-    dawn: () => [t >= 5 && t <= 7.8, `${t.toFixed(1)} h`],
+    sunset: () => [t >= 16.8 && t <= 19, `${t.toFixed(1)} h`],
+    dawn: () => [t >= 5.5 && t <= 7.8, `${t.toFixed(1)} h`],
     wet: () => [doc.weather.wetness >= 0.5, `humedad ${doc.weather.wetness}`],
   };
   return features.map((f) => {

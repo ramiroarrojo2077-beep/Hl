@@ -14,7 +14,7 @@ export function directLighting(ctx: GenContext) {
   env.sky = plan.biome === "alien" ? "alien" : "earth";
   env.sunIntensity = plan.biome === "desert" || plan.biome === "alien" ? 2.6 : 2.2;
   env.ambientIntensity = 0.6;
-  const fogByWeather: Record<string, number> = { clear: 0.0016, cloudy: 0.0024, rain: 0.006, storm: 0.009, snow: 0.007, fog: 0.022, sandstorm: 0.016 };
+  const fogByWeather: Record<string, number> = { clear: 0.0016, cloudy: 0.0022, rain: 0.0032, storm: 0.0045, snow: 0.0038, fog: 0.016, sandstorm: 0.011 };
   env.fogDensity = fogByWeather[plan.weather] ?? 0.002;
   if (plan.archetype === "futuristic" && plan.timeOfDay > 19) env.fogDensity = Math.max(env.fogDensity, 0.0035);
   env.fogColor = plan.weather === "sandstorm" ? "#c8a070" : null;

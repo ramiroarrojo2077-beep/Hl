@@ -24,7 +24,8 @@ export function generatePopulation(ctx: GenContext): { npcs: number; vehicles: n
     id: ctx.id("s"),
     type: "spawn",
     props: {},
-    transform: { position: [r2(spawnPos[0]), r2(groundY(doc.terrain, spawnPos[0], spawnPos[1])), r2(spawnPos[1])], rotation: [0, Math.PI, 0] },
+    // Mira hacia el centro del asentamiento.
+    transform: { position: [r2(spawnPos[0]), r2(groundY(doc.terrain, spawnPos[0], spawnPos[1])), r2(spawnPos[1])], rotation: [0, r2(Math.atan2(ctx.site.center[0] - spawnPos[0], ctx.site.center[1] - spawnPos[1])), 0] },
     parentId: FOLDERS.cameras.id,
   });
   ctx.log(`${npcs} personajes y ${vehicles} vehículos`);

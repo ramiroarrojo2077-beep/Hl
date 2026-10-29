@@ -88,7 +88,7 @@ export function generateVegetation(ctx: GenContext): number {
 
   // Bosques silvestres con densidad modulada por ruido.
   const half = terrain.size / 2;
-  const maxTrees = Math.round(1600 * density * (plan.size === "large" ? 1.3 : 1));
+  const maxTrees = Math.round((species.includes("giant") ? 900 : 1500) * density * (plan.size === "large" ? 1.3 : 1));
   const attempts = maxTrees * 4;
   const wildBase = species.filter((s) => s !== "sakura" || plan.style === "japanese");
   for (let k = 0; k < attempts && trees < maxTrees + layout.treeSpots.length; k++) {

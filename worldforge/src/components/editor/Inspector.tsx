@@ -41,6 +41,8 @@ const LABELS: Record<string, string> = {
   grid: "Grilla", bands: "Bandas", curtain: "Muro cortina", sparse: "Pocas", arched: "Arcos", storefront: "Vidriera", none: "Sin ventanas",
   idle: "Quieto", wander: "Deambular", sidewalk: "Caminar por veredas", patrol: "Patrullar", poi: "Visitar lugares",
 };
+const NO_TRACKS: WorldDoc["animation"]["tracks"] = [];
+const NO_ROUTES: WorldDoc["routes"] = [];
 const opts = <T extends string>(list: readonly T[]) => list.map((v) => ({ value: v, label: LABELS[v] ?? v }));
 
 function useEntity(id: string | undefined): Entity | undefined {
@@ -369,7 +371,7 @@ function NpcSection({ e }: { e: EntityOf<"npc"> }) {
 function VehicleSection({ e }: { e: EntityOf<"vehicle"> }) {
   const p = e.props;
   const id = e.id;
-  const routes = useEditor((s) => s.doc?.routes ?? []);
+  const routes = useEditor((s) => s.doc?.routes) ?? NO_ROUTES;
   return (
     <Section title="Vehículo">
       <Row label="Modelo">
@@ -548,7 +550,8 @@ function PhysicsSection({ e }: { e: Entity }) {
 
 function KeyframeSection({ e }: { e: Entity }) {
   const time = useEditor((s) => s.playback.time);
-  const tracks = useEditor((s) => s.doc?.animation.tracks.filter((t) => t.entityId === e.id) ?? []);
+  const allTracks = useEditor((s) => s.doc?.animation.tracks);
+  const tracks = (allTracks ?? NO_TRACKS).filter((t) => t.entityId === e.id);
   const addKey = () => {
     const t = Math.round(time * 100) / 100;
     useEditor.getState().exec(`Clave en ${t}s`, (d) => {
@@ -610,9 +613,9 @@ export function EnvironmentInspector() {
       </Row>
       <div className="grid grid-cols-4 gap-1">
         {[
-          ["Amanecer", 6.4],
+          ["Amanecer", 6.9],
           ["Día", 13],
-          ["Atardecer", 18.6],
+          ["Atardecer", 17.3],
           ["Noche", 22],
         ].map(([l, v]) => (
           <button key={l} className="rounded-md bg-surface-2 px-1 py-1 text-[11px] hover:bg-line" onClick={() => setDoc(`Hora: ${l}`, (d) => void (d.environment.timeOfDay = v as number))}>

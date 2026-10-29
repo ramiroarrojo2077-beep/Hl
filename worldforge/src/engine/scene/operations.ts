@@ -530,8 +530,8 @@ function executeOne(doc: WorldDoc, op: Operation, ctx: OpContext, rng: Rng, resu
       const created = addObjects(doc, op, ctx, rng, result);
       result.created.push(...created);
       result.select = created;
-      result.summary.push(`Agregados ${created.length} ${op.objectType === "tree" ? "árboles" : "objetos"}${op.variant ? ` (${op.variant})` : ""}`);
-      if (created.length < op.count) result.warnings.push(`Solo había lugar para ${created.length} de ${op.count}`);
+      if (created.length) result.summary.push(`Agregados ${created.length} ${op.objectType === "tree" ? "árboles" : "objetos"}${op.variant ? ` (${op.variant})` : ""}`);
+      if (created.length < op.count) result.warnings.push(created.length ? `Solo había lugar para ${created.length} de ${op.count}` : "No se encontró lugar libre para los objetos pedidos");
       return;
     }
     case "delete_objects": {
@@ -555,7 +555,7 @@ function executeOne(doc: WorldDoc, op: Operation, ctx: OpContext, rng: Rng, resu
     }
     case "set_environment": {
       const env = doc.environment;
-      const presets = { day: 13, noon: 12, night: 22, sunset: 18.6, dawn: 6.4 } as const;
+      const presets = { day: 13, noon: 12, night: 22, sunset: 17.3, dawn: 6.9 } as const;
       if (op.preset) env.timeOfDay = presets[op.preset];
       if (op.timeOfDay !== undefined) env.timeOfDay = op.timeOfDay;
       if (op.dayNightCycle !== undefined) env.dayNightCycle = op.dayNightCycle;
@@ -573,7 +573,7 @@ function executeOne(doc: WorldDoc, op: Operation, ctx: OpContext, rng: Rng, resu
         w.clouds = op.type === "clear" ? 0.2 : op.type === "cloudy" ? 0.7 : 0.9;
         if (op.type === "clear") w.wetness = 0;
         if ((op.type === "rain" || op.type === "storm") && op.wetness === undefined) w.wetness = Math.max(w.wetness, 0.8);
-        const fog: Record<string, number> = { clear: 0.0016, cloudy: 0.0024, rain: 0.006, storm: 0.009, snow: 0.007, fog: 0.022, sandstorm: 0.016 };
+        const fog: Record<string, number> = { clear: 0.0016, cloudy: 0.0022, rain: 0.0032, storm: 0.0045, snow: 0.0038, fog: 0.016, sandstorm: 0.011 };
         doc.environment.fogDensity = fog[op.type] ?? doc.environment.fogDensity;
         doc.environment.fogColor = op.type === "sandstorm" ? "#c8a070" : null;
       }
@@ -744,9 +744,14 @@ function addObjects(doc: WorldDoc, op: Extract<Operation, { operation: "add_obje
   } else if (p.anchor === "water" && p.mode !== "random") {
     const shore = shorePoints(doc);
     if (!shore.length) {
-      result.warnings.push("No hay agua en el mundo: se ubican alrededor del centro");
+      result.warnings.push("No hay agua en el mundo: se ubican alrededor del asentamiento");
       const c = siteCenter(doc);
-      sample = () => [c[0] + rng.range(-40, 40), c[1] + rng.range(-40, 40)];
+      const r0 = siteRadius(doc);
+      sample = () => {
+        const a = rng.range(0, Math.PI * 2);
+        const r = r0 + rng.range(4, 40);
+        return [c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r];
+      };
     } else {
       // Toma el cuerpo de agua más cercano al primer punto elegido para no mezclar lago y río.
       const pick = shore[rng.int(0, shore.length - 1)]!;

@@ -32,7 +32,7 @@ function partMaterial(part: BuildingPart, preset: string): Material {
     case "winDark":
       return getMaterial({ preset: "glass", color: "#ffffff", roughness: 0.06, metalness: 0.9, noTexture: true });
     case "neon":
-      return registerNightMaterial(getMaterial({ preset: "plastic", color: "#ffffff", emissive: "#ffffff", emissiveIntensity: 1.5, noTexture: true, tintEmissive: true }), 1.1, 3.2);
+      return registerNightMaterial(getMaterial({ preset: "plastic", color: "#ffffff", emissive: "#ffffff", emissiveIntensity: 1.5, noTexture: true, tintEmissive: true }), 1.3, 4.5);
     case "detail":
       return getMaterial({ preset: "metal", color: "#8d9299", roughness: 0.55 });
     case "door":

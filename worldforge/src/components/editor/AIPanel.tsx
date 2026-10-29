@@ -51,7 +51,7 @@ export function AIPanel() {
         <div className="flex items-center gap-2 text-xs">
           <Icon name="sparkles" size={14} className="text-accent-2" />
           <select
-            className="rounded-md border border-line bg-surface px-1.5 py-1 text-xs outline-none"
+            className="max-w-[170px] rounded-md border border-line bg-surface px-1.5 py-1 text-xs outline-none"
             value={provider}
             onChange={(e) => useSettings.getState().setProvider(e.target.value as "local" | "openai-compatible")}
             data-testid="ai-provider"
@@ -62,8 +62,8 @@ export function AIPanel() {
             </option>
           </select>
         </div>
-        <Button variant="ghost" icon="globe" onClick={() => setConfirmGen(true)} className="px-2 py-1 text-xs">
-          Mundo nuevo
+        <Button variant="ghost" icon="plus" onClick={() => setConfirmGen(true)} className="px-2 py-1 text-xs whitespace-nowrap">
+          Nuevo
         </Button>
       </div>
 

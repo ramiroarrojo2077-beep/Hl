@@ -318,8 +318,8 @@ export function planWorld(prompt: string, seedOverride?: number): PlannerResult 
   }
   if (f.has("wet") || d.weather === "rain" || d.weather === "storm") d.wet = true;
   if (f.has("night")) d.timeOfDay = 22;
-  else if (f.has("sunset")) d.timeOfDay = 18.6;
-  else if (f.has("dawn")) d.timeOfDay = 6.4;
+  else if (f.has("sunset")) d.timeOfDay = 17.3;
+  else if (f.has("dawn")) d.timeOfDay = 6.9;
   else if (has(t, /\b(mediodia|de dia|daytime|noon|soleado|sunny)\b/)) d.timeOfDay = 12.5;
 
   // Edificios
