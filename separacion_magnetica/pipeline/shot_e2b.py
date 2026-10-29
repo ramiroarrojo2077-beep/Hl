@@ -201,7 +201,7 @@ def main():
     cams = {}
     c = SL.CameraRig('C1', [(0.0, (0.3, -1.45, 1.45), (0.0, 0.45, 1.15), 35), (2.7, (0.2, -1.3, 1.42), (-0.05, 0.45, 1.1), 36)])
     cams['C1'] = c.bake(1, F(2.8))
-    c = SL.CameraRig('C2', [(2.6, (-0.36, -0.12, 1.02), (-0.22, BOARD_Y, BT + 0.02), 32), (10.6, (0.24, -0.12, 1.02), (0.2, BOARD_Y, BT + 0.02), 32)], fstop=11.0)
+    c = SL.CameraRig('C2', [(2.6, (-0.36, -0.12, 1.02), (-0.22, BOARD_Y, BT + 0.02), 32), (10.6, (0.24, -0.12, 1.02), (0.2, BOARD_Y, BT + 0.02), 32)])   # sin desenfoque: todo nítido
     cams['C2'] = c.bake(F(2.5), F(10.8))
     c = SL.CameraRig('C3', [(10.6, (0.22, -1.45, 1.6), (0.12, 0.45, 1.37), 34), (18.5, (0.22, -1.7, 1.63), (0.12, 0.45, 1.37), 32)])
     cams['C3'] = c.bake(F(10.5), F(18.5))
@@ -231,9 +231,9 @@ def main():
         # cada rótulo aparece cuando el imán pasa sobre ESE objeto y se va antes del siguiente: siempre queda claro
         # qué se está probando y los rótulos no se superponen
         # panel abajo, delante de la tabla: el imán pasa por arriba y no lo tapa
-        # ventana corta (no coincide con la del objeto vecino) y alturas alternadas: nunca se superponen
-        k_ = len(seen) - 1
-        MG.label('lbl_%s' % ob.name, txt, anchor, anchor + Vector((-0.02, -0.11, -0.012 + 0.03 * (k_ % 2))), cams['C2'],
+        # ventana corta (no coincide con la del objeto vecino): nunca se superponen; panel a la izquierda del objeto,
+        # donde el imán (que avanza hacia +X) ya pasó: no lo tapa
+        MG.label('lbl_%s' % ob.name, txt, anchor, anchor + Vector((-0.04 - 0.0052 * len(txt), -0.06, 0.015 if magnetic else 0.055)), cams['C2'],
                  F(t_pass + 0.05), F(t_pass + 0.9), mg,
                  size=0.014, color=colr)
     MG.label('lbl_res', 'EL IMÁN SEPARA EL ACERO', lift + Vector((0, 0, -0.03)), Vector((0.7, 0.2, 1.5)), cams['C3'],
