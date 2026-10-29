@@ -235,6 +235,8 @@ def main():
              fs(37.0), None, col, size=0.045, color=MG.ORANGE, sub='arena')
     MG.label('lbl_frac_m', 'FRACCIÓN MAGNÉTICA', TRAY + Vector((0.0, 0.0, 0.01)), TRAY + Vector((-0.42, -0.35, 0.16)), cams['C7'],
              fs(37.4), None, col, size=0.045, color=MG.CYAN, sub='hierro')
+    # granos de arena solo en los primeros planos (en los planos generales son sub-píxel y solo cuestan render)
+    SL.hide_in_cameras(sc, ex['sand_grains'], {'C1', 'C3', 'C7'})
     # narración (tiempo real)
     for lid, t in (('E2_01', 0.5), ('E2_02', 6.2), ('E2_03', 11.2), ('E2_04', 17.6), ('E2_05', 24.4), ('E2_06', 27.4), ('E2_07', 38.4)):
         SL.narration(sc, lid, t)

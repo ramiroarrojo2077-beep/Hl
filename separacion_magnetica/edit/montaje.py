@@ -17,7 +17,10 @@ filt = []
 for i, it in enumerate(items):
     inputs += ['-framerate', '30', '-start_number', '1', '-i', os.path.join(frames_dir, it['scene'], 'f%05d.png')]
     # nlmeans a 720p: quita el granulado del muestreo de sombras de EEVEE (2 muestras) sin borrar bordes
-    filt.append('[%d:v]nlmeans=s=4:p=7:r=13,scale=1920:1080:flags=lanczos,unsharp=5:5:0.25:5:5:0.0,format=yuv420p,setsar=1,settb=1/30,fps=30[v%d]' % (i, i))
+    # quita el granulado del muestreo de sombras de EEVEE (2 muestras) sin borrar bordes. nlmeans es el mejor
+    # pero lento (~1 cuadro/s); con SM_DENOISE=hq se usa hqdn3d (rápido, algo menos fino)
+    dn = 'hqdn3d=4:3:5:4' if os.environ.get('SM_DENOISE') == 'hq' else 'nlmeans=s=4:p=7:r=13'
+    filt.append('[%d:v]%s,scale=1920:1080:flags=lanczos,unsharp=5:5:0.25:5:5:0.0,format=yuv420p,setsar=1,settb=1/30,fps=30[v%d]' % (i, dn, i))
 cur = 'v0'
 for i in range(1, len(items)):
     it = items[i]
@@ -44,7 +47,7 @@ p1 = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-stats'] + inputs +
 p2 = common + venc + ['-pass', '2', '-passlogfile', out + '.log'] + aenc + [out]
 if os.environ.get('SM_FAST'):
     # una sola pasada (más rápida) con tope de bitrate
-    vfast = [('medium' if v == 'slow' else v) for v in venc]
+    vfast = [(os.environ.get('SM_PRESET', 'medium') if v == 'slow' else v) for v in venc]
     print('PASS UNICA', flush=True)
     subprocess.run(common + vfast + aenc + [out], check=True)
 else:

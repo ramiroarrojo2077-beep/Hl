@@ -238,6 +238,8 @@ def main():
                  size=0.014, color=colr)
     MG.label('lbl_res', 'EL IMÁN SEPARA EL ACERO', lift + Vector((0, 0, -0.03)), Vector((0.7, 0.2, 1.5)), cams['C3'],
              F(12.6), None, mg, size=0.04, color=MG.CYAN, sub='el resto queda en la tabla')
+    # el cristalizador queda al fondo en toda la escena: granos sub-píxel
+    ex['sand_grains'].hide_render = True
     for lid, t in (('E2b_01', 0.4), ('E2b_02', 3.1), ('E2b_03', 7.2), ('E2b_04', 12.9)):
         SL.narration(sc, lid, t)
     SL.save(sc, 'E2b')

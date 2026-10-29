@@ -122,6 +122,17 @@ def narration(sc, line_id, t):
     sc['narration'] = json.dumps(lst)
 
 
+def hide_in_cameras(sc, obj, cam_names):
+    """Oculta un objeto en los planos de ciertas cámaras (detalle que a esa distancia es menor que un píxel)."""
+    marks = sorted((m.frame, m.camera.name if m.camera else '') for m in sc.timeline_markers)
+    obj.hide_render = False
+    obj.keyframe_insert('hide_render', frame=1)
+    for k, (f, cname) in enumerate(marks):
+        obj.hide_render = cname in cam_names
+        obj.keyframe_insert('hide_render', frame=max(f, 1))
+    obj.hide_render = False
+
+
 def save(sc, name):
     import mograph
     # los gráficos (líneas de campo, partículas, flechas, etiquetas) no proyectan sombra sobre la escena
