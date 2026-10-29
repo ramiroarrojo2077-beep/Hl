@@ -78,7 +78,7 @@ def _skin_material(name, tone, hair_col):
     nb.link(attr.outputs['Color'], sep.inputs['Color'])
     # R: rubor (mejillas/nariz/orejas), G: labios, B: zona de barba/cuero cabelludo
     tc = nb.n('ShaderNodeTexCoord')
-    nz = nb.n('ShaderNodeTexNoise', Scale=60.0, Detail=4.0, Roughness=0.6)
+    nz = nb.n('ShaderNodeTexNoise', Scale=40.0, Detail=2.0, Roughness=0.6)
     nb.link(tc.outputs['Object'], nz.inputs['Vector'])
     nzs = nb.n('ShaderNodeMath', _operation='MULTIPLY_ADD')
     nb.link(nz.outputs['Fac'], nzs.inputs[0])
@@ -180,7 +180,10 @@ def _eye_material(name):
     p = nb.n('ShaderNodeBsdfPrincipled')
     img = bpy.data.images.load(os.path.join(ASSETS, 'eyes', 'brown_eye.png'), check_existing=True)
     tex = nb.n('ShaderNodeTexImage', _image=img)
-    nb.link(tex.outputs['Color'], p.inputs['Base Color'])
+    # iris más saturado y oscuro (con el reflejo del ambiente blanco se veía gris claro, como ojo cerrado)
+    gm = nb.n('ShaderNodeGamma', Gamma=1.35)
+    nb.link(tex.outputs['Color'], gm.inputs['Color'])
+    nb.link(gm.outputs['Color'], p.inputs['Base Color'])
     p.inputs['Roughness'].default_value = 0.25
     p.inputs['Coat Weight'].default_value = 0.35
     p.inputs['Coat Roughness'].default_value = 0.05
@@ -195,8 +198,11 @@ def _cornea_material(name):
     gl = nb.n('ShaderNodeBsdfGlossy', Roughness=0.0)
     tr = nb.n('ShaderNodeBsdfTransparent')
     fr = nb.n('ShaderNodeFresnel', IOR=1.376)
+    fm = nb.n('ShaderNodeMath', _operation='MULTIPLY')     # reflejo más tenue: no lava el iris
+    nb.link(fr.outputs['Fac'], fm.inputs[0])
+    fm.inputs[1].default_value = 0.45
     mix = nb.n('ShaderNodeMixShader')
-    nb.link(fr.outputs['Fac'], mix.inputs['Fac'])
+    nb.link(fm.outputs[0], mix.inputs['Fac'])
     nb.link(tr.outputs[0], mix.inputs[1])
     nb.link(gl.outputs[0], mix.inputs[2])
     nb.output(mix.outputs[0])

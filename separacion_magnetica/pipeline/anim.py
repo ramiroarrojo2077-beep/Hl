@@ -142,12 +142,11 @@ def face_units():
 
 EXPRESSIONS = {
     'neutral': {},
-    'smile': {'LeftCheekUp': 0.45, 'RightCheekUp': 0.45, 'MouthLeftPullUp': 0.55, 'MouthRightPullUp': 0.55,
-              'LeftLowerLidUp': 0.15, 'RightLowerLidUp': 0.15},
+    'smile': {'LeftCheekUp': 0.3, 'RightCheekUp': 0.3, 'MouthLeftPullUp': 0.5, 'MouthRightPullUp': 0.5},
     'smile_soft': {'MouthLeftPullUp': 0.3, 'MouthRightPullUp': 0.3, 'LeftCheekUp': 0.2, 'RightCheekUp': 0.2},
     'curious': {'LeftOuterBrowUp': 0.55, 'LeftInnerBrowUp': 0.35, 'RightOuterBrowUp': 0.2,
                 'MouthLeftPullUp': 0.12},
-    'focus': {'LeftBrowDown': 0.35, 'RightBrowDown': 0.35, 'LeftLowerLidUp': 0.25, 'RightLowerLidUp': 0.25,
+    'focus': {'LeftBrowDown': 0.3, 'RightBrowDown': 0.3, 'LeftLowerLidUp': 0.08, 'RightLowerLidUp': 0.08,
               'lowerLipUp': 0.15},
     'amazed': {'LeftOuterBrowUp': 0.6, 'RightOuterBrowUp': 0.6, 'LeftInnerBrowUp': 0.5, 'RightInnerBrowUp': 0.5,
                'LeftUpperLidOpen': 0.35, 'RightUpperLidOpen': 0.35, 'JawDrop': 0.12,
@@ -160,7 +159,7 @@ EXPRESSIONS = {
 # Poses de mano (curl por falange en grados; pulgar por (abd, curl1, curl2, curl3))
 # ---------------------------------------------------------------------------
 HAND_POSES = {
-    'relaxed': dict(f=[(12, 18, 12), (15, 22, 14), (18, 26, 16), (22, 30, 18)], thumb=(10, 8, 10, 10), spread=3),
+    'relaxed': dict(f=[(8, 13, 8), (10, 16, 10), (12, 18, 11), (15, 21, 13)], thumb=(12, 5, 6, 6), spread=3),
     'open': dict(f=[(2, 3, 2), (2, 3, 2), (3, 3, 2), (4, 4, 3)], thumb=(25, 0, 3, 3), spread=8),
     'grip': dict(f=[(55, 70, 45), (60, 75, 48), (62, 78, 50), (65, 80, 50)], thumb=(45, 25, 25, 30), spread=0),
     'point': dict(f=[(3, 3, 2), (70, 95, 60), (75, 95, 60), (78, 95, 60)], thumb=(35, 25, 30, 25), spread=0),

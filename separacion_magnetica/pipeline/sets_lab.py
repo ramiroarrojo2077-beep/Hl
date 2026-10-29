@@ -53,7 +53,7 @@ def build_room(col):
         for y in (-3, -0.5, 2):
             P.ceiling_panel('led_%d_%d' % (x * 10, y * 10), (x, y, 3.18), (1.2, 0.3), col)
     # cartel
-    sign = text3d('lab_sign', 'LABORATORIO DE MATERIALES', (0, 4.5, 2.55), 0.16, col, principled('sign_txt', '#2f5d7c', 0.4), extrude=0.005)
+    sign = text3d('lab_sign', 'LABORATORIO DE MATERIALES', (0, 4.5, 2.78), 0.16, col, principled('sign_txt', '#2f5d7c', 0.4), extrude=0.005)
 
 
 def build_furniture(col):

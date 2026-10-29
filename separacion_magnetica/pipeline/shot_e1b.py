@@ -25,8 +25,11 @@ def main():
     w = P.walk(0.3, 13.2, [(-6.2, 2.5), (-3.0, 2.0), (-0.9, 1.15), (sx, sy + 0.04)], step=0.72)
     P.turn(13.8, 14.6, 0.0)
     P.look_at(9.5, (-1.5, 3.6, 1.5))
-    P.look_at(11.5, LAB.DISH + Vector((0, 0, 0.3)))
-    P.look_at(14.4, LAB.DISH)
+    P.look_at(11.0, LAB.DISH + Vector((0, 0, 0.3)))
+    # mientras plantea la pregunta mira a cámara; a la mezcla solo cuando la señala
+    P.look_at(12.1, (2.2, -3.0, 1.75))
+    P.look_at(14.7, LAB.DISH)
+    P.look_at(16.4, (1.3, -2.2, 1.6))
     P.expression(14.0, 'curious')
     P.lean.add(14.4, 0.0).add(15.4, 0.16).add(17.0, 0.12).add(17.8, 0.0)
     P.hand('R', 14.6, 'rest')

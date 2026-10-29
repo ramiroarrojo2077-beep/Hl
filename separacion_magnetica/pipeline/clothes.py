@@ -825,7 +825,12 @@ def default_materials(prefix, style):
     mats['pen_black'] = principled(prefix + '_penblack', '#111111', rough=0.3, coat=0.6)
     mats['strap'] = principled(prefix + '_strap', '#2a1a10', rough=0.5)
     mats['frame'] = principled(prefix + '_frame', '#1b1b1d', rough=0.25, metal=0.6)
-    mats['lens'] = principled(prefix + '_lens', '#dfe6e8', rough=0.02, alpha=0.04, spec=0.6)
+    # lente: transparente con reflejo solo en ángulo rasante (de frente deja ver los ojos nítidos)
+    import props as _P
+    mats['lens'] = _P.glass_mat(prefix + '_lens', alpha=0.0)
+    for n in mats['lens'].node_tree.nodes:
+        if n.type == 'MATH':
+            n.inputs[1].default_value = 0.22
     mats['badge'] = badge_material(prefix + '_badgemat')
     mats['vest'] = fabric_material(prefix + '_vestmat', '#ff8a00' if style == 'labcoat' else '#ffb300', rough=0.6, weave_scale=700)
     mats['reflective'] = principled(prefix + '_reflect', '#d9dde0', rough=0.25, metal=0.6)

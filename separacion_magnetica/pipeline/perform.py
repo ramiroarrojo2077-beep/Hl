@@ -132,7 +132,8 @@ class Performer:
         self.twist = Track(default=0.0)
         self.hip_shift = Track(default=0.0)
         self.hands = {'L': [], 'R': []}
-        self.benches = []   # mesadas (x0, x1, y0, y1, z_sup) que la mano en reposo no debe atravesar
+        self.benches = []
+        self._seed_ph = random.Random(seed).uniform(0, 6.28)   # mesadas (x0, x1, y0, y1, z_sup) que la mano en reposo no debe atravesar
         self.poses = {'L': [], 'R': []}
         self.looks = []
         self.faces = []
@@ -270,7 +271,7 @@ class Performer:
         q = Quaternion((0, 0, 1), yaw + self.twist(t))
         breath = 0.004 * math.sin(t * 2 * math.pi * 0.23)
         swing = -foot_fw * 0.45 * amp
-        local = Vector((s * 0.08, -0.04 + swing, -arm_len * 0.965 + abs(swing) * 0.2 + breath))
+        local = Vector((s * 0.06, -0.04 + swing, -arm_len * 0.965 + abs(swing) * 0.2 + breath))
         p = sh + q @ local
         fdir = q @ Vector((s * 0.03, -0.18 + swing * 0.6, -1.0))
         pdir = q @ Vector((-s * 1.0, 0.45, 0.0))
@@ -568,8 +569,21 @@ class Performer:
                 A.set_hand(f, side, pw)
             # cara
             fw = dict(self._interp_dicts(self.faces, t, {}))
+            # cara viva: párpados abiertos por defecto y micro-movimientos suaves de cejas, labios y mejillas
+            # (ruido lento con fases distintas; nunca queda una máscara rígida)
+            for k, base_, amp_, fr_, ph in (('LeftUpperLidOpen', 0.4, 0.0, 0.0, 0.0), ('RightUpperLidOpen', 0.4, 0.0, 0.0, 0.0),
+                                            ('LeftOuterBrowUp', 0.0, 0.12, 0.31, 0.0), ('RightOuterBrowUp', 0.0, 0.12, 0.31, 0.4),
+                                            ('LeftInnerBrowUp', 0.0, 0.08, 0.23, 1.3), ('RightInnerBrowUp', 0.0, 0.08, 0.23, 1.5),
+                                            ('MouthLeftPullUp', 0.0, 0.07, 0.17, 2.1), ('MouthRightPullUp', 0.0, 0.07, 0.17, 2.6),
+                                            ('lowerLipUp', 0.0, 0.06, 0.41, 0.7), ('LeftCheekUp', 0.0, 0.05, 0.13, 3.3),
+                                            ('RightCheekUp', 0.0, 0.05, 0.13, 3.5)):
+                v = base_ + amp_ * max(0.0, math.sin(t * 2 * math.pi * fr_ + ph + self._seed_ph) * 0.6
+                                       + math.sin(t * 2 * math.pi * fr_ * 2.7 + ph * 1.7) * 0.4)
+                fw[k] = fw.get(k, 0.0) + v
             bl = self._blink(t)
             if bl > 0:
+                for k in ('LeftUpperLidOpen', 'RightUpperLidOpen'):
+                    fw[k] = fw.get(k, 0.0) * (1.0 - bl)
                 fw['LeftUpperLidClosed'] = max(fw.get('LeftUpperLidClosed', 0), bl)
                 fw['RightUpperLidClosed'] = max(fw.get('RightUpperLidClosed', 0), bl)
             A.set_face(f, fw)
