@@ -344,7 +344,9 @@ class Performer:
                 return p, f, pd
         return resolve(keys[-1][1])
 
-    def _interp_dicts(self, keys, t, default):
+    def _interp_dicts(self, keys, t, default, blend=None):
+        """blend: duración máxima de la transición; antes se mantiene la clave anterior (si no, una mano que
+        sostiene algo se iba abriendo durante todo el intervalo hasta la próxima pose)."""
         if not keys:
             return default
         if t <= keys[0][0]:
@@ -353,6 +355,10 @@ class Performer:
             return keys[-1][1]
         for (t0, d0), (t1, d1) in zip(keys[:-1], keys[1:]):
             if t0 <= t <= t1:
+                if blend is not None:
+                    t0 = max(t0, t1 - blend)
+                    if t < t0:
+                        return d0
                 u = ease_io((t - t0) / max(t1 - t0, 1e-6))
                 out = {}
                 for k in set(d0) | set(d1):
@@ -553,7 +559,7 @@ class Performer:
                     foot_fw = (Vector(feet[side][0]) - Vector((pos[0], pos[1], 0))).dot(fwdv)
                 rest = lambda side=side, foot_fw=foot_fw: self.rest_hand(side, t, pos, yaw, bob, amp, phase, foot_fw)
                 p, fd, pd = self._interp_states(self.hands[side], t, rest)
-                pw = self._interp_dicts(self.poses[side], t, {'relaxed': 1.0})
+                pw = self._interp_dicts(self.poses[side], t, {'relaxed': 1.0}, blend=0.45)
                 if self.benches:
                     # cuánto bajan las puntas hacia el lado de la palma según la pose (relajada > puño > abierta/señalar)
                     tw_ = sum(pw.values()) or 1.0
@@ -568,7 +574,7 @@ class Performer:
                 A.set_pole(f, 'pole_arm.' + side, sh + qy @ Vector((s * 0.25, 0.6, -0.35)))
                 A.set_hand(f, side, pw)
             # cara
-            fw = dict(self._interp_dicts(self.faces, t, {}))
+            fw = dict(self._interp_dicts(self.faces, t, {}, blend=0.8))
             # cara viva: párpados abiertos por defecto y micro-movimientos suaves de cejas, labios y mejillas
             # (ruido lento con fases distintas; nunca queda una máscara rígida)
             for k, base_, amp_, fr_, ph in (('LeftUpperLidOpen', 0.4, 0.0, 0.0, 0.0), ('RightUpperLidOpen', 0.4, 0.0, 0.0, 0.0),

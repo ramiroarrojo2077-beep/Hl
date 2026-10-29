@@ -272,6 +272,10 @@ def main():
         Pw.hand_pose('R', tg, {'grip': 1})
         Pw.hand('R', t + 1.8, ('world', Vector((-7.0, 0.7, 1.24)), Vector((-0.7, 0.1, -0.7)), Vector((0, 0, -1))))
         Pw.hand_pose('R', tr, {'open': 1})
+        # mirada: sigue la botella que viene por la cinta, la toma y la mira caer al contenedor
+        Pw.look_at(t + 0.2, pick + Vector((-0.6, 0, 0.05)))
+        Pw.look_at(t + 0.9, pick)
+        Pw.look_at(t + 1.6, Vector((-7.2, 0.85, 1.05)))
         bo = bpy.data.objects.new('pick%02d' % k, bot_me.copy())
         bo.data.materials.append(pl_m[k % len(pl_m)])
         col.objects.link(bo)
