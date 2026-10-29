@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #090b10;
+  --color-panel: #121722;
+  --color-surface: #1b2230;
+  --color-surface-2: #232c3d;
+  --color-line: #2a3346;
+  --color-accent: #6d7cff;
+  --color-accent-2: #00d6c9;
+  --color-text: #f5f7ff;
+  --color-muted: #9aa3b8;
+  --color-danger: #ff5c7a;
+  --color-warn: #ffb547;
+  --color-ok: #3ddc97;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shadow-glow: 0 0 0 1px rgb(109 124 255 / 0.35), 0 8px 30px rgb(109 124 255 / 0.15);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3346 transparent;
+}
+
+::selection {
+  background: rgb(109 124 255 / 0.4);
+}
+
+input[type="range"] {
+  accent-color: var(--color-accent);
+}
+
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 0.4;
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.glass {
+  background: rgb(18 23 34 / 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+@keyframes wf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: wf-fade-up 0.35s ease-out both;
+}
+
+@keyframes wf-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(0 214 201 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(0 214 201 / 0);
+  }
+}
+.pulse-ring {
+  animation: wf-pulse-ring 1.6s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .pulse-ring {
+    animation: none;
+  }
+}
