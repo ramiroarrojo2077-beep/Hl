@@ -196,7 +196,7 @@ def main():
     beam.visible_shadow = False
     MG.key_fade(bm_m, F(5.4), None, dur=10, peak=0.12)
     # líneas de campo en 3D (eje del imán a lo largo de X)
-    lines = MG.dipole_lines(L=MAGL, n=8, max_len=0.55, step=0.006, planes=3)
+    lines = MG.dipole_lines(L=MAGL, n=6, max_len=0.36, step=0.006, planes=2)   # más compactas: no tapan los materiales
     fl, flm = MG.field_lines_object('holo_field', lines, col, '#1a8fe0', radius=0.004, strength=3.2)   # azul más saturado: se lee sobre blanco
     fl.location = MAGC
     fl.rotation_euler = (0, math.pi / 2, 0)

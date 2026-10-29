@@ -133,6 +133,7 @@ class Performer:
         self.hip_shift = Track(default=0.0)
         self.hands = {'L': [], 'R': []}
         self.benches = []
+        self.max_head_down = -0.75   # cabeceo máximo hacia abajo (rad); el resto lo hacen los ojos
         self._seed_ph = random.Random(seed).uniform(0, 6.28)   # mesadas (x0, x1, y0, y1, z_sup) que la mano en reposo no debe atravesar
         self.poses = {'L': [], 'R': []}
         self.looks = []
@@ -546,7 +547,7 @@ class Performer:
             hyaw = math.atan2(d_local.x, -d_local.y)
             hpitch = math.atan2(d_local.z, math.hypot(d_local.x, d_local.y))
             hyaw = max(-1.3, min(1.3, hyaw)) * hw * self.head_w
-            hpitch = max(-0.75, min(0.6, hpitch)) * hw * self.head_w
+            hpitch = max(self.max_head_down, min(0.6, hpitch)) * hw * self.head_w
             rot = Quaternion((0, 0, 1), hyaw) @ Quaternion((1, 0, 0), -hpitch)
             for bn, w in (('neck01', 0.15), ('neck02', 0.15), ('neck03', 0.2), ('head', 0.5)):
                 A.set_world_rot(f, bn, Quaternion().slerp(rot, w))

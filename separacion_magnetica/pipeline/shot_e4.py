@@ -162,13 +162,16 @@ def main():
                     state = 'fall'
                     fall_t = t
                     start = p.copy()
-                    land = cont + Vector((rnd.uniform(-0.9, 0.9), rnd.uniform(-0.6, 0.6), 0.1 + rnd.uniform(0, 0.25)))
+                    # cae casi vertical desde el extremo de la banda transversal, dentro del contenedor
+                    land = Vector((start.x + rnd.uniform(-0.35, 0.35), min(start.y + 0.35 + rnd.uniform(0, 0.3), cont.y + 0.6),
+                                   0.1 + rnd.uniform(0, 0.25)))
+                    t_fall = math.sqrt(max(start.z - land.z, 0.01) / 4.9)
             elif state == 'fall':
                 tf = t - fall_t
-                p = start.lerp(land, min(tf / 0.45, 1))
-                p.z = max(land.z, start.z + 0.6 * tf - 4.9 * tf * tf)
-                q = Quaternion((0, 1, 0), math.pi / 2) @ Quaternion((1, 0, 0), tf * 9)
-                if tf > 0.45 and p.z <= land.z + 1e-3:
+                p = start.lerp(land, min(tf / t_fall, 1))
+                p.z = max(land.z, start.z - 4.9 * tf * tf)
+                q = Quaternion((0, 1, 0), math.pi / 2) @ Quaternion((1, 0, 0), min(tf, t_fall) * 6)
+                if tf >= t_fall:
                     state = 'in'
                     qin = q
             elif state == 'in':
@@ -340,10 +343,10 @@ def main():
     for f, val in ((F(21.0), 0.0), (F(21.8), 1.0)):
         node.default_value = val
         node.keyframe_insert('default_value', frame=f)
-    lines = MG.dipole_lines(L=0.25, n=8, max_len=0.8, step=0.01, planes=3)
+    lines = MG.dipole_lines(L=0.25, n=6, max_len=0.5, step=0.01, planes=2)
     fl, flm = MG.field_lines_object('sep_field', lines, mg, MG.CYAN, radius=0.004, strength=5.0)
     fl.location = (PL.MAG_X, 0.0, PL.XBELT_Z + 0.15)
-    fl.scale = (1.6, 1.6, 1.6)
+    fl.scale = (1.2, 1.2, 1.2)
     MG.grow(fl, F(15.2), F(16.6), flm, f_out=F(21.5))
     MG.label('lbl_sep', 'SEPARADOR MAGNÉTICO', (PL.MAG_X, -0.3, PL.XBELT_Z + 0.4), (PL.MAG_X - 0.5, 0.3, PL.XBELT_Z + 0.7),
              cams['C3'], F(14.0), F(21.0), mg, size=0.06, color=MG.RED, sub='de banda: imán + banda transversal')
@@ -379,7 +382,8 @@ def cameras():
     c = SL.CameraRig('C2', [(6.5, (-6.2, -1.0, 1.55), (-3.0, 0.0, 1.2), 28), (13.0, (-4.2, -0.95, 1.5), (-1.0, 0.0, 1.25), 30)])
     cams['C2'] = c.bake(F(6.4), F(13.2))
     # más alta: antes quedaba detrás de la baranda verde y la tapaba
-    c = SL.CameraRig('C3', [(13.0, (-2.5, -1.9, 2.0), (0.0, 0.3, 1.5), 28), (21.0, (-2.1, -1.7, 2.05), (0.0, 0.6, 1.45), 30)])
+    # plano abierto: se ven la cinta, el separador y el contenedor de acero a la vez
+    c = SL.CameraRig('C3', [(13.0, (-3.2, -2.6, 2.6), (0.0, 0.6, 1.4), 24), (21.0, (-2.8, -2.4, 2.6), (0.0, 0.9, 1.35), 24)])
     cams['C3'] = c.bake(F(12.9), F(21.2))
     # primero la mano en la pantalla, luego se abre para mostrar qué hace la máquina con cada toque
     c = SL.CameraRig('C4', [(21.0, (2.6, -3.1, 1.85), (1.55, -1.75, 1.12), 32), (22.9, (2.7, -3.2, 1.9), (1.4, -1.6, 1.15), 32),

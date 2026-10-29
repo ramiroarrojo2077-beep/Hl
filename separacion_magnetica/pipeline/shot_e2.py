@@ -44,6 +44,7 @@ def main():
     x0, y0 = LAB.SCI_SPOT
     P = perform.Performer(A, pos=(x0, y0), yaw=0.0)
     P.benches.append(LAB.MAIN_BENCH)
+    P.max_head_down = -0.42   # no agacha tanto la cabeza: mira la mesada con los ojos y se le ve la cara
     mag, sleeve = ex['magnet'], ex['sleeve']
     mag_base0 = mag.location.copy()
     DISH, TRAY = LAB.DISH, LAB.TRAY
@@ -97,6 +98,7 @@ def main():
     P.look_at(3.7, (0.3, -2.5, 1.5))
     P.look_at(4.8, b0 + Vector((0, 0, 0.04)))
     P.look_at(5.6, DISH + Vector((0, 0, 0.03)))
+    P.look_at(6.4, (0.4, -2.6, 1.55))
     # mano derecha señala las limaduras
     P.hand('R', 5.8, 'rest')
     P.hand_pose('R', 5.8, {'relaxed': 1})
@@ -155,6 +157,8 @@ def main():
     over_tray = TRAY + Vector((0, 0, 0.075))
     P.hand('R', 25.0, W(handR(over_tray)))
     P.look_at(24.6, TRAY)
+    P.look_at(25.4, (0.3, -2.6, 1.5))
+    P.look_at(26.0, TRAY)
     P.expression(24.8, 'focus')
     P.hand('L', 24.9, 'rest')
     P.hand_pose('L', 25.1, {'relaxed': 1})
@@ -215,7 +219,7 @@ def main():
     MG.label('lbl_mag', 'IMÁN', lifted + Vector((0, 0, 0.06)), lifted + Vector((-0.28, -0.2, 0.14)), cams['C3'],
              fs(13.8), fs(17.0), col, size=0.04, color=MG.RED, sub='dentro de una funda plástica')
     # líneas de campo alrededor del imán (siguen al imán)
-    lines = MG.dipole_lines(L=LAB.MAG_LEN, n=9, max_len=0.16, step=0.002, planes=4)
+    lines = MG.dipole_lines(L=LAB.MAG_LEN, n=7, max_len=0.11, step=0.002, planes=3)
     fl, flm = MG.field_lines_object('field_e2', lines, col, MG.CYAN, radius=0.0006, strength=3.0, parent=mag)
     fl.location = (0, 0, LAB.MAG_LEN / 2)
     MG.grow(fl, fs(17.0), fs(18.4), flm, f_out=fs(27.6))
