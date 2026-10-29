@@ -16,7 +16,7 @@ from util import srgb, NodeBuilder, link, principled, emission_mat, add_modifier
 def M(name):
     lib = {
         'glass': lambda: principled('glass', '#cfdde6', rough=0.06, spec=1.0, coat=1.0),
-        'glass_hero': lambda: glass_mat('glass_hero'),
+        'glass_hero': lambda: glass_mat('glass_hero', alpha=0.06, refl=0.35),   # menos reflejo: se ve la arena y su volumen
         'steel': lambda: principled('steel', '#b9bcc0', rough=0.28, metal=1.0, noise_color=0.05, noise_scale=30),
         'brushed': lambda: principled('brushed', '#a8acb0', rough=0.38, metal=1.0, noise_color=0.08, noise_scale=80),
         'chrome': lambda: principled('chrome_p', '#e0e0e0', rough=0.08, metal=1.0),
@@ -62,7 +62,7 @@ def M(name):
     return m
 
 
-def glass_mat(name, tint='#ffffff', alpha=0.12, method='BLENDED'):
+def glass_mat(name, tint='#ffffff', alpha=0.12, method='BLENDED', refl=0.7):
     mat = bpy.data.materials.new(name)
     nb = NodeBuilder(mat)
     gl = nb.n('ShaderNodeBsdfGlossy', Roughness=0.03)
@@ -70,7 +70,7 @@ def glass_mat(name, tint='#ffffff', alpha=0.12, method='BLENDED'):
     fr = nb.n('ShaderNodeLayerWeight', Blend=0.25)
     mf = nb.n('ShaderNodeMath', _operation='MULTIPLY_ADD')
     nb.link(fr.outputs['Fresnel'], mf.inputs[0])
-    mf.inputs[1].default_value = 0.7
+    mf.inputs[1].default_value = refl
     mf.inputs[2].default_value = alpha
     mix = nb.n('ShaderNodeMixShader')
     nb.link(mf.outputs[0], mix.inputs['Fac'])

@@ -85,6 +85,11 @@ def build_items(col):
     items.append((foil, False, 'aluminio'))
     cap = cyl('plastic_cap', 0.014, 0.011, Vector((0.22, BOARD_Y, BOARD_Z)), col, principled('cap_m', '#d63b3b', 0.35), seg=24)
     items.append((cap, False, 'plástico'))
+    # más grandes que antes (eran difíciles de distinguir); apoyados sobre la tabla
+    for ob, _, _ in items:
+        k = 1.8
+        ob.scale = (k, k, k)
+        ob.location.z = BOARD_Z + (ob.location.z - BOARD_Z) * k
     return items
 
 
@@ -127,7 +132,7 @@ def main():
     P.hand('R', 0.0, handR(start))
     P.hand_pose('R', 0.0, {'grip': 1})
     P.attach(mag, 'R', 0.0, 999)
-    zlow = BOARD_Z + 0.03
+    zlow = BOARD_Z + 0.05     # pasa por encima de los objetos (ahora más grandes) sin tocarlos
     x0, x1 = -0.33, 0.29
     t0, t1 = 2.6, 10.4
     P.hand('R', 2.0, handR(Vector((x0, BOARD_Y, zlow + 0.04))))
@@ -175,12 +180,12 @@ def main():
         prev = None
         for f in range(1, nF + 1):
             tip = Mm[f].translation
-            if f_cap is None and (Vector((tip.x, tip.y)) - Vector((M0.translation.x, M0.translation.y))).length < 0.035 and tip.z < BOARD_Z + 0.06:
+            if f_cap is None and (Vector((tip.x, tip.y)) - Vector((M0.translation.x, M0.translation.y))).length < 0.04 and tip.z < BOARD_Z + 0.08:
                 f_cap = f
             if f_cap is None:
                 Mx = M0
             else:
-                u = min((f - f_cap) / 5.0, 1.0)
+                u = min((f - f_cap) / 7.0, 1.0)      # salto visible (7 cuadros), sin teletransporte
                 tg = Mm[f] @ local
                 loc = M0.translation.lerp(tg.translation, u * u)
                 q = M0.to_quaternion().slerp(tg.to_quaternion(), u)
@@ -196,7 +201,7 @@ def main():
     cams = {}
     c = SL.CameraRig('C1', [(0.0, (0.3, -1.45, 1.45), (0.0, 0.45, 1.15), 35), (2.7, (0.2, -1.3, 1.42), (-0.05, 0.45, 1.1), 36)])
     cams['C1'] = c.bake(1, F(2.8))
-    c = SL.CameraRig('C2', [(2.6, (-0.36, -0.12, 1.02), (-0.22, BOARD_Y, BT + 0.02), 32), (10.6, (0.24, -0.12, 1.02), (0.2, BOARD_Y, BT + 0.02), 32)], fstop=4.0)
+    c = SL.CameraRig('C2', [(2.6, (-0.36, -0.12, 1.02), (-0.22, BOARD_Y, BT + 0.02), 32), (10.6, (0.24, -0.12, 1.02), (0.2, BOARD_Y, BT + 0.02), 32)], fstop=11.0)
     cams['C2'] = c.bake(F(2.5), F(10.8))
     c = SL.CameraRig('C3', [(10.6, (0.22, -1.45, 1.6), (0.12, 0.45, 1.37), 34), (18.5, (0.22, -1.7, 1.63), (0.12, 0.45, 1.37), 32)])
     cams['C3'] = c.bake(F(10.5), F(18.5))
@@ -214,15 +219,19 @@ def main():
     for i, (ob, magnetic, kind) in enumerate(items):
         x = ob.location.x
         t_pass = t0 + (t1 - t0) * (x - x0) / (x1 - x0)
-        key = (kind, magnetic)
-        if magnetic and key in seen:
+        nm = {'clip': 'CLIPS', 'nail': 'CLAVO', 'screw': 'TORNILLO', 'copper_wire': 'CABLE DE COBRE',
+              'foil_ball': 'PAPEL DE ALUMINIO', 'plastic_cap': 'TAPITA DE PLÁSTICO'}[ob.name.rstrip('0123456789')]
+        key = nm
+        if key in seen:
             continue
         seen.add(key)
-        txt = 'ACERO: atraído' if magnetic else '%s: no' % kind.upper()
+        txt = '%s: atraído' % nm if magnetic else '%s: no' % nm
         colr = MG.CYAN if magnetic else '#ff6b6b'
         anchor = Vector((x + (0.03 if magnetic else 0.0), BOARD_Y, BOARD_Z + 0.01))
-        MG.label('lbl_%s' % kind, txt, anchor, anchor + Vector((0.0, -0.07, 0.06)), cams['C2'], F(t_pass + 0.2), F(10.6), mg,
-                 size=0.012, color=colr)
+        # cada rótulo aparece cuando el imán pasa sobre ESE objeto y se va antes del siguiente: siempre queda claro
+        # qué se está probando y los rótulos no se superponen
+        MG.label('lbl_%s' % ob.name, txt, anchor, anchor + Vector((0.0, -0.06, 0.075)), cams['C2'], F(t_pass + 0.1), F(t_pass + 1.6), mg,
+                 size=0.014, color=colr)
     MG.label('lbl_res', 'EL IMÁN SEPARA EL ACERO', lift + Vector((0, 0, -0.03)), Vector((0.7, 0.2, 1.5)), cams['C3'],
              F(12.6), None, mg, size=0.04, color=MG.CYAN, sub='el resto queda en la tabla')
     for lid, t in (('E2b_01', 0.4), ('E2b_02', 3.1), ('E2b_03', 7.2), ('E2b_04', 12.9)):

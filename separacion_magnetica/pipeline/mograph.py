@@ -206,7 +206,7 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     lm = fade_material(name + '_line', color, 4.0)
     cv = bpy.data.curves.new(name + '_lead', 'CURVE')
     cv.dimensions = '3D'
-    cv.bevel_depth = size * 0.035
+    cv.bevel_depth = size * 0.016   # línea fina: se lee como anotación, no como un objeto
     sp = cv.splines.new('POLY')
     sp.points.add(1)
     sp.points[0].co = (*anchor, 1)
@@ -220,7 +220,7 @@ def label(name, text, anchor, panel_pos, cam, f_in, f_out=None, col=None, size=0
     dot = bpy.data.objects.new(name + '_dot', bpy.data.meshes.new(name + '_dotm'))
     import bmesh
     bmm = bmesh.new()
-    bmesh.ops.create_uvsphere(bmm, u_segments=12, v_segments=8, radius=size * 0.12)
+    bmesh.ops.create_uvsphere(bmm, u_segments=12, v_segments=8, radius=size * 0.06)
     bmm.to_mesh(dot.data)
     bmm.free()
     dot.data.materials.append(lm)
@@ -584,7 +584,12 @@ def dipole_lines(L=0.12, n=14, max_len=0.6, step=0.003, ring_r=None, planes=4, s
     return lines
 
 
+FIELD_BLUE = '#1d8fe6'   # azul saturado: las líneas de campo se leen sobre paredes blancas y cielo claro
+
+
 def field_lines_object(name, lines, col, color=CYAN, radius=0.0012, strength=4.0, parent=None):
+    if color == CYAN:
+        color, strength = FIELD_BLUE, min(strength, 3.2)
     mat = fade_material(name + '_mat', color, strength)
     cv = bpy.data.curves.new(name, 'CURVE')
     cv.dimensions = '3D'

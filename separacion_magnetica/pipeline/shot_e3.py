@@ -133,7 +133,7 @@ def main():
     # campo de proyección: media cáscara oscura detrás del holograma (mejora la lectura)
     verts, faces = [], []
     nseg = 24
-    for j, z in enumerate((0.93, 1.72)):
+    for j, z in enumerate((0.93, 1.5)):     # más bajo: no tapa la cara ni el pecho del científico
         for i in range(nseg + 1):
             a = math.radians(8 + 164 * i / nseg)
             verts.append((HOLO.x + math.cos(a) * 0.46, HOLO.y + math.sin(a) * 0.46, z))
@@ -143,12 +143,12 @@ def main():
     me.from_pydata(verts, [], faces)
     vol = bpy.data.objects.new('holo_volume', me)
     col.objects.link(vol)
-    vm = MG.panel_material('holo_volume_m', '#03101c', 0.8)
+    vm = MG.panel_material('holo_volume_m', '#03101c', 0.32)   # tenue: da contraste a las líneas sin oscurecer la escena
     me.materials.append(vm)
     vol.visible_shadow = False
     MG.key_fade(vm, F(5.2), None, dur=12)
     grid = []
-    for k in range(7):
+    for k in range(5):
         z = 0.95 + k * 0.12
         cv = bpy.data.curves.new('holo_grid%d' % k, 'CURVE')
         cv.dimensions = '3D'
@@ -182,9 +182,22 @@ def main():
         t.data.align_y = 'CENTER'
         MG.key_fade(t.data.materials[0], F(6.0), None)
         t.visible_shadow = False
+    beam_me = bpy.data.meshes.new('holo_beam')
+    bmb = bmesh.new()
+    bmesh.ops.create_cone(bmb, cap_ends=False, segments=32, radius1=0.33, radius2=0.2, depth=MAGC.z - HOLO.z - 0.05,
+                          matrix=Matrix.Translation((0, 0, (MAGC.z - HOLO.z - 0.05) / 2)))
+    bmb.to_mesh(beam_me)
+    bmb.free()
+    beam = bpy.data.objects.new('holo_beam', beam_me)
+    col.objects.link(beam)
+    beam.location = HOLO + Vector((0, 0, 0.0))
+    bm_m = MG.fade_material('holo_beam_m', '#3fd2ff', 1.2, 0.0)
+    beam_me.materials.append(bm_m)
+    beam.visible_shadow = False
+    MG.key_fade(bm_m, F(5.4), None, dur=10, peak=0.12)
     # líneas de campo en 3D (eje del imán a lo largo de X)
     lines = MG.dipole_lines(L=MAGL, n=8, max_len=0.55, step=0.006, planes=3)
-    fl, flm = MG.field_lines_object('holo_field', lines, col, MG.CYAN, radius=0.0035, strength=6.0)
+    fl, flm = MG.field_lines_object('holo_field', lines, col, '#1a8fe0', radius=0.004, strength=3.2)   # azul más saturado: se lee sobre blanco
     fl.location = MAGC
     fl.rotation_euler = (0, math.pi / 2, 0)
     MG.grow(fl, F(6.0), F(7.6), flm)
@@ -215,8 +228,10 @@ def main():
             kb.key_vec('location', f, p)
         kb.write()
         MG.arrow('arr_%s' % sym, MAGC + off * 1.35, MAGC + off * 0.75, col, MG.ORANGE, radius=0.004, f_in=F(t0 - 0.3), f_out=F(t0 + 1.2))
-        lbl = PR.text3d('lbl_%s' % sym, sym, MAGC + off * 1.5 + Vector((0, -0.02, 0.05)), 0.035, col, MG.fade_material('lt_%s' % sym, MG.WHITE, 3.0, 0.0))
+        lbl = PR.text3d('lbl_%s' % sym, sym, (0, 0, 0), 0.032, col, MG.fade_material('lt_%s' % sym, '#0d2a40', 1.0, 0.0))
         lbl.visible_shadow = False
+        lbl.parent = ob
+        lbl.location = (0, -0.03, sz * 0.75)
         MG.key_fade(lbl.data.materials[0], f_in, F(20.0))
     for i, (nm, kname, kind, sz, colr, off) in enumerate(nonatt):
         ob, mats = holo_obj('non_%d' % i, kind, sz, colr, col, MAGC + off)
@@ -228,16 +243,20 @@ def main():
             t = (f - 1) / 30
             kb.key_vec('location', f, MAGC + off + Vector((0, 0, 0.004 * math.sin(t * 3 + i))))
         kb.write()
-        lbl = PR.text3d('lbln_%d' % i, nm, MAGC + off + Vector((0, -0.03, sz * 0.9)), 0.03, col, MG.fade_material('ltn_%d' % i, MG.WHITE, 3.0, 0.0))
+        lbl = PR.text3d('lbln_%d' % i, nm, (0, 0, 0), 0.03, col, MG.fade_material('ltn_%d' % i, '#0d2a40', 1.0, 0.0))
         lbl.visible_shadow = False
+        lbl.parent = ob
+        lbl.location = (0, -0.03, sz * 0.9)
         MG.key_fade(lbl.data.materials[0], f_in, F(20.0))
-        x = PR.text3d('lblx_%d' % i, 'no atraído', MAGC + off + Vector((0, -0.03, -sz * 0.85)), 0.022, col, MG.fade_material('ltx_%d' % i, '#ff6b6b', 3.5, 0.0))
+        x = PR.text3d('lblx_%d' % i, 'no atraído', (0, 0, 0), 0.022, col, MG.fade_material('ltx_%d' % i, '#d63b3b', 1.2, 0.0))
         x.visible_shadow = False
+        x.parent = ob
+        x.location = (0, -0.03, -sz * 0.85)
         MG.key_fade(x.data.materials[0], f_in + 20, F(20.0))
     MG.label('lbl_att', 'ATRAÍDOS POR EL IMÁN', MAGC + Vector((0.3, 0, 0.0)), MAGC + Vector((0.42, -0.3, 0.17)), cams['C2'],
-             F(9.0), F(13.2), col, size=0.05, color=MG.CYAN, sub='hierro · níquel · cobalto · aceros')
+             F(9.0), F(13.2), col, size=0.036, color=MG.CYAN, sub='hierro · níquel · cobalto · aceros')
     MG.label('lbl_non', 'NO ATRAÍDOS (imán común)', MAGC + Vector((-0.2, 0, 0.22)), MAGC + Vector((-0.46, -0.3, 0.16)), cams['C3'],
-             F(14.6), F(20.0), col, size=0.05, color='#ff6b6b', sub='aluminio · cobre · plástico')
+             F(14.6), F(20.0), col, size=0.036, color='#ff6b6b', sub='aluminio · cobre · plástico')
     # ---- diagrama: mezcla -> fracción magnética / no magnética
     mix_c = HOLO + Vector((0, 0, 0.28))
     for i in range(28):

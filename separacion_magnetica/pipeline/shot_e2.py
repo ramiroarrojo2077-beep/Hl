@@ -123,7 +123,7 @@ def main():
     P.hand('R', 12.3, W(handR(mag_base0)))
     P.hand('R', 13.4, W(handR(lifted)))
     P.hand('R', 16.4, W(handR(lifted + Vector((0.01, 0.0, 0.01)))))
-    P.attach(mag, 'R', 12.25, 999)
+    P.attach(mag, 'R', 12.25, 31.15)   # lo deja parado sobre la mesada al terminar
     P.attach(sleeve, 'R', 12.25, 26.3)
     P.look_at(12.8, lifted + Vector((0, 0, 0.1)))
     P.expression(13.0, 'curious')
@@ -164,23 +164,39 @@ def main():
     P.hand('L', 26.2, W(handL_sleeve(over_tray)))
     P.hand_pose('L', 26.2, {'open': 1})
     P.hand_pose('L', 26.45, {'grip': 1})
-    P.hand('L', 40.0, W(handL_sleeve(over_tray)))
+    P.hand('L', 40.0, W(handL_sleeve(over_tray + Vector((0.0, 0.0, 0.03)))))
     P.attach(sleeve, 'L', 26.35, 999)
     P.hand('R', 26.6, W(handR(over_tray)))
     pulled = over_tray + Vector((0, 0, 0.165))
     P.hand('R', 27.9, W(handR(pulled)))
-    P.hand('R', 33.0, W(handR(pulled + Vector((0.0, 0.01, -0.01)))))
+    P.hand('R', 28.9, W(handR(pulled + Vector((0.0, 0.0, 0.005)))))
     P.lean.add(25.0, 0.18).add(33.0, 0.14)
     P.look_at(28.4, TRAY + Vector((0, 0, 0.02)))
     P.expression(28.6, 'smile_soft')
-    P.look_at(31.0, (0.3, -2.6, 1.5))
-    P.expression(31.2, 'smile')
-    # resultado
+    # golpecitos a la funda para que caigan las últimas limaduras (sin pausa: la acción sigue)
+    for k, tk in enumerate((29.0, 29.25, 29.5, 29.75)):
+        P.hand('L', tk, W(handL_sleeve(over_tray + Vector((0.0, 0.0, 0.012 if k % 2 == 0 else 0.0)))))
+    # deja el imán parado sobre la mesada, a la derecha de la bandeja
+    mag_down = Vector((0.0, 0.40, LAB.BENCH_TOP + 0.012))
+    P.hand('R', 30.5, W(handR(mag_down + Vector((0, 0, 0.04)))))
+    P.hand('R', 31.1, W(handR(mag_down)))
+    P.hand_pose('R', 31.2, {'open': 1})
+    P.hand('R', 31.6, W(handR(mag_down + Vector((-0.03, -0.05, 0.06)))))
+    P.hand('R', 32.6, 'rest')
+    P.hand_pose('R', 32.6, {'relaxed': 1})
+    P.look_at(30.2, mag_down + Vector((0, 0, 0.1)))
+    # levanta la funda vacía y la muestra: el hierro quedó en la bandeja
+    P.hand('L', 31.0, W(handL_sleeve(over_tray)))
+    P.hand('L', 32.4, W(handL_sleeve(over_tray + Vector((0.03, -0.07, 0.1)))))
+    P.hand('L', 34.0, W(handL_sleeve(over_tray + Vector((0.035, -0.07, 0.11)))))
+    P.look_at(31.6, over_tray + Vector((0.03, -0.07, 0.18)))
+    P.look_at(33.0, (0.3, -2.6, 1.5))
+    P.expression(33.2, 'smile')
+    # resultado: la funda vuelve sobre la bandeja; mira la arena limpia y a cámara
+    P.hand('L', 35.4, W(handL_sleeve(over_tray + Vector((0.0, 0.0, 0.03)))))
     P.look_at(35.5, DISH)
     P.look_at(37.2, (0.3, -2.6, 1.5))
     P.expression(37.4, 'smile')
-    P.hand('R', 36.5, W(handR(pulled + Vector((0.03, 0.02, -0.05)))))
-    P.hand('L', 36.5, W(handL_sleeve(over_tray + Vector((0.0, 0.0, 0.0)))))
     nF = sc.frame_end
     cache = P.bake(1, nF, timemap=story)
 
@@ -231,18 +247,20 @@ def cameras(sc, P, ex):
     c = SL.CameraRig('C1', [(0.0, (-1.2, -1.9, 1.55), (0.0, 0.5, 1.12), 32), (6.0, (-0.9, -1.55, 1.45), (0.02, 0.45, 1.1), 34)])
     cams['C1'] = c.bake(1, F(6.2))
     c = SL.CameraRig('C2', [(6.0, DISH + Vector((0.2, -0.3, 0.12)), DISH + Vector((0, 0, 0.025)), 55),
-                             (11.0, DISH + Vector((0.13, -0.24, 0.08)), DISH + Vector((0.0, 0, 0.025)), 62)], fstop=2.8)
+                             (11.0, DISH + Vector((0.13, -0.24, 0.08)), DISH + Vector((0.0, 0, 0.025)), 62)], fstop=11.0)
     cams['C2'] = c.bake(F(5.9), F(11.2))
     c = SL.CameraRig('C3', [(11.0, (-1.25, -1.15, 1.45), (-0.22, 0.5, 1.22), 32), (17.5, (-1.1, -1.0, 1.45), (-0.12, 0.5, 1.25), 34)])
     cams['C3'] = c.bake(F(10.9), F(17.7))
     c = SL.CameraRig('C4', [(17.5, DISH + Vector((0.32, -0.42, 0.2)), DISH + Vector((0, 0, 0.06)), 45),
-                             (24.2, DISH + Vector((0.2, -0.33, 0.1)), DISH + Vector((0, 0, 0.04)), 52)], fstop=4.0)
+                             (24.2, DISH + Vector((0.2, -0.33, 0.1)), DISH + Vector((0, 0, 0.04)), 52)], fstop=11.0)
     cams['C4'] = c.bake(F(17.4), F(24.4))
     c = SL.CameraRig('C5', [(24.2, DISH + Vector((0.1, -0.28, 0.14)), DISH + Vector((0, 0, 0.02)), 55),
-                             (27.0, DISH + Vector((0.06, -0.24, 0.12)), DISH + Vector((0, 0, 0.02)), 58)], fstop=4.0)
+                             (27.0, DISH + Vector((0.06, -0.24, 0.12)), DISH + Vector((0, 0, 0.02)), 58)], fstop=11.0)
     cams['C5'] = c.bake(F(24.1), F(27.2))
     c = SL.CameraRig('C6', [(27.0, TRAY + Vector((-0.45, -0.6, 0.35)), TRAY + Vector((0.02, 0.05, 0.12)), 40),
-                             (37.5, TRAY + Vector((-0.38, -0.5, 0.3)), TRAY + Vector((0.02, 0.05, 0.12)), 42)])
+                             (31.0, TRAY + Vector((-0.4, -0.62, 0.36)), TRAY + Vector((0.08, 0.05, 0.12)), 38),
+                             (34.0, TRAY + Vector((-0.3, -0.7, 0.42)), TRAY + Vector((0.05, 0.02, 0.2)), 34),
+                             (37.5, TRAY + Vector((-0.2, -0.75, 0.4)), TRAY + Vector((0.12, 0.05, 0.12)), 34)])
     cams['C6'] = c.bake(F(26.9), F(37.7))
     c = SL.CameraRig('C7', [(37.5, (0.15, -1.9, 1.5), (-0.03, 0.45, 1.12), 34), (45.0, (0.3, -2.4, 1.6), (-0.03, 0.45, 1.15), 32)])
     cams['C7'] = c.bake(F(37.4), F(45.0))

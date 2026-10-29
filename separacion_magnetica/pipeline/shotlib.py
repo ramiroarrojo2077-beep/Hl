@@ -124,6 +124,11 @@ def narration(sc, line_id, t):
 
 def save(sc, name):
     import mograph
+    # los gráficos (líneas de campo, partículas, flechas, etiquetas) no proyectan sombra sobre la escena
+    for coll in bpy.data.collections:
+        if coll.name.startswith('MoGraph'):
+            for ob in coll.all_objects:
+                ob.visible_shadow = False
     mograph.fit_labels(sc)
     mograph.separate_labels(sc)
     os.makedirs(os.path.join(BUILD, 'scenes'), exist_ok=True)
