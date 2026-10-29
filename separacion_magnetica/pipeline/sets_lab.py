@@ -186,7 +186,8 @@ def build_experiment(col, seed=3, n_filings=320):
         r = (DISH_R - 0.003) * i / nr
         for j in range(na):
             a = 2 * math.pi * j / na
-            h = SAND_H + 0.004 * (1 - (r / DISH_R) ** 2) + rnd.uniform(-0.0008, 0.0008)
+            # relieve suave (sin ruido por vértice: en el centro formaba una estrella oscura de sombreado)
+            h = SAND_H + 0.004 * (1 - (r / DISH_R) ** 2) + 0.0005 * math.sin(3 * a + r * 90) * (r / DISH_R)
             verts.append((r * math.cos(a), r * math.sin(a), h))
     for j in range(na):
         faces.append([0, 1 + j, 1 + (j + 1) % na])
@@ -204,6 +205,7 @@ def build_experiment(col, seed=3, n_filings=320):
     me.materials.append(M('sand'))
     cyl('sand_body', DISH_R - 0.003, SAND_H, DISH, col, M('sand'))
     objs['sand'] = sand
+    objs['sand_grains'] = _sand_grains(col, rnd)
     # bandeja blanca
     tr = box('tray', (0.22, 0.15, 0.004), TRAY + Vector((0, 0, 0.002)), col, M('tray_white'), bevel=0.002)
     for dx, dy, sx, sy in ((0.11, 0, 0.006, 0.15), (-0.11, 0, 0.006, 0.15), (0, 0.075, 0.226, 0.006), (0, -0.075, 0.226, 0.006)):
@@ -251,21 +253,29 @@ def build_experiment(col, seed=3, n_filings=320):
     box('notebook', (0.21, 0.28, 0.012), (0.78, -0.18, BENCH_TOP + 0.006), col, principled('nb_cover', '#283a52', 0.5), bevel=0.002).rotation_euler = (0, 0, math.radians(12))
     box('notebook_pg', (0.2, 0.27, 0.002), (0.78, -0.18, BENCH_TOP + 0.013), col, M('paper')).rotation_euler = (0, 0, math.radians(12))
     cyl('pen', 0.004, 0.14, (0.68, -0.25, BENCH_TOP + 0.004), col, M('blue_plastic'), rot=(0, math.radians(90), math.radians(40)))
-    # limaduras de hierro
-    fm = bpy.data.meshes.new('filing_mesh')
+    # limaduras de hierro: astillas irregulares (varias formas), con sombra propia para que tengan volumen
     import bmesh
-    bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    bmesh.ops.scale(bm, vec=(0.0012, 0.0012, 0.0034), verts=bm.verts)
-    for v in bm.verts:
-        v.co.x += rnd.uniform(-0.0002, 0.0002)
-        v.co.y += rnd.uniform(-0.0002, 0.0002)
-    bm.to_mesh(fm)
-    bm.free()
-    fm.materials.append(M('iron'))
+    fms = []
+    for k in range(6):
+        fm = bpy.data.meshes.new('filing_mesh%d' % k)
+        bm = bmesh.new()
+        bmesh.ops.create_cube(bm, size=1.0)
+        bmesh.ops.subdivide_edges(bm, edges=[e for e in bm.edges if abs(e.verts[0].co.z - e.verts[1].co.z) > 0.5], cuts=2)
+        L = rnd.uniform(0.0032, 0.0048)
+        bmesh.ops.scale(bm, vec=(rnd.uniform(0.0009, 0.0014), rnd.uniform(0.0007, 0.0011), L), verts=bm.verts)
+        bend = rnd.uniform(-0.6, 0.6)
+        for v in bm.verts:
+            u = v.co.z / L
+            v.co.x += bend * 0.0012 * (u * u - 0.25) + rnd.uniform(-0.00018, 0.00018)
+            v.co.y += rnd.uniform(-0.00018, 0.00018)
+            v.co.x *= 1.0 - 0.45 * abs(u)      # puntas afinadas
+        bm.to_mesh(fm)
+        bm.free()
+        fm.materials.append(M('iron'))
+        fms.append(fm)
     filings = []
     for i in range(n_filings):
-        ob = bpy.data.objects.new('filing%03d' % i, fm)
+        ob = bpy.data.objects.new('filing%03d' % i, fms[i % len(fms)])
         col.objects.link(ob)
         r = DISH_R * 0.86 * math.sqrt(rnd.random())
         a = rnd.uniform(0, 2 * math.pi)
@@ -273,11 +283,40 @@ def build_experiment(col, seed=3, n_filings=320):
         ob.location = DISH + Vector((r * math.cos(a), r * math.sin(a), z))
         ob.rotation_euler = (rnd.uniform(1.2, 1.9), rnd.uniform(-0.4, 0.4), rnd.uniform(0, 6.28))
         s = rnd.uniform(0.7, 1.4)
-        ob.scale = (s, s, s * rnd.uniform(0.7, 1.3))
-        ob.visible_shadow = False
+        ob.scale = (s, s, s * rnd.uniform(0.8, 1.2))
         filings.append(ob)
     objs['filings'] = filings
     return objs
+
+
+def _sand_grains(col, rnd, n=3200):
+    """Granos de arena en 3D sobre la superficie del recipiente (un solo objeto liviano)."""
+    import bmesh
+    bm = bmesh.new()
+    base = bmesh.new()
+    bmesh.ops.create_icosphere(base, subdivisions=1, radius=1.0)
+    proto = [v.co.copy() for v in base.verts]
+    tris = [[v.index for v in f.verts] for f in base.faces]
+    base.free()
+    for i in range(n):
+        r = (DISH_R - 0.006) * math.sqrt(rnd.random())
+        a = rnd.uniform(0, 2 * math.pi)
+        h = SAND_H + 0.004 * (1 - (r / DISH_R) ** 2) + 0.0005 * math.sin(3 * a + r * 90) * (r / DISH_R)
+        g = rnd.uniform(0.00035, 0.00085)
+        c = Vector((r * math.cos(a), r * math.sin(a), h + g * 0.25))
+        sx, sy, sz = rnd.uniform(0.8, 1.2), rnd.uniform(0.8, 1.2), rnd.uniform(0.6, 0.9)
+        vs = [bm.verts.new(c + Vector((p.x * g * sx, p.y * g * sy, p.z * g * sz))) for p in proto]
+        for t in tris:
+            bm.faces.new([vs[j] for j in t])
+    me = bpy.data.meshes.new('sand_grains')
+    bm.to_mesh(me)
+    bm.free()
+    me.shade_smooth()
+    ob = bpy.data.objects.new('sand_grains', me)
+    col.objects.link(ob)
+    ob.location = DISH
+    me.materials.append(M('sand'))
+    return ob
 
 
 def build_hologram_table(col, loc=(3.2, 1.2)):

@@ -33,10 +33,10 @@ def M(name):
         'wood': lambda: principled('wood', '#8a6240', rough=0.5, noise_color=0.2, noise_scale=6),
         'paper': lambda: principled('paper', '#f3f1ea', rough=0.9),
         'sand': lambda: sand_mat('sand'),
-        'iron': lambda: principled('iron', '#3c3d40', rough=0.45, metal=0.85, noise_color=0.3, noise_scale=400),
+        'iron': lambda: principled('iron', '#2e3033', rough=0.38, metal=0.9, noise_color=0.35, noise_scale=400),
         'magnet_red': lambda: principled('magnet_red', '#c4242a', rough=0.3, coat=0.5),
         'magnet_blue': lambda: principled('magnet_blue', '#1f4fb5', rough=0.3, coat=0.5),
-        'sleeve': lambda: plastic_clear('sleeve'),
+        'sleeve': lambda: plastic_clear('sleeve', '#6fc3ec', alpha=0.3, edge=0.55),   # celeste: se distingue de la bata
         'tray_white': lambda: principled('tray_white', '#f2f2f0', rough=0.3, coat=0.3),
         'liquid_blue': lambda: principled('liquid_blue', '#2a7fd4', rough=0.05),
         'liquid_green': lambda: principled('liquid_green', '#3fbf6a', rough=0.05),
@@ -82,15 +82,26 @@ def glass_mat(name, tint='#ffffff', alpha=0.12, method='BLENDED'):
     return mat
 
 
-def plastic_clear(name, tint='#e8f2f7'):
+def plastic_clear(name, tint='#e8f2f7', alpha=0.35, edge=0.0):
+    """Plástico translúcido. edge > 0: los bordes (vistos de costado) se ven más opacos, así la pieza se
+    distingue sobre fondos claros sin tapar lo que hay adentro."""
     mat = bpy.data.materials.new(name)
     nb = NodeBuilder(mat)
     p = nb.n('ShaderNodeBsdfPrincipled')
     p.inputs['Base Color'].default_value = srgb(tint)
     p.inputs['Roughness'].default_value = 0.15
-    p.inputs['Alpha'].default_value = 0.35
+    if edge > 0:
+        lw = nb.n('ShaderNodeLayerWeight', Blend=0.35)
+        ma = nb.n('ShaderNodeMath', _operation='MULTIPLY_ADD')
+        nb.link(lw.outputs['Facing'], ma.inputs[0])
+        ma.inputs[1].default_value = edge
+        ma.inputs[2].default_value = alpha
+        nb.link(ma.outputs[0], p.inputs['Alpha'])
+    else:
+        p.inputs['Alpha'].default_value = alpha
     nb.output(p.outputs['BSDF'])
     mat.surface_render_method = 'BLENDED'
+    mat.use_backface_culling = False
     return mat
 
 
@@ -116,9 +127,9 @@ def sand_mat(name):
     nb = NodeBuilder(mat)
     p = nb.n('ShaderNodeBsdfPrincipled')
     tc = nb.n('ShaderNodeTexCoord')
-    v = nb.n('ShaderNodeTexVoronoi', Scale=900.0)
+    v = nb.n('ShaderNodeTexVoronoi', Scale=450.0)
     nb.link(tc.outputs['Object'], v.inputs['Vector'])
-    nz = nb.n('ShaderNodeTexNoise', Scale=300.0, Detail=4.0)
+    nz = nb.n('ShaderNodeTexNoise', Scale=150.0, Detail=2.0)
     nb.link(tc.outputs['Object'], nz.inputs['Vector'])
     mix = nb.n('ShaderNodeMix', _data_type='RGBA')
     nb.link(nz.outputs['Fac'], mix.inputs['Factor'])
@@ -330,11 +341,11 @@ def screen_material(name, kind='graph', color='#3fc1ff', strength=2.0, seed=0):
     nb.link(tc.outputs['Generated'], sep.inputs[0])
     # rejilla
     # rejilla y curva de trazo grueso: las líneas finas producían muaré y titileo en movimiento
-    w1 = nb.n('ShaderNodeTexWave', Scale=6.0, _wave_type='BANDS', _bands_direction='X', Distortion=0.0)
+    # pocas líneas, con bordes suaves (umbral duro + líneas muy juntas = interferencia/titileo)
+    w1 = nb.n('ShaderNodeTexWave', Scale=1.6, _wave_type='BANDS', _bands_direction='X', Distortion=0.0)
     nb.link(tc.outputs['Generated'], w1.inputs['Vector'])
-    g1 = nb.n('ShaderNodeMath', _operation='GREATER_THAN')
-    nb.link(w1.outputs['Fac'], g1.inputs[0])
-    g1.inputs[1].default_value = 0.95
+    g1 = nb.n('ShaderNodeMapRange', _interpolation_type='SMOOTHSTEP', **{'From Min': 0.7, 'From Max': 0.97})
+    nb.link(w1.outputs['Fac'], g1.inputs['Value'])
     # curva senoidal
     sw = nb.n('ShaderNodeMath', _operation='MULTIPLY')
     nb.link(sep.outputs['X'], sw.inputs[0])
@@ -350,14 +361,13 @@ def screen_material(name, kind='graph', color='#3fc1ff', strength=2.0, seed=0):
     nb.link(sc.outputs[0], dz.inputs[1])
     ab = nb.n('ShaderNodeMath', _operation='ABSOLUTE')
     nb.link(dz.outputs[0], ab.inputs[0])
-    lt = nb.n('ShaderNodeMath', _operation='LESS_THAN')
-    nb.link(ab.outputs[0], lt.inputs[0])
-    lt.inputs[1].default_value = 0.035
+    lt = nb.n('ShaderNodeMapRange', _interpolation_type='SMOOTHSTEP', **{'From Min': 0.05, 'From Max': 0.02})
+    nb.link(ab.outputs[0], lt.inputs['Value'])
     add = nb.n('ShaderNodeMath', _operation='MAXIMUM')
     nb.link(lt.outputs[0], add.inputs[0])
     g1m = nb.n('ShaderNodeMath', _operation='MULTIPLY')
     nb.link(g1.outputs[0], g1m.inputs[0])
-    g1m.inputs[1].default_value = 0.25
+    g1m.inputs[1].default_value = 0.15
     nb.link(g1m.outputs[0], add.inputs[1])
     base = nb.n('ShaderNodeMix', _data_type='RGBA')
     nb.link(add.outputs[0], base.inputs['Factor'])

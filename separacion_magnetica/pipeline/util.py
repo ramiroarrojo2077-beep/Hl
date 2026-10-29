@@ -97,7 +97,8 @@ def principled(name, color, rough=0.5, metal=0.0, spec=0.5, emission=None, emit_
     col = srgb(color) if not (isinstance(color, tuple) and len(color) == 4) else color
     if noise_color > 0:
         tc = nb.n('ShaderNodeTexCoord')
-        nz = nb.n('ShaderNodeTexNoise', Scale=noise_scale, Detail=6.0)
+        # pocas octavas: con 6 el detalle quedaba por debajo del píxel y se veía como granulado que titila
+        nz = nb.n('ShaderNodeTexNoise', Scale=noise_scale, Detail=2.0)
         nb.link(tc.outputs['Object'], nz.inputs['Vector'])
         ramp = nb.n('ShaderNodeMix', _data_type='RGBA')
         ramp.inputs['Factor'].default_value = 0.5
@@ -125,7 +126,7 @@ def principled(name, color, rough=0.5, metal=0.0, spec=0.5, emission=None, emit_
         p.inputs['Emission Strength'].default_value = emit_strength
     if bump_scale > 0:
         tc = nb.n('ShaderNodeTexCoord')
-        nz = nb.n('ShaderNodeTexNoise', Scale=bump or 200.0, Detail=8.0)
+        nz = nb.n('ShaderNodeTexNoise', Scale=bump or 200.0, Detail=3.0)
         nb.link(tc.outputs['Object'], nz.inputs['Vector'])
         bn = nb.n('ShaderNodeBump', Strength=bump_scale, Distance=0.002)
         nb.link(nz.outputs['Fac'], bn.inputs['Height'])

@@ -295,6 +295,8 @@ def sim_filings(ex, mag, sleeve, nF, sand_top):
                 if (d < cap_r and tip.z < sand_top + 0.05) or (s > 22.3 and s < 22.5):
                     state = 'fly'
                     f_cap = f
+                    # vuelo continuo: dura más cuanto más lejos está (antes las lejanas "saltaban" en 4 cuadros)
+                    fly = int(min(22, max(fly, 5 + d * 180)))
                 M = p0
             if state == 'fly':
                 u = (f - f_cap) / fly

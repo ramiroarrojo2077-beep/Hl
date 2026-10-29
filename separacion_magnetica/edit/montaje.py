@@ -16,7 +16,8 @@ inputs = []
 filt = []
 for i, it in enumerate(items):
     inputs += ['-framerate', '30', '-start_number', '1', '-i', os.path.join(frames_dir, it['scene'], 'f%05d.png')]
-    filt.append('[%d:v]scale=1920:1080:flags=lanczos,unsharp=5:5:0.35:5:5:0.0,format=yuv420p,setsar=1,settb=1/30,fps=30[v%d]' % (i, i))
+    # nlmeans a 720p: quita el granulado del muestreo de sombras de EEVEE (2 muestras) sin borrar bordes
+    filt.append('[%d:v]nlmeans=s=4:p=7:r=13,scale=1920:1080:flags=lanczos,unsharp=5:5:0.25:5:5:0.0,format=yuv420p,setsar=1,settb=1/30,fps=30[v%d]' % (i, i))
 cur = 'v0'
 for i in range(1, len(items)):
     it = items[i]

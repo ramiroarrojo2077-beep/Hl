@@ -117,14 +117,15 @@ def _skin_material(name, tone, hair_col):
     nb.link(rr.outputs[0], p.inputs['Roughness'])
     p.inputs['Specular IOR Level'].default_value = 0.45
     # Poros + microdetalle
-    pz = nb.n('ShaderNodeTexVoronoi', Scale=500.0)
+    # (poros más suaves y sin octavas sub-píxel: antes se veían como puntitos negros en la piel)
+    pz = nb.n('ShaderNodeTexVoronoi', Scale=280.0)
     nb.link(tc.outputs['Object'], pz.inputs['Vector'])
-    pn = nb.n('ShaderNodeTexNoise', Scale=350.0, Detail=6.0)
+    pn = nb.n('ShaderNodeTexNoise', Scale=200.0, Detail=2.0)
     nb.link(tc.outputs['Object'], pn.inputs['Vector'])
     hm = nb.n('ShaderNodeMath', _operation='ADD')
     nb.link(pz.outputs['Distance'], hm.inputs[0])
     nb.link(pn.outputs['Fac'], hm.inputs[1])
-    bump = nb.n('ShaderNodeBump', Strength=0.025, Distance=0.0004)
+    bump = nb.n('ShaderNodeBump', Strength=0.012, Distance=0.0004)
     nb.link(hm.outputs[0], bump.inputs['Height'])
     nb.link(bump.outputs['Normal'], p.inputs['Normal'])
     nb.output(p.outputs['BSDF'])
