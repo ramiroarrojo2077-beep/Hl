@@ -303,11 +303,13 @@ def main():
     P.bake(1, sc.frame_end)
     # cámaras
     cams = {}
-    c = SL.CameraRig('C1', [(0.0, (0.55, -0.85, 1.55), (0.0, 0.32, 1.0), 30), (8.2, (0.35, -0.75, 1.5), (0.0, 0.35, 1.02), 32)])
+    # plano que incluye al presentador y las maquetas: se ve la cara y qué botón toca cada vez
+    c = SL.CameraRig('C1', [(0.0, (0.5, -1.55, 1.72), (0.0, 0.32, 1.27), 30), (8.2, (0.32, -1.4, 1.7), (0.0, 0.35, 1.27), 32)])
     cams['C1'] = c.bake(1, F(8.4))
-    c = SL.CameraRig('C2', [(8.2, (0.0, -1.35, 1.45), (0.0, 0.4, 1.2), 32), (15.0, (0.0, -1.6, 1.5), (0.0, 0.4, 1.22), 30)])
+    c = SL.CameraRig('C2', [(8.2, (0.0, -2.0, 1.68), (0.0, 0.4, 1.48), 30), (15.0, (0.0, -2.2, 1.7), (0.0, 0.4, 1.5), 30)])
     cams['C2'] = c.bake(F(8.1), F(15.2))
-    c = SL.CameraRig('C3', [(15.0, (0.0, -1.9, 1.55), (0.0, 0.4, 1.35), 30), (22.0, (0.6, -4.6, 1.9), (0.0, 0.6, 1.6), 26)])
+    # alejamiento final moderado: el científico sigue siendo protagonista y el título se lee
+    c = SL.CameraRig('C3', [(15.0, (0.0, -2.2, 1.7), (0.0, 0.4, 1.5), 30), (22.0, (0.25, -3.3, 1.85), (0.0, 0.5, 1.7), 30)])
     cams['C3'] = c.bake(F(14.9), F(22.0))
     SL.cut(0.0, cams['C1'])
     SL.cut(8.2, cams['C2'])
@@ -317,8 +319,10 @@ def main():
     for i, (txt, colr, t) in enumerate((('RECUPERACIÓN DE MATERIALES', MG.ORANGE, 9.0), ('CLASIFICACIÓN DE RESIDUOS', MG.GREEN, 10.4),
                                         ('APROVECHAMIENTO INDUSTRIAL', MG.CYAN, 11.8))):
         x = xs[i]
-        MG.label('ben%d' % i, txt, Vector((x, Y, BT + 0.08)), Vector((x * 1.25, Y - 0.38, BT + 0.2 + 0.09 * (i % 2))), cams['C2'],
-                 F(t), F(15.0), mg, size=0.036, color=colr)
+        # fila de rótulos por encima de la cabeza: no cruzan las manos ni las maquetas
+        top = Vector((-0.6 + 0.6 * i, Y - 0.35, 2.06))
+        MG.label('ben%d' % i, txt, top - Vector((0, 0, 0.03)), top, cams['C2'],
+                 F(t), F(15.0), mg, size=0.03, color=colr)
     tc = Vector((0.0, -0.2, 2.15))
     MG.title_text('final_title', 'SEPARACIÓN MAGNÉTICA', tc, (math.pi / 2, 0, 0), 0.17, mg, MG.WHITE, f_in=F(16.0), extrude=0.012)
     MG.title_text('final_sub', 'CIENCIA EN ACCIÓN', tc + Vector((0, -0.01, -0.32)), (math.pi / 2, 0, 0), 0.1, mg, MG.CYAN, f_in=F(17.0), extrude=0.008, strength=4.0)

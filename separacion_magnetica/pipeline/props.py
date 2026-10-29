@@ -20,10 +20,10 @@ def M(name):
         'steel': lambda: principled('steel', '#b9bcc0', rough=0.28, metal=1.0, noise_color=0.05, noise_scale=30),
         'brushed': lambda: principled('brushed', '#a8acb0', rough=0.38, metal=1.0, noise_color=0.08, noise_scale=80),
         'chrome': lambda: principled('chrome_p', '#e0e0e0', rough=0.08, metal=1.0),
-        'white_lam': lambda: principled('white_lam', '#e8e9e6', rough=0.4, noise_color=0.03),
+        'white_lam': lambda: principled('white_lam', '#d5dadf', rough=0.4, noise_color=0.03),   # gris frío: la bata blanca se despega
         'bench_top': lambda: principled('bench_top', '#2b2e33', rough=0.35, noise_color=0.08, noise_scale=12, coat=0.3),
         'floor_lab': lambda: principled('floor_lab', '#b8bcbf', rough=0.25, noise_color=0.06, noise_scale=4, coat=0.2),
-        'wall': lambda: principled('wall', '#dfe3e6', rough=0.7, noise_color=0.02),
+        'wall': lambda: principled('wall', '#cdd5dc', rough=0.7, noise_color=0.02),
         'wall_accent': lambda: principled('wall_accent', '#2f5d7c', rough=0.6),
         'ceiling': lambda: principled('ceiling', '#eef0f0', rough=0.8),
         'black_plastic': lambda: principled('black_plastic', '#141516', rough=0.35),
@@ -79,6 +79,8 @@ def glass_mat(name, tint='#ffffff', alpha=0.12, method='BLENDED', refl=0.7):
     nb.output(mix.outputs[0])
     mat.surface_render_method = method
     mat.use_backface_culling = False
+    if hasattr(mat, 'use_transparency_overlap'):
+        mat.use_transparency_overlap = False   # sin capas internas superpuestas (bordes raros / exceso de opacidad)
     return mat
 
 

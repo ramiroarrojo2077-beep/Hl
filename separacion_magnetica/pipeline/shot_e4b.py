@@ -19,7 +19,7 @@ DUR = 18.0
 V = 1.8                      # velocidad de la banda en el tramo final (m/s)
 R = 0.3                      # radio de la polea magnética
 PC = Vector((PL.BELT_X1, 0.0, PL.BELT_Z - R))   # centro de la polea
-FAR_BIN = Vector((12.7, 0.0, 0.0))
+FAR_BIN = Vector((12.15, 0.0, 0.0))   # empieza donde realmente caen los no magnéticos (tiro horizontal desde la polea)
 NEAR_BIN = Vector((10.95, 0.0, 0.0))
 
 
@@ -62,13 +62,15 @@ def main():
     # contenedores y separador
     cont_g = PR.paint_mat('bin_nm', '#3a8a55', 0.5, 0.2)
     cont_b = PR.paint_mat('bin_m', '#2b5f97', 0.5, 0.2)
-    for c, (sx, sy, h), m in ((FAR_BIN, (1.4, 1.6, 0.9), cont_g), (NEAR_BIN, (0.9, 1.4, 0.5), cont_b)):
+    for c, (sx, sy, h), m in ((FAR_BIN, (1.4, 1.6, 0.7), cont_g), (NEAR_BIN, (0.9, 1.4, 0.5), cont_b)):
         for dx, dy, ax, ay in ((0, -sy / 2, sx, 0.05), (0, sy / 2, sx, 0.05), (-sx / 2, 0, 0.05, sy), (sx / 2, 0, 0.05, sy)):
             box('bin_%d_%d_%d' % (int(c.x * 10), int(dx * 10), int(dy * 10)), (ax, ay, h), c + Vector((dx, dy, h / 2)), col, m)
         box('binfloor_%d' % int(c.x * 10), (sx, sy, 0.04), c + Vector((0, 0, 0.02)), col, m)
-    box('splitter', (0.04, 1.4, 0.95), Vector((11.62, 0, 0.475)), col, M('brushed'))
-    PL.sign('sign_nm', 'NO MAGNÉTICOS', FAR_BIN + Vector((0, -0.85, 1.25)), col, 0.0, 0.14, '#3a8a55')
-    PL.sign('sign_m', 'ACERO', NEAR_BIN + Vector((-0.1, -0.75, 0.95)), col, 0.0, 0.14, '#2b5f97')
+    # divisor bajo entre los dos contenedores: el acero cae antes, lo demás pasa por encima
+    box('splitter', (0.03, 1.4, 0.74), Vector((11.41, 0, 0.37)), col, M('brushed'))
+    # carteles en el frente de cada contenedor (no delante de la polea)
+    PL.sign('sign_nm', 'NO MAGNÉTICOS', FAR_BIN + Vector((0, -0.84, 0.42)), col, 0.0, 0.14, '#3a8a55')
+    PL.sign('sign_m', 'ACERO', NEAR_BIN + Vector((0, -0.74, 0.3)), col, 0.0, 0.12, '#2b5f97')
     PL.railing('rail_end', (8, -1.2, 0), (13.5, -1.2, 0), col)
     # ---- residuos: no magnéticos salen despedidos; acero gira con la polea y cae atrás
     rnd = random.Random(44)
@@ -112,19 +114,26 @@ def main():
                         tf = (s - th_rel * (R + zoff)) / V
                         p0 = PC + Vector((math.sin(th_rel) * (R + zoff), y, math.cos(th_rel) * (R + zoff)))
                         if land is None:
-                            land = Vector((NEAR_BIN.x + rnd.uniform(-0.3, 0.3), y * 0.8, 0.08 + rnd.uniform(0, 0.12)))
-                        p = p0.lerp(Vector((land.x, land.y, p0.z)), min(tf / 0.3, 1))
+                            land = Vector((min(p0.x + rnd.uniform(-0.12, 0.08), NEAR_BIN.x + 0.3), y * 0.85, 0.08 + rnd.uniform(0, 0.1)))
+                        # se despega de la polea y cae casi vertical al contenedor de acero (sin deslizarse en el aire)
+                        p = p0.lerp(Vector((land.x, land.y, p0.z)), min(tf / 0.35, 1))
                         p.z = max(land.z, p0.z - 4.9 * tf * tf)
                         q = Quaternion((0, 1, 0), th_rel) @ q0 @ Quaternion((1, 0, 0), tf * 6)
                 else:
+                    # tiro horizontal: sale con la velocidad de la banda y cae por gravedad (sin atravesar paredes)
                     tf = s / V
+                    z0 = PL.BELT_Z + zoff
                     if land is None:
-                        land = Vector((FAR_BIN.x + rnd.uniform(-0.45, 0.45), y * 0.9, 0.08 + rnd.uniform(0, 0.25)))
-                    p = Vector((PL.BELT_X1 + V * tf, y, PL.BELT_Z + zoff + 0.6 * tf - 4.9 * tf * tf))
-                    if p.z <= land.z or p.x >= land.x:
-                        p = Vector((min(p.x, land.x), y, land.z))
-                        p.z = land.z
-                    q = q0 @ Quaternion((0, 1, 0), min(tf, 0.6) * 5)
+                        lz = 0.06 + rnd.uniform(0, 0.16)
+                        t_land = math.sqrt(max(z0 - lz, 0.0) / 4.9)
+                        lx = min(PL.BELT_X1 + V * t_land, FAR_BIN.x + 0.6)
+                        land = Vector((lx, y * 0.9, lz))
+                        t_land = (lx - PL.BELT_X1) / V
+                    if tf < t_land:
+                        p = Vector((PL.BELT_X1 + V * tf, y, max(land.z, z0 - 4.9 * tf * tf)))
+                    else:
+                        p = land.copy()
+                    q = q0 @ Quaternion((0, 1, 0), min(tf, t_land) * 4)
             if prev is not None and prev.dot(q) < 0:
                 q = -q
             prev = q
@@ -173,7 +182,8 @@ def main():
     P.bake(1, nF - 1)
     # ---- cámaras
     cams = {}
-    c = SL.CameraRig('C1', [(0.0, (11.4, -3.6, 2.6), (11.5, 0.0, 0.8), 26), (7.0, (11.8, -3.3, 2.45), (11.6, 0.0, 0.8), 28)])
+    # corrida a la derecha: el brazo del científico (a la izquierda) ya no entra por el borde del cuadro
+    c = SL.CameraRig('C1', [(0.0, (11.75, -3.6, 2.6), (11.55, 0.0, 0.8), 26), (7.0, (12.05, -3.3, 2.45), (11.65, 0.0, 0.8), 28)])
     cams['C1'] = c.bake(1, F(7.2))
     c = SL.CameraRig('C2', [(7.0, (11.95, -2.75, 3.25), (11.85, 0.0, 0.62), 28), (14.0, (12.15, -2.55, 3.15), (11.85, 0.0, 0.62), 30)])
     cams['C2'] = c.bake(F(6.9), F(14.2))
@@ -205,11 +215,11 @@ def main():
     MG.grow(fl, F(7.4), F(8.6), flm)
     MG.label('lbl_pulley', 'POLEA MAGNÉTICA', PC + Vector((0, -0.55, 0.1)), PC + Vector((-0.6, -0.9, 0.75)), cams['C1'], F(1.6), F(7.0), mg,
              size=0.09, color=MG.RED, sub='al final de la cinta')
-    MG.label('lbl_nm', 'NO MAGNÉTICOS', FAR_BIN + Vector((-0.3, 0, 0.9)), Vector((12.55, -0.45, 1.8)),
+    MG.label('lbl_nm', 'NO MAGNÉTICOS', FAR_BIN + Vector((-0.2, 0, 0.5)), Vector((12.3, -0.45, 1.75)),
              cams['C2'], F(8.0), F(14.0), mg, size=0.09, color=MG.ORANGE, sub='salen despedidos', flat=True)
     MG.label('lbl_m', 'ACERO', NEAR_BIN + Vector((0.2, 0, 0.5)), Vector((10.9, -0.35, 1.8)),
              cams['C2'], F(9.6), F(14.0), mg, size=0.09, color=MG.CYAN, sub='sigue la banda y cae atrás', flat=True)
-    MG.arrow('arr_nm', PC + Vector((0.35, -0.6, 0.45)), Vector((12.3, -0.3, 1.2)), mg, MG.ORANGE, radius=0.015, f_in=F(8.2), f_out=F(14.0))
+    MG.arrow('arr_nm', PC + Vector((0.35, -0.6, 0.45)), Vector((11.95, -0.6, 0.85)), mg, MG.ORANGE, radius=0.015, f_in=F(8.2), f_out=F(14.0))
     MG.arrow('arr_m', PC + Vector((0.42, -0.6, -0.1)), NEAR_BIN + Vector((0.2, -0.6, 0.6)), mg, MG.CYAN, radius=0.015, f_in=F(9.8), f_out=F(14.0))
     for lid, t in (('E4b_01', 0.6), ('E4b_02', 7.0)):
         SL.narration(sc, lid, t)

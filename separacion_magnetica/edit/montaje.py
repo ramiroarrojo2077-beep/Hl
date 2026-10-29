@@ -26,7 +26,7 @@ for i in range(1, len(items)):
     nxt = 'x%d' % i
     filt.append('[%s][v%d]xfade=transition=%s:duration=%.4f:offset=%.4f[%s]' % (cur, i, trans, dur, it['start'], nxt))
     cur = nxt
-filt.append("[%s]ass='%s',fade=t=in:st=0:d=0.8,fade=t=out:st=%.3f:d=1.5[vout]" % (cur, subs.replace("'", "\\'"), total - 1.5))
+filt.append("[%s]ass='%s',fade=t=in:st=0:d=0.8,fade=t=out:st=%.3f:d=2.5[vout]" % (cur, subs.replace("'", "\\'"), total - 2.5))
 na = len(items)
 filt.append('[%d:a]loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[aout]' % na)
 fc = ';'.join(filt)

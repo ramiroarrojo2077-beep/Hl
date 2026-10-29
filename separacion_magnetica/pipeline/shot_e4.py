@@ -21,11 +21,21 @@ DUR = 31.0
 def can_mesh(name, r, h, seg=16):
     me = bpy.data.meshes.new(name)
     bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=seg, radius1=r, radius2=r, depth=h)
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=max(seg, 24), radius1=r, radius2=r, depth=h)
+    # rebordes de lata (anillos) en las tapas
+    for zz in (-h / 2, h / 2):
+        bmesh.ops.create_cone(bm, cap_ends=False, segments=24, radius1=r * 1.03, radius2=r * 1.03, depth=h * 0.04,
+                              matrix=Matrix.Translation((0, 0, zz)))
     bm.to_mesh(me)
     bm.free()
-    me.shade_smooth()
+    _smooth_sides(me)
     return me
+
+
+def _smooth_sides(me):
+    """Costados suaves y tapas planas (con todo suave las latas parecían cápsulas)."""
+    for pl in me.polygons:
+        pl.use_smooth = abs(pl.normal.z) < 0.5
 
 
 def bottle_mesh(name):
@@ -33,9 +43,11 @@ def bottle_mesh(name):
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=14, radius1=0.04, radius2=0.04, depth=0.2)
     bmesh.ops.create_cone(bm, cap_ends=True, segments=14, radius1=0.04, radius2=0.014, depth=0.07, matrix=Matrix.Translation((0, 0, 0.135)))
+    # pico y tapa: se reconoce como botella
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=14, radius1=0.016, radius2=0.016, depth=0.025, matrix=Matrix.Translation((0, 0, 0.18)))
     bm.to_mesh(me)
     bm.free()
-    me.shade_smooth()
+    _smooth_sides(me)
     return me
 
 
@@ -102,7 +114,7 @@ def main():
             me.materials.append(cb_m)
         col.objects.link(ob)
         ob.rotation_mode = 'QUATERNION'
-        ob.visible_shadow = kind != 'plastic'
+        ob.visible_shadow = True    # todos con sombra de contacto sobre la cinta
         y = rnd.uniform(-0.36, 0.36)
         lying = kind in ('steel', 'alu', 'plastic') and rnd.random() < 0.7
         q0 = Quaternion((0, 0, 1), rnd.uniform(0, 6.28))
@@ -337,8 +349,19 @@ def main():
              cams['C2'], F(7.0), F(12.8), mg, size=0.07, color=MG.ORANGE, sub='acero · aluminio · plástico')
     MG.label('lbl_cont', 'ALUMINIO Y PLÁSTICO', (3.5, 0.0, PL.BELT_Z + 0.1), (3.6, -1.0, PL.BELT_Z + 0.95),
              cams['C4'], F(25.5), None, mg, size=0.08, color=MG.ORANGE, sub='siguen en la cinta')
-    MG.arrow('arr_steel', (PL.MAG_X, 0.6, PL.XBELT_Z - 0.2), (PL.MAG_X, 2.0, PL.XBELT_Z - 0.2), mg, MG.CYAN, radius=0.025, f_in=F(22.0))
-    MG.arrow('arr_rest', (1.0, 0.0, PL.BELT_Z + 0.35), (4.5, 0.0, PL.BELT_Z + 0.35), mg, MG.ORANGE, radius=0.025, f_in=F(24.5))
+    # la consola maneja la línea: cada toque enciende un indicador en la máquina y su flecha de recorrido
+    MG.arrow('arr_steel', (PL.MAG_X, 0.6, PL.XBELT_Z - 0.2), (PL.MAG_X, 2.0, PL.XBELT_Z - 0.2), mg, MG.CYAN, radius=0.025, f_in=F(22.5))
+    MG.arrow('arr_rest', (1.0, 0.0, PL.BELT_Z + 0.35), (4.5, 0.0, PL.BELT_Z + 0.35), mg, MG.ORANGE, radius=0.025, f_in=F(23.3))
+    for k, (pos, colr, tt) in enumerate((((PL.MAG_X - 0.35, -0.62, PL.XBELT_Z + 0.5), '#35e06a', 22.4),
+                                          ((PL.MAG_X + 0.35, -0.62, PL.XBELT_Z + 0.5), '#ffb02e', 23.2))):
+        lamp = PR.cyl('st_lamp%d' % k, 0.05, 0.09, Vector(pos), col, None, seg=20)
+        lm = emission_mat('st_lamp%d_m' % k, colr, 0.3)
+        lamp.data.materials.append(lm)
+        PR.cyl('st_lamp_base%d' % k, 0.055, 0.03, Vector(pos) - Vector((0, 0, 0.03)), col, M('black_plastic'), seg=20)
+        nd = lm.node_tree.nodes['Emission'].inputs['Strength']
+        for f, v_ in ((F(tt) - 1, 0.3), (F(tt) + 2, 12.0), (F(tt) + 12, 6.0)):
+            nd.default_value = v_
+            nd.keyframe_insert('default_value', frame=f)
     for lid, t in (('E4_01', 0.8), ('E4_02', 6.6), ('E4_03', 13.4), ('E4_04', 21.2)):
         SL.narration(sc, lid, t)
     SL.save(sc, 'E4')
@@ -346,13 +369,17 @@ def main():
 
 def cameras():
     cams = {}
-    c = SL.CameraRig('C1', [(0.0, (-16.0, -9.0, 8.5), (-4.0, 0.0, 1.0), 24), (6.5, (-11.0, -7.5, 5.0), (-4.5, -1.0, 1.2), 26)])
+    # presentación más cercana: se ve la nave y enseguida los residuos que avanzan por la cinta
+    c = SL.CameraRig('C1', [(0.0, (-14.5, -6.0, 4.4), (-7.5, 0.0, 1.2), 26), (6.5, (-10.6, -2.7, 2.2), (-7.2, 0.0, 1.22), 30)])
     cams['C1'] = c.bake(1, F(6.8))
     c = SL.CameraRig('C2', [(6.5, (-6.2, -1.0, 1.55), (-3.0, 0.0, 1.2), 28), (13.0, (-4.2, -0.95, 1.5), (-1.0, 0.0, 1.25), 30)])
     cams['C2'] = c.bake(F(6.4), F(13.2))
-    c = SL.CameraRig('C3', [(13.0, (-2.0, -1.3, 1.25), (0.0, 0.5, 1.55), 28), (21.0, (-1.7, -1.0, 1.2), (0.0, 0.9, 1.5), 30)])
+    # más alta: antes quedaba detrás de la baranda verde y la tapaba
+    c = SL.CameraRig('C3', [(13.0, (-2.5, -1.9, 2.0), (0.0, 0.3, 1.5), 28), (21.0, (-2.1, -1.7, 2.05), (0.0, 0.6, 1.45), 30)])
     cams['C3'] = c.bake(F(12.9), F(21.2))
-    c = SL.CameraRig('C4', [(21.0, (3.2, -3.6, 2.1), (1.2, 0.2, 1.2), 30), (31.0, (5.5, -5.5, 3.2), (0.8, 0.8, 1.0), 26)])
+    # primero la mano en la pantalla, luego se abre para mostrar qué hace la máquina con cada toque
+    c = SL.CameraRig('C4', [(21.0, (2.6, -3.1, 1.85), (1.55, -1.75, 1.12), 32), (22.9, (2.7, -3.2, 1.9), (1.4, -1.6, 1.15), 32),
+                             (25.0, (3.6, -4.4, 2.5), (0.4, 0.0, 1.4), 26), (31.0, (5.2, -5.3, 3.0), (0.8, 0.6, 1.1), 26)])
     cams['C4'] = c.bake(F(20.9), F(31.0))
     for t, k in ((0.0, 'C1'), (6.5, 'C2'), (13.0, 'C3'), (21.0, 'C4')):
         SL.cut(t, cams[k])

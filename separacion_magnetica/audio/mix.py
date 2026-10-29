@@ -573,7 +573,7 @@ def main():
     venv = lp(venv, 4) * 3
     duck = 1.0 - 0.65 * np.clip(venv / (venv.max() + 1e-9) * 3, 0, 1)
     fade_in = np.minimum(1, np.arange(voice.n) / t2s(2.0))
-    fade_out = np.clip((t2s(total) - np.arange(voice.n)) / t2s(3.5), 0, 1)
+    fade_out = np.clip((t2s(total) - np.arange(voice.n)) / t2s(2.5), 0, 1)   # igual que el fundido de imagen
     mus = mus * (duck * fade_in * fade_out)[:, None]
     # voz: compresión suave + leve EQ
     vx = voice.x

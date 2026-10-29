@@ -213,9 +213,14 @@ def main():
         slew.rotation_euler = (0, 0, slew_a(t))
         slew.keyframe_insert('rotation_euler', index=2, frame=f)
         z = mag_z(t)
-        mag.location = (tip.x + sw * 3, 0, z - 1.5 + 0.45)
+        mz = z - 1.5 + 0.45
+        mag.location = (tip.x + sw * 3, 0, mz)
         mag.keyframe_insert('location', frame=f)
-        hook.scale = (1, 1, max(tip.z - (z - 1.5 + 0.45), 0.01))
+        # cable tenso: va de la punta de la pluma al centro del electroimán aunque este se balancee
+        dx, dz = sw * 3, tip.z - mz
+        hook.rotation_euler = (0, -math.atan2(dx, dz), 0)   # Ry(θ) lleva -Z a (-senθ, 0, -cosθ)
+        hook.keyframe_insert('rotation_euler', index=1, frame=f)
+        hook.scale = (1, 1, max(math.hypot(dx, dz), 0.01))
         hook.keyframe_insert('scale', frame=f)
     node = cr['glow'].node_tree.nodes['Emission'].inputs['Strength']
     for f, vv in ((F(T['on']) - 1, 0.0), (F(T['on']) + 3, 8.0), (F(T['off']), 8.0), (F(T['off']) + 3, 0.0)):
@@ -236,22 +241,30 @@ def main():
     for f in range(F(T['on']) - 2, nF + 1):
         sc.frame_set(f)
         Mw[f] = mag.matrix_world.copy()
+    # puntos de sujeción repartidos bajo el disco (sin que las piezas se encimen entre sí)
+    slots = []
+    for ring, (rr, n) in enumerate(((0.0, 1), (0.32, 6), (0.62, 11))):
+        for k in range(n):
+            a = 2 * math.pi * k / max(n, 1) + ring * 0.4
+            slots.append(Vector((rr * math.cos(a), rr * math.sin(a), -0.58)))
     for i, ob in enumerate(caught):
         ob.rotation_mode = 'QUATERNION'
         M0 = ob.matrix_world.copy()
-        f_on = F(T['on'] + 0.05 + rnd.uniform(0, 0.25))
-        att = Vector((rnd.uniform(-0.6, 0.6), rnd.uniform(-0.6, 0.6), -0.55 - rnd.uniform(0, 0.35)))
+        # la atracción se ve: arrancan escalonadas y aceleran hacia el disco durante ~0.6 s
+        f_on = F(T['on'] + 0.05 + rnd.uniform(0, 0.5))
+        sl_ = slots[i % len(slots)] + Vector((0, 0, -0.16 * (i // len(slots))))
+        att = sl_ + Vector((rnd.uniform(-0.04, 0.04), rnd.uniform(-0.04, 0.04), -rnd.uniform(0, 0.06)))
         q_att = Quaternion((0, 0, 1), rnd.uniform(0, 6.28)) @ Quaternion((1, 0, 0), rnd.uniform(-0.4, 0.4))
         local = Matrix.Translation(att) @ q_att.to_matrix().to_4x4()
-        land = CONT + Vector((rnd.uniform(-1.8, 1.8), rnd.uniform(-0.9, 0.9), 0.5 + rnd.uniform(0, 0.4)))
+        land, land_ok, t_fall = None, None, 1.0
         f_off = F(T['off'] + rnd.uniform(0, 0.12))
         kb = KeyBuffer(ob)
         prev = None
         for f in range(F(T['on']) - 2, nF + 1):
             if f < f_on:
                 Mx = M0
-            elif f < f_on + 6:
-                u = (f - f_on) / 6
+            elif f < f_on + 18:
+                u = (f - f_on) / 18
                 tg = Mw[f] @ local
                 loc = M0.translation.lerp(tg.translation, u * u)
                 q = M0.to_quaternion().slerp(tg.to_quaternion(), u)
@@ -259,12 +272,17 @@ def main():
             elif f < f_off:
                 Mx = Mw[f] @ local
             else:
+                # caída libre hasta el contenedor, justo debajo (con leve dispersión), sin deslizarse al llegar
                 st = Mw[f_off] @ local
+                if land_ok is not ob:
+                    land = Vector((min(max(st.translation.x + rnd.uniform(-0.25, 0.25), CONT.x - 2.0), CONT.x + 2.0),
+                                   min(max(st.translation.y + rnd.uniform(-0.25, 0.25), CONT.y - 0.95), CONT.y + 0.95),
+                                   0.35 + rnd.uniform(0, 0.35)))
+                    t_fall = math.sqrt(max(st.translation.z - land.z, 0.01) / 4.9)
+                    land_ok = ob
                 tf = (f - f_off) / 30
-                z = st.translation.z - 4.9 * tf * tf
-                if z <= land.z:
-                    z = land.z
-                xy = st.translation.lerp(land, min(tf / 0.7, 1))
+                z = max(land.z, st.translation.z - 4.9 * tf * tf)
+                xy = st.translation.lerp(land, min(tf / t_fall, 1))
                 q = st.to_quaternion() @ Quaternion((1, 0, 0), min(tf, 0.7) * 2.0)
                 Mx = Matrix.Translation(Vector((xy.x, xy.y, z))) @ q.to_matrix().to_4x4()
             loc, q, s = Mx.decompose()
@@ -353,7 +371,8 @@ def main():
     P.bake(1, nF)
     # ---- cámaras
     cams = {}
-    c = SL.CameraRig('C1', [(0.0, (-26.0, -24.0, 15.0), (2.0, 2.0, 1.5), 26), (7.0, (-20.0, -21.0, 9.0), (0.0, 0.0, 2.5), 28)])
+    # presentación más cercana: se reconocen la grúa, el electroimán y la chatarra
+    c = SL.CameraRig('C1', [(0.0, (-11.0, -14.0, 7.5), (4.0, 1.0, 3.0), 28), (7.0, (-6.5, -12.5, 5.2), (5.5, 0.5, 3.6), 30)])
     cams['C1'] = c.bake(1, F(7.2))
     c = SL.CameraRig('C2', [(7.0, (2.6, -6.2, 3.4), (0.9, -1.4, 3.6), 30), (9.5, (3.0, -6.6, 3.3), (4.5, -0.5, 3.4), 28),
                              (14.0, (3.6, -7.2, 3.0), (8.0, 0.3, 2.4), 28)])
