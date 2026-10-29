@@ -132,6 +132,7 @@ class Performer:
         self.twist = Track(default=0.0)
         self.hip_shift = Track(default=0.0)
         self.hands = {'L': [], 'R': []}
+        self.benches = []   # mesadas (x0, x1, y0, y1, z_sup) que la mano en reposo no debe atravesar
         self.poses = {'L': [], 'R': []}
         self.looks = []
         self.faces = []
@@ -273,7 +274,45 @@ class Performer:
         p = sh + q @ local
         fdir = q @ Vector((s * 0.03, -0.18 + swing * 0.6, -1.0))
         pdir = q @ Vector((-s * 1.0, 0.45, 0.0))
+        for bench in self.benches:
+            p = self._out_of_bench(p, fdir, pos, *bench)
         return p, fdir, pdir
+
+    @staticmethod
+    def _over_bench(p, fdir, pdir, curl, bx0, bx1, by0, by1, top, tol=0.006):
+        """Si los dedos entrarían en la mesada (en una transición o apoyando la mano), la mano sube lo
+        justo para que las puntas queden sobre la superficie."""
+        lift = 0.0
+        fn, pn = fdir.normalized(), pdir.normalized()
+        for q in (p, p + fn * 0.10 + pn * curl * 0.5, p + fn * 0.19 + pn * curl):
+            if bx0 < q.x < bx1 and by0 < q.y < by1:
+                lift = max(lift, top - tol - q.z)
+        return p + Vector((0.0, 0.0, lift)) if lift > 0 else p
+
+    @staticmethod
+    def _out_of_bench(p, fdir, pos, bx0, bx1, by0, by1, top, m=0.04):
+        """Mano que cuelga al inclinarse sobre una mesada: queda del lado del personaje, sin meterse
+        en el mueble (se corre hacia afuera del borde que mira al personaje)."""
+        tip = p + fdir.normalized() * 0.17
+        w = 1.0 - smoothstep(top - 0.02, top + 0.04, min(p.z, tip.z))
+        if w <= 0.0:
+            return p
+        cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
+        hx, hy = (bx1 - bx0) / 2, (by1 - by0) / 2
+        dx, dy = pos[0] - cx, pos[1] - cy
+        if abs(dy) / hy >= abs(dx) / hx:
+            sg = 1.0 if dy > 0 else -1.0
+            near = min(p.y, tip.y) if sg > 0 else max(p.y, tip.y)
+            push = (cy + sg * (hy + m) - near) * sg
+            if push > 0 and bx0 - m < p.x < bx1 + m:
+                p = p + Vector((0.0, sg * push * w, 0.0))
+        else:
+            sg = 1.0 if dx > 0 else -1.0
+            near = min(p.x, tip.x) if sg > 0 else max(p.x, tip.x)
+            push = (cx + sg * (hx + m) - near) * sg
+            if push > 0 and by0 - m < p.y < by1 + m:
+                p = p + Vector((sg * push * w, 0.0, 0.0))
+        return p
 
     def _interp_states(self, keys, t, rest_fn):
         if not keys:
@@ -513,13 +552,19 @@ class Performer:
                     foot_fw = (Vector(feet[side][0]) - Vector((pos[0], pos[1], 0))).dot(fwdv)
                 rest = lambda side=side, foot_fw=foot_fw: self.rest_hand(side, t, pos, yaw, bob, amp, phase, foot_fw)
                 p, fd, pd = self._interp_states(self.hands[side], t, rest)
+                pw = self._interp_dicts(self.poses[side], t, {'relaxed': 1.0})
+                if self.benches:
+                    # cuánto bajan las puntas hacia el lado de la palma según la pose (relajada > puño > abierta/señalar)
+                    tw_ = sum(pw.values()) or 1.0
+                    curl = (0.04 * pw.get('relaxed', 0.0) + 0.02 * pw.get('grip', 0.0)) / tw_
+                    for bench in self.benches:
+                        p = self._over_bench(Vector(p), Vector(fd), Vector(pd), curl, *bench)
                 hand_cache[(side, f)] = (Vector(p), Vector(fd), Vector(pd))
                 A.set_ik_hand(f, side, p, fd, pd)
                 sh = self.shoulder_world(side, t, pos, yaw, bob)
                 s = 1 if side == 'L' else -1
                 qy = Quaternion((0, 0, 1), yaw)
                 A.set_pole(f, 'pole_arm.' + side, sh + qy @ Vector((s * 0.25, 0.6, -0.35)))
-                pw = self._interp_dicts(self.poses[side], t, {'relaxed': 1.0})
                 A.set_hand(f, side, pw)
             # cara
             fw = dict(self._interp_dicts(self.faces, t, {}))

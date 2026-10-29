@@ -114,6 +114,7 @@ def main():
     A = anim.Actor(rig)
     sx, sy = 0.0, LAB.SCI_SPOT[1]
     P = perform.Performer(A, pos=(sx, sy), yaw=0.0)
+    P.benches.append(LAB.MAIN_BENCH)
     mag = ex['magnet']
     hintR = Vector((0.45, -1.0, 0.0))
 

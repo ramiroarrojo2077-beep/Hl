@@ -43,6 +43,7 @@ def main():
     A = anim.Actor(rig)
     x0, y0 = LAB.SCI_SPOT
     P = perform.Performer(A, pos=(x0, y0), yaw=0.0)
+    P.benches.append(LAB.MAIN_BENCH)
     mag, sleeve = ex['magnet'], ex['sleeve']
     mag_base0 = mag.location.copy()
     DISH, TRAY = LAB.DISH, LAB.TRAY

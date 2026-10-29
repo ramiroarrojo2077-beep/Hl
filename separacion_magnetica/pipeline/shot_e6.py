@@ -247,6 +247,7 @@ def main():
     sx, sy = LAB.SCI_SPOT
     sy += 0.1   # un paso atrás: el botón del medio quedaba pegado a la bata y la mano entraba en el cuerpo
     P = perform.Performer(A, pos=(sx, sy), yaw=0.0)
+    P.benches.append(LAB.MAIN_BENCH)
     xs = (-0.42, 0.0, 0.42)
     tp = (1.4, 3.4, 5.6)
     btn = []
@@ -261,7 +262,7 @@ def main():
     P.lean.add(0.6, 0.0).add(1.2, 0.22).add(6.4, 0.22).add(7.4, 0.04)
     # mientras está inclinado, la mano libre se apoya en el borde de la mesada (antes colgaba y se metía en ella)
     # (al alcance del brazo: muñeca un poco alta y dedos inclinados hacia la mesada, que es lo que toca)
-    bench = {sd: ('world', Vector((sx + k * 0.26, 0.5, BT + 0.06)), Vector((k * 0.1, -1, -0.45)), Vector((0, 0, -1)))
+    bench = {sd: ('world', Vector((sx + k * 0.26, 0.5, BT + 0.07)), Vector((k * 0.1, -1, -0.3)), Vector((0, 0, -1)))
              for sd, k in (('L', 1), ('R', -1))}
     P.hand('L', 0.6, 'rest')
     P.hand('L', 1.3, bench['L'])

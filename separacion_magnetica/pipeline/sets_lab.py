@@ -156,6 +156,7 @@ def build_corridor(col):
 DISH = Vector((0.12, 0.33, BENCH_TOP))
 TRAY = Vector((-0.18, 0.33, BENCH_TOP))
 STAND = Vector((-0.42, 0.40, BENCH_TOP))
+MAIN_BENCH = (-1.41, 1.41, -0.485, 0.485, BENCH_TOP)   # tapa de la mesada principal (x0, x1, y0, y1, z)
 SAND_BOTTLE = Vector((0.30, 0.47, BENCH_TOP))   # al alcance de la mano izquierda (inclinándose un poco)
 HANDLE_C = 0.165   # centro del mango (desde la base del imán)
 SLEEVE_GRIP = 0.085
