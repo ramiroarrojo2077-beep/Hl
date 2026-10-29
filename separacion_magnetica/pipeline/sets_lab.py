@@ -195,7 +195,7 @@ def build_experiment(col, seed=3, n_filings=320):
         for j in range(na):
             a = 1 + i * na + j
             b = 1 + i * na + (j + 1) % na
-            faces.append([a, b, b + na, a + na])
+            faces.append([a, a + na, b + na, b])     # misma orientación que el abanico central (antes opuesta: anillo oscuro)
     me = bpy.data.meshes.new('sand_surface')
     me.from_pydata(verts, [], faces)
     me.shade_smooth()
