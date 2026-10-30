@@ -1,0 +1,185 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'katex/dist/katex.min.css';
+@import '@xyflow/react/dist/style.css';
+
+@theme {
+  --color-bg: #080b14;
+  --color-surface: #121827;
+  --color-surface-2: #182036;
+  --color-surface-3: #1f2942;
+  --color-line: rgb(148 163 184 / 0.14);
+  --color-line-strong: rgb(148 163 184 / 0.28);
+  --color-primary: #5271ff;
+  --color-violet: #8b5cf6;
+  --color-cyan: #22d3ee;
+  --color-ink: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
+  --color-ok: #34d399;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+}
+
+:root {
+  color-scheme: dark;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Fondo con profundidad: dos auroras suaves fijas detrás del contenido */
+.app-backdrop {
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgb(82 113 255 / 0.13), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgb(139 92 246 / 0.1), transparent 60%),
+    radial-gradient(700px 400px at 60% 110%, rgb(34 211 238 / 0.06), transparent 60%),
+    var(--color-bg);
+}
+
+.glass {
+  background: linear-gradient(180deg, rgb(24 32 54 / 0.72), rgb(18 24 39 / 0.72));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--color-line);
+}
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-2xl);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #8fa4ff, #b79cff 45%, #5fe3f5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ring-focus:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.25) transparent;
+}
+
+input[type='range'] {
+  accent-color: var(--color-primary);
+}
+
+/* Markdown generado por la IA */
+.prose-study {
+  line-height: 1.65;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+}
+.prose-study h1,
+.prose-study h2,
+.prose-study h3 {
+  font-family: var(--font-display);
+  color: var(--color-ink);
+  line-height: 1.25;
+  margin: 1.2em 0 0.5em;
+}
+.prose-study h1 { font-size: 1.45rem; }
+.prose-study h2 { font-size: 1.2rem; }
+.prose-study h3 { font-size: 1.05rem; }
+.prose-study p { margin: 0.6em 0; }
+.prose-study ul,
+.prose-study ol { padding-left: 1.3em; margin: 0.5em 0; }
+.prose-study ul { list-style: disc; }
+.prose-study ol { list-style: decimal; }
+.prose-study li { margin: 0.2em 0; }
+.prose-study strong { color: #fff; }
+.prose-study code {
+  font-family: var(--font-mono);
+  background: rgb(148 163 184 / 0.12);
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+.prose-study pre {
+  background: #0d1322;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.prose-study pre code { background: none; padding: 0; }
+.prose-study table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+  font-size: 0.9em;
+  display: block;
+  overflow-x: auto;
+}
+.prose-study th,
+.prose-study td {
+  border: 1px solid var(--color-line-strong);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.prose-study th { background: rgb(82 113 255 / 0.12); }
+.prose-study blockquote {
+  border-left: 3px solid var(--color-violet);
+  padding-left: 0.9em;
+  color: #cbd5e1;
+  margin: 0.8em 0;
+}
+.prose-study a { color: #8fa4ff; text-decoration: underline; }
+.prose-study .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.3em 0; }
+
+/* React Flow en tema oscuro */
+.react-flow { --xy-background-color: transparent; }
+.react-flow__node { font-family: var(--font-sans); }
+.react-flow__controls button {
+  background: var(--color-surface-2);
+  border-color: var(--color-line);
+  color: var(--color-ink);
+  fill: var(--color-ink);
+}
+.react-flow__minimap { background: var(--color-surface); }
+.react-flow__attribution { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
