@@ -18,7 +18,7 @@ function Card({ title, action, children, className, ...rest }: { title: string; 
   return (
     <section className={cx('panel p-3.5', className)} {...rest}>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-display font-semibold text-[15px] sm:text-[17px] text-white">{title}</h2>
+        <h2 className="font-display font-semibold text-[15px] xl:text-[16px] text-white leading-tight">{title}</h2>
         {action}
       </div>
       {children}
@@ -28,7 +28,7 @@ function Card({ title, action, children, className, ...rest }: { title: string; 
 
 function SeeAll({ to, label = 'Ver todas' }: { to: string; label?: string }) {
   return (
-    <Link to={to} className="flex items-center gap-1.5 text-xs text-[#8ea2ff] hover:text-[#b9c6ff]">
+    <Link to={to} className="flex items-center gap-1.5 text-xs text-[#8ea2ff] hover:text-[#b9c6ff] whitespace-nowrap shrink-0">
       {label} <ArrowRight className="size-3.5" />
     </Link>
   );
@@ -51,10 +51,10 @@ function SubjectTile({ s, progress }: { s: Subject; progress?: { score: number; 
       <span className="h-[26px] flex items-center">
         <SubjectGlyph icon={s.icon} className="size-6" color={s.icon === 'leaf' ? st.bar : undefined} />
       </span>
-      <span className="text-[13px] font-semibold truncate pr-4">{s.name}</span>
-      <span className="flex justify-between text-[11px]" style={{ color: st.soft }}>
+      <span className="text-[13px] font-semibold truncate pr-3" title={s.name}>{s.name}</span>
+      <span className="flex justify-between gap-1 text-[11px] whitespace-nowrap" style={{ color: st.soft }} title={pct === null ? 'Todavía no hay resultados en esta materia' : undefined}>
         <span>Progreso</span>
-        <span>{pct === null ? 'Sin datos' : `${pct}%`}</span>
+        <span>{pct === null ? '—' : `${pct}%`}</span>
       </span>
       <span className="block h-1 rounded bg-white/20">
         <span className="block h-1 rounded" style={{ width: `${pct ?? 0}%`, background: st.bar }} />
@@ -117,11 +117,11 @@ function WeekBars({ days }: { days: StudyStats['last7'] }) {
 
 function MiniStat({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
   return (
-    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[#121a3a]/80 border border-line">
+    <div className="flex items-center gap-2 px-2.5 py-2.5 rounded-xl bg-[#121a3a]/80 border border-line">
       {icon}
       <div className="flex flex-col min-w-0">
         <span className="font-display font-semibold text-[17px] text-white">{value}</span>
-        <span className="text-[11px] text-[#b2bcdf] truncate">{label}</span>
+        <span className="text-[11px] leading-tight text-[#b2bcdf]">{label}</span>
       </div>
     </div>
   );
@@ -189,7 +189,7 @@ function TutorPanel() {
       </div>
       <div className="relative flex-1 min-h-[300px] -mx-3.5">
         <HoloBoard />
-        {show3d ? <AvatarView character={character} framing="half" facing={-0.42} className="absolute inset-y-0 right-0 w-[78%]" /> : <img src="./teacher-seed.png" alt="Profesora virtual" className="absolute right-0 bottom-0 h-full w-auto object-contain" />}
+        {show3d ? <AvatarView character={character} framing="half" facing={-0.42} className="absolute inset-y-0 right-0 w-[72%]" /> : <img src="./teacher-seed.png" alt="Profesora virtual" className="absolute right-0 bottom-0 h-full w-auto object-contain" />}
       </div>
       <div className="relative z-10 -mt-10 self-start max-w-[88%] px-4 py-3 rounded-2xl rounded-bl-sm bg-[#161e46]/95 border border-line-strong text-sm">¿En qué te gustaría que te ayude hoy?</div>
       <div className="relative z-10 grid grid-cols-2 gap-2">

@@ -394,7 +394,7 @@ export class StudyDB extends Dexie {
   constructor(name = 'studyos') {
     super(name);
     this.version(1).stores({
-      subjects: 'id, name, updatedAt',
+      subjects: 'id, name, createdAt, updatedAt',
       folders: 'id, subjectId',
       notes: 'id, subjectId, folderId, updatedAt',
       documents: 'id, subjectId, folderId, status, createdAt',
@@ -402,7 +402,7 @@ export class StudyDB extends Dexie {
       pages: 'id, docId, [docId+index]',
       chunks: 'id, docId, [docId+order]',
       summaries: 'id, docId, subjectId, createdAt',
-      decks: 'id, subjectId, docId',
+      decks: 'id, subjectId, docId, createdAt',
       cards: 'id, deckId, due',
       reviews: 'id, cardId, deckId, reviewedAt',
       exams: 'id, subjectId, docId, createdAt',

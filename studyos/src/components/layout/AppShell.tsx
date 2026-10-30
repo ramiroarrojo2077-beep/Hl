@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span className={cx('grid place-items-center h-7 w-12 rounded-full transition', isActive && 'bg-primary/30')}>
                       <n.icon className="size-5" />
                     </span>
-                    {n.label.replace(' IA', '').replace('Mis ', '')}
+                    {n.to === '/tasks' ? 'Tareas' : n.label.replace(' IA', '')}
                   </>
                 )}
               </NavLink>

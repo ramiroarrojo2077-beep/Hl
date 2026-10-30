@@ -22,8 +22,8 @@ function Rig({ character, framing, facing, onReady, onError }: { character: Char
           camera.position.set(0, h - 0.05, 1.25);
           camera.lookAt(0, h - 0.12, 0);
         } else if (framing === 'half') {
-          camera.position.set(0, h - 0.18, 2.1);
-          camera.lookAt(0, h - 0.32, 0);
+          camera.position.set(0, h - 0.1, 2.45);
+          camera.lookAt(0, h - 0.24, 0);
         } else {
           camera.position.set(0, h * 0.62, 3.6);
           camera.lookAt(0, h * 0.55, 0);
@@ -71,7 +71,8 @@ export function AvatarView({ character, framing = 'half', facing = 0, className,
   );
   if (error) return <div className={className}>{fallback}</div>;
   return (
-    <div className={className} style={{ position: 'relative' }}>
+    <div className={className}>
+      <div className="relative size-full">
       <GlBoundary fallback={fallback}>
         <Canvas
           gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
@@ -99,6 +100,7 @@ export function AvatarView({ character, framing = 'half', facing = 0, className,
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

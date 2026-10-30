@@ -1,13 +1,17 @@
+import { useId } from 'react';
+
 export function Logo({ size = 44 }: { size?: number }) {
+  // id único: si el mismo degradado está dentro de un elemento oculto, otros usos no lo encuentran
+  const id = `brand-cap-${useId().replace(/:/g, '')}`;
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
       <defs>
-        <linearGradient id="brand-cap" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#5b7bff" />
           <stop offset="1" stopColor="#2e4bdb" />
         </linearGradient>
       </defs>
-      <path d="M24 9 3 19l21 10 21-10z" fill="url(#brand-cap)" />
+      <path d="M24 9 3 19l21 10 21-10z" fill={`url(#${id})`} />
       <path d="M11 23.5v8.5c0 3.6 5.8 6.5 13 6.5s13-2.9 13-6.5v-8.5l-13 6.2z" fill="#3f5ff0" />
       <path d="M41 21v10" stroke="#8fd3ff" strokeWidth="2" strokeLinecap="round" />
       <circle cx="41" cy="33" r="2.4" fill="#8fd3ff" />
@@ -24,7 +28,7 @@ export function Brand({ compact }: { compact?: boolean }) {
           <span className={`font-display font-bold tracking-tight text-white ${compact ? 'text-xl' : 'text-[25px]'}`}>StudyOS</span>
           <span className="font-display font-semibold text-[11px] text-white bg-primary rounded-md px-1.5 py-px">AI</span>
         </div>
-        {!compact && <span className="text-[10.5px] text-muted">Tu sistema operativo de aprendizaje</span>}
+        {!compact && <span className="text-[10px] text-muted whitespace-nowrap">Tu sistema operativo de aprendizaje</span>}
       </div>
     </div>
   );
@@ -88,16 +92,17 @@ export function Mountains({ className, variant = 'side' }: { className?: string;
 }
 
 export function Flame({ className = 'size-7' }: { className?: string }) {
+  const id = `flame-${useId().replace(/:/g, '')}`;
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <defs>
-        <linearGradient id="flame-g" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#ffd166" />
           <stop offset=".55" stopColor="#ff8a1f" />
           <stop offset="1" stopColor="#ff4d1f" />
         </linearGradient>
       </defs>
-      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="url(#flame-g)" />
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill={`url(#${id})`} />
     </svg>
   );
 }
