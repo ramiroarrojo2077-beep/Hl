@@ -18,7 +18,7 @@ async function getWorker(onProgress?: (p: number) => void): Promise<TessWorker> 
         workerPath: vendor('worker.min.js'),
         corePath: vendor('core'),
         langPath: vendor('lang'),
-        gzip: true,
+        gzip: false,
         logger: (m) => {
           if (m.status === 'recognizing text') onProgress?.(m.progress);
         },

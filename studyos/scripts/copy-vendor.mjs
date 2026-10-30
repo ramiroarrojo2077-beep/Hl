@@ -1,7 +1,8 @@
 // Copia a public/vendor los archivos que la app necesita servir localmente para
 // funcionar sin conexión dentro del APK: worker y núcleo de Tesseract (OCR), los
 // datos de idioma español e inglés y los recursos auxiliares de pdf.js.
-import { cpSync, mkdirSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,7 +19,9 @@ for (const f of ['tesseract-core-lstm.wasm.js', 'tesseract-core-simd-lstm.wasm.j
 for (const lang of ['spa', 'eng']) {
   const src = join(nm, '@tesseract.js-data', lang, '4.0.0_best_int', `${lang}.traineddata.gz`);
   if (!existsSync(src)) throw new Error(`Falta ${src}`);
-  cpSync(src, join(out, 'lang', `${lang}.traineddata.gz`));
+  // Se guardan descomprimidos: el empaquetado de Android descomprime y renombra
+  // los .gz de los assets, y Tesseract no los encontraría dentro del APK.
+  writeFileSync(join(out, 'lang', `${lang}.traineddata`), gunzipSync(readFileSync(src)));
 }
 // pdf.js: mapas de caracteres, fuentes estándar, decodificadores wasm y perfiles ICC
 const pdfOut = join(root, 'public', 'vendor', 'pdfjs');
