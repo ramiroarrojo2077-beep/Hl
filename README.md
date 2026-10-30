@@ -1,3 +1,12 @@
+# Hl
+
+Este repositorio contiene dos aplicaciones:
+
+- **[StudyOS AI](studyos/README.md)** (`studyos/`): plataforma de estudio con profesor virtual 3D, SmartTasks, exámenes, flashcards, laboratorio 3D y estudio de video. Se distribuye como APK de Android (ver Releases).
+- **Precio de Fábrica** (raíz): estimador de precio de fábrica y costo real por país, descrito abajo.
+
+---
+
 # Precio de Fábrica
 
 App web que, para cualquier producto, estima:

@@ -1,0 +1,116 @@
+name: StudyOS APK
+
+# Compila la app web, la empaqueta con Capacitor y genera el APK de Android.
+# El APK queda como artefacto del workflow y como descarga en Releases.
+on:
+  push:
+    branches: [ccr-1bbbf337-m9vdn6, main]
+    paths:
+      - 'studyos/**'
+      - '.github/workflows/studyos-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: studyos-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: studyos
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: studyos/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Dependencias
+        run: npm ci
+
+      - name: Tipos y pruebas unitarias
+        run: |
+          npm run check
+          npm test
+
+      - name: Compilar la app web
+        run: npm run build
+
+      - name: Sincronizar con Android
+        run: npx cap sync android
+
+      # Clave de firma estable (opcional): secretos del repositorio
+      # STUDYOS_KEYSTORE_BASE64, STUDYOS_KEYSTORE_PASSWORD, STUDYOS_KEY_ALIAS y STUDYOS_KEY_PASSWORD.
+      - name: Clave de firma
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.STUDYOS_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/studyos.keystore"
+            echo "path=$RUNNER_TEMP/studyos.keystore" >> "$GITHUB_OUTPUT"
+            echo "kind=estable" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=temporal" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilar APK
+        working-directory: studyos/android
+        env:
+          STUDYOS_KEYSTORE: ${{ steps.signing.outputs.path }}
+          STUDYOS_KEYSTORE_PASSWORD: ${{ secrets.STUDYOS_KEYSTORE_PASSWORD }}
+          STUDYOS_KEY_ALIAS: ${{ secrets.STUDYOS_KEY_ALIAS }}
+          STUDYOS_KEY_PASSWORD: ${{ secrets.STUDYOS_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Preparar archivo
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          NAME="StudyOS-AI-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$NAME"
+          ls -la "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: studyos/${{ steps.apk.outputs.name }}
+          if-no-files-found: error
+
+      - name: Publicar en Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: studyos-v${{ steps.apk.outputs.version }}-build${{ github.run_number }}
+          name: StudyOS AI ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: studyos/${{ steps.apk.outputs.name }}
+          body: |
+            APK de StudyOS AI para Android (7.0 o superior).
+
+            Instalación: descargá el archivo .apk en el celular, abrilo y permití
+            «Instalar apps desconocidas» para tu navegador o administrador de archivos.
+
+            Firma: ${{ steps.signing.outputs.kind }}. Con firma estable, cada versión se
+            instala encima de la anterior sin perder datos. Con firma temporal, Android
+            pide desinstalar la versión anterior para actualizar (eso borra los datos):
+            antes exportá una copia en Configuración → Datos.
+
+            Commit: ${{ github.sha }}

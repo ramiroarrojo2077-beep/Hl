@@ -5,10 +5,16 @@ const config: CapacitorConfig = {
   appName: 'StudyOS AI',
   webDir: 'dist',
   android: {
-    // Permite que el WebView cargue la app y las llamadas nativas a Ollama en la red local.
     allowMixedContent: false,
+    backgroundColor: '#060913',
   },
+  backgroundColor: '#060913',
   plugins: {
+    SystemBars: {
+      insetsHandling: 'css',
+      initialViewportFitValueHint: 'cover',
+      style: 'DARK',
+    },
     LocalNotifications: {
       smallIcon: 'ic_stat_studyos',
       iconColor: '#5271FF',
