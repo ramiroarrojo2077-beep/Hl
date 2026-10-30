@@ -5,6 +5,7 @@ import { Layers, Plus, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { newId } from '@/lib/ids';
 import { initialSrs, estimatedRetention } from '@/lib/srs';
+import { subjectStyle } from '@/lib/subjects';
 import { Badge, Button, EmptyState, Field, Input, Modal, Notice, PageHeader, Segmented, Select, Slider } from '@/components/ui';
 import { runJob } from '@/stores/jobs';
 import { aiConfigured, useSettings } from '@/stores/settings';
@@ -107,11 +108,28 @@ function NewDeck({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+/** Mazo dibujado como pila de tarjetas con el color de la materia. */
+function DeckStack({ count, due, color }: { count: number; due: number; color?: string }) {
+  const st = subjectStyle(color ?? 'purple');
+  return (
+    <span className="relative w-[58px] h-[66px] shrink-0" aria-hidden="true">
+      <span className="absolute inset-x-1 top-0 bottom-3 rounded-[10px] opacity-40 -rotate-[9deg]" style={{ background: st.bg }} />
+      <span className="absolute inset-x-1 top-1 bottom-2 rounded-[10px] opacity-70 -rotate-[4deg]" style={{ background: st.bg }} />
+      <span className="absolute inset-x-1 top-2 bottom-0.5 rounded-[10px] bg-[#f4f6ff] rotate-[3deg] shadow-[0_10px_20px_-10px_rgba(0,0,0,.7)] grid place-items-center">
+        <span className="font-display font-semibold text-[17px] text-[#1a2140] leading-none">{count}</span>
+      </span>
+      {due > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-[10px] font-semibold grid place-items-center ring-2 ring-bg">{due > 99 ? '99+' : due}</span>}
+    </span>
+  );
+}
+
 export default function FlashcardsPage() {
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(params.get('new') === '1');
   const decks = useLiveQuery(() => db.decks.orderBy('createdAt').reverse().toArray(), []) ?? [];
   const cards = useLiveQuery(() => db.cards.toArray(), []) ?? [];
+  const subjects = useLiveQuery(() => db.subjects.toArray(), []) ?? [];
+  const subjectsById = new Map(subjects.map((x) => [x.id, x]));
   const now = Date.now();
   return (
     <div>
@@ -135,13 +153,23 @@ export default function FlashcardsPage() {
             const reviewed = dc.filter((c) => c.lastReview);
             const ret = reviewed.length ? reviewed.reduce((s, c) => s + estimatedRetention(c, now), 0) / reviewed.length : null;
             return (
-              <Link key={d.id} to={`/flashcards/${d.id}`} className="panel p-4 hover:border-line-strong flex flex-col gap-2 relative overflow-hidden">
-                <div className="absolute -right-6 -top-6 size-24 rounded-2xl bg-gradient-to-br from-[#8577f0] to-[#3b2fa8] rotate-12 opacity-30" />
-                <div className="font-medium relative">{d.name}</div>
-                <div className="text-xs text-muted relative">{dc.length} tarjetas</div>
-                <div className="flex flex-wrap gap-1.5 relative">
-                  {due > 0 ? <Badge tone="primary">{due} para repasar</Badge> : <Badge tone="ok">Al día</Badge>}
-                  {ret !== null && <Badge>Retención estimada {Math.round(ret * 100)}%</Badge>}
+              <Link key={d.id} to={`/flashcards/${d.id}`} className="panel p-3.5 sm:p-4 hover:border-line-strong active:scale-[.99] transition flex items-center gap-3.5">
+                <DeckStack count={dc.length} due={due} color={subjectsById.get(d.subjectId ?? '')?.color} />
+                <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                  <div className="font-medium leading-snug line-clamp-2">{d.name}</div>
+                  <div className="text-xs text-muted">
+                    {subjectsById.get(d.subjectId ?? '') ? <span style={{ color: subjectStyle(subjectsById.get(d.subjectId!)!.color).text }}>{subjectsById.get(d.subjectId!)!.name}</span> : 'Sin materia'} · {dc.length} {dc.length === 1 ? 'tarjeta' : 'tarjetas'}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">{due > 0 ? <Badge tone="primary">{due} para repasar</Badge> : <Badge tone="ok">Al día</Badge>}</div>
+                  {ret !== null && (
+                    <div className="flex items-center gap-2 text-[11px] text-muted">
+                      Retención estimada
+                      <span className="flex-1 h-1 rounded bg-white/10 max-w-28">
+                        <span className="block h-1 rounded bg-gradient-to-r from-[#8577f0] to-cyan" style={{ width: `${Math.round(ret * 100)}%` }} />
+                      </span>
+                      {Math.round(ret * 100)}%
+                    </div>
+                  )}
                 </div>
               </Link>
             );

@@ -263,7 +263,8 @@ async function main() {
   await test('SmartTasks 3: responder y guardar avances (persisten al recargar)', async () => {
     const field = page.getByLabel('Respuesta numérica').first();
     await field.fill('2');
-    await page.getByText(/1\/\d+ · Guardado/).waitFor({ timeout: 10000 });
+    // El indicador pasa de «Guardando…» a «Guardado» cuando el borrador se escribió en IndexedDB
+    await page.waitForFunction(() => /\b1\/\d+ · Guardado/.test(document.querySelector('main')?.innerText ?? ''), null, { timeout: 10000 });
     await page.reload();
     await page.getByLabel('Respuesta numérica').first().waitFor({ timeout: 15000 });
     const v = await page.getByLabel('Respuesta numérica').first().inputValue();
@@ -345,8 +346,18 @@ async function main() {
     await p.getByRole('button', { name: 'Más secciones' }).tap();
     await p.getByRole('link', { name: 'Laboratorio 3D' }).tap();
     await p.getByRole('heading', { name: 'Laboratorio 3D' }).waitFor();
+    // Búsqueda a pantalla completa
+    await p.getByRole('button', { name: 'Buscar', exact: true }).tap();
+    await p.getByRole('dialog', { name: 'Buscar' }).getByPlaceholder(/Materias, apuntes/).fill('quím');
+    await p.getByRole('dialog', { name: 'Buscar' }).getByText('Química', { exact: true }).tap();
+    await p.getByRole('heading', { name: 'Química' }).waitFor();
+    // El profesor muestra su escenario con el botón de voz en el celular
+    await p.getByRole('navigation', { name: 'Navegación inferior' }).getByText('Profesor').tap();
+    await p.getByRole('button', { name: 'Conversar por voz' }).waitFor();
+    const [ph, vh] = await p.evaluate(() => [document.documentElement.scrollHeight, window.innerHeight]);
+    assert(ph <= vh + 1, `el chat del profesor no entra en la pantalla (${ph}px > ${vh}px)`);
     await m.close();
-    return '15 pantallas sin desborde; navegación inferior y menú «Más» funcionan';
+    return '15 pantallas sin desborde; navegación inferior, menú «Más», búsqueda y profesor con voz funcionan';
   });
 
   await test('Prueba 8: micrófono denegado muestra un error comprensible', async () => {

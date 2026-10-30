@@ -6,6 +6,7 @@ import { db, type Exam } from '@/lib/db';
 import { newId } from '@/lib/ids';
 import { ITEM_TYPE_LABEL, ITEM_TYPES, type Item, type ItemType } from '@/lib/items';
 import { fmtDate } from '@/lib/format';
+import { DifficultyDots, SubjectIconTile, subjectStyle } from '@/lib/subjects';
 import { Badge, Button, EmptyState, Field, Input, Modal, Notice, PageHeader, Segmented, Select, Slider, cx } from '@/components/ui';
 import { runJob } from '@/stores/jobs';
 import { aiConfigured, useSettings } from '@/stores/settings';
@@ -147,6 +148,24 @@ function CreateExam({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+function ScoreRing({ value }: { value: number }) {
+  const r = 19;
+  const c = 2 * Math.PI * r;
+  const color = value >= 0.6 ? '#34d399' : '#fbbf24';
+  return (
+    <span className="relative self-center grid place-items-center size-12 shrink-0" title="Mejor resultado">
+      <svg viewBox="0 0 48 48" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
+        <circle cx="24" cy="24" r={r} fill="none" stroke="rgba(150,165,220,.18)" strokeWidth="4" />
+        <circle cx="24" cy="24" r={r} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeDasharray={`${c * value} ${c}`} />
+      </svg>
+      <span className="text-[11px] font-semibold" style={{ color }}>
+        {Math.round(value * 100)}%
+      </span>
+      <span className="sr-only">Mejor resultado</span>
+    </span>
+  );
+}
+
 export default function ExamsPage() {
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(params.get('new') === '1');
@@ -174,25 +193,32 @@ export default function ExamsPage() {
             const b = best(e.id);
             const s = subjects.find((x) => x.id === e.subjectId);
             return (
-              <Link key={e.id} to={`/exams/${e.id}`} className="panel p-4 hover:border-line-strong flex flex-col gap-2">
-                <div className="font-medium">{e.title}</div>
-                <div className="text-xs text-muted">
-                  {s?.name ?? 'General'} · {e.items.length} preguntas · {difficultyLabel(e.difficulty)} · {fmtDate(e.createdAt)}
+              <Link key={e.id} to={`/exams/${e.id}`} className="panel relative overflow-hidden p-3.5 sm:p-4 hover:border-line-strong active:scale-[.99] transition flex gap-3">
+                <span className="absolute left-0 inset-y-0 w-[3px]" style={{ background: s ? subjectStyle(s.color).bar : '#8b5cf6' }} aria-hidden="true" />
+                <SubjectIconTile subject={s} fallback="pen" />
+                <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                  <div className="font-medium leading-snug line-clamp-2">{e.title}</div>
+                  <div className="text-xs text-muted">
+                    {s ? <span style={{ color: subjectStyle(s.color).text }}>{s.name}</span> : 'General'} · {e.items.length} {e.items.length === 1 ? 'pregunta' : 'preguntas'} · {fmtDate(e.createdAt)}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone={e.mode === 'mock' ? 'violet' : 'cyan'}>{e.mode === 'mock' ? 'Simulacro' : 'Práctica'}</Badge>
+                    {e.timeLimitMin && (
+                      <Badge>
+                        <Timer className="size-3" /> {e.timeLimitMin} min
+                      </Badge>
+                    )}
+                    {e.provider === 'flashcards' && (
+                      <Badge>
+                        <Layers className="size-3" /> Desde flashcards
+                      </Badge>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-muted ml-0.5" title={difficultyLabel(e.difficulty)}>
+                      <DifficultyDots value={e.difficulty} color={s ? subjectStyle(s.color).bar : undefined} />
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge tone={e.mode === 'mock' ? 'violet' : 'cyan'}>{e.mode === 'mock' ? 'Simulacro' : 'Práctica'}</Badge>
-                  {e.timeLimitMin && (
-                    <Badge>
-                      <Timer className="size-3" /> {e.timeLimitMin} min
-                    </Badge>
-                  )}
-                  {e.provider === 'flashcards' && (
-                    <Badge>
-                      <Layers className="size-3" /> Desde flashcards
-                    </Badge>
-                  )}
-                  {b !== null && <Badge tone={b >= 0.6 ? 'ok' : 'warn'}>Mejor: {Math.round(b * 100)}%</Badge>}
-                </div>
+                {b !== null ? <ScoreRing value={b} /> : <span className="self-center text-[10.5px] text-faint text-center leading-tight w-12 shrink-0">Sin intentos</span>}
               </Link>
             );
           })}

@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { CalendarDays, ClipboardList, History, Sparkles, Target, WandSparkles } from 'lucide-react';
 import { db, type Task, type TaskStatus } from '@/lib/db';
 import { ITEM_TYPE_LABEL, ITEM_TYPES, type ItemType } from '@/lib/items';
-import { subjectStyle } from '@/lib/subjects';
+import { DifficultyDots, SubjectIconTile, subjectStyle } from '@/lib/subjects';
 import { fmtDate, relativeDay, startOfDay, toDateInput, fromDateTimeInputs, timeAgo } from '@/lib/format';
 import { weakConcepts } from '@/lib/mastery';
 import { Badge, Button, EmptyState, Field, Input, Modal, Notice, PageHeader, Panel, ProgressBar, Select, Slider, Tabs, Textarea, Toggle, cx } from '@/components/ui';
@@ -243,7 +243,7 @@ export default function TasksPage() {
           </Button>
         }
       />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
           <Tabs
             value={tab}
@@ -259,30 +259,36 @@ export default function TasksPage() {
             list.length === 0 ? (
               <EmptyState icon={<ClipboardList className="size-6" />} title={tab === 'pending' ? 'No hay tareas pendientes' : 'Nada por acá'} text="Pedí una tarea en lenguaje natural, desde un PDF, un resumen o una clase con el profesor." action={<Button variant="primary" onClick={() => setOpen(true)}>Crear tarea con IA</Button>} />
             ) : (
-              <div className="grid gap-2.5">
+              <div className="grid grid-cols-1 gap-2.5">
                 {list.map((t) => {
                   const s = t.subjectId ? byId.get(t.subjectId) : undefined;
                   return (
-                    <Link key={t.id} to={`/tasks/${t.id}`} className="panel p-4 flex flex-col gap-2 hover:border-line-strong">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{t.title}</div>
-                          <div className="text-xs text-muted mt-0.5">
-                            {s ? <span style={{ color: subjectStyle(s.color).text }}>{s.name}</span> : 'General'} · {t.items.length} ejercicios · ~{t.estimatedMinutes} min · {difficultyLabel(t.difficulty)}
-                            {t.modality === 'grupal' ? ' · grupal' : ''}
-                          </div>
+                    <Link key={t.id} to={`/tasks/${t.id}`} className="panel relative overflow-hidden p-3.5 sm:p-4 flex gap-3 hover:border-line-strong active:scale-[.99] transition">
+                      <span className="absolute left-0 inset-y-0 w-[3px]" style={{ background: s ? subjectStyle(s.color).bar : '#5b6b95' }} aria-hidden="true" />
+                      <SubjectIconTile subject={s} fallback="pen" />
+                      <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-medium leading-snug line-clamp-2">{t.title}</div>
+                          <Badge tone={statusTone(t.status)} className="shrink-0">{STATUS_LABEL[t.status]}</Badge>
                         </div>
-                        <Badge tone={statusTone(t.status)}>{STATUS_LABEL[t.status]}</Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
-                        {t.dueDate && <span className={t.dueDate < startOfDay() ? 'text-bad' : ''}>Entrega {relativeDay(t.dueDate)}</span>}
-                        {t.lastScore !== undefined && (
-                          <span className="flex items-center gap-2 min-w-40">
-                            Resultado <ProgressBar value={t.lastScore} className="w-24" tone={t.lastScore >= 0.6 ? 'ok' : 'warn'} /> {Math.round(t.lastScore * 100)}%
+                        <div className="text-xs text-muted">
+                          {s ? <span style={{ color: subjectStyle(s.color).text }}>{s.name}</span> : 'General'} · {t.items.length} {t.items.length === 1 ? 'ejercicio' : 'ejercicios'} · ~{t.estimatedMinutes} min
+                          {t.modality === 'grupal' ? ' · grupal' : ''}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
+                          <span className="inline-flex items-center gap-1.5" title={difficultyLabel(t.difficulty)}>
+                            <DifficultyDots value={t.difficulty === 6 ? 3 : t.difficulty} color={s ? subjectStyle(s.color).bar : undefined} />
+                            {t.difficulty === 6 ? 'Adaptativa' : difficultyLabel(t.difficulty)}
                           </span>
-                        )}
-                        {t.origin === 'errors' && <Badge tone="warn">Refuerzo</Badge>}
-                        {t.origin === 'document' && <Badge tone="cyan">Desde documento</Badge>}
+                          {t.dueDate && <span className={cx('inline-flex items-center gap-1', t.dueDate < startOfDay() ? 'text-bad' : '')}><CalendarDays className="size-3.5" />Entrega {relativeDay(t.dueDate)}</span>}
+                          {t.lastScore !== undefined && (
+                            <span className="flex items-center gap-2 min-w-36">
+                              <ProgressBar value={t.lastScore} className="w-20" tone={t.lastScore >= 0.6 ? 'ok' : 'warn'} /> {Math.round(t.lastScore * 100)}%
+                            </span>
+                          )}
+                          {t.origin === 'errors' && <Badge tone="warn">Refuerzo</Badge>}
+                          {t.origin === 'document' && <Badge tone="cyan">Desde documento</Badge>}
+                        </div>
                       </div>
                     </Link>
                   );

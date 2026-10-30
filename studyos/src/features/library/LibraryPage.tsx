@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Copy, FileText, Image, Presentation, Search, Trash, Upload } from 'lucide-react';
+import { Copy, Search, Trash, Upload } from 'lucide-react';
 import { db, type DocumentRec } from '@/lib/db';
 import { fmtBytes, timeAgo } from '@/lib/format';
 import { normalizeText } from '@/lib/items';
 import { subjectStyle } from '@/lib/subjects';
 import { deleteDocument } from '@/import';
-import { Badge, Button, EmptyState, IconButton, Input, Notice, PageHeader, Select } from '@/components/ui';
+import { Badge, Button, EmptyState, IconButton, Input, Notice, PageHeader, cx } from '@/components/ui';
+import { DocTypeIcon } from '@/components/DocTypeIcon';
 import { ImportDialog } from './ImportDialog';
 import { toast } from '@/stores/toast';
 
-const KIND_ICON = { pdf: FileText, docx: FileText, pptx: Presentation, txt: FileText, image: Image, paste: FileText };
 
 export function StatusBadge({ d }: { d: DocumentRec }) {
   if (d.status === 'processing') return <Badge tone="cyan">Procesando…</Badge>;
@@ -47,34 +47,33 @@ export default function LibraryPage() {
           <Notice title="Elegí un documento para resumir">Abrilo y en la pestaña «Resúmenes» elegí el tipo de resumen. Si todavía no subiste el material, subilo primero.</Notice>
         </div>
       )}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-3">
         <label className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-faint" />
           <span className="sr-only">Buscar documentos</span>
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre…" className="pl-9" />
         </label>
-        <Select value={subject} onChange={(e) => setSubject(e.target.value)} className="w-auto" aria-label="Filtrar por materia">
-          <option value="all">Todas las materias</option>
-          <option value="none">Sin materia</option>
-          {subjects.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </Select>
       </div>
+      {subjects.length > 0 && (
+        <div className="snap-row -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:flex-wrap mb-4" role="group" aria-label="Filtrar por materia">
+          {[{ id: 'all', name: 'Todas', color: '' }, { id: 'none', name: 'Sin materia', color: '' }, ...subjects].map((x) => (
+            <button key={x.id} onClick={() => setSubject(x.id)} aria-pressed={subject === x.id} className={cx('inline-flex items-center gap-2 h-9 px-3.5 rounded-full border text-xs whitespace-nowrap transition', subject === x.id ? 'nav-active text-white' : 'border-line text-muted hover:text-ink')}>
+              {x.color && <span className="size-2 rounded-full" style={{ background: subjectStyle(x.color).bar }} />}
+              {x.name}
+            </button>
+          ))}
+        </div>
+      )}
       {docs.length === 0 ? (
         <EmptyState icon={<Upload className="size-6" />} title="Tu biblioteca está vacía" text="Subí apuntes en PDF, Word, PowerPoint, fotos de la pizarra o pegá texto." action={<Button variant="primary" onClick={() => setOpen(true)}>Subir documento</Button>} />
       ) : (
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {shown.map((d) => {
-            const I = KIND_ICON[d.kind];
             const s = d.subjectId ? byId.get(d.subjectId) : undefined;
             return (
-              <div key={d.id} className="panel p-3.5 flex gap-3 hover:border-line-strong transition">
-                <span className="grid place-items-center size-11 rounded-xl bg-primary/15 text-[#a9b8ff] shrink-0">
-                  <I className="size-5" />
-                </span>
+              <div key={d.id} className="panel relative overflow-hidden p-3.5 flex items-start gap-3 hover:border-line-strong transition">
+                <span className="absolute left-0 inset-y-0 w-[3px]" style={{ background: s ? subjectStyle(s.color).bar : 'transparent' }} aria-hidden="true" />
+                <DocTypeIcon kind={d.kind} />
                 <Link to={`/library/${d.id}${pick === 'summary' ? '?tab=summaries' : ''}`} className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{d.title}</div>
                   <div className="text-xs text-muted mt-0.5">

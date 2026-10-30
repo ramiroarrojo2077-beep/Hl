@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, ClipboardList, Copy, GraduationCap, Headphones, Lightbulb, MessageSquarePlus, Mic, MicOff, PenTool, Plus, Repeat, Settings2, Square, Trash, Volume2, ZoomIn, ZoomOut, Shuffle, ListChecks, FileText } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, ClipboardList, Copy, GraduationCap, Headphones, Lightbulb, MessageSquarePlus, Mic, MicOff, PenTool, Plus, Repeat, Settings2, Square, Trash, Volume2, ZoomIn, ZoomOut, Shuffle, ListChecks, FileText } from 'lucide-react';
 import { db, logActivity, type TutorMessage, type TutorMode, type TutorSession } from '@/lib/db';
 import { newId } from '@/lib/ids';
 import { timeAgo } from '@/lib/format';
@@ -18,6 +18,7 @@ import { useAvatar } from '@/features/avatar/store';
 import { speak, stopSpeaking, ttsAvailable } from '@/voice/tts';
 import { listenOnce, stopListening, sttSupported } from '@/voice/stt';
 import { useVoice, VOICE_STATE_LABEL } from '@/voice/bus';
+import { useDesktop } from '@/lib/useMedia';
 
 const LANGS: { label: string; code: string }[] = [
   { label: 'Inglés', code: 'en-US' },
@@ -47,6 +48,71 @@ function VoiceIndicator() {
   );
 }
 
+/** Escenario del profesor en celulares: avatar 3D, pizarra holográfica y voz. */
+function MobileStage(p: { compact: boolean; onToggle: () => void; title: string; detail: string; board: string; conversation: boolean; canTalk: boolean; onTalk: () => void; onSessions: () => void; onSettings: () => void }) {
+  const s = useSettings((x) => x.s);
+  const voice = useVoice();
+  return (
+    <div
+      className={cx('relative shrink-0 overflow-hidden border-b border-line-strong/70 transition-[height] duration-300 ease-out', p.compact ? 'h-[68px]' : 'h-[196px]')}
+      style={{ background: 'radial-gradient(90% 120% at 85% 10%, rgba(80,120,255,.35), transparent 60%), radial-gradient(60% 90% at 0% 100%, rgba(139,92,246,.22), transparent 60%), linear-gradient(180deg,#121a44,#0b1029)' }}
+    >
+      <div className="absolute inset-0 opacity-60 bg-[linear-gradient(rgba(90,200,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(90,200,255,.08)_1px,transparent_1px)] bg-[size:22px_22px]" aria-hidden="true" />
+      {!p.compact && (
+        <div className="holo absolute left-3 top-[56px] w-[47%] h-[76px] rounded-md px-2.5 py-2 overflow-hidden" aria-hidden={!p.board}>
+          <div className="text-[9px] uppercase tracking-widest text-cyan/80">Pizarra</div>
+          <div className="text-[10.5px] text-[#cfeaff] leading-snug line-clamp-4">{voice.subtitle || p.board || 'Las ideas clave de la explicación aparecen acá.'}</div>
+        </div>
+      )}
+      <div className={cx('absolute bottom-0 right-0 transition-all duration-300', p.compact ? 'w-[74px] h-[68px]' : 'w-[50%] h-full')}>
+        {s.avatar.show ? <AvatarView character={s.avatar.character} framing="half" facing={-0.3} className="absolute inset-0" /> : <img src="./teacher-seed.png" alt="Profesora virtual" className="absolute right-0 bottom-0 h-full object-contain" />}
+      </div>
+      <div className={cx('relative z-10 flex gap-2 p-3', p.compact ? 'items-center h-full pr-[84px]' : 'flex-col h-full pr-[48%]')}>
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display font-semibold text-[15px] leading-tight truncate">{p.title}</h1>
+          {!p.compact && <div className="text-[11px] text-[#b9c3e6] truncate">{p.detail}</div>}
+        </div>
+        <div className={cx('flex items-center gap-1.5', !p.compact && 'mt-auto')}>
+          <button
+            onClick={p.onTalk}
+            disabled={!p.canTalk}
+            aria-label={p.conversation ? 'Terminar conversación por voz' : 'Conversar por voz'}
+            className={cx('inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full text-[13px] font-medium text-white disabled:opacity-45 transition shrink-0', p.conversation ? 'bg-bad/85 shadow-[0_0_20px_-4px_rgba(248,113,113,.9)]' : 'bg-gradient-to-r from-primary to-violet shadow-[0_8px_20px_-8px_rgba(82,113,255,.9)]')}
+          >
+            {p.conversation ? <MicOff className="size-4" /> : <Headphones className="size-4" />}
+            {p.conversation ? 'Terminar' : 'Hablar'}
+          </button>
+          {!p.compact && (
+            <>
+              <IconButton label="Clases" onClick={p.onSessions} className="size-9 shrink-0 bg-black/30 border border-line">
+                <MessageSquarePlus className="size-4" />
+              </IconButton>
+              <IconButton label="Ajustes de la clase" onClick={p.onSettings} className="size-9 shrink-0 bg-black/30 border border-line">
+                <Settings2 className="size-4" />
+              </IconButton>
+            </>
+          )}
+        </div>
+      </div>
+      {!p.compact && (
+        <div className="absolute z-10 right-2 top-2">
+          <VoiceIndicator />
+        </div>
+      )}
+      <button onClick={p.onToggle} aria-label={p.compact ? 'Mostrar profesor' : 'Achicar profesor'} className={cx('absolute z-20 grid place-items-center size-8 rounded-full bg-black/35 border border-line text-[#cdd5f0]', p.compact ? 'right-1.5 top-1.5' : 'right-2 bottom-2')}>
+        {p.compact ? <ChevronDown className="size-4" /> : <ChevronUp className="size-4" />}
+      </button>
+      <AnimatePresence>
+        {s.voice.subtitles && voice.subtitle && !p.compact && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute z-10 left-3 right-12 bottom-14 rounded-xl bg-black/70 px-3 py-1.5 text-[12px] leading-snug line-clamp-2" aria-live="polite">
+            {voice.subtitle}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function TutorPage() {
   const { sessionId } = useParams();
   const [params, setParams] = useSearchParams();
@@ -66,6 +132,9 @@ export default function TutorPage() {
   const [sttOk, setSttOk] = useState<boolean | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [stageMin, setStageMin] = useState(false);
+  const desktop = useDesktop();
   const abortRef = useRef<AbortController | null>(null);
   const convRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -315,12 +384,26 @@ export default function TutorPage() {
   );
 
   return (
-    <div className="grid gap-3.5 xl:grid-cols-[230px_minmax(0,1fr)_360px] lg:grid-cols-[minmax(0,1fr)_340px] h-[calc(100dvh-190px)] lg:h-[calc(100dvh-80px)] min-h-[520px]">
+    <div className="grid gap-3.5 xl:grid-cols-[230px_minmax(0,1fr)_360px] lg:grid-cols-[minmax(0,1fr)_340px] h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-146px)] lg:h-[calc(100dvh-100px)] min-h-[440px] lg:min-h-[520px]">
       <aside className="hidden xl:block panel p-3 overflow-y-auto scroll-thin">{Sessions}</aside>
 
       {/* Chat */}
       <section className="panel flex flex-col min-h-0 overflow-hidden">
-        <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-line">
+        {!desktop && (
+          <MobileStage
+            compact={typing || stageMin}
+            onToggle={() => setStageMin((v) => !v)}
+            title={session?.title ?? 'Profesor IA'}
+            detail={`${TUTOR_MODES[mode].label} · nivel ${session?.level ?? 3}/5${docIds.length ? ` · ${docIds.length} doc.` : ''}`}
+            board={(lastAssistant?.content ?? '').replace(/[#*$`>|]/g, '').slice(0, 220)}
+            conversation={conversation}
+            canTalk={ai && sttOk !== false}
+            onTalk={toggleConversation}
+            onSessions={() => setShowSessions(true)}
+            onSettings={() => setShowSettings(true)}
+          />
+        )}
+        <header className="hidden lg:flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-line">
           <div className="min-w-0">
             <h1 className="font-display font-semibold truncate">{session?.title ?? 'Profesor IA'}</h1>
             <div className="text-[11px] text-muted">
@@ -337,20 +420,21 @@ export default function TutorPage() {
           </div>
         </header>
 
-        <div ref={listRef} className="flex-1 overflow-y-auto scroll-thin px-4 py-4 space-y-4">
+        <div ref={listRef} className="flex-1 overflow-y-auto scroll-thin px-3 sm:px-4 py-3 sm:py-4 space-y-4">
+          {!desktop && voice.error && (voice.state === 'denied' || voice.state === 'error' || voice.state === 'unsupported') && <Notice tone="bad">{voice.error}</Notice>}
           {!ai && (
             <Notice tone="warn" title="El profesor necesita un proveedor de IA">
               Configurá Gemini (gratis), Claude, OpenAI o Ollama en <button className="underline" onClick={() => nav('/settings#ia')}>Configuración</button>. Sin IA podés usar la pizarra, el laboratorio y tus tareas guardadas.
             </Notice>
           )}
           {messages.length === 0 && !streaming && (
-            <div className="text-center py-10">
-              <GraduationCap className="size-8 mx-auto text-[#8ea2ff]" />
-              <h2 className="font-display font-semibold mt-3">¿Qué querés aprender hoy?</h2>
-              <p className="text-sm text-muted mt-1">Preguntá, pedí ejemplos o resolvé ejercicios acompañado. Podés interrumpir en cualquier momento.</p>
-              <div className="flex flex-wrap justify-center gap-2 mt-4">
+            <div className="text-center py-4 lg:py-10">
+              <GraduationCap className="hidden lg:block size-8 mx-auto text-[#8ea2ff]" />
+              <h2 className="font-display font-semibold lg:mt-3">¿Qué querés aprender hoy?</h2>
+              <p className="text-[13px] lg:text-sm text-muted mt-1">Preguntá, pedí ejemplos o resolvé ejercicios acompañado. Podés interrumpir en cualquier momento.</p>
+              <div className="flex flex-col lg:flex-row lg:flex-wrap justify-center gap-2 mt-4">
                 {['Explicame la separación magnética con un ejemplo de reciclaje', '¿Cómo se resuelve una ecuación cuadrática?', 'Ayudame a entender la fotosíntesis'].map((q) => (
-                  <button key={q} onClick={() => send(q)} disabled={!ai} className="text-xs rounded-full border border-line-strong px-3 py-1.5 hover:bg-white/5 disabled:opacity-40">
+                  <button key={q} onClick={() => send(q)} disabled={!ai} className="text-[13px] lg:text-xs text-left lg:text-center rounded-2xl lg:rounded-full border border-line-strong px-3.5 py-2.5 lg:px-3 lg:py-1.5 hover:bg-white/5 disabled:opacity-40">
                     {q}
                   </button>
                 ))}
@@ -416,7 +500,7 @@ export default function TutorPage() {
         )}
 
         <form
-          className="flex items-end gap-2 p-3 border-t border-line"
+          className="flex items-end gap-1.5 sm:gap-2 p-2.5 sm:p-3 border-t border-line"
           onSubmit={(e) => {
             e.preventDefault();
             send(input);
@@ -434,8 +518,10 @@ export default function TutorPage() {
                 }
               }}
               rows={1}
-              placeholder={voice.state === 'listening' ? 'Escuchando…' : 'Escribí tu pregunta o usá el micrófono…'}
-              className="w-full resize-none max-h-40 rounded-xl bg-[#0a102a] border border-line-strong px-3.5 py-2.5 text-sm outline-none focus:border-primary/70"
+              onFocus={() => setTyping(true)}
+              onBlur={() => setTyping(false)}
+              placeholder={voice.state === 'listening' ? 'Escuchando…' : desktop ? 'Escribí tu pregunta o usá el micrófono…' : 'Escribí tu pregunta…'}
+              className="block w-full resize-none max-h-40 h-11 rounded-xl bg-[#0a102a] border border-line-strong px-3.5 py-[11px] text-[15px] lg:text-sm leading-5 outline-none focus:border-primary/70"
             />
           </label>
           {sttOk !== false ? (
@@ -468,7 +554,7 @@ export default function TutorPage() {
             <div className="text-[10px] uppercase tracking-widest text-cyan/80 mb-1">Pizarra</div>
             <div className="text-[11px] text-[#cfeaff] leading-snug line-clamp-[12]">{voice.subtitle || (lastAssistant?.content ?? 'Las ideas clave de la explicación aparecen acá.').replace(/[#*$`>|]/g, '').slice(0, 360)}</div>
           </div>
-          {s.avatar.show ? <AvatarView character={s.avatar.character} framing="half" facing={-0.35} className="absolute inset-y-0 right-0 w-[80%]" /> : <img src="./teacher-seed.png" alt="Profesora virtual" className="absolute right-0 bottom-0 h-full object-contain" />}
+          {desktop && (s.avatar.show ? <AvatarView character={s.avatar.character} framing="half" facing={-0.35} className="absolute inset-y-0 right-0 w-[80%]" /> : <img src="./teacher-seed.png" alt="Profesora virtual" className="absolute right-0 bottom-0 h-full object-contain" />)}
           <AnimatePresence>
             {s.voice.subtitles && voice.subtitle && (
               <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute inset-x-3 bottom-2 rounded-xl bg-black/65 px-3 py-2 text-center text-[13px] leading-snug" aria-live="polite">
@@ -559,6 +645,8 @@ export default function TutorPage() {
             </div>
           </div>
           <Toggle label="Subtítulos" checked={s.voice.subtitles} onChange={(v) => update((x) => void (x.voice.subtitles = v))} />
+          <Toggle label="Leer respuestas automáticamente" checked={s.voice.autoSpeak} onChange={(v) => update((x) => void (x.voice.autoSpeak = v))} />
+          {sttOk === false && <p className="text-[11px] text-faint">Este navegador no tiene reconocimiento de voz: podés escribir y escuchar las respuestas. En la app de Android se usa el reconocimiento del sistema.</p>}
           <div className="flex items-center gap-2 text-xs text-muted">
             Estado de voz: <Badge>{VOICE_STATE_LABEL[voice.state]}</Badge>
           </div>

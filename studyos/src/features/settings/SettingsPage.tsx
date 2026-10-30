@@ -369,7 +369,7 @@ export default function SettingsPage() {
   }, [loc.hash]);
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Configuración" subtitle={`StudyOS AI 0.1.0 · ${isNative ? `app ${platform}` : 'web'}`} icon={<Settings className="size-5" />} />
+      <PageHeader title="Configuración" subtitle={`StudyOS AI 0.2.0 · ${isNative ? `app ${platform}` : 'web'}`} icon={<Settings className="size-5" />} />
       <div className="space-y-4">
         <Section id="perfil" icon={<UserRound className="size-5" />} title="Perfil">
           <div className="grid sm:grid-cols-2 gap-3">

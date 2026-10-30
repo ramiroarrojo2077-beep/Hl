@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowRight, Box, Clock, Ellipsis, EllipsisVertical, FileText, Image, List, Mic, MessageSquareText, Play, Plus, Quote, Rocket, SquareCheck, Target, WandSparkles, CircleQuestionMark, MessageCircle, Lightbulb } from 'lucide-react';
-import { db, type DocumentRec, type Subject } from '@/lib/db';
+import { ArrowRight, Box, Clock, Ellipsis, EllipsisVertical, FileText, Layers, List, Mic, MessageSquareText, Play, Plus, Quote, Rocket, SquareCheck, Target, WandSparkles, CircleQuestionMark, MessageCircle, Lightbulb } from 'lucide-react';
+import { db, type Subject } from '@/lib/db';
 import { getStudyStats, subjectProgress, type StudyStats } from '@/lib/stats';
 import { SubjectGlyph, subjectStyle } from '@/lib/subjects';
 import { fmtDate, fmtMinutes, relativeDay, startOfDay, timeAgo, addDays } from '@/lib/format';
@@ -13,6 +13,7 @@ import { AvatarView } from '@/features/avatar/AvatarView';
 import { ImportDialog } from '@/features/library/ImportDialog';
 import { NewSubjectDialog } from '@/features/subjects/NewSubjectDialog';
 import { cx } from '@/components/ui';
+import { DocTypeIcon } from '@/components/DocTypeIcon';
 
 function Card({ title, action, children, className, ...rest }: { title: string; action?: ReactNode; children: ReactNode; className?: string } & React.HTMLAttributes<HTMLElement>) {
   return (
@@ -43,6 +44,15 @@ const ACTIONS = [
   { key: 'video', title: 'Generar video', sub: 'Animaciones educativas', grad: 'from-[#e0389a] to-[#a92ad6]', icon: Play, to: '/video' },
 ] as const;
 
+function TodayChip({ to, icon, label }: { to: string; icon: ReactNode; label: string }) {
+  return (
+    <Link to={to} className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-[#0b1030]/70 border border-white/15 text-[11.5px] text-[#e3e8ff] backdrop-blur-sm">
+      {icon}
+      {label}
+    </Link>
+  );
+}
+
 function SubjectTile({ s, progress }: { s: Subject; progress?: { score: number; concepts: number } }) {
   const st = subjectStyle(s.color);
   const pct = progress ? Math.round(progress.score * 100) : null;
@@ -59,7 +69,7 @@ function SubjectTile({ s, progress }: { s: Subject; progress?: { score: number; 
       <span className="block h-1 rounded bg-white/20">
         <span className="block h-1 rounded" style={{ width: `${pct ?? 0}%`, background: st.bar }} />
       </span>
-      <Ellipsis className="absolute top-2 right-2 size-3.5 opacity-80" />
+      <Ellipsis className="hidden sm:block absolute top-2 right-2 size-3.5 opacity-80" />
     </Link>
   );
 }
@@ -127,14 +137,6 @@ function MiniStat({ icon, value, label }: { icon: ReactNode; value: string; labe
   );
 }
 
-function DocIcon({ d }: { d: DocumentRec }) {
-  if (d.kind === 'image') return <span className="grid place-items-center w-6 h-7 rounded bg-[#1fa971] text-white"><Image className="size-3.5" /></span>;
-  if (d.kind === 'docx') return <span className="grid place-items-center w-6 h-7 rounded bg-[#2b6cf0] text-white text-[9px] font-bold">W</span>;
-  if (d.kind === 'pptx') return <span className="grid place-items-center w-6 h-7 rounded bg-[#e0662b] text-white text-[9px] font-bold">P</span>;
-  if (d.kind === 'pdf') return <span className="grid place-items-center w-6 h-7 rounded bg-[#e5484d] text-white text-[7.5px] font-bold">PDF</span>;
-  return <span className="grid place-items-center w-6 h-7 rounded bg-[#5b6b95] text-white text-[8px] font-bold">TXT</span>;
-}
-
 function HoloBoard() {
   return (
     <div className="holo absolute left-2.5 top-4 w-[64%] h-[78%] rounded-md [transform:perspective(600px)_rotateY(14deg)] origin-left" aria-hidden="true">
@@ -180,14 +182,14 @@ function TutorPanel() {
     nav(`/tutor?q=${encodeURIComponent(msg.trim())}&send=1`);
   };
   return (
-    <aside aria-label="Profesor IA" className="relative overflow-hidden rounded-[18px] border border-line-strong bg-[linear-gradient(180deg,#121a44_0%,#0d1334_55%,#0b1029_100%)] p-3.5 flex flex-col gap-3 min-h-[560px]">
+    <aside aria-label="Profesor IA" className="relative overflow-hidden rounded-[18px] border border-line-strong bg-[linear-gradient(180deg,#121a44_0%,#0d1334_55%,#0b1029_100%)] p-3.5 flex flex-col gap-3 min-h-[480px] sm:min-h-[560px]">
       <div className="relative z-10 flex flex-col gap-2">
         <h2 className="font-display font-semibold text-xl text-white">Profesor IA</h2>
         <span className="self-start inline-flex items-center gap-1.5 text-[11px] text-[#c9f7dc] bg-ok/15 border border-ok/35 rounded-full px-2.5 py-0.5">
           <span className="size-[7px] rounded-full bg-ok" /> En línea
         </span>
       </div>
-      <div className="relative flex-1 min-h-[300px] -mx-3.5">
+      <div className="relative flex-1 min-h-[250px] sm:min-h-[300px] -mx-3.5">
         <HoloBoard />
         {show3d ? <AvatarView character={character} framing="half" facing={-0.42} className="absolute inset-y-0 right-0 w-[72%]" /> : <img src="./teacher-seed.png" alt="Profesora virtual" className="absolute right-0 bottom-0 h-full w-auto object-contain" />}
       </div>
@@ -209,7 +211,7 @@ function TutorPanel() {
       >
         <label className="flex-1 min-w-0">
           <span className="sr-only">Mensaje al profesor</span>
-          <input value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Escribí tu mensaje o usá el micrófono..." className="w-full bg-transparent outline-none text-[12.5px] placeholder:text-[#7f8db0]" />
+          <input value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Escribí tu mensaje o usá el micrófono..." className="w-full bg-transparent outline-none text-[14px] sm:text-[12.5px] placeholder:text-[#7f8db0]" />
         </label>
         <button type="button" onClick={() => nav('/tutor?voice=1')} aria-label="Hablar por micrófono" className="grid place-items-center size-11 rounded-xl text-[#c3cbea] hover:text-white">
           <Mic className="size-[18px]" />
@@ -329,6 +331,12 @@ export function Dashboard() {
   const [importOpen, setImportOpen] = useState(false);
   const [newSubject, setNewSubject] = useState(false);
   const subjects = useLiveQuery(() => db.subjects.orderBy('createdAt').toArray(), []) ?? [];
+  // Al cambiar la cantidad de materias, el carrusel vuelve al inicio (el scroll-snap
+  // se queda enganchado al botón «Agregar» si las materias se insertan antes).
+  const subjectRow = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    subjectRow.current?.scrollTo({ left: 0 });
+  }, [subjects.length]);
   const subjectsById = new Map(subjects.map((s) => [s.id, s]));
   const docs = useLiveQuery(() => db.documents.orderBy('createdAt').reverse().limit(4).toArray(), []) ?? [];
   const exams = useLiveQuery(() => db.events.where('start').aboveOrEqual(startOfDay()).filter((e) => e.type === 'exam').limit(3).toArray(), []) ?? [];
@@ -351,13 +359,20 @@ export function Dashboard() {
       <div className="grid gap-3.5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-3.5">
           {/* Hero */}
-          <section aria-label="Bienvenida" className="relative overflow-hidden rounded-2xl min-h-[116px] border border-line-strong bg-[#0d1230] flex flex-wrap items-center justify-between gap-4 px-5 sm:px-7 py-5">
+          <section aria-label="Bienvenida" className="relative overflow-hidden rounded-[20px] sm:rounded-2xl min-h-[116px] border border-line-strong bg-[#0d1230] flex flex-wrap items-center justify-between gap-4 px-4 sm:px-7 py-4 sm:py-5">
             <Mountains variant="hero" className="absolute inset-0 size-full" />
-            <div className="relative">
-              <h1 className="font-display font-bold text-3xl sm:text-[36px] tracking-tight text-white leading-tight">¡Hola{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}!</h1>
-              <p className="flex items-center gap-2 text-base sm:text-lg text-[#e3e8ff] mt-1">
+            <div className="relative min-w-0">
+              <p className="sm:hidden text-[11px] uppercase tracking-[.14em] text-[#aab6e8] mb-1">{fmtDate(Date.now(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+              <h1 className="font-display font-bold text-[28px] sm:text-[36px] tracking-tight text-white leading-tight">¡Hola{name.trim() ? `, ${name.trim().split(' ')[0]}` : ''}!</h1>
+              <p className="flex items-center gap-2 text-[15px] sm:text-lg text-[#e3e8ff] mt-1">
                 Hoy es un gran día para aprender <Rocket className="size-5 text-[#ff8a3d]" />
               </p>
+              {/* Resumen del día (celular): solo datos registrados */}
+              <div className="sm:hidden flex flex-wrap gap-1.5 mt-3">
+                <TodayChip to="/stats" icon={<Flame className="size-3.5" />} label={`${stats?.streak ?? 0} ${stats?.streak === 1 ? 'día' : 'días'} de racha`} />
+                <TodayChip to="/tasks" icon={<SquareCheck className="size-3.5 text-[#c4a6ff]" />} label={`${tasks.length} ${tasks.length === 1 ? 'tarea' : 'tareas'}`} />
+                <TodayChip to="/flashcards" icon={<Layers className="size-3.5 text-[#8ea2ff]" />} label={`${dueCards} ${dueCards === 1 ? 'tarjeta' : 'tarjetas'} hoy`} />
+              </div>
             </div>
             <div className="relative hidden md:flex gap-2 max-w-[230px]">
               <Quote className="size-3.5 shrink-0 mt-0.5 text-[#aab6e8] fill-[#aab6e8]" />
@@ -366,15 +381,15 @@ export function Dashboard() {
           </section>
 
           {/* Acciones rápidas */}
-          <section aria-label="Acciones rápidas" className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-2.5">
+          <section aria-label="Acciones rápidas" className="grid grid-cols-3 2xl:grid-cols-6 gap-2 sm:gap-2.5">
             {ACTIONS.map((a) => (
-              <button key={a.key} onClick={() => ('to' in a ? nav(a.to) : setImportOpen(true))} className="tile relative flex flex-col gap-1.5 p-3 pb-3.5 text-left hover:border-line-strong transition">
-                <span className={cx('grid place-items-center size-[38px] rounded-[10px] bg-gradient-to-br mb-1', a.grad)}>
-                  <a.icon className={cx('size-[19px] text-white', a.key === 'video' && 'fill-white')} />
+              <button key={a.key} onClick={() => ('to' in a ? nav(a.to) : setImportOpen(true))} className="tile relative flex flex-col items-center sm:items-start gap-1.5 px-1.5 py-3 sm:p-3 sm:pb-3.5 text-center sm:text-left hover:border-line-strong active:scale-[.97] transition">
+                <span className={cx('grid place-items-center size-11 sm:size-[38px] rounded-[13px] sm:rounded-[10px] bg-gradient-to-br sm:mb-1 shadow-[0_8px_18px_-10px_rgba(90,110,255,.9)]', a.grad)}>
+                  <a.icon className={cx('size-5 sm:size-[19px] text-white', a.key === 'video' && 'fill-white')} />
                 </span>
-                <span className="text-[13.5px] font-semibold">{a.title}</span>
-                <span className="text-[11px] text-muted">{a.sub}</span>
-                <Ellipsis className="absolute top-3 right-3 size-4 text-muted" />
+                <span className="text-[12px] sm:text-[13.5px] font-semibold leading-tight">{a.title}</span>
+                <span className="hidden sm:block text-[11px] text-muted">{a.sub}</span>
+                <Ellipsis className="hidden sm:block absolute top-3 right-3 size-4 text-muted" />
               </button>
             ))}
           </section>
@@ -398,7 +413,7 @@ export function Dashboard() {
 
           <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <Card title="Mis materias" action={<SeeAll to="/subjects" />}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div ref={subjectRow} className="snap-row -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-2.5 [&>*]:w-[38%] sm:[&>*]:w-auto">
                 {subjects.slice(0, 7).map((s) => (
                   <SubjectTile key={s.id} s={s} progress={progress.get(s.id)} />
                 ))}
@@ -432,7 +447,7 @@ export function Dashboard() {
                   {docs.map((d) => (
                     <li key={d.id} className="border-b border-[#96a5dc]/10 last:border-0">
                       <Link to={`/library/${d.id}`} className="flex items-center gap-2.5 py-2">
-                        <DocIcon d={d} />
+                        <DocTypeIcon kind={d.kind} size="sm" />
                         <span className="flex-1 min-w-0">
                           <span className="block text-[12.5px] truncate">{d.title}</span>
                           <span className="block text-[10.5px] text-muted truncate">
@@ -523,7 +538,7 @@ export function Dashboard() {
         <TutorPanel />
       </div>
 
-      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="snap-row -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:grid sm:gap-3.5 sm:grid-cols-2 xl:grid-cols-4 [&>*]:w-[80%] sm:[&>*]:w-auto">
         <ModuleCard title="Laboratorio 3D" badge="Nuevo" text="Explorá simulaciones interactivas de Física, Química, Biología y más." cta="Explorar laboratorio" to="/lab" art={SolarArt} ctaClass="border border-[#8ca0ff]/65 bg-[#283ca0]/35" />
         <ModuleCard title="Generador de videos" text="Convertí tus apuntes en videos educativos con animaciones, narración y ejemplos." cta="Crear video" to="/video" art={VideoArt} ctaClass="bg-gradient-to-r from-[#7a4dff] to-[#a04dff]" />
         <ModuleCard title="Mapas conceptuales" text="Generá mapas conceptuales a partir de tus apuntes con IA." cta="Crear mapa" to="/maps" art={MapArt} ctaClass="bg-[#2f63ff]" />

@@ -47,6 +47,11 @@ function BackButtonHandler() {
     let remove: (() => void) | undefined;
     import('@capacitor/app').then(({ App: CapApp }) => {
       CapApp.addListener('backButton', ({ canGoBack }) => {
+        // Primero cierra lo que esté abierto encima (diálogos, hojas, pantalla completa)
+        if (document.querySelector('[role="dialog"], [data-overlay]')) {
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+          return;
+        }
         if (canGoBack && window.location.hash !== '#/') nav(-1);
         else CapApp.minimizeApp();
       }).then((h) => (remove = () => h.remove()));

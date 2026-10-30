@@ -1,6 +1,9 @@
 import { forwardRef, useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LoaderCircle, X } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, LoaderCircle, X } from 'lucide-react';
+import { SectionArt } from './layout/SectionArt';
+import { sectionGradient, sectionRoot, sectionTheme } from './layout/sections';
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(' ');
@@ -77,17 +80,65 @@ export function SectionTitle({ title, action, subtitle }: { title: string; actio
   );
 }
 
+const BACK_TO: Record<string, string> = { '/summaries': '/library' };
+
+/**
+ * Encabezado de página con la identidad de su sección (acento de color e
+ * ilustración). En las páginas de detalle (/seccion/:id) se muestra una
+ * versión compacta con botón para volver.
+ */
 export function PageHeader({ title, subtitle, actions, icon }: { title: string; subtitle?: string; actions?: ReactNode; icon?: ReactNode }) {
+  const loc = useLocation();
+  const nav = useNavigate();
+  const root = sectionRoot(loc.pathname);
+  const t = sectionTheme(loc.pathname);
+  const detail = loc.pathname.replace(/\/$/, '') !== root;
+  const iconTile = icon && (
+    <span className="grid place-items-center size-11 sm:size-12 rounded-[14px] text-white shrink-0 shadow-[0_10px_24px_-10px_var(--sec-glow)]" style={{ background: sectionGradient(t) }}>
+      {icon}
+    </span>
+  );
+  const style = { '--sec-glow': t.from, borderColor: `${t.from}4d` } as React.CSSProperties;
+  if (detail) {
+    return (
+      <header className="mb-4 sm:mb-5" style={style}>
+        <div className="flex items-start gap-3 min-w-0">
+          <button
+            onClick={() => (window.history.length > 1 ? nav(-1) : nav(BACK_TO[root] ?? root))}
+            aria-label="Volver"
+            className="grid place-items-center size-11 -ml-1.5 rounded-xl text-[#cdd5f0] hover:text-white hover:bg-white/5 shrink-0"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+          {iconTile && <span className="hidden sm:block">{iconTile}</span>}
+          <div className="min-w-0 flex-1 pt-1.5 sm:pt-0">
+            <h1 className="font-display text-lg sm:text-2xl font-semibold tracking-tight leading-snug break-words">{title}</h1>
+            {subtitle && <p className="text-[12.5px] sm:text-sm text-muted mt-0.5 line-clamp-2 sm:line-clamp-none max-w-3xl">{subtitle}</p>}
+          </div>
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2 mt-3 sm:pl-[68px]">{actions}</div>}
+      </header>
+    );
+  }
   return (
-    <header className="flex flex-wrap items-start justify-between gap-3 mb-5">
-      <div className="flex items-start gap-3 min-w-0">
-        {icon && <div className="mt-0.5 grid place-items-center size-10 rounded-xl bg-gradient-to-br from-primary/25 to-violet/25 border border-line text-ink shrink-0">{icon}</div>}
+    <header
+      className="relative overflow-hidden rounded-[20px] border mb-4 sm:mb-5 px-4 py-4 sm:px-6 sm:py-5"
+      style={{ ...style, background: `radial-gradient(120% 140% at 100% 0%, ${t.to}33, transparent 55%), radial-gradient(90% 120% at 0% 100%, ${t.from}26, transparent 60%), linear-gradient(180deg, #10183a, #0a1028)` }}
+    >
+      <SectionArt
+        art={t.art}
+        from={t.from}
+        to={t.to}
+        className={cx('absolute right-0 w-auto pointer-events-none sm:top-1/2 sm:-translate-y-1/2 sm:h-[150px] sm:[mask-image:none]', actions ? 'top-1.5 h-[112px] [mask-image:linear-gradient(180deg,#000_62%,transparent)]' : 'top-1/2 -translate-y-1/2 h-[120px]')}
+      />
+      <div className="relative flex items-center gap-3 sm:gap-4 pr-[104px] sm:pr-[180px]">
+        {iconTile}
         <div className="min-w-0">
-          <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight">{title}</h1>
-          {subtitle && <p className="text-sm text-muted mt-1 max-w-2xl">{subtitle}</p>}
+          <h1 className="font-display text-[22px] sm:text-[26px] font-semibold tracking-tight text-white leading-tight">{title}</h1>
+          {subtitle && <p className="text-[12.5px] sm:text-sm text-[#c5cdec] mt-1 line-clamp-2 sm:line-clamp-none max-w-2xl leading-snug">{subtitle}</p>}
         </div>
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="relative flex flex-wrap items-center gap-2 mt-3.5 sm:mt-4">{actions}</div>}
     </header>
   );
 }
@@ -221,7 +272,8 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
             exit={{ y: 40, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 320 }}
           >
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
+            <div className="relative flex items-center justify-between px-5 pt-4 pb-3 border-b border-line">
+              <span className="sm:hidden absolute top-1.5 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
               <h3 className="font-display font-semibold">{title}</h3>
               <IconButton label="Cerrar" onClick={onClose}>
                 <X className="size-4" />

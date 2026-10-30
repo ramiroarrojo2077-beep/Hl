@@ -325,7 +325,7 @@ export default function CalendarPage() {
             <IconButton label="Mes anterior" onClick={() => setMonth(new Date(mDate.getFullYear(), mDate.getMonth() - 1, 1).getTime())}>
               <ChevronLeft className="size-4" />
             </IconButton>
-            <h2 className="font-display font-semibold capitalize">{mDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}</h2>
+            <h2 className="font-display font-semibold first-letter:uppercase">{mDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}</h2>
             <IconButton label="Mes siguiente" onClick={() => setMonth(new Date(mDate.getFullYear(), mDate.getMonth() + 1, 1).getTime())}>
               <ChevronRight className="size-4" />
             </IconButton>
@@ -362,7 +362,7 @@ export default function CalendarPage() {
           </div>
         </Panel>
         <Panel className="p-4">
-          <h3 className="font-display font-semibold capitalize mb-3">{fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+          <h3 className="font-display font-semibold first-letter:uppercase mb-3">{fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
           {dayEvents.length === 0 ? (
             <p className="text-sm text-muted">Sin eventos. Tocá «Evento» o «Planificar estudio».</p>
           ) : (

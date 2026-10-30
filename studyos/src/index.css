@@ -202,3 +202,29 @@ input[type='range'] {
     transition-duration: 0.01ms !important;
   }
 }
+
+@layer components {
+  /* Los ítems de grilla pueden achicarse: evita que un texto con truncate
+     ensanche la pantalla en celulares. */
+  .grid > * {
+    min-width: 0;
+  }
+
+  /* Carruseles horizontales en celular */
+  .snap-row {
+    display: flex;
+    gap: 0.625rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0.875rem;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .snap-row::-webkit-scrollbar {
+    display: none;
+  }
+  .snap-row > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+}

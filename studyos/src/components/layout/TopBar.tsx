@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -48,6 +49,79 @@ function useSearch(q: string): Hit[] {
 }
 
 const HIT_ICON = { subject: BookOpen, doc: FileText, task: ClipboardList, exam: FileText, deck: Layers, page: FileText };
+
+function SearchResults({ q, hits, go }: { q: string; hits: Hit[]; go: (to: string) => void }) {
+  return (
+    <>
+      {hits.map((h, i) => {
+        const I = HIT_ICON[h.kind];
+        return (
+          <button key={i} onMouseDown={(e) => e.preventDefault()} onClick={() => go(h.to)} className="w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/5 active:bg-white/5">
+            <I className="size-4 mt-0.5 text-[#8ea2ff] shrink-0" />
+            <span className="min-w-0">
+              <span className="block text-sm truncate">{h.title}</span>
+              <span className="block text-[11px] text-muted truncate">{h.sub}</span>
+            </span>
+          </button>
+        );
+      })}
+      <button onMouseDown={(e) => e.preventDefault()} onClick={() => go(`/tutor?q=${encodeURIComponent(q.trim())}`)} className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/5 border-t border-line mt-1">
+        <Sparkles className="size-4 text-violet shrink-0" />
+        <span className="text-sm">
+          Preguntar al profesor: <span className="text-[#b9c6ff]">“{q.trim()}”</span>
+        </span>
+      </button>
+    </>
+  );
+}
+
+/** Búsqueda a pantalla completa para celulares. */
+function MobileSearch({ onClose }: { onClose: () => void }) {
+  const [q, setQ] = useState('');
+  const nav = useNavigate();
+  const hits = useSearch(q);
+  const go = (to: string) => {
+    onClose();
+    nav(to);
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <motion.div role="dialog" aria-label="Buscar" className="fixed inset-0 z-50 bg-[#060913]/97 backdrop-blur-md pt-[var(--safe-top)] flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <form
+        className="flex items-center gap-2 px-3.5 pt-3 pb-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (q.trim()) go(hits[0]?.to ?? `/tutor?q=${encodeURIComponent(q.trim())}`);
+        }}
+      >
+        <label className="flex-1 flex items-center gap-2.5 h-12 pl-3.5 pr-2 rounded-2xl bg-[#0d1430] border border-primary/50">
+          <Search className="size-[18px] text-[#9aa6cc] shrink-0" />
+          <span className="sr-only">Buscar</span>
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} enterKeyHint="search" placeholder="Materias, apuntes, tareas…" className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-[#7f8db0]" />
+          {q && (
+            <button type="button" onClick={() => setQ('')} aria-label="Limpiar búsqueda" className="grid place-items-center size-9 text-faint">
+              <X className="size-4" />
+            </button>
+          )}
+        </label>
+        <button type="button" onClick={onClose} className="h-12 px-2 text-sm text-[#b9c6ff]">
+          Cancelar
+        </button>
+      </form>
+      <div className="flex-1 overflow-y-auto px-2 pb-[calc(1rem+var(--safe-bottom))]">
+        {q.trim().length >= 2 ? (
+          <SearchResults q={q} hits={hits} go={go} />
+        ) : (
+          <p className="px-4 py-6 text-sm text-muted leading-relaxed">Buscá en tus materias, documentos, tareas, exámenes, mazos y en el texto de tus apuntes. Si no hay coincidencias, podés preguntarle al profesor.</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 function SearchBox() {
   const [q, setQ] = useState('');
@@ -104,24 +178,7 @@ function SearchBox() {
       <AnimatePresence>
         {open && q.trim().length >= 2 && (
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-50 left-0 right-0 mt-2 glass rounded-2xl p-1.5 shadow-2xl max-h-[60dvh] overflow-y-auto">
-            {hits.map((h, i) => {
-              const I = HIT_ICON[h.kind];
-              return (
-                <button key={i} onMouseDown={(e) => e.preventDefault()} onClick={() => go(h.to)} className="w-full flex items-start gap-3 rounded-xl px-3 py-2 text-left hover:bg-white/5">
-                  <I className="size-4 mt-0.5 text-[#8ea2ff] shrink-0" />
-                  <span className="min-w-0">
-                    <span className="block text-sm truncate">{h.title}</span>
-                    <span className="block text-[11px] text-muted truncate">{h.sub}</span>
-                  </span>
-                </button>
-              );
-            })}
-            <button onMouseDown={(e) => e.preventDefault()} onClick={() => go(`/tutor?q=${encodeURIComponent(q.trim())}`)} className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/5 border-t border-line mt-1">
-              <Sparkles className="size-4 text-violet shrink-0" />
-              <span className="text-sm">
-                Preguntar al profesor: <span className="text-[#b9c6ff]">“{q.trim()}”</span>
-              </span>
-            </button>
+            <SearchResults q={q} hits={hits} go={go} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -132,6 +189,14 @@ function SearchBox() {
 function Notifications() {
   const [open, setOpen] = useState(false);
   const nav = useNavigate();
+  const boxRef = useRef<HTMLDivElement>(null);
+  // Cierre al tocar afuera (un overlay fixed quedaría confinado por el backdrop-filter del header)
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => !boxRef.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [open]);
   const items =
     useLiveQuery(async () => {
       const now = Date.now();
@@ -149,7 +214,7 @@ function Notifications() {
       return out;
     }, []) ?? [];
   return (
-    <div className="relative">
+    <div className="relative" ref={boxRef}>
       <button onClick={() => setOpen((v) => !v)} aria-label={`Notificaciones${items.length ? ` (${items.length})` : ''}`} className="relative grid place-items-center size-11 text-[#d7defa] hover:text-white">
         <Bell className="size-[22px]" strokeWidth={1.8} />
         {items.length > 0 && <span className="absolute top-2.5 right-[11px] size-2 rounded-full bg-[#ff4d5e] ring-2 ring-bg" />}
@@ -157,7 +222,6 @@ function Notifications() {
       <AnimatePresence>
         {open && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-50 right-0 mt-2 w-[min(340px,calc(100vw-24px))] glass rounded-2xl p-2 shadow-2xl">
               <div className="px-2 py-1.5 text-xs text-muted">Próximos días</div>
               {items.length === 0 && <div className="px-2 py-4 text-sm text-muted">No hay recordatorios pendientes.</div>}
@@ -186,10 +250,11 @@ export function TopBar() {
   const name = useSettings((s) => s.s.profile.name);
   const level = useSettings((s) => s.s.profile.level);
   const nav = useNavigate();
+  const [searching, setSearching] = useState(false);
   const initial = useMemo(() => (name.trim()[0] ?? 'E').toUpperCase(), [name]);
   return (
-    <header className="sticky top-0 z-30 bg-bg/85 backdrop-blur-md lg:bg-transparent lg:backdrop-blur-0 lg:static pt-[var(--safe-top)]">
-      <div className="flex items-center gap-3 px-3.5 sm:px-4 lg:pl-4 lg:pr-3.5 pt-3 pb-1 lg:pt-3.5">
+    <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line/60 lg:border-0 lg:bg-transparent lg:backdrop-blur-0 lg:static pt-[var(--safe-top)]">
+      <div className="flex items-center gap-2 sm:gap-3 h-14 lg:h-auto px-3.5 sm:px-4 lg:pl-4 lg:pr-3.5 lg:pt-3.5 lg:pb-1">
         <div className="lg:hidden shrink-0">
           <Brand compact />
         </div>
@@ -197,10 +262,13 @@ export function TopBar() {
           <SearchBox />
         </div>
         <div className="flex-1 sm:hidden" />
-        <div className="flex items-center gap-1 sm:gap-4 shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-4 shrink-0">
+          <button onClick={() => setSearching(true)} aria-label="Buscar" className="sm:hidden grid place-items-center size-11 text-[#d7defa]">
+            <Search className="size-[21px]" strokeWidth={1.8} />
+          </button>
           <Notifications />
-          <button onClick={() => nav('/settings')} className="flex items-center gap-3 min-h-11" aria-label="Perfil y configuración">
-            <span className="grid place-items-center size-[38px] rounded-full bg-gradient-to-br from-primary to-violet font-display font-semibold text-sm text-white">{initial}</span>
+          <button onClick={() => nav('/settings')} className="flex items-center gap-3 min-h-11 pl-1" aria-label="Perfil y configuración">
+            <span className="grid place-items-center size-9 sm:size-[38px] rounded-full bg-gradient-to-br from-primary to-violet font-display font-semibold text-sm text-white ring-2 ring-white/10">{initial}</span>
             <span className="hidden md:flex flex-col items-start leading-tight">
               <span className="text-[13px] font-medium">Hola, {name.trim() || 'estudiante'}</span>
               <span className="text-[11.5px] text-muted">{level || 'Estudiante'}</span>
@@ -209,9 +277,8 @@ export function TopBar() {
           </button>
         </div>
       </div>
-      <div className="sm:hidden px-3.5 pb-2 pt-1">
-        <SearchBox />
-      </div>
+      {/* Portal: el header tiene backdrop-filter, que confina a los hijos position:fixed */}
+      {createPortal(<AnimatePresence>{searching && <MobileSearch onClose={() => setSearching(false)} />}</AnimatePresence>, document.body)}
     </header>
   );
 }

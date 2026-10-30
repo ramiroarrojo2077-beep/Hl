@@ -46,9 +46,9 @@ export default function SubjectsPage() {
         }
       />
       {cats.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="snap-row -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:flex-wrap gap-2 mb-4">
           {['all', ...cats].map((c) => (
-            <button key={c} onClick={() => setCat(c)} className={`h-8 px-3 rounded-full border text-xs ${cat === c ? 'nav-active text-white' : 'border-line text-muted'}`}>
+            <button key={c} onClick={() => setCat(c)} aria-pressed={cat === c} className={`h-9 px-3.5 rounded-full border text-xs whitespace-nowrap ${cat === c ? 'nav-active text-white' : 'border-line text-muted'}`}>
               {c === 'all' ? 'Todas' : c}
             </button>
           ))}
@@ -57,27 +57,28 @@ export default function SubjectsPage() {
       {subjects.length === 0 ? (
         <EmptyState icon={<BookOpen className="size-6" />} title="Todavía no tenés materias" text="Creá tu primera materia para organizar tu material de estudio." action={<Button variant="primary" onClick={() => setOpen(true)}>Crear materia</Button>} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
           {shown.map((s) => {
             const st = subjectStyle(s.color);
             const p = progress.get(s.id);
             const c = counts?.get(s.id);
             return (
-              <Link key={s.id} to={`/subjects/${s.id}`} className="rounded-2xl p-4 text-white transition hover:brightness-110 flex flex-col gap-3 min-h-[150px]" style={{ background: st.bg, border: `1px solid ${st.border}` }}>
-                <div className="flex items-start justify-between">
-                  <SubjectGlyph icon={s.icon} className="size-8" />
-                  {s.category && <span className="text-[11px] rounded-full bg-black/20 px-2 py-0.5" style={{ color: st.soft }}>{s.category}</span>}
+              <Link key={s.id} to={`/subjects/${s.id}`} className="relative overflow-hidden rounded-2xl p-3.5 sm:p-4 text-white transition hover:brightness-110 active:scale-[.98] flex flex-col gap-2 sm:gap-3 min-h-[148px]" style={{ background: st.bg, border: `1px solid ${st.border}` }}>
+                <SubjectGlyph icon={s.icon} className="absolute -right-3 -bottom-3 size-24 opacity-[.13] pointer-events-none" />
+                <div className="flex items-start justify-between gap-2">
+                  <SubjectGlyph icon={s.icon} className="size-7 sm:size-8" color={s.icon === 'leaf' ? st.bar : undefined} />
+                  {s.category && <span className="hidden sm:inline text-[11px] rounded-full bg-black/20 px-2 py-0.5 truncate" style={{ color: st.soft }}>{s.category}</span>}
                 </div>
-                <div className="font-display font-semibold text-lg">{s.name}</div>
-                <div className="text-xs flex gap-3" style={{ color: st.soft }}>
-                  <span>{c?.docs ?? 0} archivos</span>
-                  <span>{c?.tasks ?? 0} tareas</span>
-                  <span>{c?.exams ?? 0} exámenes</span>
+                <div className="font-display font-semibold text-[15px] sm:text-lg leading-tight line-clamp-2">{s.name}</div>
+                <div className="text-[11px] sm:text-xs flex flex-wrap gap-x-2.5 gap-y-0.5" style={{ color: st.soft }}>
+                  <span>{c?.docs ?? 0} {c?.docs === 1 ? 'archivo' : 'archivos'}</span>
+                  <span>{c?.tasks ?? 0} {c?.tasks === 1 ? 'tarea' : 'tareas'}</span>
+                  <span className="hidden sm:inline">{c?.exams ?? 0} exámenes</span>
                 </div>
                 <div className="mt-auto">
                   <div className="flex justify-between text-[11px] mb-1" style={{ color: st.soft }}>
                     <span>Dominio</span>
-                    <span>{p ? `${Math.round(p.score * 100)}% · ${p.concepts} conceptos` : 'Sin datos todavía'}</span>
+                    <span>{p ? <>{Math.round(p.score * 100)}%<span className="hidden sm:inline"> · {p.concepts} conceptos</span></> : '—'}</span>
                   </div>
                   <div className="h-1.5 rounded bg-white/20">
                     <div className="h-1.5 rounded" style={{ width: `${p ? p.score * 100 : 0}%`, background: st.bar }} />

@@ -68,3 +68,25 @@ export const SUBJECT_PRESETS: { name: string; color: string; icon: SubjectIcon; 
   { name: 'Inglés', color: 'pink', icon: 'book', category: 'Idiomas' },
   { name: 'Informática', color: 'cyan', icon: 'monitor', category: 'Tecnología' },
 ];
+
+/** Ícono de la materia sobre su gradiente (o neutro si no tiene materia). */
+export function SubjectIconTile({ subject, className = 'size-10 rounded-xl', glyph = 'size-5', fallback = 'book' }: { subject?: { color: string; icon: string }; className?: string; glyph?: string; fallback?: string }) {
+  const st = subjectStyle(subject?.color ?? 'slate');
+  return (
+    <span className={`grid place-items-center shrink-0 text-white ${className}`} style={{ background: st.bg, boxShadow: `inset 0 0 0 1px ${st.border}` }}>
+      <SubjectGlyph icon={subject?.icon ?? fallback} className={glyph} color={subject?.icon === 'leaf' ? st.bar : undefined} />
+    </span>
+  );
+}
+
+/** Puntos de dificultad 1..5 */
+export function DifficultyDots({ value, color = '#8ea2ff' }: { value: number; color?: string }) {
+  const v = Math.max(1, Math.min(5, Math.round(value)));
+  return (
+    <span className="inline-flex items-center gap-[3px]" role="img" aria-label={`Dificultad ${v} de 5`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className="size-[6px] rounded-full" style={{ background: i <= v ? color : 'rgba(150,165,220,.22)' }} />
+      ))}
+    </span>
+  );
+}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import katex from 'katex';
-import { ArrowRight, Circle, Download, Eraser, Image as ImageIcon, MousePointer2, MoveRight, PenTool, Plus, Redo2, Sigma, Sparkles, Square, Trash, Type, Undo2, Volume2, ChartColumn, Check, Minus } from 'lucide-react';
+import { ArrowRight, Circle, Download, Eraser, Image as ImageIcon, MousePointer2, MoveRight, PenTool, Plus, Redo2, Sigma, Sparkles, Square, Trash, Type, Undo2, Volume2, ChartColumn, Check, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { newId } from '@/lib/ids';
 import { fileToDataUrl, saveFile } from '@/lib/platform';
@@ -183,6 +183,13 @@ export default function BoardPage() {
   const [prompt, setPrompt] = useState<{ kind: 'text' | 'formula' | 'graph'; x: number; y: number } | null>(null);
   const [promptValue, setPromptValue] = useState('');
   const svgRef = useRef<SVGSVGElement>(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [full]);
   const drag = useRef<{ x: number; y: number } | null>(null);
   const imgRef = useRef<HTMLInputElement>(null);
   // Explicación paso a paso
@@ -239,8 +246,15 @@ export default function BoardPage() {
   };
 
   const pt = (e: React.PointerEvent): [number, number] => {
-    const r = svgRef.current!.getBoundingClientRect();
-    return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
+    // Matriz de pantalla: respeta viewBox y el encuadre en pantalla completa
+    const svg = svgRef.current!;
+    const m = svg.getScreenCTM();
+    if (!m) {
+      const r = svg.getBoundingClientRect();
+      return [((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H];
+    }
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    return [p.x, p.y];
   };
   const hit = (x: number, y: number) => [...objs].reverse().find((o) => {
     const [a, b, c, d] = bbox(o);
@@ -413,10 +427,10 @@ export default function BoardPage() {
 
   return (
     <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="min-w-0 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="max-w-xs font-display font-semibold" aria-label="Título de la pizarra" />
-          <Select value={boardId ?? ''} onChange={async (e) => { const b = await db.boards.get(e.target.value); if (b) { setBoardId(b.id); setTitle(b.title); setObjs(b.objects as Obj[]); setLesson(null); } }} className="w-auto h-10 text-xs" aria-label="Sesiones guardadas">
+      <div data-overlay={full || undefined} className={cx('min-w-0', full ? 'fixed inset-0 z-50 bg-bg flex flex-col gap-2 px-2 pb-[calc(.5rem+var(--safe-bottom))] pt-[calc(.5rem+var(--safe-top))]' : 'space-y-2')}>
+        <div className={cx('flex-wrap items-center gap-2', full ? 'hidden' : 'flex')}>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 min-w-0 sm:flex-none sm:max-w-xs font-display font-semibold" aria-label="Título de la pizarra" />
+          <Select value={boardId ?? ''} onChange={async (e) => { const b = await db.boards.get(e.target.value); if (b) { setBoardId(b.id); setTitle(b.title); setObjs(b.objects as Obj[]); setLesson(null); } }} className="order-last sm:order-none w-full sm:w-auto h-10 text-xs" aria-label="Sesiones guardadas">
             {boards.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.title} · {timeAgo(b.updatedAt)}
@@ -430,17 +444,21 @@ export default function BoardPage() {
             SVG
           </Button>
         </div>
-        <Panel className="p-2 flex flex-wrap items-center gap-1">
+        <Panel className="p-1.5 sm:p-2 flex items-center gap-1 overflow-x-auto scroll-thin sm:flex-wrap [&>*]:shrink-0">
+          <IconButton label={full ? 'Salir de pantalla completa' : 'Pantalla completa'} active={full} onClick={() => setFull((v) => !v)} className="size-10 sm:size-9">
+            {full ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+          </IconButton>
+          <span className="w-px h-6 bg-line mx-1" />
           {TOOLS.map((x) => (
-            <IconButton key={x.t} label={x.label} active={tool === x.t} onClick={() => setTool(x.t)}>
+            <IconButton key={x.t} label={x.label} active={tool === x.t} onClick={() => setTool(x.t)} className="size-10 sm:size-9">
               {x.icon}
             </IconButton>
           ))}
           <span className="w-px h-6 bg-line mx-1" />
           {COLORS.map((c) => (
-            <button key={c} aria-label={`Color ${c}`} onClick={() => setColor(c)} className={cx('size-7 rounded-full border-2', color === c ? 'border-white' : 'border-transparent')} style={{ background: c }} />
+            <button key={c} aria-label={`Color ${c}`} onClick={() => setColor(c)} className={cx('size-8 sm:size-7 rounded-full border-2', color === c ? 'border-white' : 'border-transparent')} style={{ background: c }} />
           ))}
-          <select value={width} onChange={(e) => setWidth(Number(e.target.value))} aria-label="Grosor" className="h-8 rounded-lg bg-[#0a102a] border border-line text-xs px-1.5 ml-1">
+          <select value={width} onChange={(e) => setWidth(Number(e.target.value))} aria-label="Grosor" className="h-9 sm:h-8 rounded-lg bg-[#0a102a] border border-line text-xs px-1.5 ml-1">
             {[2, 4, 7, 12].map((w) => (
               <option key={w} value={w}>
                 {w}px
@@ -463,8 +481,8 @@ export default function BoardPage() {
             <Eraser className="size-4 text-bad" />
           </IconButton>
         </Panel>
-        <div className="rounded-2xl overflow-hidden border border-line bg-[#0c1a1f] touch-none">
-          <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block select-none" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp} style={{ cursor: tool === 'select' ? 'move' : 'crosshair', background: 'linear-gradient(180deg,#102027,#0b1a20)' }}>
+        <div className={cx('rounded-2xl overflow-hidden border border-line bg-[#0c1a1f] touch-none', full && 'flex-1 min-h-0')}>
+          <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className={cx('block select-none', full ? 'size-full' : 'w-full h-auto')} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp} style={{ cursor: tool === 'select' ? 'move' : 'crosshair', background: 'linear-gradient(180deg,#102027,#0b1a20)' }}>
             <defs>
               {COLORS.map((c) => (
                 <marker key={c} id={`arrow-${c.slice(1)}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
