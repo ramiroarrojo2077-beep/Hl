@@ -22,8 +22,8 @@ function Rig({ character, framing, facing, onReady, onError }: { character: Char
           camera.position.set(0, h - 0.05, 1.25);
           camera.lookAt(0, h - 0.12, 0);
         } else if (framing === 'half') {
-          camera.position.set(0, h - 0.1, 2.45);
-          camera.lookAt(0, h - 0.24, 0);
+          camera.position.set(0, h - 0.06, 2.5);
+          camera.lookAt(0, h - 0.2, 0);
         } else {
           camera.position.set(0, h * 0.62, 3.6);
           camera.lookAt(0, h * 0.55, 0);

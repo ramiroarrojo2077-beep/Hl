@@ -28,7 +28,7 @@ function Card({ title, action, children, className, ...rest }: { title: string; 
 
 function SeeAll({ to, label = 'Ver todas' }: { to: string; label?: string }) {
   return (
-    <Link to={to} className="flex items-center gap-1.5 text-xs text-[#8ea2ff] hover:text-[#b9c6ff] whitespace-nowrap shrink-0">
+    <Link to={to} className="flex items-center gap-1 text-[11.5px] text-[#8ea2ff] hover:text-[#b9c6ff] whitespace-nowrap shrink-0">
       {label} <ArrowRight className="size-3.5" />
     </Link>
   );

@@ -4,7 +4,7 @@ export function Logo({ size = 44 }: { size?: number }) {
   // id único: si el mismo degradado está dentro de un elemento oculto, otros usos no lo encuentran
   const id = `brand-cap-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="shrink-0">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#5b7bff" />
