@@ -35,7 +35,8 @@ function mapError(e: unknown): never {
   if (e instanceof Anthropic.APIUserAbortError) throw new DOMException('Cancelado', 'AbortError');
   if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw new AiError('auth', 'La clave de API de Anthropic no es válida o no tiene permisos.');
   if (e instanceof Anthropic.RateLimitError) throw new AiError('rate_limit', 'Anthropic limitó las solicitudes. Esperá un momento o revisá tu plan.');
-  if (e instanceof Anthropic.NotFoundError) throw new AiError('other', 'El modelo elegido no existe para tu cuenta. Elegí otro en Configuración.');
+  if (e instanceof Anthropic.NotFoundError) throw new AiError('not_found', 'El modelo elegido no existe para tu cuenta.', e.message);
+  if (e instanceof Anthropic.APIError && e.status === 400 && /credit balance/i.test(e.message)) throw new AiError('quota', 'Tu cuenta de Anthropic no tiene crédito: cargalo en platform.claude.com → Billing.', e.message);
   if (e instanceof Anthropic.BadRequestError) throw new AiError('other', `Solicitud rechazada por Anthropic: ${e.message}`);
   if (e instanceof Anthropic.APIConnectionError) throw new AiError('network', 'No se pudo conectar con Anthropic. Revisá tu conexión.');
   if (e instanceof Anthropic.APIError) throw new AiError('network', `Error de Anthropic (${e.status ?? 'sin estado'}): ${e.message}`);

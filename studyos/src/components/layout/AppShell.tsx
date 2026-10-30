@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { GraduationCap, LayoutGrid, Quote, X } from 'lucide-react';
 import { NAV_MAIN, NAV_MOBILE, NAV_TOOLS } from './nav';
-import { SECTION_THEME, sectionGradient } from './sections';
+import { SECTION_THEME, sectionGradient, sectionRoot } from './sections';
 import { Brand, Flame, Mountains } from './Brand';
 import { TopBar } from './TopBar';
 import { JobsTray } from './JobsTray';
@@ -87,7 +87,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
       <div className="flex-1 min-w-0 flex flex-col">
         {!immersive && <TopBar />}
-        <main className={cx('flex-1 w-full mx-auto', immersive ? '' : 'max-w-[1440px] px-3.5 sm:px-4 lg:pl-4 lg:pr-3.5 pt-3.5 lg:pb-6', fitHeight ? 'pb-[calc(4.625rem+var(--safe-bottom))]' : 'pb-[calc(6.5rem+var(--safe-bottom))]')}>{children}</main>
+        <main className={cx('flex-1 w-full mx-auto', immersive ? '' : 'max-w-[1440px] px-3.5 sm:px-4 lg:pl-4 lg:pr-3.5 pt-3.5 lg:pb-6', fitHeight ? 'pb-[calc(4.625rem+var(--safe-bottom))]' : 'pb-[calc(6.5rem+var(--safe-bottom))]')}>
+          {/* Fundido suave al cambiar de sección (sin desmontar al cambiar de clase o tarea dentro de la misma) */}
+          <div key={immersive ? 'immersive' : sectionRoot(loc.pathname)} className="page-in">
+            {children}
+          </div>
+        </main>
       </div>
 
       {!immersive && (

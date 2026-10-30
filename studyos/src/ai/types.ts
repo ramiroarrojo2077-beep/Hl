@@ -46,7 +46,7 @@ export interface ProviderImpl {
   embeddingModel?: string;
 }
 
-export type AiErrorCode = 'no_provider' | 'auth' | 'rate_limit' | 'network' | 'refusal' | 'bad_output' | 'aborted' | 'too_long' | 'other';
+export type AiErrorCode = 'no_provider' | 'auth' | 'rate_limit' | 'quota' | 'not_found' | 'network' | 'refusal' | 'bad_output' | 'aborted' | 'too_long' | 'other';
 
 export class AiError extends Error {
   constructor(public code: AiErrorCode, message: string, public detail?: string) {
@@ -59,14 +59,35 @@ export function isAbort(e: unknown): boolean {
   return (e instanceof AiError && e.code === 'aborted') || (e instanceof DOMException && e.name === 'AbortError') || (e as Error)?.name === 'AbortError' || (e as Error)?.name === 'APIUserAbortError';
 }
 
+/** Mensaje de error que devuelve el proveedor ({error:{message}} o {error:"…"}). */
+export function providerMessage(body: string): string {
+  try {
+    const j = JSON.parse(body);
+    const e = Array.isArray(j) ? j[0]?.error : j.error;
+    const m = typeof e === 'string' ? e : e?.message ?? j.message;
+    if (typeof m === 'string' && m.trim()) return m.trim().slice(0, 240);
+  } catch {
+    /* no es JSON */
+  }
+  return body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+}
+
 export function httpError(status: number, body: string): AiError {
-  const short = body.slice(0, 300);
-  if (status === 401 || status === 403) return new AiError('auth', 'La clave de API no es válida o no tiene permisos.', short);
-  if (status === 429) return new AiError('rate_limit', 'El proveedor limitó las solicitudes (cuota o velocidad). Esperá un momento o revisá tu plan.', short);
-  if (status === 404) return new AiError('other', 'El modelo o el endpoint no existe. Elegí otro modelo en Configuración.', short);
-  if (status === 413) return new AiError('too_long', 'El contenido es demasiado largo para este modelo.', short);
-  if (status >= 500) return new AiError('network', 'El proveedor de IA tuvo un error temporal. Probá de nuevo.', short);
-  return new AiError('other', `Error del proveedor (${status}).`, short);
+  const msg = providerMessage(body);
+  const said = msg ? ` Detalle del proveedor: «${msg}»` : '';
+  if (status === 401 || ((status === 400 || status === 403) && /API[_ ]?key[_ ]?(not valid|invalid)|API_KEY_INVALID|invalid[_ -]?(x-)?api[_ -]?key|incorrect api key/i.test(body)))
+    return new AiError('auth', `La clave de API no es válida. Copiala de nuevo completa (sin espacios) desde la página del proveedor.${said}`, msg);
+  if (status === 403) return new AiError('auth', `La clave no tiene permiso para usar este servicio o modelo (o la API no está habilitada en tu proyecto/país).${said}`, msg);
+  if (status === 429) {
+    if (/insufficient_quota|billing|credit|exceeded your current quota/i.test(body)) return new AiError('quota', `Tu cuenta no tiene saldo o cuota disponible para la API. En OpenAI hay que cargar crédito (platform.openai.com → Billing); con Gemini podés usar la cuota gratuita de Google AI Studio.${said}`, msg);
+    return new AiError('rate_limit', `Se alcanzó el límite de uso del proveedor (por minuto o por día). Esperá un momento y probá de nuevo, o elegí un modelo más liviano.${said}`, msg);
+  }
+  if (status === 404 || /not[_ ]found|does not exist|is not supported for generateContent|no longer available/i.test(msg))
+    return new AiError('not_found', `El modelo elegido no existe o ya no está disponible para tu clave.${said}`, msg);
+  if (status === 413) return new AiError('too_long', 'El contenido es demasiado largo para este modelo.', msg);
+  if (status === 400 && /location|region|country/i.test(msg)) return new AiError('auth', `El proveedor no ofrece la API en tu ubicación.${said}`, msg);
+  if (status >= 500) return new AiError('network', `El proveedor de IA tuvo un error temporal. Probá de nuevo en unos segundos.${said}`, msg);
+  return new AiError('other', `Error del proveedor (${status}).${said}`, msg);
 }
 
 export function aiErrorMessage(e: unknown): string {

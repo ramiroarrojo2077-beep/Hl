@@ -8,18 +8,46 @@ import { isNative, platform, saveFile, fileToDataUrl } from '@/lib/platform';
 import { Badge, Button, Field, Input, Notice, PageHeader, Panel, Segmented, Select, Slider, Toggle } from '@/components/ui';
 import { useSettings, DEFAULT_MODELS, type Character } from '@/stores/settings';
 import { PROVIDER_LABEL, aiErrorMessage, type ProviderId } from '@/ai/types';
-import { getProviderImpl, providerConfig } from '@/ai/client';
+import { getProviderImpl, pickModel, providerConfig } from '@/ai/client';
 import { listVoices, speak, stopSpeaking } from '@/voice/tts';
 import { listenOnce, sttSupported } from '@/voice/stt';
 import { useVoice, VOICE_STATE_LABEL } from '@/voice/bus';
 import { CHARACTERS } from '@/features/avatar/store';
 import { toast } from '@/stores/toast';
 
-function Section({ id, icon, title, children, subtitle }: { id: string; icon: ReactNode; title: string; subtitle?: string; children: ReactNode }) {
+// Índice de secciones (también fija el color de cada bloque)
+const SECTIONS = [
+  { id: 'perfil', label: 'Perfil', grad: 'linear-gradient(135deg,#3d5bff,#8b5cf6)' },
+  { id: 'ia', label: 'IA', grad: 'linear-gradient(135deg,#8b5cf6,#d946ef)' },
+  { id: 'voz', label: 'Voz', grad: 'linear-gradient(135deg,#12a58a,#22d3ee)' },
+  { id: 'avatar', label: 'Profesor 3D', grad: 'linear-gradient(135deg,#2e7bff,#22d3ee)' },
+  { id: 'interfaz', label: 'Interfaz', grad: 'linear-gradient(135deg,#e0389a,#a92ad6)' },
+  { id: 'datos', label: 'Datos', grad: 'linear-gradient(135deg,#ff8a3d,#e0389a)' },
+  { id: 'seguridad', label: 'PIN', grad: 'linear-gradient(135deg,#5b6b95,#8b9be8)' },
+  { id: 'estado', label: 'Estado', grad: 'linear-gradient(135deg,#1fb3a1,#2f63ff)' },
+];
+
+function SectionIndex() {
   return (
-    <Panel id={id} className="p-5 scroll-mt-24">
+    <nav aria-label="Secciones de configuración" className="sticky top-[calc(3.5rem+var(--safe-top))] lg:top-2 z-20 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 py-2 mb-2 bg-bg/85 backdrop-blur-md lg:bg-transparent lg:backdrop-blur-0">
+      <div className="snap-row gap-1.5">
+        {SECTIONS.map((x) => (
+          <button key={x.id} onClick={() => document.getElementById(x.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full border border-line bg-surface/70 text-xs text-[#cdd5f0] whitespace-nowrap hover:text-white">
+            <span className="size-2 rounded-full" style={{ background: x.grad }} />
+            {x.label}
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function Section({ id, icon, title, children, subtitle }: { id: string; icon: ReactNode; title: string; subtitle?: string; children: ReactNode }) {
+  const grad = SECTIONS.find((x) => x.id === id)?.grad ?? SECTIONS[0].grad;
+  return (
+    <Panel id={id} className="p-4 sm:p-5 scroll-mt-36 lg:scroll-mt-20">
       <div className="flex items-start gap-3 mb-4">
-        <span className="grid place-items-center size-9 rounded-xl bg-primary/15 text-[#a9b8ff] shrink-0">{icon}</span>
+        <span className="grid place-items-center size-10 rounded-xl text-white shrink-0 shadow-[0_8px_18px_-10px_rgba(0,0,0,.9)]" style={{ background: grad }}>{icon}</span>
         <div>
           <h2 className="font-display font-semibold">{title}</h2>
           {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
@@ -51,9 +79,19 @@ function AiSection() {
       const impl = getProviderImpl(p);
       const list = await impl.listModels(providerConfig(p));
       setModels(list);
+      // Si el modelo guardado no está en la lista (retirado o de otro servicio), se elige uno disponible
+      let changed = '';
+      if (list.length && !list.includes(providerConfig(p).model)) {
+        const next = pickModel(p, list);
+        if (next) {
+          changed = ` (${providerConfig(p).model || 'sin modelo'} no está disponible para tu clave: se eligió ${next})`;
+          await update((x) => void (x.ai.models[p] = next));
+        }
+      }
       const cfg = providerConfig(p);
-      const r = await impl.generate({ messages: [{ role: 'user', content: 'Respondé solo: OK' }], maxTokens: 200 }, cfg);
-      setResult({ ok: true, text: `Conexión correcta con ${cfg.model}. Respuesta: «${r.text.trim().slice(0, 40)}». ${list.length} modelos disponibles.` });
+      // margen de tokens: los modelos con razonamiento piensan antes de contestar
+      const r = await impl.generate({ messages: [{ role: 'user', content: 'Respondé solo: OK' }], maxTokens: 1024 }, cfg);
+      setResult({ ok: true, text: `Conexión correcta con ${cfg.model}${changed}. Respuesta: «${r.text.trim().slice(0, 40) || '(vacía)'}». ${list.length} modelos disponibles.` });
     } catch (e) {
       setResult({ ok: false, text: aiErrorMessage(e) });
     } finally {
@@ -369,7 +407,8 @@ export default function SettingsPage() {
   }, [loc.hash]);
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Configuración" subtitle={`StudyOS AI 0.2.0 · ${isNative ? `app ${platform}` : 'web'}`} icon={<Settings className="size-5" />} />
+      <PageHeader title="Configuración" subtitle={`StudyOS AI 0.2.1 · ${isNative ? `app ${platform}` : 'web'}`} icon={<Settings className="size-5" />} />
+      <SectionIndex />
       <div className="space-y-4">
         <Section id="perfil" icon={<UserRound className="size-5" />} title="Perfil">
           <div className="grid sm:grid-cols-2 gap-3">

@@ -92,6 +92,11 @@ const server = http.createServer(async (req, res) => {
   for await (const ch of req) body += ch;
   const j = JSON.parse(body || '{}');
   calls++;
+  // Igual que las APIs reales cuando un modelo se retira
+  if (j.model && !['mock-model', 'mock-model-2'].includes(j.model)) {
+    res.statusCode = 404;
+    return res.end(JSON.stringify({ error: { message: `The model \`${j.model}\` does not exist or you do not have access to it.`, code: 'model_not_found' } }));
+  }
   const system = j.messages?.find((m) => m.role === 'system')?.content ?? '';
   const userMsgs = (j.messages ?? []).filter((m) => m.role === 'user');
   const user = userMsgs.map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content))).join('\n');

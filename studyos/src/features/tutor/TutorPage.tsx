@@ -37,12 +37,30 @@ const QUICK: { label: string; icon: typeof Lightbulb; prompt: string }[] = [
   { label: 'Preguntas de práctica', icon: ListChecks, prompt: 'Haceme 3 preguntas de práctica sobre esto, de a una, y esperá mi respuesta.' },
 ];
 
+/** Ícono del profesor junto a sus mensajes. */
+function TeacherDot() {
+  return (
+    <span className="grid place-items-center size-7 rounded-full text-white shrink-0 mb-6 shadow-[0_6px_14px_-6px_rgba(80,110,255,.9)]" style={{ background: 'radial-gradient(circle at 30% 25%, #7d93ff, #4d5cff 50%, #7a3cf0)' }} aria-hidden="true">
+      <GraduationCap className="size-3.5" />
+    </span>
+  );
+}
+
 function VoiceIndicator() {
   const v = useVoice();
   const tone = v.state === 'listening' ? 'bg-bad animate-pulse' : v.state === 'speaking' ? 'bg-cyan animate-pulse' : v.state === 'processing' ? 'bg-warn animate-pulse' : v.state === 'denied' || v.state === 'error' || v.state === 'unsupported' ? 'bg-bad' : 'bg-ok';
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] text-[#d5dcf5] bg-black/30 border border-line rounded-full px-2.5 py-1" role="status" aria-live="polite">
-      <span className={cx('size-2 rounded-full', tone)} />
+      {v.state === 'speaking' || v.state === 'listening' ? (
+        <span className={cx('eq inline-flex items-end gap-[2px] h-3', v.state === 'speaking' ? 'text-cyan' : 'text-bad')} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </span>
+      ) : (
+        <span className={cx('size-2 rounded-full', tone)} />
+      )}
       {VOICE_STATE_LABEL[v.state]}
     </span>
   );
@@ -133,6 +151,8 @@ export default function TutorPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
   const [typing, setTyping] = useState(false);
+  // Mensaje que se está leyendo en voz alta (se resalta en el chat)
+  const [readingId, setReadingId] = useState<string | null>(null);
   const [stageMin, setStageMin] = useState(false);
   const desktop = useDesktop();
   const abortRef = useRef<AbortController | null>(null);
@@ -207,7 +227,8 @@ export default function TutorPage() {
           signal: ctrl.signal,
           onText: (full) => setStreaming({ text: full }),
         });
-        await db.tutorMessages.add({ id: newId(), sessionId: sess.id, role: 'assistant', content: r.text, createdAt: Date.now() });
+        const replyId = newId();
+        await db.tutorMessages.add({ id: replyId, sessionId: sess.id, role: 'assistant', content: r.text, createdAt: Date.now() });
         await db.tutorSessions.update(sess.id, { updatedAt: Date.now() });
         await logActivity({ type: 'tutor', title: `Clase: ${sess.title}`, refId: sess.id, route: `/tutor/${sess.id}`, subjectId: sess.subjectId });
         setMood('happy');
@@ -215,6 +236,7 @@ export default function TutorPage() {
         playGesture('explain');
         useVoice.getState().set({ state: 'idle' });
         if (opts.speakReply || s.voice.autoSpeak || convRef.current) {
+          setReadingId(replyId);
           const finished = await speak(r.text);
           if (finished && convRef.current) listenLoop();
         }
@@ -241,6 +263,12 @@ export default function TutorPage() {
   useEffect(() => {
     streamingRef.current = streaming?.text ?? '';
   }, [streaming]);
+
+  const readAloud = (m: TutorMessage) => {
+    if (readingId === m.id && voice.state === 'speaking') return stopSpeaking();
+    setReadingId(m.id);
+    speak(m.content);
+  };
 
   const interrupt = () => {
     abortRef.current?.abort();
@@ -448,35 +476,61 @@ export default function TutorPage() {
               ) : m.error ? (
                 <div className="max-w-[90%] rounded-2xl border border-bad/30 bg-bad/10 px-4 py-2.5 text-sm text-[#ffc9c9]">{m.error}</div>
               ) : (
-                <div className="max-w-[92%] group">
-                  <div className="rounded-2xl rounded-bl-md bg-[#141d42] border border-line px-4 py-3">
-                    <Markdown onCite={session?.docId ? (p) => nav(`/library/${session.docId}?page=${p}`) : undefined}>{m.content}</Markdown>
-                    {m.interrupted && <div className="text-[11px] text-warn mt-1">Interrumpido</div>}
-                  </div>
-                  <div className="flex gap-1 mt-1 opacity-70 group-hover:opacity-100">
-                    {ttsAvailable() && (
-                      <IconButton label="Escuchar" onClick={() => speak(m.content)}>
-                        <Volume2 className="size-3.5" />
+                <div className="flex items-end gap-2 max-w-[94%] group">
+                  <TeacherDot />
+                  <div className="min-w-0">
+                    <div className={cx('rounded-2xl rounded-bl-md bg-[#141d42] border px-4 py-3 transition', readingId === m.id && voice.state === 'speaking' ? 'border-cyan/60 shadow-[0_0_24px_-8px_rgba(34,211,238,.8)]' : 'border-line')}>
+                      {readingId === m.id && voice.state === 'speaking' && (
+                        <div className="flex items-center gap-2 text-[11px] text-cyan mb-1.5">
+                          <span className="eq inline-flex items-end gap-[2px] h-3" aria-hidden="true">
+                            <span />
+                            <span />
+                            <span />
+                            <span />
+                          </span>
+                          Leyendo en voz alta
+                        </div>
+                      )}
+                      <Markdown onCite={session?.docId ? (p) => nav(`/library/${session.docId}?page=${p}`) : undefined}>{m.content}</Markdown>
+                      {m.interrupted && <div className="text-[11px] text-warn mt-1">Interrumpido</div>}
+                    </div>
+                    <div className="flex gap-1 mt-1 opacity-70 group-hover:opacity-100">
+                      {ttsAvailable() && (
+                        <IconButton label={readingId === m.id && voice.state === 'speaking' ? 'Dejar de leer' : 'Escuchar'} onClick={() => readAloud(m)} active={readingId === m.id && voice.state === 'speaking'}>
+                          {readingId === m.id && voice.state === 'speaking' ? <Square className="size-3.5" /> : <Volume2 className="size-3.5" />}
+                        </IconButton>
+                      )}
+                      <IconButton
+                        label="Copiar"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(m.content);
+                          toast.ok('Copiado');
+                        }}
+                      >
+                        <Copy className="size-3.5" />
                       </IconButton>
-                    )}
-                    <IconButton
-                      label="Copiar"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(m.content);
-                        toast.ok('Copiado');
-                      }}
-                    >
-                      <Copy className="size-3.5" />
-                    </IconButton>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           ))}
           {streaming && (
-            <div className="flex justify-start">
-              <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-[#141d42] border border-line px-4 py-3">
-                {streaming.text ? <Markdown>{streaming.text}</Markdown> : <span className="text-sm text-muted">El profesor está pensando…</span>}
+            <div className="flex items-end gap-2 max-w-[94%]">
+              <TeacherDot />
+              <div className="min-w-0 rounded-2xl rounded-bl-md bg-[#141d42] border border-line px-4 py-3">
+                {streaming.text ? (
+                  <Markdown>{streaming.text}</Markdown>
+                ) : (
+                  <span className="flex items-center gap-2.5 text-sm text-muted">
+                    <span className="typing-dots inline-flex gap-1 text-[#8ea2ff]" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                    El profesor está pensando…
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -568,7 +622,7 @@ export default function TutorPage() {
           <Button variant={conversation ? 'danger' : 'primary'} icon={conversation ? <MicOff className="size-4" /> : <Headphones className="size-4" />} onClick={toggleConversation} disabled={!ai || sttOk === false} className="col-span-2">
             {conversation ? 'Terminar conversación por voz' : 'Conversar por voz'}
           </Button>
-          <Button variant="secondary" size="sm" icon={<Volume2 className="size-4" />} disabled={!lastAssistant || !ttsAvailable()} onClick={() => lastAssistant && speak(lastAssistant.content)}>
+          <Button variant="secondary" size="sm" icon={<Volume2 className="size-4" />} disabled={!lastAssistant || !ttsAvailable()} onClick={() => lastAssistant && readAloud(lastAssistant)}>
             Leer respuesta
           </Button>
           <Button variant="secondary" size="sm" icon={<Square className="size-4" />} disabled={voice.state !== 'speaking'} onClick={stopSpeaking}>

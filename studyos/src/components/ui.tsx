@@ -289,11 +289,17 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
 }
 
 export function EmptyState({ icon, title, text, action }: { icon: ReactNode; title: string; text: string; action?: ReactNode }) {
+  const t = sectionTheme(useLocation().pathname);
   return (
-    <div className="flex flex-col items-center text-center py-12 px-4">
-      <div className="grid place-items-center size-14 rounded-2xl bg-gradient-to-br from-primary/20 to-violet/20 border border-line mb-4 text-[#a9b8ff]">{icon}</div>
-      <h3 className="font-display font-semibold">{title}</h3>
-      <p className="text-sm text-muted mt-1 max-w-sm">{text}</p>
+    <div className="relative flex flex-col items-center text-center py-12 px-4">
+      <div className="relative mb-5">
+        <span className="absolute inset-0 -m-4 rounded-full blur-2xl opacity-40" style={{ background: sectionGradient(t) }} aria-hidden="true" />
+        <div className="relative grid place-items-center size-16 rounded-[20px] text-white shadow-[0_14px_30px_-14px_rgba(0,0,0,.9)] [&_svg]:size-7" style={{ background: sectionGradient(t) }}>
+          {icon}
+        </div>
+      </div>
+      <h3 className="font-display font-semibold text-[17px]">{title}</h3>
+      <p className="text-sm text-muted mt-1.5 max-w-sm leading-relaxed">{text}</p>
       {action && <div className="mt-5">{action}</div>}
     </div>
   );

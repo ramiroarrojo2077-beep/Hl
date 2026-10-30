@@ -1,10 +1,14 @@
 import type { z } from 'zod';
-import { getSettings, aiConfigured, type AppSettings } from '@/stores/settings';
+import { getSettings, aiConfigured, useSettings, type AppSettings } from '@/stores/settings';
+import { toast } from '@/stores/toast';
 import { anthropicProvider } from './providers/anthropic';
 import { openaiProvider } from './providers/openai';
 import { geminiProvider } from './providers/gemini';
 import { ollamaProvider } from './providers/ollama';
 import { extractJson } from './json';
+import { pickModel } from './models';
+
+export { pickModel };
 import { AiError, type GenRequest, type GenResult, type ProviderConfig, type ProviderId, type ProviderImpl } from './types';
 
 const PROVIDERS: Record<ProviderId, ProviderImpl> = {
@@ -36,10 +40,38 @@ export function getProviderImpl(id: ProviderId) {
   return PROVIDERS[id];
 }
 
+/** Cuando el modelo configurado no existe, busca uno disponible y lo guarda. */
+export async function repairModel(id: ProviderId): Promise<string | null> {
+  const impl = PROVIDERS[id];
+  const cfg = providerConfig(id);
+  const list = await impl.listModels(cfg).catch(() => [] as string[]);
+  if (list.includes(cfg.model)) return null;
+  const next = pickModel(id, list);
+  if (!next || next === cfg.model) return null;
+  await useSettings.getState().update((x) => void (x.ai.models[id] = next));
+  return next;
+}
+
 export async function generate(req: GenRequest): Promise<GenResult> {
-  const { impl, cfg } = activeProvider();
-  if (!cfg.model) throw new AiError('no_provider', 'Elegí un modelo en Configuración.');
-  return impl.generate(req, cfg);
+  const { id, impl, cfg } = activeProvider();
+  if (!cfg.model) {
+    const m = await repairModel(id);
+    if (!m) throw new AiError('no_provider', 'Elegí un modelo en Configuración.');
+    cfg.model = m;
+  }
+  try {
+    return await impl.generate(req, cfg);
+  } catch (e) {
+    // Modelo retirado o inexistente: se cambia por uno disponible y se reintenta una vez.
+    if (e instanceof AiError && e.code === 'not_found' && !req.signal?.aborted) {
+      const m = await repairModel(id);
+      if (m) {
+        toast.info(`El modelo ${cfg.model} ya no está disponible: StudyOS pasó a usar ${m}.`);
+        return impl.generate(req, { ...cfg, model: m });
+      }
+    }
+    throw e;
+  }
 }
 
 /**

@@ -39,9 +39,12 @@ export interface AppSettings {
 export const DEFAULT_MODELS: Record<ProviderId, string> = {
   anthropic: 'claude-opus-5-5',
   openai: 'gpt-5-mini',
-  gemini: 'gemini-2.5-flash',
+  // alias de Google que siempre apunta al Flash estable más nuevo
+  gemini: 'gemini-flash-latest',
   ollama: 'llama3.2',
 };
+
+const RETIRED_DEFAULTS = { gemini: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'] };
 
 export const DEFAULT_SETTINGS: AppSettings = {
   onboarded: false,
@@ -87,7 +90,10 @@ export const useSettings = create<SettingsState>((set, get) => ({
   s: DEFAULT_SETTINGS,
   load: async () => {
     const row = await db.settings.get('app');
-    set({ s: merge(DEFAULT_SETTINGS, row?.value), loaded: true });
+    const s = merge(DEFAULT_SETTINGS, row?.value);
+    // Modelos que fueron predeterminados en versiones anteriores y ya se retiraron
+    if (RETIRED_DEFAULTS.gemini.includes(s.ai.models.gemini ?? '')) s.ai.models.gemini = DEFAULT_MODELS.gemini;
+    set({ s, loaded: true });
   },
   update: async (fn) => {
     const draft = structuredClone(get().s);

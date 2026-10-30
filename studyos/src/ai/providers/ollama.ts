@@ -30,8 +30,19 @@ function toOllama(system: string | undefined, messages: Msg[]) {
   return out;
 }
 
+/** Errores del puente nativo (sin conexión, IP equivocada, puerto cerrado) en lenguaje claro. */
+function nativeError(u: string, e: unknown): never {
+  if (e instanceof AiError) throw e;
+  const host = u.replace(/^(https?:\/\/[^/]+).*/, '$1');
+  throw new AiError(
+    'network',
+    `No se pudo conectar con Ollama en ${host}. Revisá que la computadora esté encendida y en la misma red Wi-Fi que el celular, que la dirección sea la IP de esa computadora (no «localhost») y que Ollama se ejecute con OLLAMA_HOST=0.0.0.0.`,
+    (e as Error)?.message,
+  );
+}
+
 async function nativePost(u: string, data: unknown) {
-  const res = await CapacitorHttp.post({ url: u, headers: { 'Content-Type': 'application/json' }, data, readTimeout: 600_000, connectTimeout: 15_000 });
+  const res = await CapacitorHttp.post({ url: u, headers: { 'Content-Type': 'application/json' }, data, readTimeout: 600_000, connectTimeout: 15_000 }).catch((e) => nativeError(u, e));
   if (res.status >= 400) throw httpError(res.status, JSON.stringify(res.data));
   return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
 }
@@ -74,7 +85,8 @@ export const ollamaProvider: ProviderImpl = {
   },
   async listModels(cfg) {
     if (isNative) {
-      const res = await CapacitorHttp.get({ url: url(cfg, '/api/tags'), connectTimeout: 8000 });
+      const u = url(cfg, '/api/tags');
+      const res = await CapacitorHttp.get({ url: u, connectTimeout: 8000 }).catch((e) => nativeError(u, e));
       if (res.status >= 400) throw httpError(res.status, JSON.stringify(res.data));
       const j = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
       return (j.models ?? []).map((m: { name: string }) => m.name);

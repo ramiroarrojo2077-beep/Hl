@@ -1,6 +1,6 @@
 {
   "name": "studyos",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "StudyOS AI: plataforma de estudio con profesor virtual, tareas adaptativas, laboratorio 3D y estudio de video",

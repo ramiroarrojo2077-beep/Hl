@@ -108,9 +108,11 @@ async function main() {
     await page.locator('#ia select').first().selectOption('openai');
     await page.locator('#ia input[type=password]').fill('clave-de-prueba');
     await page.locator('#ia input[value="https://api.openai.com/v1"]').fill(MOCK);
-    await page.locator('#ia input[value="gpt-5-mini"]').fill('mock-model');
+    // Modelo que «ya no existe»: la prueba de conexión elige uno disponible
+    await page.locator('#ia input[value="gpt-5-mini"]').fill('modelo-retirado');
     await page.getByRole('button', { name: 'Probar conexión y cargar modelos' }).click();
-    await page.getByText(/Conexión correcta/).waitFor({ timeout: 20000 });
+    await page.getByText(/Conexión correcta con mock-model \(modelo-retirado no está disponible/).waitFor({ timeout: 20000 });
+    return 'modelo retirado reemplazado automáticamente por uno disponible';
   });
 
   await test('Prueba 1: subir un PDF de química y generar un resumen con citas', async () => {
