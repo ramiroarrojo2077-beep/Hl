@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html, Line, Stars } from '@react-three/drei';
+import { Line, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { Segmented, Select, Slider, Toggle } from '@/components/ui';
-import { PlayBar, Readout, SimCanvas, SimLayout, Simplified, fmt } from '../shared';
+import { Label3D, PlayBar, Readout, SimCanvas, SimLayout, Simplified, fmt } from '../shared';
 
 const PLANETS = [
   { name: 'Mercurio', a: 0.387, T: 87.97, r: 0.38, c: '#a8a29e' },
@@ -58,11 +58,7 @@ function System({ days, mode, labels }: { days: number; mode: 'compressed' | 'li
                   <meshBasicMaterial color="#e7d3a8" side={THREE.DoubleSide} transparent opacity={0.7} />
                 </mesh>
               )}
-              {labels && (
-                <Html center position={[0, size + 0.3, 0]} distanceFactor={18} className="pointer-events-none">
-                  <span className="text-[11px] text-white bg-black/50 rounded px-1 whitespace-nowrap">{p.name}</span>
-                </Html>
-              )}
+              {labels && <Label3D text={p.name} position={[0, size + 0.45, 0]} size={0.55} />}
             </group>
           </group>
         );

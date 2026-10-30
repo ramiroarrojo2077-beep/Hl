@@ -57,15 +57,51 @@ export async function listenOnce(onInterim?: (t: string) => void): Promise<strin
     voiceBus.set({ state: 'unsupported', error: 'Tu navegador no permite dictado por voz. Probá con Chrome o con la app de Android, o escribí tu mensaje.' });
     throw new Error(voiceBus.get().error);
   }
+  // Pide el permiso del micrófono explícitamente: así un rechazo se informa
+  // siempre, aunque el motor de reconocimiento del navegador no emita error.
+  if (navigator.mediaDevices?.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (e) {
+      const name = (e as DOMException).name;
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        voiceBus.set({ state: 'denied', error: 'StudyOS no tiene permiso para usar el micrófono. Habilitalo en la configuración del navegador (ícono del candado) y volvé a intentar.' });
+      } else if (name === 'NotSupportedError' || name === 'TypeError') {
+        voiceBus.set({ state: 'unsupported', error: 'Este navegador no permite usar el micrófono en esta página. Probá con la app de Android o escribí tu mensaje.' });
+      } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+        voiceBus.set({ state: 'error', error: 'No se encontró un micrófono disponible.' });
+      } else {
+        voiceBus.set({ state: 'error', error: `No se pudo acceder al micrófono (${name}).` });
+      }
+      throw new Error(voiceBus.get().error);
+    }
+  }
   return new Promise<string>((resolve, reject) => {
     const rec = new Ctor();
+    // Si el motor no arranca en unos segundos, se informa en lugar de quedar colgado.
+    const startTimer = setTimeout(() => {
+      if (voiceBus.get().state !== 'listening') {
+        failed = true;
+        try {
+          rec.abort();
+        } catch {
+          /* ignorado */
+        }
+        voiceBus.set({ state: 'error', error: 'El reconocimiento de voz del navegador no respondió. Probá de nuevo o escribí tu mensaje.' });
+        reject(new Error(voiceBus.get().error));
+      }
+    }, 6000);
     rec.lang = lang;
     rec.interimResults = true;
     rec.continuous = false;
     rec.maxAlternatives = 1;
     let finalText = '';
     let failed = false;
-    rec.onstart = () => voiceBus.set({ state: 'listening', interim: '', error: undefined });
+    rec.onstart = () => {
+      clearTimeout(startTimer);
+      voiceBus.set({ state: 'listening', interim: '', error: undefined });
+    };
     rec.onresult = (e) => {
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -77,6 +113,8 @@ export async function listenOnce(onInterim?: (t: string) => void): Promise<strin
       onInterim?.(finalText + interim);
     };
     rec.onerror = (e) => {
+      clearTimeout(startTimer);
+      if (failed) return;
       failed = true;
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
         voiceBus.set({ state: 'denied', error: 'StudyOS no tiene permiso para usar el micrófono. Habilitalo en la configuración del navegador (ícono del candado) y volvé a intentar.' });
@@ -96,6 +134,7 @@ export async function listenOnce(onInterim?: (t: string) => void): Promise<strin
       }
     };
     rec.onend = () => {
+      clearTimeout(startTimer);
       active = null;
       if (!failed) {
         voiceBus.set({ state: 'idle', interim: '' });

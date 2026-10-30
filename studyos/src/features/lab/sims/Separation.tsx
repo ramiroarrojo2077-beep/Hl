@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Slider } from '@/components/ui';
-import { PlayBar, Readout, SimCanvas, SimLayout, Simplified, fmt } from '../shared';
+import { Label3D, PlayBar, Readout, SimCanvas, SimLayout, Simplified, fmt } from '../shared';
 
 // Separación magnética con polea magnética en el extremo de una cinta: las
 // partículas ferromagnéticas quedan adheridas al tambor y caen en el contenedor
@@ -136,23 +135,17 @@ export default function Separation({ params }: { params?: Record<string, number>
             <cylinderGeometry args={[DRUM_R, DRUM_R, 1.7, 32]} />
             <meshStandardMaterial color="#b91c1c" emissive="#7f1d1d" emissiveIntensity={magnet / 200} metalness={0.6} roughness={0.3} />
           </mesh>
-          <Html position={[BELT_END, 1.0, 0.9]} center className="pointer-events-none">
-            <span className="text-[10px] text-white bg-black/60 rounded px-1.5 py-0.5 whitespace-nowrap">Polea magnética</span>
-          </Html>
+          <Label3D position={[BELT_END, 1.0, 0.9]} size={0.3} text="Polea magnética" />
           <mesh position={[BELT_END - 0.5, -2.4, 0]}>
             <boxGeometry args={[1.2, 0.8, 1.8]} />
             <meshStandardMaterial color="#3d5bff" transparent opacity={0.55} />
           </mesh>
-          <Html position={[BELT_END - 0.5, -1.7, 1]} center className="pointer-events-none">
-            <span className="text-[10px] text-white bg-black/60 rounded px-1.5 py-0.5 whitespace-nowrap">B · ferrosos</span>
-          </Html>
+          <Label3D position={[BELT_END - 0.5, -1.7, 1]} size={0.3} text="B · ferrosos" />
           <mesh position={[BELT_END + 1.6, -2.4, 0]}>
             <boxGeometry args={[1.8, 0.8, 1.8]} />
             <meshStandardMaterial color="#12a58a" transparent opacity={0.55} />
           </mesh>
-          <Html position={[BELT_END + 1.6, -1.7, 1]} center className="pointer-events-none">
-            <span className="text-[10px] text-white bg-black/60 rounded px-1.5 py-0.5 whitespace-nowrap">A · no ferrosos</span>
-          </Html>
+          <Label3D position={[BELT_END + 1.6, -1.7, 1]} size={0.3} text="A · no ferrosos" />
           <instancedMesh ref={meshRef} args={[undefined, undefined, 400]}>
             <icosahedronGeometry args={[1, 0]} />
             <meshStandardMaterial vertexColors metalness={0.3} roughness={0.5} />

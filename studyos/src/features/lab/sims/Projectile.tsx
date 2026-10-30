@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Grid, Html, Line } from '@react-three/drei';
+import { Grid, Line } from '@react-three/drei';
 import { Select, Slider } from '@/components/ui';
 import { Markdown } from '@/components/Markdown';
-import { PlayBar, Readout, SimCanvas, SimLayout, Simplified, fmt } from '../shared';
+import { Label3D, PlayBar, Readout, SimCanvas, SimLayout, Simplified, fmt } from '../shared';
 
 const GRAVITY: Record<string, number> = { Tierra: 9.81, Luna: 1.62, Marte: 3.71, Júpiter: 24.79 };
 
@@ -45,11 +45,7 @@ function Scene({ v0, angle, g, h0, t, scale }: { v0: number; angle: number; g: n
         <sphereGeometry args={[0.18, 24, 24]} />
         <meshStandardMaterial color="#ff8a3d" emissive="#ff6a00" emissiveIntensity={0.4} />
       </mesh>
-      <Html position={[x, y + 0.5, 0]} center className="pointer-events-none">
-        <div className="text-[10px] text-white bg-black/60 rounded px-1.5 py-0.5 whitespace-nowrap">
-          ({fmt(vx * tc, 1)} m; {fmt(Math.max(0, h0 + vy * tc - 0.5 * g * tc * tc), 1)} m)
-        </div>
-      </Html>
+      <Label3D position={[x, y + 0.55, 0]} size={0.3} text={`(${fmt(vx * tc, 1)} m; ${fmt(Math.max(0, h0 + vy * tc - 0.5 * g * tc * tc), 1)} m)`} />
     </>
   );
 }

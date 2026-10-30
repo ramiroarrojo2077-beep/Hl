@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Html } from '@react-three/drei';
 import { Segmented, Toggle } from '@/components/ui';
-import { SimCanvas, SimLayout, Simplified } from '../shared';
+import { Label3D, SimCanvas, SimLayout, Simplified } from '../shared';
 
 interface Org {
   id: string;
@@ -26,11 +25,7 @@ const ORGS: Org[] = [
 
 function Label({ text, on }: { text: string; on: boolean }) {
   if (!on) return null;
-  return (
-    <Html center distanceFactor={9} className="pointer-events-none">
-      <span className="text-[10px] text-white bg-black/60 rounded px-1.5 py-0.5 whitespace-nowrap">{text}</span>
-    </Html>
-  );
+  return <Label3D text={text} position={[0, 0.55, 0]} size={0.26} />;
 }
 
 export default function Cell({ params }: { params?: Record<string, number> }) {

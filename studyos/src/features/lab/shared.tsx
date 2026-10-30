@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
+import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Pause, Play, RotateCcw } from 'lucide-react';
@@ -64,3 +65,36 @@ export function SimLayout({ canvas, panel }: { canvas: ReactNode; panel: ReactNo
 }
 
 export const fmt = (n: number, d = 2) => (Number.isFinite(n) ? n.toFixed(d).replace('.', ',') : '—');
+
+/**
+ * Rótulo 3D como sprite con textura de canvas (siempre mira a la cámara).
+ * Se usa en lugar de <Html> para evitar portales DOM dentro del canvas.
+ */
+export function Label3D({ text, position = [0, 0, 0], size = 0.32, color = '#ffffff', bg = 'rgba(0,0,0,.6)' }: { text: string; position?: [number, number, number]; size?: number; color?: string; bg?: string }) {
+  const tex = useMemo(() => {
+    const c = document.createElement('canvas');
+    const g = c.getContext('2d')!;
+    const font = '600 44px Inter, system-ui, sans-serif';
+    g.font = font;
+    const w = Math.ceil(g.measureText(text).width) + 36;
+    c.width = w;
+    c.height = 68;
+    g.font = font;
+    g.fillStyle = bg;
+    g.beginPath();
+    g.roundRect(0, 0, w, 68, 14);
+    g.fill();
+    g.fillStyle = color;
+    g.textBaseline = 'middle';
+    g.fillText(text, 18, 36);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return { t, aspect: w / 68 };
+  }, [text, color, bg]);
+  useEffect(() => () => tex.t.dispose(), [tex]);
+  return (
+    <sprite position={position} scale={[size * tex.aspect, size, 1]} renderOrder={10}>
+      <spriteMaterial map={tex.t} transparent depthTest={false} />
+    </sprite>
+  );
+}

@@ -127,7 +127,7 @@ export async function generateTask(input: TaskGenInput): Promise<GeneratedTask> 
     }
   }
   if (input.progressive) items = items.map((it, i) => ({ it, i })).sort((a, b) => a.it.difficulty - b.it.difficulty || a.i - b.i).map((x) => x.it);
-  if (!items.length) throw new Error('No se obtuvieron ejercicios válidos. Probá de nuevo o con otro modelo.');
+  if (!items.length) throw new Error(rejected.some((r) => r === 'ítem repetido') ? 'La IA solo propuso ejercicios que repetían otros que ya hiciste. Probá de nuevo o cambiá el tema.' : 'No se obtuvieron ejercicios válidos. Probá de nuevo o con otro modelo.');
   return {
     title: data.title,
     description: data.description,

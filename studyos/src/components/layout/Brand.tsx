@@ -2,7 +2,7 @@ import { useId } from 'react';
 
 export function Logo({ size = 44 }: { size?: number }) {
   // id único: si el mismo degradado está dentro de un elemento oculto, otros usos no lo encuentran
-  const id = `brand-cap-${useId().replace(/:/g, '')}`;
+  const id = `brand-cap-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
       <defs>
@@ -92,7 +92,7 @@ export function Mountains({ className, variant = 'side' }: { className?: string;
 }
 
 export function Flame({ className = 'size-7' }: { className?: string }) {
-  const id = `flame-${useId().replace(/:/g, '')}`;
+  const id = `flame-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <defs>

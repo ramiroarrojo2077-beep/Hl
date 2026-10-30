@@ -1,9 +1,8 @@
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Select, Toggle } from '@/components/ui';
-import { SimCanvas, SimLayout, Simplified } from '../shared';
+import { Label3D, SimCanvas, SimLayout, Simplified } from '../shared';
 
 type Atom = [string, number, number, number];
 interface Mol {
@@ -109,11 +108,7 @@ function Model({ mol, labels, spin }: { mol: Mol; labels: boolean; spin: boolean
         <mesh key={i} position={pos[i]}>
           <sphereGeometry args={[CPK[el].r * (mol.formula === 'NaCl' ? 1.1 : 1.3), 32, 32]} />
           <meshStandardMaterial color={CPK[el].c} roughness={0.35} metalness={0.05} />
-          {labels && (
-            <Html center distanceFactor={10} className="pointer-events-none">
-              <span className="text-[11px] font-bold text-white drop-shadow">{el}</span>
-            </Html>
-          )}
+          {labels && <Label3D text={el} size={0.28} bg="rgba(0,0,0,0)" />}
         </mesh>
       ))}
       {mol.bonds.map(([a, b, o], i) => (
