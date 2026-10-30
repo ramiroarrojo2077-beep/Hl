@@ -53,4 +53,6 @@ export const useJobs = create<JobsState>((set, get) => ({
   dismiss: (id) => set({ jobs: get().jobs.filter((j) => j.id !== id) }),
 }));
 
-export const runJob = (...args: Parameters<JobsState['run']>) => useJobs.getState().run(...args);
+export function runJob<T>(title: string, fn: (ctx: JobCtx) => Promise<T>, opts?: { route?: (r: T) => string | undefined }) {
+  return useJobs.getState().run(title, fn, opts);
+}

@@ -12,14 +12,17 @@ function vendor(p: string) {
 }
 
 export async function loadPdf(data: ArrayBuffer) {
-  return pdfjs.getDocument({
+  const task = pdfjs.getDocument({
     data: new Uint8Array(data),
     cMapUrl: vendor('cmaps'),
     cMapPacked: true,
     standardFontDataUrl: vendor('standard_fonts'),
     wasmUrl: vendor('wasm'),
     iccUrl: vendor('iccs'),
-  }).promise;
+  });
+  const pdf = await task.promise;
+  // El documento se libera destruyendo la tarea de carga (cierra el worker asociado).
+  return Object.assign(pdf, { destroy: () => task.destroy() });
 }
 
 interface Line {

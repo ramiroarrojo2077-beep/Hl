@@ -147,6 +147,8 @@ export interface CardReview {
   intervalBefore: number;
   intervalAfter: number;
   elapsedDays: number;
+  /** tiempo real que tardó en responder la tarjeta (ms, máx. 2 min) */
+  durationMs?: number;
 }
 
 export interface ItemResult {

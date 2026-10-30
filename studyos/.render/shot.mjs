@@ -1,0 +1,12 @@
+import { createRequire } from 'node:module'; const require = createRequire(import.meta.url); const { chromium } = require('playwright');
+import { writeFileSync } from 'node:fs';
+const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const p = await b.newPage();
+p.on('console', (m) => console.log('console:', m.text()));
+p.on('pageerror', (e) => console.log('pageerror:', e.message));
+await p.goto('http://127.0.0.1:8765/.render/render.html');
+await p.waitForFunction(() => window.__done, null, { timeout: 120000 });
+const data = await p.evaluate(() => window.__done);
+writeFileSync(process.argv[2], Buffer.from(data.split(',')[1], 'base64'));
+await b.close();
+console.log('ok');

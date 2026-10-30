@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/","@pixiv/three-vrm":"/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js"}}</script>
+<style>html,body{margin:0;background:transparent}</style></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+const W=900,H=1200;
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setSize(W,H);renderer.setClearColor(0x000000,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(26,W/H,0.1,20);
+scene.add(new THREE.AmbientLight(0xffffff,0.45));
+const key=new THREE.DirectionalLight(0xffffff,1.15);key.position.set(1.2,2,2.5);scene.add(key);
+const rim=new THREE.DirectionalLight(0x8b5cf6,2.5);rim.position.set(-2,1.5,-1.5);scene.add(rim);
+const rim2=new THREE.DirectionalLight(0x22d3ee,1.6);rim2.position.set(2,1,-2);scene.add(rim2);
+const loader=new GLTFLoader();loader.register(p=>new VRMLoaderPlugin(p));
+const g=await loader.loadAsync('/public/models/seed-san.vrm');
+const vrm=g.userData.vrm;VRMUtils.rotateVRM0(vrm);scene.add(vrm.scene);
+vrm.scene.rotation.y=-0.42; vrm.scene.position.x=0.1; vrm.scene.traverse(o=>{ if(/robo_arm/i.test(o.name)) o.visible=false; });
+const h=vrm.humanoid;const b=n=>h.getNormalizedBoneNode(n);
+// Pose: brazo izquierdo relajado, brazo derecho presentando con la palma abierta
+b('leftUpperArm').rotation.z=-1.2; b('leftUpperArm').rotation.y=-0.15; b('leftLowerArm').rotation.y=-0.35;
+b('rightUpperArm').rotation.z=1.05; b('rightUpperArm').rotation.y=0.75;
+b('rightLowerArm').rotation.y=1.25; b('rightLowerArm').rotation.z=-0.55;
+b('rightHand').rotation.x=-0.9; b('rightHand').rotation.z=-0.2;
+b('spine').rotation.y=0.08; b('neck').rotation.y=0.18; b('head').rotation.y=0.22; b('head').rotation.z=-0.05;
+vrm.expressionManager?.setValue('happy',0.3); vrm.expressionManager?.setValue('blink',0);
+vrm.lookAt && (vrm.lookAt.target=cam);
+vrm.update(0.016);
+const headPos=new THREE.Vector3();b('head').getWorldPosition(headPos);
+cam.position.set(-0.12,headPos.y-0.12,2.45);cam.lookAt(-0.06,headPos.y-0.2,0);
+vrm.update(0.016);
+renderer.render(scene,cam);
+window.__done=renderer.domElement.toDataURL('image/png');
+</script></body></html>

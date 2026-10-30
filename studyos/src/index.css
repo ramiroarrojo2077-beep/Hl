@@ -1,29 +1,31 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/space-grotesk';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
 @import '@fontsource-variable/jetbrains-mono';
 @import 'katex/dist/katex.min.css';
 @import '@xyflow/react/dist/style.css';
 
 @theme {
-  --color-bg: #080b14;
-  --color-surface: #121827;
-  --color-surface-2: #182036;
-  --color-surface-3: #1f2942;
-  --color-line: rgb(148 163 184 / 0.14);
-  --color-line-strong: rgb(148 163 184 / 0.28);
-  --color-primary: #5271ff;
+  --color-bg: #060913;
+  --color-surface: #0f1733;
+  --color-surface-2: #121b3a;
+  --color-surface-3: #1a2550;
+  --color-line: rgb(120 140 255 / 0.18);
+  --color-line-strong: rgb(130 150 255 / 0.32);
+  --color-primary: #3d5bff;
   --color-violet: #8b5cf6;
   --color-cyan: #22d3ee;
-  --color-ink: #f8fafc;
-  --color-muted: #94a3b8;
-  --color-faint: #64748b;
+  --color-ink: #eef2ff;
+  --color-muted: #a7b2d6;
+  --color-faint: #8590b5;
   --color-ok: #34d399;
   --color-warn: #fbbf24;
   --color-bad: #f87171;
 
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Space Grotesk Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Poppins', 'Inter Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
 
   --radius-xl: 14px;
@@ -55,23 +57,39 @@ body {
 /* Fondo con profundidad: dos auroras suaves fijas detrás del contenido */
 .app-backdrop {
   background:
-    radial-gradient(1200px 600px at 12% -10%, rgb(82 113 255 / 0.13), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgb(139 92 246 / 0.1), transparent 60%),
-    radial-gradient(700px 400px at 60% 110%, rgb(34 211 238 / 0.06), transparent 60%),
+    radial-gradient(1100px 520px at 30% -12%, rgb(61 91 255 / 0.1), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgb(139 92 246 / 0.08), transparent 60%),
     var(--color-bg);
 }
 
 .glass {
-  background: linear-gradient(180deg, rgb(24 32 54 / 0.72), rgb(18 24 39 / 0.72));
+  background: linear-gradient(180deg, rgb(18 27 62 / 0.86), rgb(12 19 44 / 0.86));
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid var(--color-line);
 }
 
 .panel {
-  background: var(--color-surface);
+  background: linear-gradient(180deg, #0f1733, #0b1229);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-2xl);
+  border-radius: 16px;
+}
+
+/* Tarjetas de materia, acciones y paneles con el lenguaje visual del dashboard */
+.tile {
+  background: linear-gradient(180deg, #121b3a, #0d1430);
+  border: 1px solid rgb(120 140 255 / 0.2);
+  border-radius: 12px;
+}
+.nav-active {
+  background: linear-gradient(90deg, rgb(61 91 255 / 0.42), rgb(61 91 255 / 0.16));
+  border: 1px solid rgb(110 135 255 / 0.55);
+  box-shadow: inset 3px 0 0 #6d86ff, 0 0 24px -8px rgb(80 110 255 / 0.8);
+}
+.holo {
+  border: 1px solid rgb(90 200 255 / 0.55);
+  background: linear-gradient(180deg, rgb(40 120 255 / 0.16), rgb(40 90 220 / 0.06));
+  box-shadow: 0 0 30px -6px rgb(60 170 255 / 0.55), inset 0 0 40px rgb(60 150 255 / 0.12);
 }
 
 .text-gradient {
