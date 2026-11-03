@@ -271,6 +271,36 @@ function limpiarEsquema(esquema: unknown): unknown {
   return salida;
 }
 
+// Gemini y los modelos estilo OpenAI omiten los campos que pueden ser null, pero las herramientas
+// estrictas de Gravity los exigen (todo requerido, opcionales como null): sin esto la llamada no pasa
+// la validación y, por ejemplo, el mensaje que el bot "mandó" nunca sale.
+const aceptaNulo = (e: Json | undefined): boolean =>
+  !!e &&
+  (e.type === "null" ||
+    (Array.isArray(e.type) && e.type.includes("null")) ||
+    [...((e.anyOf as Json[]) ?? []), ...((e.oneOf as Json[]) ?? [])].some(aceptaNulo));
+
+const sinNulo = (e: Json | undefined): Json | undefined =>
+  e?.anyOf || e?.oneOf ? ([...((e.anyOf as Json[]) ?? []), ...((e.oneOf as Json[]) ?? [])].find((x) => x?.type !== "null") ?? e) : e;
+
+function completarNulos(esquema: Json | undefined, valor: unknown): unknown {
+  const props = esquema?.properties as Record<string, Json> | undefined;
+  if (!props || !valor || typeof valor !== "object" || Array.isArray(valor)) return valor;
+  const salida: Json = { ...(valor as Json) };
+  const requeridos = (esquema?.required as string[] | undefined) ?? [];
+  for (const [k, sub] of Object.entries(props)) {
+    if (salida[k] === undefined) {
+      if (requeridos.includes(k) && aceptaNulo(sub)) salida[k] = null;
+    } else if (salida[k] && typeof salida[k] === "object") {
+      salida[k] = completarNulos(sinNulo(sub), salida[k]);
+    }
+  }
+  return salida;
+}
+
+const entradaDeLlamada = (p: Pedido, nombre: string, entrada: Json): Json =>
+  completarNulos(p.herramientas.find((h) => h.nombre === nombre)?.esquema, entrada) as Json;
+
 // ---------------------------------------------------------------- Google Gemini
 
 /** Firmas de razonamiento de Gemini: hay que devolverlas con cada llamada a herramienta del turno. */
@@ -351,7 +381,7 @@ async function pedirGemini(p: Pedido, modelo: string, signal?: AbortSignal | nul
       const llamada = parte.functionCall as Json;
       const id = nuevoId("toolu_");
       if (typeof parte.thoughtSignature === "string") recordarFirma(id, parte.thoughtSignature);
-      bloques.push({ type: "tool_use", id, name: String(llamada.name), input: (llamada.args as Json) ?? {} });
+      bloques.push({ type: "tool_use", id, name: String(llamada.name), input: entradaDeLlamada(p, String(llamada.name), (llamada.args as Json) ?? {}) });
     }
   }
   cerrarTexto();
@@ -510,7 +540,7 @@ async function pedirCompatible(c: Compatible, p: Pedido, modelo: string, signal?
     } catch {
       throw new ErrorProveedor(502, `El modelo ${modelo} armó mal una llamada a herramienta.`);
     }
-    bloques.push({ type: "tool_use", id: nuevoId("toolu_"), name: String(f.name), input: entrada });
+    bloques.push({ type: "tool_use", id: nuevoId("toolu_"), name: String(f.name), input: entradaDeLlamada(p, String(f.name), entrada) });
   }
   const final = String(eleccion?.finish_reason ?? "stop");
   const llamo = bloques.some((b) => b.type === "tool_use");
