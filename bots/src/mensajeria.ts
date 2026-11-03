@@ -133,6 +133,8 @@ interface EstadoMensajeria {
   apps: AppEscuchada[];
 }
 
+export const APP_TELEGRAM = "org.telegram.bot";
+
 const APPS_INICIALES: AppEscuchada[] = [
   { paquete: "com.whatsapp.w4b", nombre: "WhatsApp Business", activa: true },
   { paquete: "com.whatsapp", nombre: "WhatsApp", activa: true },
@@ -144,6 +146,8 @@ const APPS_INICIALES: AppEscuchada[] = [
   { paquete: "com.google.android.youtube", nombre: "YouTube", activa: true },
   { paquete: "com.facebook.pages.app", nombre: "Meta Business Suite", activa: false },
   { paquete: "org.telegram.messenger", nombre: "Telegram", activa: false },
+  // Bot de Telegram por la API oficial (Conexiones): no pasa por las notificaciones del celular.
+  { paquete: APP_TELEGRAM, nombre: "Telegram (bot)", activa: true },
 ];
 
 function leerJson<T>(archivo: string, porDefecto: T): T {
@@ -268,8 +272,18 @@ function despertarApp(): void {
   for (const d of ds) d();
 }
 
-/** Lo que la app puede mandar ya: pendientes de conversaciones cuya última notificación tiene "Responder". */
-const entregables = () => salientesPendientes().filter((s) => buscarChat(s.clave)?.puedeResponder !== false);
+/** Lo que la app del celular puede mandar ya: pendientes de conversaciones cuya última notificación tiene
+ * "Responder". Los del bot de Telegram los manda el motor por la API (telegram.ts). */
+const entregables = () =>
+  salientesPendientes().filter((s) => !s.clave.startsWith(`${APP_TELEGRAM}|`) && buscarChat(s.clave)?.puedeResponder !== false);
+
+/** Para los que mandan desde el motor (bot de Telegram): toma los pendientes de esa app. */
+export function tomarSalientesDe(app: string): { id: string; clave: string; texto: string }[] {
+  const listos = salientesPendientes().filter((s) => s.clave.startsWith(`${app}|`));
+  for (const s of listos) Object.assign(s, { estado: "enviando", tomado: ahora() });
+  if (listos.length) guardarSalientes();
+  return listos.map(({ id, clave, texto }) => ({ id, clave, texto }));
+}
 
 /** Espera hasta `ms` a que haya algo para mandar y lo entrega (vacío si no llegó nada). */
 export async function esperarSalientes(ms: number): Promise<{ id: string; clave: string; texto: string }[]> {

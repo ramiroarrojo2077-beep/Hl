@@ -588,7 +588,63 @@ const tipoMcp: TipoConexion = {
   },
 };
 
-const TIPOS: TipoConexion[] = [tipoCorreo("gmail"), tipoMicrosoft, tipoCorreo("correo"), tipoMcp];
+// ---- Bot de Telegram (API oficial de bots, gratis; recibe con getUpdates, sin servidor público) ----
+
+export const API_TELEGRAM = (process.env.TELEGRAM_API_BASE ?? "https://api.telegram.org").replace(/\/$/, "");
+
+export async function llamarTelegram(token: string, metodo: string, datos: Record<string, unknown> = {}, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const res = await fetch(`${API_TELEGRAM}/bot${token}/${metodo}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(datos),
+    signal: signal ?? AbortSignal.timeout(40_000),
+  });
+  const r = (await res.json().catch(() => ({}))) as { ok?: boolean; result?: unknown; description?: string; parameters?: { retry_after?: number } };
+  if (!r.ok) {
+    const error = new Error(`Telegram: ${r.description ?? `respondió ${res.status}`}`) as Error & { status?: number; esperar?: number };
+    error.status = res.status;
+    error.esperar = r.parameters?.retry_after;
+    throw error;
+  }
+  return { resultado: r.result };
+}
+
+const tipoTelegram: TipoConexion = {
+  tipo: "telegram",
+  nombre: "Bot de Telegram",
+  descripcion: "Un bot tuyo de Telegram (API oficial y gratis). Lo que le escriben llega a Mensajes y tus compañeros contestan por el bot, en chats privados y en grupos.",
+  campos: [{ clave: "token", etiqueta: "Token del bot", tipo: "clave", ayuda: "El que te da @BotFather, del estilo 123456:ABC-DEF…" }],
+  pasos: [
+    "En Telegram abrí @BotFather, mandale /newbot y elegí nombre y usuario: te da el token.",
+    "Pegalo acá. Desde ese momento, lo que le escriban al bot aparece en Mensajes y un compañero contesta solo (si está prendido «Contestar mensajes solo»).",
+    "Para que lea todo lo que se dice en un grupo, en @BotFather usá /setprivacy y elegí Disable; si no, solo ve los mensajes que lo mencionan o le responden.",
+  ],
+  acciones: {},
+  conectar: async (c, datos) => {
+    const token = (datos.token ?? "").trim();
+    if (!/^\d+:[\w-]{20,}$/.test(token)) throw new Error("Ese no parece un token de bot de Telegram (número:letras).");
+    const { resultado } = await llamarTelegram(token, "getMe");
+    const yo = resultado as { username?: string; first_name?: string };
+    guardarSecreto(c, { token });
+    c.cuenta = yo.username ? `@${yo.username}` : (yo.first_name ?? "bot");
+    c.estado = "conectada";
+  },
+  probar: async (c) => {
+    const { resultado } = await llamarTelegram(secretoDe(c).token ?? "", "getMe");
+    const yo = resultado as { username?: string };
+    return `Conectado como @${yo.username}.`;
+  },
+};
+
+/** Bots de Telegram conectados, para el que recibe y manda los mensajes (telegram.ts). */
+export function botsTelegram(): { id: string; cuenta: string; token: string }[] {
+  return conexiones
+    .filter((c) => c.tipo === "telegram" && c.estado === "conectada")
+    .map((c) => ({ id: c.id, cuenta: c.cuenta, token: secretoDe(c).token ?? "" }))
+    .filter((b) => b.token);
+}
+
+const TIPOS: TipoConexion[] = [tipoCorreo("gmail"), tipoMicrosoft, tipoCorreo("correo"), tipoMcp, tipoTelegram];
 const tipoDe = (tipo: string) => TIPOS.find((t) => t.tipo === tipo);
 
 function accionesDe(c: Conexion): AccionInfo[] {
