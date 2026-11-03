@@ -77,6 +77,8 @@ class MainActivity : Activity() {
     private lateinit var campoRespaldo: EditText
     private lateinit var botonCancelar: Button
     private lateinit var manija: ImageButton
+    /** Voz nativa de las llamadas (window.GravityVoz): el WebView no trae la Web Speech API. */
+    private lateinit var voz: VozPuente
 
     private val principal = Handler(Looper.getMainLooper())
     private val preferencias by lazy { getSharedPreferences("gravity", Context.MODE_PRIVATE) }
@@ -254,6 +256,9 @@ class MainActivity : Activity() {
         web.setDownloadListener { url, agente, disposicion, tipo, _ ->
             descargar(url, agente, disposicion, tipo)
         }
+        // Cada método de GravityVoz verifica que la página sea la del motor local antes de hacer algo.
+        voz = VozPuente(this, web)
+        web.addJavascriptInterface(voz, "GravityVoz")
     }
 
     private inner class ClienteWeb : WebViewClient() {
@@ -264,6 +269,8 @@ class MainActivity : Activity() {
 
         override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
             progreso.visibility = View.VISIBLE
+            // La página que pidió escuchar o hablar se va: se corta el micrófono y la voz.
+            voz.paginaNueva()
         }
 
         override fun onPageFinished(view: WebView, url: String?) {
@@ -299,6 +306,7 @@ class MainActivity : Activity() {
             // El motor del WebView se cerró (falta de memoria, por ejemplo): se arma la actividad de nuevo.
             if (rendererCaido) return true
             rendererCaido = true
+            voz.liberar()
             (view.parent as? ViewGroup)?.removeView(view)
             view.destroy()
             recreate()
@@ -759,6 +767,24 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
+    override fun onStart() {
+        super.onStart()
+        voz.alMostrarse()
+    }
+
+    /** En segundo plano no queda el micrófono abierto (la voz que está sonando termina igual). */
+    override fun onStop() {
+        voz.alOcultarse()
+        super.onStop()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == VozPuente.PEDIDO_MICROFONO) {
+            voz.alResponderPermiso(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         if (!rendererCaido) web.saveState(outState)
@@ -769,6 +795,7 @@ class MainActivity : Activity() {
         principal.removeCallbacksAndMessages(null)
         callbackArchivos?.onReceiveValue(null)
         callbackArchivos = null
+        voz.liberar()
         if (!rendererCaido) {
             (web.parent as? ViewGroup)?.removeView(web)
             web.destroy()

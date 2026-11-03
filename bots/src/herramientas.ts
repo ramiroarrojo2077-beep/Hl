@@ -22,6 +22,7 @@ import {
   guardarHabilidad,
   ajustes,
   buscarBot,
+  listarBots,
   jefes,
   subarbol,
   type Bot,
@@ -34,6 +35,8 @@ import { ejecutarConexion, externo, htmlATexto, pedidoDeConexion } from "./conex
 import { emitir } from "./eventos.ts";
 import { PROVEEDOR } from "./cliente.ts";
 import { buscarConGoogle, hayGemini } from "./proveedores.ts";
+import { buscar as buscarRecuerdos, formatear as formatearRecuerdos } from "./recuerdos.ts";
+import { ESTADOS_TAREA, agregarTarea, buscarProyecto, cambiarTarea, crearProyecto, describirProyecto, listarProyectos, progreso as progresoProyecto } from "./proyectos.ts";
 import { DESCRIPCION_VIDEO, analizarVideo } from "./videos.ts";
 import { derivarDesdeBot, enviarDesdeBot, leerParaBot, listarParaBot, pedidoDeMensajes } from "./mensajeria.ts";
 
@@ -243,6 +246,8 @@ export async function herramientasDe(botId: string): Promise<Map<string, BetaRun
       herramientaReunion(botId),
       herramientaConexion(botId),
       herramientaMensajes(botId),
+      herramientaRecordar(botId),
+      herramientaProyectos(botId),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
       // Mirar videos y audios lo hace Gemini: está si hay su clave, sea cual sea el proveedor de los bots.
@@ -260,7 +265,7 @@ export async function cerrarHerramientas(botId: string): Promise<void> {
   for (const t of mapa?.values() ?? []) await t.close?.();
 }
 
-const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion", "conexion", "mensajes", "analizar_video"]);
+const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion", "conexion", "mensajes", "analizar_video", "recordar", "proyectos"]);
 
 // ---- Apps de afuera (Gmail, Microsoft 365, MCP…): una sola herramienta fija para todas ----
 
@@ -400,6 +405,102 @@ async function leerPagina(direccion: string, saltos = 0): Promise<string> {
   }
   const texto = /html/.test(tipo) ? htmlATexto(crudo) : crudo;
   return `${url.toString()}\n\n${texto.slice(0, 40_000)}`;
+}
+
+// ---- Recordar: búsqueda en la memoria, las conversaciones y la carpeta del equipo ----
+
+const EntradaRecordar = z.strictObject({
+  consulta: z.string().min(2).max(300).describe("Qué buscar, en pocas palabras clave"),
+  alcance: z
+    .enum(["memoria", "conversaciones", "equipo", "todo"])
+    .nullable()
+    .describe("Dónde buscar: tu memoria, tus conversaciones pasadas, los archivos de tu equipo, o todo (null = todo)"),
+});
+
+function herramientaRecordar(botId: string): BetaRunnableTool {
+  const herramienta = betaZodTool({
+    name: "recordar",
+    description:
+      "Buscá en lo que ya sabés: tus archivos de memoria, tus conversaciones pasadas con el usuario y los archivos de la carpeta de tu equipo. Usala antes de preguntar algo que quizás ya te dijeron. Devuelve fragmentos con su origen; pueden estar desactualizados.",
+    inputSchema: EntradaRecordar,
+    run: (e) => formatearRecuerdos(buscarRecuerdos(botId, e.consulta, e.alcance ?? "todo"), e.consulta),
+  });
+  return Object.assign(herramienta, { input_schema: esquemaJson(EntradaRecordar) });
+}
+
+// ---- Proyectos: objetivo, tareas con dependencias y criterio de "listo" ----
+
+const EntradaProyectos = z.strictObject({
+  accion: z.enum(["listar", "ver", "crear", "agregar_tarea", "actualizar_tarea"]),
+  proyecto: z.string().nullable().describe("Id o nombre del proyecto (ver, agregar_tarea, actualizar_tarea)"),
+  nombre: z.string().nullable().describe("Solo crear: nombre del proyecto"),
+  objetivo: z.string().nullable().describe("Solo crear: qué se quiere lograr y cómo se sabe que se logró"),
+  tarea: z.string().nullable().describe("Solo actualizar_tarea: id de la tarea (t…)"),
+  titulo: z.string().nullable().describe("agregar_tarea: título corto"),
+  detalle: z.string().nullable().describe("agregar_tarea: qué hay que hacer"),
+  criterio: z.string().nullable().describe("agregar_tarea: cómo se verifica que está lista (comprobable)"),
+  asignar_a: z.string().nullable().describe("agregar_tarea/actualizar_tarea: nombre o id del compañero responsable"),
+  depende_de: z.array(z.string()).nullable().describe("agregar_tarea/actualizar_tarea: ids de tareas que tienen que estar completadas antes"),
+  prioridad: z.number().nullable().describe("1 alta, 2 media, 3 baja"),
+  vence: z.string().nullable().describe("Fecha límite AAAA-MM-DD"),
+  estado: z.enum(ESTADOS_TAREA).nullable().describe("actualizar_tarea: nuevo estado"),
+  resultado: z.string().nullable().describe("actualizar_tarea: qué se entregó, dónde quedó y cómo se verificó el criterio (obligatorio para completar)"),
+});
+
+function herramientaProyectos(botId: string): BetaRunnableTool {
+  const idDe = (nombre: string | null) => {
+    if (!nombre) return null;
+    const b = buscarBot(nombre) ?? listarBots().find((x) => x.nombre.toLowerCase() === nombre.trim().toLowerCase());
+    if (!b) throw new Error(`No existe el compañero «${nombre}».`);
+    return b.id;
+  };
+  const herramienta = betaZodTool({
+    name: "proyectos",
+    description:
+      "Proyectos del usuario: listá y mirá proyectos, creá uno nuevo dividiéndolo en tareas con responsable, dependencias y un criterio de 'listo' comprobable, y actualizá el estado de tus tareas (en_curso al empezar, completada con el resultado al terminar, fallida si no se pudo). Cuando una tarea queda lista para arrancar, Gravity se la pasa sola a su responsable. No marques completada sin verificar el criterio.",
+    inputSchema: EntradaProyectos,
+    run: (e) => {
+      if (e.accion === "listar") {
+        const ps = listarProyectos();
+        if (!ps.length) return "No hay proyectos todavía.";
+        return ps.map((p) => {
+          const pr = progresoProyecto(p);
+          return `- ${p.id} «${p.nombre}» · ${p.estado} · ${pr.hechas}/${pr.total} tareas`;
+        }).join("\n");
+      }
+      if (e.accion === "crear") {
+        const p = crearProyecto({ nombre: e.nombre ?? "", objetivo: e.objetivo ?? "", coordinadorId: botId }, botId);
+        return `Proyecto creado: ${p.id} «${p.nombre}». Carpeta: ${p.carpeta}. Ahora agregá las tareas.`;
+      }
+      const p = buscarProyecto(e.proyecto ?? "");
+      if (!p) throw new Error("No existe ese proyecto: usá accion listar para ver los ids.");
+      if (e.accion === "ver") return describirProyecto(p);
+      const prioridad = e.prioridad === 1 || e.prioridad === 2 || e.prioridad === 3 ? e.prioridad : undefined;
+      if (e.accion === "agregar_tarea") {
+        const t = agregarTarea(
+          p.id,
+          { titulo: e.titulo ?? "", detalle: e.detalle ?? "", criterio: e.criterio ?? "", asignadoA: idDe(e.asignar_a), dependeDe: e.depende_de ?? [], prioridad, vence: e.vence },
+          botId,
+        );
+        return `Tarea ${t.id} agregada a «${p.nombre}».`;
+      }
+      const t = cambiarTarea(
+        p.id,
+        e.tarea ?? "",
+        {
+          ...(e.estado ? { estado: e.estado } : {}),
+          ...(e.resultado !== null ? { resultado: e.resultado } : {}),
+          ...(e.asignar_a !== null ? { asignadoA: idDe(e.asignar_a) } : {}),
+          ...(e.depende_de ? { dependeDe: e.depende_de } : {}),
+          ...(prioridad ? { prioridad } : {}),
+          ...(e.vence !== null ? { vence: e.vence } : {}),
+        },
+        botId,
+      );
+      return `Tarea ${t.id} actualizada: ${t.estado}.`;
+    },
+  });
+  return Object.assign(herramienta, { input_schema: esquemaJson(EntradaProyectos) });
 }
 
 // ---- Reuniones convocadas por un manager ----

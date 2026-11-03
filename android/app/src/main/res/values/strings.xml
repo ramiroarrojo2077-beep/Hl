@@ -91,4 +91,28 @@
     <string name="compartir_fallo">No se pudo compartir con Gravity. Probá de nuevo con la app abierta.</string>
     <string name="mensajeria_activar_aviso">Activá Gravity en esta lista: así contesta WhatsApp y redes solo.</string>
     <string name="msj_sin_confirmar">No se confirmó el envío: la notificación no cambió.</string>
+
+    <!-- Llamadas de voz con los compañeros (VozPuente) -->
+    <string name="voz_sin_conexion">No hay conexión: el reconocimiento de voz necesita internet.</string>
+    <string name="voz_tiempo_red">La conexión tardó demasiado. Revisá internet y probá de nuevo.</string>
+    <string name="voz_audio">No se pudo grabar con el micrófono.</string>
+    <string name="voz_servidor">El servicio de voz tuvo un problema. Probá de nuevo.</string>
+    <string name="voz_cliente">Se cortó el reconocimiento de voz. Probá de nuevo.</string>
+    <string name="voz_no_hablaste">No te escuché decir nada.</string>
+    <string name="voz_no_entendi">No se entendió nada. ¿Lo repetís?</string>
+    <string name="voz_ocupado">El micrófono está ocupado. Cerrá la otra app que lo esté usando y probá de nuevo.</string>
+    <string name="voz_permiso">Gravity no tiene permiso para usar el micrófono. Activalo en Ajustes &gt; Apps &gt; Gravity &gt; Permisos.</string>
+    <string name="voz_demasiados">Demasiados pedidos seguidos al reconocedor de voz. Esperá un momento.</string>
+    <string name="voz_idioma">El reconocedor de voz no tiene este idioma. Probá descargarlo en los ajustes de voz del celular.</string>
+    <string name="voz_idioma_descargando">El idioma del reconocedor todavía no está listo (se está descargando). Probá en un rato.</string>
+    <string name="voz_sin_reconocedor">Este celular no tiene reconocimiento de voz. Instalá o activá la app de Google.</string>
+    <string name="voz_segundo_plano">Se cortó el micrófono porque Gravity quedó en segundo plano.</string>
+    <string name="voz_desconocido">Falló el reconocimiento de voz (código %1$d).</string>
+    <string name="voz_sin_voz">No hay voz para leer en voz alta. Instalá o activá un motor de texto a voz en los ajustes del celular.</string>
+    <string name="voz_sintesis">No se pudo armar la voz de esta frase.</string>
+    <string name="voz_red_tts">La voz elegida necesita internet y no hay conexión.</string>
+    <string name="voz_reproduccion">No se pudo reproducir la voz.</string>
+    <string name="voz_texto_invalido">El texto está vacío o es demasiado largo (hasta 4000 caracteres).</string>
+    <string name="voz_id_invalido">Falta el id de la frase o es demasiado largo (hasta 64 caracteres).</string>
+    <string name="voz_cola_llena">Hay demasiadas frases esperando para leerse.</string>
 </resources>
