@@ -6,7 +6,8 @@
     "start": "node --env-file-if-exists=.env src/server.ts",
     "gravity": "node --env-file-if-exists=.env bots/src/servidor.ts",
     "check": "tsc",
-    "empaquetar": "node bots/empaquetar.mjs"
+    "empaquetar": "node bots/empaquetar.mjs",
+    "pruebas": "node --test \"bots/pruebas/*.test.mjs\""
   },
   "repository": {
     "type": "git",
