@@ -1,0 +1,40 @@
+# Chequeo de tipos y pruebas automáticas del motor en cada cambio (npm run check + npm run pruebas).
+name: Pruebas
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "bots/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/pruebas.yml"
+  workflow_dispatch:
+
+jobs:
+  motor:
+    name: Motor (tipos y pruebas)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Bajar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Chequeo de tipos
+        run: npm run check
+
+      - name: Pruebas
+        run: npm run pruebas
+
+      - name: Empaquetado del motor (el que va en la app)
+        run: node bots/empaquetar.mjs dist
