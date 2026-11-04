@@ -58,6 +58,7 @@ import {
 } from "./agente.ts";
 import { GRUPOS_HERRAMIENTAS, cerrarHerramientas, normalizarBloqueadas } from "./herramientas.ts";
 import { iniciarTelegram } from "./telegram.ts";
+import { auditar, informeComoTexto } from "./auditoria.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
 import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
 import { abierta, cancelarTarea, crearEquipo, iniciarEquipo, vistaTarea } from "./equipo.ts";
@@ -825,6 +826,18 @@ ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
 });
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
+
+// ---- Auditoría (solo lectura) ----
+
+ruta("GET", "/api/auditoria", async () => auditar());
+
+// Le pasa el informe a un compañero para que lo analice (es un mensaje normal: queda en su chat).
+ruta("POST", "/api/auditoria/analizar", async ({ cuerpo }) => {
+  const { botId } = validar(z.object({ botId: z.string().min(1).max(64) }), await cuerpo());
+  const bot = botDe(botId);
+  enviarMensaje(bot.id, informeComoTexto(auditar()));
+  return { ok: true };
+});
 
 // ---- Proyectos ----
 

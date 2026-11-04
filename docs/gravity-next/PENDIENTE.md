@@ -15,6 +15,8 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 - **Permisos por compañero** (Perfil), **copia de seguridad** (Ajustes) y **pausar/reanudar reuniones**.
 - **56 Agentes temporales**: Perfil > «Misión (especialista temporal)» y «Archivar». Archivar deja de trabajar, cancela sus tareas, pausa rutinas y saca sus chats; Ajustes > «Compañeros archivados» para restaurar. API: `POST /api/bots/:id/archivar` y `/restaurar`; `listarBots()` excluye archivados.
 - **57 Modo enseñanza**: Perfil > «Modo enseñanza» (campo `ensenanza`): explica cada paso y resume el procedimiento.
+- **58 Auditor**: `bots/src/auditoria.ts` (`GET /api/auditoria`, solo lectura): «Aprobar todo solo», reglas amplias, quién puede enviar afuera, errores de herramientas por compañero, tareas bloqueadas/fallidas/viejas, proyectos con vencidas/fallidas/sin responsable, rutinas que fallaron y aprobaciones de más de 1 h. `POST /api/auditoria/analizar {botId}` le pasa el informe a un compañero para que lo analice.
+- **59 Centro de operaciones** (`#/operaciones`): resumen, cada compañero con lo que está haciendo, lo que espera, reuniones en vivo, proyectos trabados y la auditoría.
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
@@ -27,8 +29,6 @@ Contrato del puente de voz nativo: `android/VOZ.md`.
 
 ## Pedidos del usuario todavía sin hacer
 
-- **58. Auditor inteligente**: un compañero con plantilla «Auditor» que revisa, con una rutina, aprobaciones, errores de herramientas (en las conversaciones), tareas bloqueadas/fallidas y permisos (`bloqueadas`, `puedeEnviarAfuera`, reglas «siempre permitir») y entrega un informe. Solo lectura: no cambia nada sin aprobación.
-- **59. Centro de operaciones en vivo**: vista con todos los compañeros, su estado (`estado`, `accion` de `/api/estado`), la herramienta que usan ahora (eventos SSE `cambio`/`estado`), tareas en espera (`tareas`), aprobaciones pendientes y uso de cupo (`cupo`). Todo está en `/api/estado` y el SSE `/api/eventos`; falta la pantalla.
 - **60. Gravity Architect**: describís un objetivo y la IA propone equipo, herramientas, permisos y flujo. Sugerencia: `POST /api/arquitecto {objetivo}` que pide al modelo una propuesta en JSON (esquema: manager, miembros con puesto/descripción/grupos bloqueados, rutinas, proyecto con tareas) y la interfaz la muestra para aprobar; al aprobar usa `POST /api/equipos`, `PUT /api/bots/:id` (bloqueadas), `POST /api/proyectos` y sus tareas.
 
 ## Pendientes del plan Gravity NEXT (ver `PLAN.md`)

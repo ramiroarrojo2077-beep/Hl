@@ -820,6 +820,16 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--tx2)}
 .deps{display:flex;flex-wrap:wrap;gap:6px 14px}
 .reus{display:flex;flex-direction:column;gap:8px}
+.ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
+.ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.ops-k b{font-size:22px;font-weight:600}.ops-k span{font-size:12.5px;color:var(--tx2)}
+.ops-bs{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.ops-b{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);color:inherit;text-decoration:none}
+.ops-b .tt{display:flex;flex-direction:column;min-width:0}.ops-b .tt small{color:var(--tx2);font-size:12px}
+.ops-b .ac{grid-column:2;font-size:13px;color:var(--tx2);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ops-b .ac.work{color:var(--ion-tx)}.ops-b .ac.wait{color:var(--sig-tx)}
+.hall{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hall li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--s1);border:1px solid var(--line);font-size:13.5px}
 .reu{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line)}
 .reu:hover{border-color:var(--line2)}
 .reu .tt{min-width:0}
@@ -1713,7 +1723,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -1938,7 +1948,7 @@ function navegar() {
 }
 
 // ================================================================ marco: riel, barra inferior, avisos
-const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["proyectos", "Proyectos", "flag"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
+const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["proyectos", "Proyectos", "flag"], ["operaciones", "Operaciones", "grid"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
 // Estado del satélite del logo: naranja si algo te necesita, late en cian si alguien trabaja.
 const derivadas = () => (S.chats || []).filter((c) => c.derivada);
 const estadoMarca = () => (S.aprobaciones.length || derivadas().length ? "wait" : S.bots.some((b) => b.estado === "trabajando") ? "work" : "idle");
@@ -2007,6 +2017,7 @@ function montar(antes) {
   if (v === "compartido") return montarCompartido(S.ruta.id);
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
+  if (v === "operaciones") return montarOps();
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
   if (v === "conexiones") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="cx"></div></div>`; pintarConexiones(); cargarConexiones(); return; }
   if (v === "ajustes") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="aj"></div></div>`; pintarAjustes(); return; }
@@ -3417,6 +3428,44 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ centro de operaciones
+// En vivo: quién trabaja y con qué herramienta, qué espera (tareas, aprobaciones, cola), reuniones,
+// proyectos trabados, el cupo de trabajo en paralelo y la auditoría (solo lectura).
+function montarOps() {
+  $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="ops"></div></div>`;
+  pintarOps();
+  if (!S.proyectos) cargarProyectos();
+}
+function pintarOps() {
+  const el = $("#ops");
+  if (!el) return;
+  const k = conteo(S.bots);
+  const c = S.cupo || {};
+  const abiertas = S.tareas.filter(tareaAbierta);
+  const vivas = reunionesVivas();
+  const trabados = (S.proyectos || []).filter((p) => p.estado === "activo" && (p.progreso.bloqueadas || p.progreso.vencidas));
+  const accion = (b) => { const e = est(b); return e === "work" ? b.accion || "Trabajando" : e === "wait" ? (aprobacionesDe(b.id).length ? "Espera tu aprobación" : b.accion || "Esperando") : "Libre"; };
+  const fila = (b) => html`<a class="ops-b" href="#/chats/${b.id}">${av(b, 32)}<span class="tt"><b>${b.nombre}</b><small>${b.titulo}</small></span>
+    <span class="ac ${est(b)}">${accion(b)}${b.enCola ? html`<span class="tag">${b.enCola} en cola</span>` : ""}${b.tareasAbiertas ? html`<span class="tag">${plural(b.tareasAbiertas, "tarea abierta", "tareas abiertas")}</span>` : ""}</span></a>`;
+  const nivel = { alto: ["Alto", "sig"], medio: ["Medio", ""], info: ["Info", ""] };
+  const a = S.auditoria;
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Centro de operaciones</h1><p>Todo el equipo en vivo: quién trabaja y en qué, qué está esperando y qué conviene revisar.</p></div></header>
+    <div class="ops-k" role="group" aria-label="Resumen">
+      <div><b>${k.work}</b><span>trabajando</span></div><div><b>${k.wait}</b><span>esperan algo</span></div><div><b>${k.idle}</b><span>libres</span></div>
+      <div><b>${S.aprobaciones.length}</b><span>aprobaciones pendientes</span></div><div><b>${c.enUso ?? 0}/${c.limite ?? "–"}</b><span>pensando a la vez${c.esperando ? ` · ${c.esperando} en espera` : ""}</span></div></div>
+    <div class="sec-h"><h2>Compañeros <span>${S.bots.length}</span></h2></div>
+    ${S.bots.length ? html`<div class="ops-bs">${ordenar(S.bots, "estado").map(fila)}</div>` : html`<p class="muted" style="font-size:13px">Todavía no hay compañeros.</p>`}
+    <div class="sec-h"><h2>En espera <span>${abiertas.length + S.aprobaciones.length}</span></h2>${S.aprobaciones.length ? html`<a class="btn out sm" href="#/aprobaciones">Ver aprobaciones</a>` : ""}</div>
+    ${abiertas.length || S.aprobaciones.length ? html`<ul class="hist">${S.aprobaciones.map((x) => html`<li><b>${bot(x.botId)?.nombre || "Alguien"}</b> pide aprobación: ${x.titulo}</li>`)}${abiertas.slice(0, 30).map((t) => html`<li><b>${bot(t.paraId)?.nombre || "Alguien"}</b> · ${t.estado === "en_curso" ? "trabajando en" : "tiene pendiente"} «${t.titulo}»${bot(t.deId) ? ` (encargo de ${bot(t.deId).nombre})` : ""}</li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Nada esperando.</p>`}
+    ${vivas.length ? html`<div class="sec-h"><h2>Reuniones en vivo <span>${vivas.length}</span></h2></div><div class="reus">${vivas.map((r) => filaReunion(r, true))}</div>` : ""}
+    ${trabados.length ? html`<div class="sec-h"><h2>Proyectos trabados <span>${trabados.length}</span></h2></div><div class="proys">${trabados.map(tarjetaProyecto)}</div>` : ""}
+    <div class="sec-h"><h2>Auditoría</h2><button class="btn out sm" data-a="auditar">${ico("shield", "s")}${a ? "Volver a auditar" : "Auditar ahora"}</button></div>
+    ${a ? html`<p class="muted" style="font-size:13px">Revisé ${a.revisados.compañeros} compañeros, ${a.revisados.tareas} tareas, ${a.revisados.proyectos} proyectos activos y ${a.revisados.rutinas} rutinas · ${diaHora(a.fecha)}.</p>
+      ${a.hallazgos.length ? html`<ul class="hall">${a.hallazgos.map((x) => html`<li><span class="tag ${nivel[x.nivel][1]}">${nivel[x.nivel][0]}</span><span>${x.texto}</span></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Sin hallazgos: permisos, errores y tareas en orden.</p>`}
+      ${S.bots.length ? html`<form class="fila" data-f="analizar-auditoria" style="margin-top:12px;gap:8px;flex-wrap:wrap"><label class="fld" style="flex:1;min-width:200px"><span>Pedirle a un compañero que lo analice</span><select class="inp" name="botId">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre} · ${b.titulo}</option>`)}</select></label><button class="btn out">Mandarle el informe</button></form>` : ""}`
+      : html`<p class="muted" style="font-size:13px">Revisa permisos amplios, errores de herramientas, tareas bloqueadas o viejas, proyectos con tareas vencidas, rutinas que fallaron y aprobaciones sin responder. No cambia nada.</p>`}`);
+}
+
 // ================================================================ proyectos
 // Un objetivo con tareas (responsable, dependencias, prioridad, plazo y criterio de «listo»). El progreso
 // sale de las tareas completadas. Cuando una tarea queda lista, el motor se la pasa a su responsable.
@@ -3774,7 +3823,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5094,6 +5143,7 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  auditar: (t) => conCarga(t, async () => { S.auditoria = await api("GET", "/api/auditoria"); pintarOps(); }),
   "borrar-proyecto": async () => {
     const p = S.proyectos?.find((x) => x.id === S.ruta.id);
     if (!p || !(await confirmar(`¿Borrar «${p.nombre}»?`, "Se borran sus tareas y su historial. Los archivos de su carpeta en la computadora quedan.", "Borrar proyecto", true))) return;
@@ -5237,6 +5287,10 @@ const F = {
   },
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
+  async "analizar-auditoria"(f) {
+    const b = bot(f.botId.value);
+    await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/auditoria/analizar", { botId: f.botId.value }); toast(`Le pasé el informe a ${b?.nombre || "tu compañero"}.`, "", { href: `#/chats/${f.botId.value}`, texto: "Ver" }); });
+  },
   async "proyecto-nuevo"(f) {
     const p = await api("POST", "/api/proyectos", { nombre: f.nombre.value.trim(), objetivo: f.objetivo.value, coordinadorId: f.coordinadorId.value || null }).catch((err) => { errDlg(err.message); return null; });
     if (!p) return;
@@ -5573,6 +5627,7 @@ function repintar() {
   if (v === "reuniones" && p.has("reuniones")) S.ruta.id ? pintarSala() : pintarReuniones();
   if (v === "ajustes" && p.has("ajustes")) pintarAjustes();
   if (v === "proyectos" && p.has("proyectos")) pintarProyectos();
+  if (v === "operaciones" && ["rail", "equipo", "ctx", "avisos", "side", "reuniones", "proyectos", "ops", "bandeja"].some((k) => p.has(k))) pintarOps();
   if (v === "mensajes" && p.has("msj")) { pintarMsjLista(); montarMsjChat(); }
   else if (v === "mensajes" && p.has("msj-chat")) { pintarMsjLista(); pintarMsjChat(); }
   if (v === "compartido" && p.has("compartido")) pintarCompartido();
