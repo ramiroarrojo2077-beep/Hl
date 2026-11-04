@@ -554,7 +554,11 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
 
   const herramientas = await herramientasDe(bot.id);
   // En una llamada de voz importa contestar ya: se razona poco (las respuestas son cortas y habladas).
-  const esfuerzo = entrada.tipo === "usuario" && entrada.llamada ? "low" : (bot.esfuerzo ?? ESFUERZO);
+  // Modelo por tipo de trabajo: mensajes de afuera y llamadas necesitan respuesta ya, así que van con
+  // el modelo rápido y razonando poco (salvo que el usuario le haya elegido otro a este compañero).
+  const urgente = (entrada.tipo === "usuario" && !!entrada.llamada) || entrada.tipo === "mensajeria";
+  const esfuerzo = entrada.tipo === "usuario" && entrada.llamada ? "low" : entrada.tipo === "mensajeria" && !bot.esfuerzo ? "low" : (bot.esfuerzo ?? ESFUERZO);
+  const modelo = modeloPara(bot.modelo ?? (urgente ? "rapido" : null));
   let ultimoTexto = "";
   let reintentosJson = 0;
   let gracia: number | null = null;
@@ -574,7 +578,7 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
           huboTexto = false;
           const stream = client.beta.messages.stream(
             {
-              model: modeloPara(bot.modelo),
+              model: modelo,
               max_tokens: 64000,
               betas: [BETA_FALLBACK, "compact-2026-01-12", "thinking-display-updates-2026-08-18", "thinking-binding-controls-2026-08-01"],
               fallbacks: "default",
