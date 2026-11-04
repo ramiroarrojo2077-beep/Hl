@@ -17,6 +17,7 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 - **57 Modo enseñanza**: Perfil > «Modo enseñanza» (campo `ensenanza`): explica cada paso y resume el procedimiento.
 - **58 Auditor**: `bots/src/auditoria.ts` (`GET /api/auditoria`, solo lectura): «Aprobar todo solo», reglas amplias, quién puede enviar afuera, errores de herramientas por compañero, tareas bloqueadas/fallidas/viejas, proyectos con vencidas/fallidas/sin responsable, rutinas que fallaron y aprobaciones de más de 1 h. `POST /api/auditoria/analizar {botId}` le pasa el informe a un compañero para que lo analice.
 - **59 Centro de operaciones** (`#/operaciones`): resumen, cada compañero con lo que está haciendo, lo que espera, reuniones en vivo, proyectos trabados y la auditoría.
+- **60 Gravity Architect** (`#/arquitecto`, botón «Architect» en Equipo): `POST /api/arquitecto {objetivo}` pide al modelo una propuesta con esquema JSON (`bots/src/arquitecto.ts`: manager, miembros con grupos apagados y si son temporales, rutinas, proyecto con tareas y dependencias, flujo y riesgos). No crea nada; `POST /api/arquitecto/aplicar {propuesta}` crea equipo, permisos, rutinas y proyecto. Se pueden sacar miembros antes de crear.
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
@@ -29,7 +30,7 @@ Contrato del puente de voz nativo: `android/VOZ.md`.
 
 ## Pedidos del usuario todavía sin hacer
 
-- **60. Gravity Architect**: describís un objetivo y la IA propone equipo, herramientas, permisos y flujo. Sugerencia: `POST /api/arquitecto {objetivo}` que pide al modelo una propuesta en JSON (esquema: manager, miembros con puesto/descripción/grupos bloqueados, rutinas, proyecto con tareas) y la interfaz la muestra para aprobar; al aprobar usa `POST /api/equipos`, `PUT /api/bots/:id` (bloqueadas), `POST /api/proyectos` y sus tareas.
+Ninguno de la lista 56–60: están todos hechos (ver arriba).
 
 ## Pendientes del plan Gravity NEXT (ver `PLAN.md`)
 

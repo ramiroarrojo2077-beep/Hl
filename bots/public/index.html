@@ -1723,7 +1723,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2018,6 +2018,7 @@ function montar(antes) {
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
   if (v === "operaciones") return montarOps();
+  if (v === "arquitecto") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="arq"></div></div>`; pintarArq(); return; }
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
   if (v === "conexiones") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="cx"></div></div>`; pintarConexiones(); cargarConexiones(); return; }
   if (v === "ajustes") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="aj"></div></div>`; pintarAjustes(); return; }
@@ -2476,7 +2477,7 @@ function pintarEquipo() {
   const frase = [dirs.length ? `${dirs.map((d) => d.nombre).join(", ")} ${dirs.length === 1 ? "dirige" : "dirigen"}` : "", leads.length ? `${listaY(leads.map((l) => l.nombre))} ${leads.length === 1 ? "reparte" : "reparten"} el trabajo entre ${plural(leads.reduce((n, l) => n + directos(l.id).length, 0), "compañero", "compañeros")}` : "", solos.length ? `${plural(solos.length, "trabaja", "trabajan")} directo con vos` : ""].filter(Boolean).join(" · ");
   pintar(el, html`
     <header class="pag-h"><div class="tt"><span class="micro">Equipo</span><h1>${bots.length ? `${plural(bots.length, "compañero", "compañeros")}${orbitas > 1 ? ` en ${orbitas} órbitas` : ""}` : "Tu equipo"}</h1><p>${bots.length ? frase : "Todavía no hay nadie. Empezá con un equipo desde una plantilla."}</p></div>
-      <div class="acts"><button class="btn out" data-a="nuevo-bot">${ico("plus", "s")}Nuevo compañero</button><button class="btn pri" data-a="crear-equipo">${ico("team", "s")}Crear equipo</button></div></header>
+      <div class="acts"><a class="btn out" href="#/arquitecto">${ico("bolt", "s")}Architect</a><button class="btn out" data-a="nuevo-bot">${ico("plus", "s")}Nuevo compañero</button><button class="btn pri" data-a="crear-equipo">${ico("team", "s")}Crear equipo</button></div></header>
     ${c.work + c.wait ? seg(c, "bigseg") : ""}
     <div class="stats">
       <div class="stat"><span class="v"><i class="d w"></i>${c.work}</span><span class="k">trabajando<small>ahora</small></span></div>
@@ -3428,6 +3429,34 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ Gravity Architect
+// Objetivo → propuesta del modelo (no crea nada) → revisar, sacar miembros → crear. Al crear, el
+// equipo arranca con las primeras tareas del proyecto.
+const ARQ = { objetivo: "", propuesta: null, cargando: false, fuera: new Set() };
+function pintarArq() {
+  const el = $("#arq");
+  if (!el) return;
+  const p = ARQ.propuesta;
+  const grupo = (id) => (S.gruposHerramientas || []).find((g) => g.id === id)?.nombre || id;
+  const persona = (m, i) => html`<article class="tk"><div class="tk-h"><b>${m.nombre} · ${m.titulo}</b>${i === null ? html`<span class="tag">Manager</span>` : html`<label class="chk" style="margin:0"><input type="checkbox" data-c="arq-incluir" data-i="${i}" ${si(!ARQ.fuera.has(i), "checked")}><span>Incluir</span></label>`}</div>
+    <p class="muted" style="margin:0;font-size:13px">${m.descripcion}</p>
+    <span class="tk-m">${m.temporal ? html`<span class="tag">Temporal</span>` : ""}${m.apagar.length ? `Sin: ${m.apagar.map(grupo).join(" · ")}` : "Con todas las herramientas"}</span></article>`;
+  pintar(el, html`<header class="pag-h"><div class="tt"><span class="micro">Gravity Architect</span><h1>Contá qué querés lograr</h1><p>Te propongo un equipo con sus puestos, qué herramientas necesita cada uno (lo mínimo), rutinas, un proyecto con tareas y el flujo de trabajo. No se crea nada hasta que lo apruebes.</p></div></header>
+    <form class="form-card" data-f="arquitecto" style="margin-top:14px"><label class="fld"><span>Objetivo</span><textarea class="inp" name="objetivo" rows="4" maxlength="4000" required placeholder="Ej.: lanzar la tienda online de mi marca de ropa en 3 semanas, con fotos, textos, precios y redes">${ARQ.objetivo}</textarea></label>
+      <p class="err" role="alert"></p><div class="acts"><button class="btn pri" ${si(ARQ.cargando, "disabled aria-busy=\"true\"")}>${ico("bolt", "s")}${p ? "Proponer de nuevo" : "Proponer equipo"}</button></div></form>
+    ${ARQ.cargando ? html`<p class="muted" role="status" style="margin-top:14px">Pensando el equipo… puede tardar hasta un minuto.</p>` : ""}
+    ${p ? html`<section class="card" style="margin-top:16px" aria-labelledby="arq-r"><h2 id="arq-r">Propuesta</h2><p>${p.resumen}</p></section>
+      <div class="sec-h"><h2>Equipo <span>${1 + p.miembros.length - ARQ.fuera.size}</span></h2></div>
+      <div class="tks">${persona(p.manager, null)}${p.miembros.map((m, i) => persona(m, i))}</div>
+      <div class="sec-h"><h2>Flujo de trabajo</h2></div><ol class="hist" style="list-style:decimal;padding-left:20px">${p.flujo.map((x) => html`<li>${x}</li>`)}</ol>
+      <div class="sec-h"><h2>Proyecto · ${p.proyecto.nombre} <span>${p.proyecto.tareas.length}</span></h2></div><p class="muted" style="font-size:13px;margin:0 0 8px">${p.proyecto.objetivo}</p>
+      <ol class="hist" style="list-style:decimal;padding-left:20px">${p.proyecto.tareas.map((t) => html`<li><b>${t.titulo}</b> → ${t.responsable}${t.depende_de.length ? ` · después de ${t.depende_de.join(", ")}` : ""}<br><small>Listo cuando: ${t.criterio}</small></li>`)}</ol>
+      ${p.rutinas.length ? html`<div class="sec-h"><h2>Rutinas <span>${p.rutinas.length}</span></h2></div><ul class="hist">${p.rutinas.map((r) => html`<li><b>${r.nombre}</b> · ${r.quien} · ${r.frecuencia === "semanal" ? "semanal" : "todos los días"} a las ${r.hora}</li>`)}</ul>` : ""}
+      ${p.riesgos.length ? html`<div class="sec-h"><h2>A tener en cuenta</h2></div><ul class="hist">${p.riesgos.map((r) => html`<li>${r}</li>`)}</ul>` : ""}
+      <div class="acts" style="margin-top:18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost" data-a="arq-descartar">Descartar</button><button class="btn pri" data-a="arq-crear">${ico("check", "s")}Crear este equipo</button></div>
+      <p class="ayuda">Al crearlo, cada compañero recibe su tarea apenas sus dependencias estén listas. Lo que manden afuera igual te pide aprobación.</p>` : ""}`);
+}
+
 // ================================================================ centro de operaciones
 // En vivo: quién trabaja y con qué herramienta, qué espera (tareas, aprobaciones, cola), reuniones,
 // proyectos trabados, el cupo de trabajo en paralelo y la auditoría (solo lectura).
@@ -3823,7 +3852,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5143,6 +5172,21 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "arq-descartar": () => { ARQ.propuesta = null; ARQ.fuera = new Set(); pintarArq(); },
+  "arq-crear": (t) => conCarga(t, async () => {
+    const p = structuredClone(ARQ.propuesta);
+    const fuera = p.miembros.filter((_, i) => ARQ.fuera.has(i)).map((m) => m.nombre);
+    p.miembros = p.miembros.filter((_, i) => !ARQ.fuera.has(i));
+    // Las tareas de quien se sacó pasan al manager.
+    for (const x of p.proyecto.tareas) if (fuera.includes(x.responsable)) x.responsable = p.manager.nombre;
+    for (const r of p.rutinas) if (fuera.includes(r.quien)) r.quien = p.manager.nombre;
+    const r = await api("POST", "/api/arquitecto/aplicar", { propuesta: p });
+    ARQ.propuesta = null; ARQ.objetivo = "";
+    toast(`Equipo creado: ${plural(r.creados, "compañero", "compañeros")} y el proyecto «${r.proyecto.nombre}».`);
+    await cargarEstado();
+    S.proyectos = null;
+    ir(`#/proyectos/${r.proyecto.id}`);
+  }),
   auditar: (t) => conCarga(t, async () => { S.auditoria = await api("GET", "/api/auditoria"); pintarOps(); }),
   "borrar-proyecto": async () => {
     const p = S.proyectos?.find((x) => x.id === S.ruta.id);
@@ -5287,6 +5331,13 @@ const F = {
   },
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
+  async arquitecto(f) {
+    ARQ.objetivo = f.objetivo.value.trim();
+    ARQ.cargando = true; ARQ.fuera = new Set(); pintarArq();
+    try { ARQ.propuesta = await api("POST", "/api/arquitecto", { objetivo: ARQ.objetivo }); }
+    catch (err) { ARQ.cargando = false; pintarArq(); const e = $("#arq .err"); if (e) e.textContent = err.message; return; }
+    ARQ.cargando = false; pintarArq();
+  },
   async "analizar-auditoria"(f) {
     const b = bot(f.botId.value);
     await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/auditoria/analizar", { botId: f.botId.value }); toast(`Le pasé el informe a ${b?.nombre || "tu compañero"}.`, "", { href: `#/chats/${f.botId.value}`, texto: "Ver" }); });
@@ -5520,6 +5571,7 @@ const C = {
     toast(`Copia restaurada (${d.archivos} archivos). Reiniciando…`);
     setTimeout(() => location.reload(), 6000);
   },
+  "arq-incluir": (t) => { const i = Number(t.dataset.i); t.checked ? ARQ.fuera.delete(i) : ARQ.fuera.add(i); pintarArq(); },
   "tk-asig": (t) => putTarea(t.dataset.id, { asignadoA: t.value || null }),
   "tk-estado": (t) => putTarea(t.dataset.id, { estado: t.value }),
   "proy-estado": async (t) => guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { estado: t.value })),

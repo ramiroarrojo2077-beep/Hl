@@ -59,6 +59,7 @@ import {
 import { GRUPOS_HERRAMIENTAS, cerrarHerramientas, normalizarBloqueadas } from "./herramientas.ts";
 import { iniciarTelegram } from "./telegram.ts";
 import { auditar, informeComoTexto } from "./auditoria.ts";
+import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
 import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
 import { abierta, cancelarTarea, crearEquipo, iniciarEquipo, vistaTarea } from "./equipo.ts";
@@ -837,6 +838,28 @@ ruta("POST", "/api/auditoria/analizar", async ({ cuerpo }) => {
   const bot = botDe(botId);
   enviarMensaje(bot.id, informeComoTexto(auditar()));
   return { ok: true };
+});
+
+// ---- Gravity Architect: objetivo → propuesta (no crea nada) → el usuario la revisa y la aplica ----
+
+ruta("POST", "/api/arquitecto", async ({ cuerpo, req }) => {
+  const { objetivo } = validar(z.object({ objetivo: z.string().trim().min(10, "Contá el objetivo con un poco más de detalle.").max(4000) }), await cuerpo());
+  const control = new AbortController();
+  const corte = setTimeout(() => control.abort(), 180_000);
+  req.on("close", () => { if (!req.complete) control.abort(); });
+  try {
+    return await proponerArquitecto(objetivo, control.signal);
+  } catch (err) {
+    if (control.signal.aborted) throw new ErrorHttp(504, "La propuesta tardó demasiado. Probá de nuevo.");
+    throw new ErrorHttp(502, (err as Error).message);
+  } finally {
+    clearTimeout(corte);
+  }
+});
+
+ruta("POST", "/api/arquitecto/aplicar", async ({ cuerpo }) => {
+  const { propuesta } = validar(z.object({ propuesta: Propuesta }), await cuerpo());
+  return malPedido(() => aplicarArquitecto(propuesta));
 });
 
 // ---- Proyectos ----
