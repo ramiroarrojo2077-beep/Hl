@@ -18,7 +18,8 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 - **58 Auditor**: `bots/src/auditoria.ts` (`GET /api/auditoria`, solo lectura): «Aprobar todo solo», reglas amplias, quién puede enviar afuera, errores de herramientas por compañero, tareas bloqueadas/fallidas/viejas, proyectos con vencidas/fallidas/sin responsable, rutinas que fallaron y aprobaciones de más de 1 h. `POST /api/auditoria/analizar {botId}` le pasa el informe a un compañero para que lo analice.
 - **59 Centro de operaciones** (`#/operaciones`): resumen, cada compañero con lo que está haciendo, lo que espera, reuniones en vivo, proyectos trabados y la auditoría.
 - **60 Gravity Architect** (`#/arquitecto`, botón «Architect» en Equipo): `POST /api/arquitecto {objetivo}` pide al modelo una propuesta con esquema JSON (`bots/src/arquitecto.ts`: manager, miembros con grupos apagados y si son temporales, rutinas, proyecto con tareas y dependencias, flujo y riesgos). No crea nada; `POST /api/arquitecto/aplicar {propuesta}` crea equipo, permisos, rutinas y proyecto. Se pueden sacar miembros antes de crear.
-- **Modelo por compañero** (Perfil > Modelo: Automático / Rápido / Potente). Con Claude: Haiku / el modelo de siempre (`BOTS_MODELO_RAPIDO`, `BOTS_MODELO_POTENTE`). Con los gratis: Rápido prueba primero Flash-Lite; Potente, `gemini-2.5-pro` (`GRAVITY_GEMINI_POTENTE`) y si se agota sigue la cadena. Ver `modeloPara` en `cliente.ts` y `ordenGemini` en `proveedores.ts`. Falta: presupuesto por compañero y elegir modelo por tipo de tarea.
+- **Modelo por compañero** (Perfil > Modelo: Automático / Rápido / Potente). Con Claude: Haiku / el modelo de siempre (`BOTS_MODELO_RAPIDO`, `BOTS_MODELO_POTENTE`). Con los gratis: Rápido prueba primero Flash-Lite; Potente, `gemini-2.5-pro` (`GRAVITY_GEMINI_POTENTE`) y si se agota sigue la cadena. Ver `modeloPara` en `cliente.ts` y `ordenGemini` en `proveedores.ts`. Falta: elegir modelo por tipo de tarea.
+- **Tope de gasto diario por compañero** (Perfil, campo `topeDiarioUsd`; solo cuenta con Claude): al llegar no arranca tareas, rutinas ni mensajes solo; lo que pide el usuario sigue. La auditoría lo avisa.
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
@@ -32,7 +33,7 @@ Ninguno de la lista 56–60: están todos hechos (ver arriba).
 ## Pendientes del plan Gravity NEXT (ver `PLAN.md`)
 
 - Base SQLite (`node:sqlite`) con búsqueda FTS5, en paralelo a los JSON actuales (no reemplazar de golpe).
-- Presupuesto de gasto por compañero y modelo por tipo de tarea (la preferencia por compañero ya está).
+- Modelo por tipo de tarea (la preferencia y el tope por compañero ya están).
 - Google Calendar / Drive / GitHub / webhooks como conexiones (`bots/src/conexiones.ts`, ver cómo está hecho Telegram).
 - WhatsApp Business por la API oficial: el módulo `bots/src/whatsapp.ts` existe pero necesita una URL pública para el webhook.
 - Pantalla de inicio tipo panel, accesibilidad completa, revisión de seguridad y medición de rendimiento.

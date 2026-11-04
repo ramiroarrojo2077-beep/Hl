@@ -32,7 +32,7 @@ import {
 } from "./almacen.ts";
 import { client, MODELO, MODELO_VISIBLE, ESFUERZO, BETA_FALLBACK, PROVEEDOR, modeloPara } from "./cliente.ts";
 import { llamar, definirBloqueo, reanudarCupo, type Clase } from "./cupo.ts";
-import { registrarUso, nivelGasto } from "./gasto.ts";
+import { registrarUso, nivelGasto, gastoBotHoy } from "./gasto.ts";
 import { herramientasDe, herramientasBloqueadas, GRUPOS_HERRAMIENTAS, normalizarBloqueadas, cerrarHerramientas, definiciones, entradaValida, necesitaAprobacion, conTerminal, type PedidoAprobacion } from "./herramientas.ts";
 import {
   conectarEquipo,
@@ -684,8 +684,9 @@ function mensajeDeError(err: unknown): string {
 
 // Elige la próxima entrada: por prioridad y, dentro de cada prioridad, por orden de llegada.
 // Cerca del tope de gasto no arranca trabajo automático (tareas y rutinas); lo del usuario sigue.
-function siguiente(t: Trabajo): Entrada | undefined {
-  const frenarAutomatico = nivelGasto() !== null || ajustes().pausa;
+function siguiente(t: Trabajo, botId: string): Entrada | undefined {
+  const tope = buscarBot(botId)?.topeDiarioUsd;
+  const frenarAutomatico = nivelGasto() !== null || ajustes().pausa || (!!tope && gastoBotHoy(botId) >= tope);
   const candidatas = t.cola.filter((e) => !(frenarAutomatico && (e.tipo === "tarea" || e.tipo === "rutina" || e.tipo === "mensajeria")));
   if (!candidatas.length) return undefined;
   const elegida = candidatas.reduce((a, b) => (PRIORIDAD[b.tipo] < PRIORIDAD[a.tipo] ? b : a));
@@ -702,7 +703,7 @@ function persistirColaUsuario(): void {
 async function procesarCola(botId: string): Promise<void> {
   const t = trabajo(botId);
   let entrada: Entrada | undefined;
-  while ((entrada = siguiente(t))) {
+  while ((entrada = siguiente(t, botId))) {
     if (entrada.tipo === "usuario") persistirColaUsuario();
     const bot = buscarBot(botId);
     if (!bot) {

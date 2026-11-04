@@ -70,6 +70,8 @@ export interface Bot {
   archivado?: string | null;
   // Preferencia de modelo: null = el de siempre; rápido = más barato y ágil; potente = el más capaz.
   modelo?: "rapido" | "potente" | null;
+  // Tope de gasto diario propio en USD (solo Claude); al llegar deja de arrancar trabajo automático.
+  topeDiarioUsd?: number | null;
 }
 
 export type Horario =

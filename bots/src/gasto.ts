@@ -52,6 +52,9 @@ export function nivelGasto(): "tope" | "suave" | null {
   return null;
 }
 
+/** Lo que gastó hoy un compañero (solo modelos pagos; los gratis suman 0). */
+export const gastoBotHoy = (botId: string): number => registro[hoy()]?.porBot[botId] ?? 0;
+
 export function costoDe(m: Anthropic.Beta.BetaMessage): number {
   // Los modelos gratis (Gemini, Groq, Mistral) no suman gasto.
   if (!PRECIOS[m.model] && !m.model.startsWith("claude")) return 0;

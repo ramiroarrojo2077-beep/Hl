@@ -23,3 +23,13 @@ test("las herramientas apagadas no se le mandan al modelo ni quedan para ejecuta
   assert.ok(!sinWeb.includes("web_search") && !sinWeb.includes("web_fetch"), "sin búsqueda web del servidor");
   assert.ok(sinWeb.includes("bash"), "lo demás vuelve a estar");
 });
+
+test("el tope de gasto propio se cuenta por compañero y la auditoría lo avisa", async () => {
+  const G = await import("../src/gasto.ts");
+  const AU = await import("../src/auditoria.ts");
+  const bot = A.crearBot({ nombre: "Gasta", titulo: "Analista", descripcion: "x" });
+  bot.topeDiarioUsd = 0.001;
+  G.registrarUso(bot.id, { model: "claude-opus-5-5", usage: { input_tokens: 10_000, output_tokens: 1_000 }, content: [] });
+  assert.ok(G.gastoBotHoy(bot.id) >= 0.001);
+  assert.ok(AU.auditar().hallazgos.some((h) => h.botId === bot.id && /tope de gasto/.test(h.texto)));
+});

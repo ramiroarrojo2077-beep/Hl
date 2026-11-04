@@ -153,6 +153,7 @@ const DatosBot = z.object({
   bloqueadas: z.array(z.string().max(30)).max(20).optional(),
   ensenanza: z.boolean().optional(),
   modelo: z.enum(["rapido", "potente"]).nullish(),
+  topeDiarioUsd: z.number().min(0).max(10_000).nullish(),
   // Misión de un especialista temporal; "" o null lo vuelve permanente.
   mision: z.string().trim().max(2000).nullish(),
 });
@@ -600,6 +601,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
     ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
     modelo: d.modelo === undefined ? (bot.modelo ?? null) : d.modelo,
+    topeDiarioUsd: d.topeDiarioUsd === undefined ? (bot.topeDiarioUsd ?? null) : d.topeDiarioUsd || null,
     temporal: d.mision === undefined ? (bot.temporal ?? null) : d.mision ? { mision: d.mision } : null,
   });
   if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);

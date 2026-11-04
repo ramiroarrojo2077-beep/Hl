@@ -2948,6 +2948,7 @@ function pintarPerfil() {
     <fieldset class="fld"><legend>Esfuerzo</legend><div class="segc"><label><input type="radio" name="esfuerzo" value="low" ${si(esf === "low", "checked")}>Económico</label><label><input type="radio" name="esfuerzo" value="" ${si(esf === "" || esf === "medium", "checked")}>Normal</label><label><input type="radio" name="esfuerzo" value="high" ${si(esf === "high" || esf === "xhigh" || esf === "max", "checked")}>Cuidadoso</label></div><small>Económico gasta menos y responde antes; Cuidadoso piensa más (y cuesta más).</small></fieldset>
     <label class="chk"><input type="checkbox" class="sw" name="puedeEnviarAfuera" ${si(b.puedeEnviarAfuera, "checked")}><span>Puede enviar mensajes afuera<small>Mandar emails o mensajes con tus apps conectadas. Igual te pide aprobación cada vez.</small></span></label>
     <fieldset class="fld"><legend>Modelo</legend><div class="segc"><label><input type="radio" name="modelo" value="" ${si(!b.modelo, "checked")}>Automático</label><label><input type="radio" name="modelo" value="rapido" ${si(b.modelo === "rapido", "checked")}>Rápido</label><label><input type="radio" name="modelo" value="potente" ${si(b.modelo === "potente", "checked")}>Potente</label></div><small>Rápido contesta antes y gasta menos (ideal para atención y mensajes); Potente piensa mejor los trabajos difíciles (con los gratis tiene menos cupo y, si se agota, usa el automático).</small></fieldset>
+    <label class="fld"><span>Tope de gasto diario (US$)</span><input class="inp" type="number" name="topeDiarioUsd" min="0" max="10000" step="0.5" value="${b.topeDiarioUsd ?? ""}" placeholder="Sin tope propio" style="max-width:200px"><small>Al llegar, no arranca tareas, rutinas ni mensajes solo (lo que le pidas vos sigue). Solo cuenta con Claude: los modelos gratis no gastan. Hoy lleva ${usd(b.gastoHoy || 0)}.</small></label>
     <label class="chk"><input type="checkbox" class="sw" name="ensenanza" ${si(b.ensenanza, "checked")}><span>Modo enseñanza<small>Explica cada paso (qué hace, por qué y con qué herramienta) y al final resume el procedimiento para que lo puedas repetir.</small></span></label>
     <label class="fld"><span>Misión (especialista temporal)</span><textarea class="inp" name="mision" rows="2" maxlength="2000" placeholder="Vacío = compañero permanente">${b.temporal?.mision || ""}</textarea><small>Si tiene una misión, se concentra en ella y te avisa al terminarla para que lo archives.</small></label>
     ${htmlPermisosPerfil(b)}
@@ -5399,6 +5400,7 @@ const F = {
     if (f.avColor) cuerpo.avatar = datosAvatar(f);
     cuerpo.ensenanza = d.get("ensenanza") === "on";
     if (f.querySelector("[name=modelo]")) cuerpo.modelo = d.get("modelo") || null;
+    if (f.topeDiarioUsd) cuerpo.topeDiarioUsd = f.topeDiarioUsd.value === "" ? null : Number(f.topeDiarioUsd.value);
     if (f.mision) cuerpo.mision = String(d.get("mision") || "").trim() || null;
     if (f.querySelector("[data-permisos]")) { const si_ = new Set(d.getAll("perm")); cuerpo.bloqueadas = (S.gruposHerramientas || []).map((g) => g.id).filter((id) => !si_.has(id)); }
     const boton = f.querySelector("button:not([type=button])");

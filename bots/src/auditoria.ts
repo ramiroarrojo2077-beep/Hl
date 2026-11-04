@@ -5,6 +5,7 @@
 import { ajustes, conversacion, listarBots, listarReglas, listarRutinas, listarTareas, TERMINALES, type Bot } from "./almacen.ts";
 import { listarAprobaciones } from "./agente.ts";
 import { normalizarBloqueadas } from "./herramientas.ts";
+import { gastoBotHoy } from "./gasto.ts";
 import { listarProyectos, progreso } from "./proyectos.ts";
 
 export type Nivel = "alto" | "medio" | "info";
@@ -58,6 +59,11 @@ export function auditar(): Informe {
     if (b.puedeEnviarAfuera && !fuera.includes("mensajes") && !fuera.includes("conexiones")) {
       h.push({ nivel: "info", area: "permisos", botId: b.id, texto: `${b.nombre} puede mandar mensajes y correos afuera (cada envío igual pide aprobación).` });
     }
+  }
+
+  // Topes de gasto propios
+  for (const b of bots) {
+    if (b.topeDiarioUsd && gastoBotHoy(b.id) >= b.topeDiarioUsd) h.push({ nivel: "medio", area: "permisos", botId: b.id, texto: `${b.nombre} llegó a su tope de gasto de hoy (US$ ${b.topeDiarioUsd}): no arranca tareas ni rutinas solo.` });
   }
 
   // Errores de herramientas
