@@ -33,7 +33,7 @@ import {
 import { client, MODELO, MODELO_VISIBLE, ESFUERZO, BETA_FALLBACK, PROVEEDOR } from "./cliente.ts";
 import { llamar, definirBloqueo, reanudarCupo, type Clase } from "./cupo.ts";
 import { registrarUso, nivelGasto } from "./gasto.ts";
-import { herramientasDe, cerrarHerramientas, definiciones, entradaValida, necesitaAprobacion, conTerminal, type PedidoAprobacion } from "./herramientas.ts";
+import { herramientasDe, herramientasBloqueadas, GRUPOS_HERRAMIENTAS, normalizarBloqueadas, cerrarHerramientas, definiciones, entradaValida, necesitaAprobacion, conTerminal, type PedidoAprobacion } from "./herramientas.ts";
 import {
   conectarEquipo,
   empezarTurnoDeTarea,
@@ -61,7 +61,8 @@ export const CONFIG = { modelo: MODELO_VISIBLE, proveedor: PROVEEDOR, esfuerzo: 
 // ---- Cola de trabajo de cada bot ----
 
 type Entrada =
-  | { tipo: "usuario"; texto: string }
+  // `llamada`: el mensaje viene de una llamada de voz (id que eligió la interfaz para reconocer su turno).
+  | { tipo: "usuario"; texto: string; llamada?: string }
   | { tipo: "resultados"; padreId: string | null }
   | { tipo: "tarea"; tareaId: string }
   | { tipo: "rutina"; rutina: Rutina; texto: string; terminar: (r: { ok: boolean; resumen: string }) => void }
@@ -229,7 +230,14 @@ El usuario puede asignarte conversaciones de las apps de mensajes de su celular 
 ## Cómo trabajar
 - Cada mensaje del usuario empieza con la fecha y hora local entre corchetes.
 - Respondé en el idioma del usuario, directo y sin relleno.
-- Para tareas de varios pasos, trabajá hasta terminar y al final contá qué hiciste, qué encontraste y qué falta.`;
+- Para tareas de varios pasos, trabajá hasta terminar y al final contá qué hiciste, qué encontraste y qué falta.${apagadas(bot)}`;
+}
+
+// Lo que el usuario le apagó a este compañero (además, esas herramientas no se le mandan ni se ejecutan).
+function apagadas(bot: Bot): string {
+  const grupos = normalizarBloqueadas(bot.bloqueadas);
+  if (!grupos.length) return "";
+  return `\n\n## Desactivado por el usuario\nNo tenés: ${grupos.map((g) => GRUPOS_HERRAMIENTAS[g]!.nombre.toLowerCase()).join("; ")}. Aunque arriba se mencionen, no están disponibles. Si una tarea las necesita, decíselo al usuario o pedile a otro compañero que lo haga.`;
 }
 
 const huella = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
@@ -383,7 +391,10 @@ async function ejecutarHerramienta(
   if (signal.aborted) return resultado("El trabajo se detuvo.", true);
 
   const herramienta = (await herramientasDe(bot.id)).get(uso.name);
-  if (!herramienta) return resultado(`No existe la herramienta ${uso.name}.`, true);
+  if (!herramienta) {
+    if (herramientasBloqueadas(bot.id).has(uso.name)) return resultado(`El usuario te desactivó ${uso.name}. No la uses; si hace falta, pedíselo o resolvelo de otra forma.`, true);
+    return resultado(`No existe la herramienta ${uso.name}.`, true);
+  }
   if (!entradaValida(uso.name, uso.input)) return resultado(JSON.stringify({ INVALID_JSON: JSON.stringify(uso.input) }), true);
 
   const entrada = uso.input as Record<string, unknown>;
@@ -442,6 +453,10 @@ function envolver(etiqueta: string, atributos: Record<string, string>, texto: st
   return `<${etiqueta}${attrs}>\n${seguro}\n</${etiqueta}>`;
 }
 
+// Para los mensajes que llegan por una llamada de voz: la respuesta se lee en voz alta.
+const PISTA_LLAMADA =
+  "El usuario te habla por una llamada de voz de Gravity: lo que escribas se lee en voz alta, oración por oración, y además queda en este chat. Contestá corto y natural, como en una charla (dos o tres oraciones), sin markdown, listas, tablas ni emojis. Si hace falta código, una tabla o algo largo, igual escribilo en tu respuesta y decí en voz que lo dejaste en el chat. El texto viene de un reconocedor de voz: si algo no se entiende, preguntá.";
+
 interface Preparado {
   usuario: string;
   origen: Omit<Origen, "indice" | "fecha"> | null;
@@ -452,7 +467,7 @@ interface Preparado {
 // Arma el mensaje que abre el turno. null = no hay nada que hacer (se saltea sin llamar al modelo).
 function preparar(bot: Bot, entrada: Entrada): Preparado | null {
   const marca = `[${fechaLocal()}]`;
-  if (entrada.tipo === "usuario") return { usuario: `${marca} ${entrada.texto}`, origen: null, sistemaExtra: [] };
+  if (entrada.tipo === "usuario") return { usuario: `${marca} ${entrada.texto}`, origen: null, sistemaExtra: entrada.llamada ? [PISTA_LLAMADA] : [] };
   if (entrada.tipo === "rutina") {
     return {
       usuario: `${marca} ${entrada.texto}`,
@@ -522,7 +537,8 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
   if (extra.length) agregarMensajes(bot.id, { role: "system", content: extra.join("\n\n") });
   guardarMeta(bot.id);
   prep.alHacerse?.();
-  emitir("cambio", { botId: bot.id });
+  // `inicio`: arranca un turno; `llamada`: es la respuesta a un mensaje de una llamada de voz.
+  emitir("cambio", { botId: bot.id, inicio: entrada.tipo, llamada: entrada.tipo === "usuario" ? (entrada.llamada ?? null) : null });
 
   const herramientas = await herramientasDe(bot.id);
   const esfuerzo = bot.esfuerzo ?? ESFUERZO;
@@ -557,7 +573,7 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
               context_management: { edits: [{ type: "compact_20260112" }] },
               cache_control: { type: "ephemeral" },
               system: c.sistema!,
-              tools: definiciones(herramientas),
+              tools: definiciones(herramientas, bot.id),
               messages: c.mensajes,
             },
             { signal: control.signal },
@@ -728,8 +744,8 @@ function encolar(botId: string, entrada: Entrada): void {
   }
 }
 
-export function enviarMensaje(botId: string, texto: string): void {
-  encolar(botId, { tipo: "usuario", texto });
+export function enviarMensaje(botId: string, texto: string, opciones: { llamada?: string } = {}): void {
+  encolar(botId, { tipo: "usuario", texto, ...(opciones.llamada ? { llamada: opciones.llamada } : {}) });
 }
 
 // Detiene lo que está haciendo el bot y descarta los mensajes del usuario en cola.

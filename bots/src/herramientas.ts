@@ -233,7 +233,37 @@ function terminalAlternativa(original: BetaRunnableTool): BetaRunnableTool {
 
 const porBot = new Map<string, Map<string, BetaRunnableTool>>();
 
+// Permisos por compañero: el usuario puede apagarle grupos de herramientas. Se hace cumplir acá (no se
+// le mandan al modelo y no se ejecutan), no con una instrucción. Entregar una tarea queda siempre.
+export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas: string[] }> = {
+  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep"] },
+  web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
+  mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
+  conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
+  equipo: { nombre: "Delegar a su equipo", herramientas: ["delegar", "tareas"] },
+  reuniones: { nombre: "Reuniones", herramientas: ["reunion"] },
+  rutinas: { nombre: "Rutinas y habilidades", herramientas: ["rutinas", "habilidades"] },
+  proyectos: { nombre: "Proyectos", herramientas: ["proyectos"] },
+  video: { nombre: "Mirar videos y audios", herramientas: ["analizar_video"] },
+};
+
+export function normalizarBloqueadas(grupos: string[] | undefined | null): string[] {
+  return [...new Set((grupos ?? []).filter((g) => g in GRUPOS_HERRAMIENTAS))];
+}
+
+/** Nombres de herramientas apagadas para un compañero. */
+export function herramientasBloqueadas(botId: string): Set<string> {
+  const grupos = normalizarBloqueadas(buscarBot(botId)?.bloqueadas);
+  return new Set(grupos.flatMap((g) => GRUPOS_HERRAMIENTAS[g]!.herramientas));
+}
+
 export async function herramientasDe(botId: string): Promise<Map<string, BetaRunnableTool>> {
+  const mapa = await todasLasHerramientas(botId);
+  const fuera = herramientasBloqueadas(botId);
+  return fuera.size ? new Map([...mapa].filter(([nombre]) => !fuera.has(nombre))) : mapa;
+}
+
+async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunnableTool>> {
   let mapa = porBot.get(botId);
   if (!mapa) {
     const memoria = betaMemoryTool(await BetaLocalFilesystemMemoryTool.init(carpetaMemoria(botId)));
@@ -561,9 +591,9 @@ function herramientaReunion(botId: string): BetaRunnableTool {
 
 
 // Definiciones para la API, en orden fijo para no romper el caché del prompt.
-export function definiciones(mapa: Map<string, BetaRunnableTool>): Anthropic.Beta.BetaToolUnion[] {
+export function definiciones(mapa: Map<string, BetaRunnableTool>, botId?: string): Anthropic.Beta.BetaToolUnion[] {
   const servidor: Anthropic.Beta.BetaToolUnion[] =
-    PROVEEDOR === "gratis"
+    PROVEEDOR === "gratis" || (botId && herramientasBloqueadas(botId).has("web_search"))
       ? []
       : [
           { type: "web_search_20260209", name: "web_search", max_uses: 10 },

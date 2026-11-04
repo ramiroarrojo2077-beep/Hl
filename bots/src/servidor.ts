@@ -1,6 +1,7 @@
 import http from "node:http";
 import { readFile, readdir, stat, writeFile, mkdir, rm } from "node:fs/promises";
-import { readFileSync, writeFileSync } from "node:fs";
+import { createReadStream, createWriteStream, readFileSync, rmSync, statSync as statArchivo, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
@@ -54,9 +55,12 @@ import {
   reintentarColas,
   resolverAprobacion,
 } from "./agente.ts";
-import { cerrarHerramientas } from "./herramientas.ts";
+import { GRUPOS_HERRAMIENTAS, cerrarHerramientas, normalizarBloqueadas } from "./herramientas.ts";
+import { iniciarTelegram } from "./telegram.ts";
+import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
+import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
 import { abierta, cancelarTarea, crearEquipo, iniciarEquipo, vistaTarea } from "./equipo.ts";
-import { aceptarAcciones, cancelar as cancelarReunion, convocar, iniciarReuniones, intervenir, terminar as terminarReunion, vistaReunion } from "./reuniones.ts";
+import { aceptarAcciones, cancelar as cancelarReunion, convocar, iniciarReuniones, intervenir, pausar as pausarReunion, reanudar as reanudarReunion, terminar as terminarReunion, vistaReunion } from "./reuniones.ts";
 import { estadoCupo, ajustarLimite } from "./cupo.ts";
 import { hoy, resumenGasto } from "./gasto.ts";
 import { describirHorario, iniciarProgramador, normalizarHorario, proximaEjecucion } from "./rutinas.ts";
@@ -108,6 +112,30 @@ class ErrorHttp extends Error {
 
 // ---- Esquemas de entrada ----
 
+// Robot y voz de las llamadas (ver Avatar en almacen.ts). Lo que falte toma el valor por defecto.
+const DatosAvatar = z.object({
+  activo: z.boolean().default(true),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, "El color va como #rrggbb.")
+    .transform((c) => c.toUpperCase())
+    .default("#6CD3F0"),
+  expresividad: z.number().min(0).max(100).transform(Math.round).default(60),
+  calidad: z.enum(["auto", "alta", "baja"]).default("auto"),
+  voz: z
+    .string()
+    .trim()
+    .max(200)
+    .nullish()
+    .transform((v) => v || null),
+  velocidad: z
+    .number()
+    .min(0.5)
+    .max(2)
+    .transform((v) => Math.round(v * 100) / 100)
+    .default(1),
+});
 const DatosBot = z.object({
   nombre: z.string().trim().min(1).max(40),
   titulo: z.string().trim().min(1).max(80),
@@ -117,6 +145,9 @@ const DatosBot = z.object({
   puedeEnviarAfuera: z.boolean().optional(),
   esfuerzo: z.enum(["low", "medium", "high", "xhigh", "max"]).nullish(),
   icono: z.string().trim().regex(/^[a-z0-9-]{1,30}$/).nullish(),
+  avatar: DatosAvatar.nullish(),
+  // Grupos de herramientas apagadas (ver GRUPOS_HERRAMIENTAS en herramientas.ts).
+  bloqueadas: z.array(z.string().max(30)).max(20).optional(),
 });
 const DatosHorario = z.object({
   tipo: z.string(),
@@ -224,7 +255,10 @@ function verificarOrigen(req: http.IncomingMessage): void {
     // Origen ilegible: se rechaza abajo.
   }
   if (origen && hostOrigen !== req.headers.host) throw new ErrorHttp(403, "Origen no permitido.");
-  if (!String(req.headers["content-type"] ?? "").startsWith("application/json")) {
+  const tipo = String(req.headers["content-type"] ?? "");
+  // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
+  const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
+  if (!tipo.startsWith("application/json") && !esRespaldo) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
 }
@@ -367,7 +401,8 @@ async function enviarArchivo(res: http.ServerResponse, archivo: string, descarga
   res.end(contenido);
 }
 
-// Archivos públicos de la interfaz (sin sesión: íconos, manifest, service worker y fuentes).
+// Archivos públicos de la interfaz (sin sesión: íconos, manifest, service worker, fuentes y las
+// bibliotecas de terceros en vendor/, como three.js para el robot de las llamadas).
 const TIPOS: Record<string, string> = {
   ".webmanifest": "application/manifest+json",
   ".js": "text/javascript; charset=utf-8",
@@ -378,7 +413,7 @@ const TIPOS: Record<string, string> = {
 };
 
 async function servirPublico(res: http.ServerResponse, ruta: string): Promise<boolean> {
-  if (!/^\/(manifest\.webmanifest|sw\.js|(iconos|fuentes)\/[\w.-]+)$/.test(ruta)) return false;
+  if (!/^\/(manifest\.webmanifest|sw\.js|(iconos|fuentes|vendor\/three)\/[\w-]+(\.[\w-]+)*)$/.test(ruta)) return false;
   const archivo = new URL(`.${ruta}`, PUBLICO);
   const contenido = await readFile(archivo).catch(() => null);
   if (!contenido) return false;
@@ -390,6 +425,23 @@ async function servirPublico(res: http.ServerResponse, ruta: string): Promise<bo
   res.end(contenido);
   return true;
 }
+
+// La página solo puede cargar lo propio: sin scripts, estilos ni conexiones de afuera, sin <object> y sin
+// quedar embebida en otro sitio. Los archivos de los bots se sirven aparte con "sandbox" (ver arriba).
+const CSP_PAGINA = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "media-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
 
 const PAGINA_LOGIN = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gravity</title><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#070A12">
@@ -458,6 +510,7 @@ ruta("GET", "/api/estado", async ({ local }) => {
     plantillasEquipo: PLANTILLAS_EQUIPO,
     categorias: CATEGORIAS,
     iconos: ICONOS,
+    gruposHerramientas: Object.entries(GRUPOS_HERRAMIENTAS).map(([id, g]) => ({ id, nombre: g.nombre })),
     limites: { maxBots: MAX_BOTS, maxEquipo: MAX_MIEMBROS_EQUIPO + 1 },
     nombres: NOMBRES,
     config: CONFIG,
@@ -497,7 +550,12 @@ ruta("POST", "/api/bots", async ({ cuerpo }) => {
   const d = validar(DatosBot, await cuerpo());
   const error = validarJefe(null, d.reportaA ?? null);
   if (error) throw new ErrorHttp(400, error);
-  const bot = crearBot({ ...d, reportaA: d.reportaA ?? null, esfuerzo: d.esfuerzo ?? null, icono: d.icono ?? null });
+  const bot = crearBot({ ...d, reportaA: d.reportaA ?? null, esfuerzo: d.esfuerzo ?? null, icono: d.icono ?? null, avatar: d.avatar ?? null });
+  const bloqueadas = normalizarBloqueadas(d.bloqueadas);
+  if (bloqueadas.length) {
+    bot.bloqueadas = bloqueadas;
+    guardarEstado();
+  }
   emitir("bots");
   return vistaBot(bot);
 });
@@ -529,6 +587,8 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     puedeEnviarAfuera: d.puedeEnviarAfuera ?? bot.puedeEnviarAfuera,
     esfuerzo: d.esfuerzo === undefined ? bot.esfuerzo : d.esfuerzo,
     icono: d.icono === undefined ? bot.icono : d.icono,
+    avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar,
+    bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
   });
   if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);
   guardarEstado();
@@ -543,6 +603,7 @@ ruta("DELETE", "/api/bots/:id", async ({ params }) => {
   borrarBot(bot.id);
   quitarBotDeConexiones(bot.id);
   quitarBotDeMensajeria(bot.id);
+  quitarBotDeProyectos(bot.id);
   await cerrarHerramientas(bot.id);
   emitir("bots");
   return { ok: true };
@@ -552,8 +613,13 @@ ruta("GET", "/api/bots/:id/conversacion", async ({ params }) => vistaConversacio
 
 ruta("POST", "/api/bots/:id/mensajes", async ({ params, cuerpo }) => {
   const bot = botDe(params[0]!);
-  const { texto } = validar(z.object({ texto: z.string().trim().min(1).max(20000) }), await cuerpo());
-  enviarMensaje(bot.id, texto);
+  // `llamada`: id que arma la interfaz cuando el mensaje sale de una llamada de voz. El bot recibe la
+  // pista de que lo que conteste se lee en voz alta, y el «cambio» que abre ese turno trae el mismo id.
+  const { texto, llamada } = validar(
+    z.object({ texto: z.string().trim().min(1).max(20000), llamada: z.string().regex(/^[\w-]{1,64}$/).optional() }),
+    await cuerpo(),
+  );
+  enviarMensaje(bot.id, texto, llamada ? { llamada } : {});
   return { ok: true };
 });
 
@@ -709,12 +775,93 @@ ruta("POST", "/api/reuniones/:id/terminar", async ({ params }) => {
   return { ok: true };
 });
 
+ruta("POST", "/api/reuniones/:id/pausar", async ({ params }) => vistaReunion(malPedido(() => pausarReunion(params[0]!)) as ReturnType<typeof pausarReunion>));
+
+ruta("POST", "/api/reuniones/:id/reanudar", async ({ params }) => {
+  const r = reanudarReunion(params[0]!);
+  if (!r) throw new ErrorHttp(404, "No existe esa reunión.");
+  return vistaReunion(r);
+});
+
 ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
   cancelarReunion(params[0]!);
   return { ok: true };
 });
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
+
+// ---- Proyectos ----
+
+const vistaProyecto = (p: Proyecto) => ({ ...p, progreso: progreso(p) });
+
+function proyectoDe(id: string): Proyecto {
+  const p = listarProyectos().find((x) => x.id === id);
+  if (!p) throw new ErrorHttp(404, "No existe ese proyecto.");
+  return p;
+}
+
+const idBot = z.string().trim().min(1).max(64).nullable().optional();
+const DatosNuevoProyecto = z.object({ nombre: z.string().trim().min(1).max(120), objetivo: z.string().max(4000).default(""), coordinadorId: idBot });
+const DatosCambioProyecto = z.object({
+  nombre: z.string().trim().min(1).max(120).optional(),
+  objetivo: z.string().max(4000).optional(),
+  estado: z.enum(["activo", "pausado", "terminado", "archivado"]).optional(),
+  coordinadorId: idBot,
+});
+const camposTarea = {
+  detalle: z.string().max(6000).optional(),
+  criterio: z.string().max(1000).optional(),
+  asignadoA: idBot,
+  dependeDe: z.array(z.string().trim().min(1).max(32)).max(50).optional(),
+  prioridad: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
+  vence: z.string().max(40).nullable().optional(),
+};
+const DatosNuevaTarea = z.object({ titulo: z.string().trim().min(1).max(200), ...camposTarea });
+const DatosCambioTarea = z.object({
+  titulo: z.string().trim().min(1).max(200).optional(),
+  ...camposTarea,
+  estado: z.enum(ESTADOS_TAREA).optional(),
+  resultado: z.string().max(6000).nullable().optional(),
+});
+
+ruta("GET", "/api/proyectos", async () => listarProyectos().map(vistaProyecto));
+ruta("GET", "/api/proyectos/:id", async ({ params }) => vistaProyecto(proyectoDe(params[0]!)));
+
+ruta("POST", "/api/proyectos", async ({ cuerpo }) => {
+  const d = validar(DatosNuevoProyecto, await cuerpo());
+  return vistaProyecto(malPedido(() => crearProyecto(d)) as Proyecto);
+});
+
+ruta("PUT", "/api/proyectos/:id", async ({ params, cuerpo }) => {
+  const d = validar(DatosCambioProyecto, await cuerpo());
+  const p = proyectoDe(params[0]!);
+  return vistaProyecto(malPedido(() => cambiarProyecto(p.id, d)) as Proyecto);
+});
+
+ruta("DELETE", "/api/proyectos/:id", async ({ params }) => {
+  if (!borrarProyecto(proyectoDe(params[0]!).id)) throw new ErrorHttp(404, "No existe ese proyecto.");
+  return { ok: true };
+});
+
+ruta("POST", "/api/proyectos/:id/tareas", async ({ params, cuerpo }) => {
+  const d = validar(DatosNuevaTarea, await cuerpo());
+  const p = proyectoDe(params[0]!);
+  malPedido(() => agregarTarea(p.id, d));
+  return vistaProyecto(p);
+});
+
+ruta("PUT", "/api/proyectos/:id/tareas/:tarea", async ({ params, cuerpo }) => {
+  const d = validar(DatosCambioTarea, await cuerpo());
+  const p = proyectoDe(params[0]!);
+  malPedido(() => cambiarTarea(p.id, params[1]!, d));
+  return vistaProyecto(p);
+});
+
+ruta("DELETE", "/api/proyectos/:id/tareas/:tarea", async ({ params }) => {
+  const p = proyectoDe(params[0]!);
+  if (!borrarTarea(p.id, params[1]!)) throw new ErrorHttp(404, "No existe esa tarea en el proyecto.");
+  return vistaProyecto(p);
+});
 
 // ---- Habilidades y reglas ----
 
@@ -834,6 +981,73 @@ ruta("GET", "/api/computadora/archivo", async ({ url, res }) => {
   const archivo = await rutaSegura(COMPUTADORA, url.searchParams.get("ruta") ?? "");
   await enviarArchivo(res, archivo, url.searchParams.has("descargar"));
   return undefined;
+});
+
+// ---- Copia de seguridad (ver respaldo.ts) ----
+
+ruta("GET", "/api/respaldo", async ({ res }) => {
+  const zip = path.join(tmpdir(), `gravity-respaldo-${Date.now()}.zip`);
+  try {
+    exportarRespaldo(zip);
+  } catch (err) {
+    rmSync(zip, { force: true });
+    throw new ErrorHttp(500, (err as Error).message);
+  }
+  const dia = new Date().toISOString().slice(0, 10);
+  res.writeHead(200, {
+    "Content-Type": "application/zip",
+    "Content-Length": String(statArchivo(zip).size),
+    "Content-Disposition": `attachment; filename="gravity-respaldo-${dia}.zip"`,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+  const flujo = createReadStream(zip);
+  flujo.pipe(res);
+  flujo.on("close", () => rmSync(zip, { force: true }));
+  return undefined;
+});
+
+const MAX_RESPALDO = 2.2 * 1024 * 1024 * 1024;
+
+ruta("POST", "/api/respaldo/importar", async ({ req }) => {
+  const zip = path.join(tmpdir(), `gravity-importar-${Date.now()}.zip`);
+  await new Promise<void>((resolve, reject) => {
+    let total = 0;
+    const salida = createWriteStream(zip);
+    req.on("data", (trozo: Buffer) => {
+      total += trozo.length;
+      if (total > MAX_RESPALDO) {
+        req.destroy();
+        salida.destroy();
+        reject(new ErrorHttp(413, "El respaldo es demasiado grande."));
+      }
+    });
+    req.on("error", reject);
+    salida.on("error", reject);
+    salida.on("finish", () => resolve());
+    req.pipe(salida);
+  }).catch((err) => {
+    rmSync(zip, { force: true });
+    throw err;
+  });
+  const destino = rutaRespaldo("restaurado");
+  let resumen;
+  try {
+    resumen = extraerRespaldo(zip, destino);
+  } catch (err) {
+    throw new ErrorHttp(400, (err as Error).message);
+  } finally {
+    rmSync(zip, { force: true });
+  }
+  // Se responde primero; después se frena todo, se cambia la carpeta y el motor se reinicia
+  // (en el celular lo vuelve a prender la app; en la compu hay que abrir Gravity de nuevo).
+  setTimeout(() => {
+    detenerTodo();
+    const anterior = aplicarRespaldo(destino);
+    console.log(`Respaldo restaurado. Los datos anteriores quedaron en ${anterior}.`);
+    process.exit(0);
+  }, 800);
+  return { ok: true, archivos: resumen.archivos, reinicia: true };
 });
 
 // ---- Mensajería por las notificaciones del celular (ver mensajeria.ts) ----
@@ -998,7 +1212,7 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
   if (!local) {
     if (!hayClave()) {
       if (url.pathname.startsWith("/api/")) throw new ErrorHttp(403, "Falta configurar una clave en Ajustes.");
-      res.writeHead(403, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      res.writeHead(403, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": CSP_PAGINA });
       res.end(PAGINA_SIN_CLAVE);
       return;
     }
@@ -1021,7 +1235,7 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
     }
     if (!sesionValida(req)) {
       if (url.pathname.startsWith("/api/")) throw new ErrorHttp(401, "Iniciá sesión.");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": CSP_PAGINA });
       res.end(PAGINA_LOGIN);
       return;
     }
@@ -1035,7 +1249,7 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
   }
 
   if (req.method === "GET" && url.pathname === "/") {
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": CSP_PAGINA, "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" });
     res.end(await readFile(new URL("index.html", PUBLICO)));
     return;
   }
@@ -1063,6 +1277,7 @@ iniciarReuniones();
 iniciarAgentes();
 iniciarEquipo();
 iniciarProgramador(ejecutarRutina);
+iniciarTelegram();
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {

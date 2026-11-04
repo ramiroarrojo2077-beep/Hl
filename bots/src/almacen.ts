@@ -23,6 +23,21 @@ export const MAX_PROFUNDIDAD = 3;
 export type Esfuerzo = "low" | "medium" | "high" | "xhigh" | "max";
 export type Cargo = "manager" | "miembro";
 
+// Cómo se ve y suena el compañero en una llamada de voz (robot 3D). Opcional: los bots viejos no lo
+// tienen y la interfaz usa los valores por defecto.
+export interface Avatar {
+  activo: boolean;
+  // Acento (ojos, anillos de los auriculares, satélite del logo): "#rrggbb".
+  color: string;
+  // 0-100: cuánto gesticula.
+  expresividad: number;
+  calidad: "auto" | "alta" | "baja";
+  // Voz del sintetizador (id que da el puente nativo o voiceURI del navegador); null = la predeterminada.
+  voz: string | null;
+  // Velocidad del habla (1 = normal).
+  velocidad: number;
+}
+
 export interface Bot {
   id: string;
   nombre: string;
@@ -43,6 +58,10 @@ export interface Bot {
   carpetaEquipo: string | null;
   // Glifo del puesto (ver ICONOS en plantillas.ts); null = sin glifo.
   icono: string | null;
+  // Robot y voz de las llamadas; ausente o null = los valores por defecto.
+  avatar?: Avatar | null;
+  // Grupos de herramientas que el usuario le apagó (ver GRUPOS_HERRAMIENTAS); ausente = todas prendidas.
+  bloqueadas?: string[];
 }
 
 export type Horario =
@@ -220,6 +239,8 @@ export interface Reunion {
   fin: string | null;
   rutinaId: string | null;
   error: string | null;
+  // El usuario la pausó: nadie habla hasta que la reanude (se puede seguir escribiendo en la sala).
+  pausada?: boolean;
 }
 
 interface Estado {
@@ -347,7 +368,7 @@ const COLORES = ["#63D3B1", "#9DA9FF", "#C9A9FF", "#F0A6CA", "#7DD9F2", "#B5E48C
 export const listarBots = (): Bot[] => estado.bots;
 export const buscarBot = (id: string): Bot | undefined => estado.bots.find((b) => b.id === id);
 
-export type DatosBot = Pick<Bot, "nombre" | "titulo" | "descripcion"> & Partial<Pick<Bot, "cargo" | "reportaA" | "puedeEnviarAfuera" | "esfuerzo" | "color" | "icono">>;
+export type DatosBot = Pick<Bot, "nombre" | "titulo" | "descripcion"> & Partial<Pick<Bot, "cargo" | "reportaA" | "puedeEnviarAfuera" | "esfuerzo" | "color" | "icono" | "avatar">>;
 
 export function crearBot(datos: DatosBot, guardar = true): Bot {
   const cargo = datos.cargo ?? "miembro";
@@ -368,6 +389,7 @@ export function crearBot(datos: DatosBot, guardar = true): Bot {
     carpetaEquipo: cargo === "manager" ? carpetaDeEquipo(datos.nombre, id) : null,
     icono: datos.icono ?? null,
   };
+  if (datos.avatar) bot.avatar = datos.avatar;
   estado.bots.push(bot);
   if (guardar) guardarEstado();
   return bot;

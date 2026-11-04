@@ -53,6 +53,8 @@ const controles = new Map<string, AbortController>();
 const prioridad = new Map<string, { botId: string; pregunta: string }[]>();
 const terminarPronto = new Set<string>();
 const alTerminar = new Map<string, (r: Reunion) => void>();
+const despertar = new Map<string, () => void>();
+const pausaTotal = new Map<string, number>();
 
 export const enCurso = (): Reunion[] => listarReuniones().filter((r) => r.estado === "en_curso" || r.estado === "cierre");
 export const enReunion = (botId: string): Reunion | undefined =>
@@ -151,6 +153,42 @@ export function intervenir(id: string, texto: string): Reunion {
 
 export function terminar(id: string): void {
   terminarPronto.add(id);
+  // Si estaba en pausa, se cierra igual: el acta se escribe con lo que se habló.
+  reanudar(id);
+}
+
+// Pausa entre turnos: quien está hablando termina su intervención y después nadie más habla hasta
+// reanudar. El tiempo en pausa no cuenta para el límite de duración.
+export function pausar(id: string): Reunion {
+  const r = buscarReunion(id);
+  if (!r || r.estado !== "en_curso") throw new Error("Solo se puede pausar una reunión en curso.");
+  if (!r.pausada) {
+    r.pausada = true;
+    r.turnos.push({ autor: "sistema", nombre: "Gravity", texto: "Reunión en pausa.", fecha: ahora(), ronda: r.ronda });
+    avisar(r);
+  }
+  return r;
+}
+
+export function reanudar(id: string): Reunion | undefined {
+  const r = buscarReunion(id);
+  if (!r?.pausada) return r;
+  r.pausada = false;
+  if (r.estado === "en_curso") r.turnos.push({ autor: "sistema", nombre: "Gravity", texto: "Reunión reanudada.", fecha: ahora(), ronda: r.ronda });
+  avisar(r);
+  despertar.get(id)?.();
+  return r;
+}
+
+async function esperarSiPausada(r: Reunion, signal: AbortSignal): Promise<void> {
+  if (!r.pausada || signal.aborted) return;
+  const desde = Date.now();
+  await new Promise<void>((listo) => {
+    despertar.set(r.id, listo);
+    signal.addEventListener("abort", () => listo(), { once: true });
+  });
+  despertar.delete(r.id);
+  pausaTotal.set(r.id, (pausaTotal.get(r.id) ?? 0) + Date.now() - desde);
 }
 
 export function cancelar(id: string): void {
@@ -346,7 +384,7 @@ async function correr(r: Reunion, signal: AbortSignal): Promise<void> {
       .join("\n\n");
   const turnos = () => r.turnos.filter((t) => t.autor !== "usuario" && t.autor !== "sistema").length;
   const sinPresupuesto = () => r.gastoUsd >= PRESUPUESTO_USD - RESERVA_CIERRE_USD;
-  const sinTiempo = () => Date.now() - inicio > MAX_MINUTOS * 60_000;
+  const sinTiempo = () => Date.now() - inicio - (pausaTotal.get(r.id) ?? 0) > MAX_MINUTOS * 60_000;
 
   const decidir = async (): Promise<z.infer<typeof Decision> | null> => {
     try {
@@ -368,6 +406,7 @@ async function correr(r: Reunion, signal: AbortSignal): Promise<void> {
 
   try {
     while (!signal.aborted) {
+      await esperarSiPausada(r, signal);
       if (r.ronda >= limites.rondas || turnos() >= MAX_TURNOS || sinPresupuesto() || sinTiempo() || terminarPronto.has(r.id)) break;
       const d = await decidir();
       // Si el facilitador no puede decidir: en la primera ronda hablan los que tienen bloqueos y los líderes; después se cierra.
@@ -430,11 +469,17 @@ async function correr(r: Reunion, signal: AbortSignal): Promise<void> {
       };
       // En una daily hablan todos los elegidos a la vez; en una discusión, de a uno y escuchando a los anteriores.
       if (r.tipo === "standup") await Promise.all(recortados.map(hablar));
-      else for (const h of recortados) await hablar(h);
+      else
+        for (const h of recortados) {
+          await esperarSiPausada(r, signal);
+          if (terminarPronto.has(r.id)) break;
+          await hablar(h);
+        }
     }
     if (signal.aborted) throw new Error("cancelada");
 
     r.estado = "cierre";
+    r.pausada = false;
     r.hablando = [];
     avisar(r);
     let acta: Acta;
@@ -469,12 +514,15 @@ async function correr(r: Reunion, signal: AbortSignal): Promise<void> {
     r.estado = "cancelada";
     r.fin = ahora();
     r.hablando = [];
+    r.pausada = false;
     if (!signal.aborted) r.error = (err as Error).message;
     avisar(r);
   } finally {
     controles.delete(r.id);
     terminarPronto.delete(r.id);
     prioridad.delete(r.id);
+    despertar.delete(r.id);
+    pausaTotal.delete(r.id);
     alTerminar.get(r.id)?.(r);
     alTerminar.delete(r.id);
   }

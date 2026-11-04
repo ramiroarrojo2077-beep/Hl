@@ -1,0 +1,3 @@
+three.js 0.180.0 (https://threejs.org, licencia MIT: ver LICENSE).
+Copiado tal cual de build/ del paquete npm three@0.180.0.
+three.module.min.js importa ./three.core.min.js: van juntos.

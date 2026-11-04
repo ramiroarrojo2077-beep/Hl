@@ -1,14 +1,17 @@
 // Service worker de Gravity (PWA).
 // - Páginas (navegaciones): primero la red. Si la compu no responde, una página "sin conexión"
 //   que vive acá adentro. Las páginas no se guardan: siempre ves lo último de tu compu.
-// - Íconos (/iconos/*) y fuentes: primero la caché (cambian poco).
+// - Íconos (/iconos/*), fuentes y bibliotecas vendorizadas (/vendor/*, como three.js para el robot de las
+//   llamadas): primero la caché (cambian poco; three.js va con su versión en vendor/three/VERSION).
 // - /api/* nunca pasa por la caché (ni por este service worker).
 // Al cambiar algo de este archivo, subí VERSION para que se borren las cachés viejas.
 
-const VERSION = "3";
+const VERSION = "4";
 const PREFIJO = "gravity-";
 const CACHE_ESTATICOS = `${PREFIJO}estaticos-v${VERSION}`;
 const PRECARGA = ["/iconos/gravity-192.png", "/iconos/gravity.svg", "/iconos/favicon.svg", "/iconos/favicon-32.png", "/iconos/favicon-16.png"];
+// El robot 3D de las llamadas: se guarda aparte para que, si falla, igual queden los íconos.
+const PRECARGA_VENDOR = ["/vendor/three/three.module.min.js", "/vendor/three/three.core.min.js"];
 
 const PAGINA_SIN_CONEXION = `<!doctype html>
 <html lang="es-AR">
@@ -71,7 +74,7 @@ self.addEventListener("install", (evento) => {
   evento.waitUntil(
     caches
       .open(CACHE_ESTATICOS)
-      .then((cache) => cache.addAll(PRECARGA))
+      .then((cache) => Promise.all([cache.addAll(PRECARGA).catch(() => {}), cache.addAll(PRECARGA_VENDOR).catch(() => {})]))
       .catch(() => {}) // si un ícono falla, igual se instala
       .then(() => self.skipWaiting()),
   );
@@ -141,7 +144,7 @@ self.addEventListener("fetch", (evento) => {
     return;
   }
 
-  if ((mismoOrigen && url.pathname.startsWith("/iconos/")) || esFuente(pedido, url)) {
+  if ((mismoOrigen && (url.pathname.startsWith("/iconos/") || url.pathname.startsWith("/vendor/"))) || esFuente(pedido, url)) {
     evento.respondWith(primeroLaCache(pedido));
   }
   // Todo lo demás: el navegador lo maneja normalmente.
