@@ -51,7 +51,7 @@
 61–64. 🟡 Tema oscuro/claro con cian y naranja; diseño de referencia en el lienzo «Gravity · Interfaz profesional». Faltan efectos de cristal y neón. 65. 🟡 Transiciones básicas. 66. ⛔ Logo 3D animado. 67. 🟡 Centro de operaciones hace de panel. 68. ✅ Tarjetas con estado. 69. ✅ Navegación inferior en el celular. 70. ✅ Íconos propios. 71. ✅ Indicadores de actividad. 72. ✅ Gráfico de productividad animado (respeta «reducir movimiento»). 73. 🟡 Tema claro/oscuro. 74. ✅ Adaptable (360 px a escritorio). 75. 🟡 Calidad del robot adaptable.
 
 ## 8. Robot 3D
-76–82. ✅ (cuerpo, iluminación, movimientos independientes, estados, gestos con pausas e intensidad, ojos). 78. 🟡 símbolo en el pecho: verificar. 83. 🟡 Reacciones al terminar. 84. 🟡 Saludo. 85. ⛔ Cambiar ángulo de cámara. 86. 🟡 Personalización (color). 87. 🟡 Estilo por expresividad. 88–90. ✅.
+76–82. ✅ (cuerpo, iluminación, movimientos independientes, estados, gestos con pausas e intensidad, ojos). 78. 🟡 símbolo en el pecho: verificar. 83. 🟡 Reacciones al terminar. 84. 🟡 Saludo. 85. ✅ Girar al robot arrastrando el dedo. 86. 🟡 Personalización (color). 87. 🟡 Estilo por expresividad. 88–90. ✅.
 
 ## 9. Reuniones
 91. ✅ 92. ✅ 93. ✅ 94. ✅ (Debate) 95. ✅ (votación) 96. ✅ 97. ✅ 98. ✅ 99. ✅ (pausar/reanudar/terminar) 100. ⛔ Robots en la sala.

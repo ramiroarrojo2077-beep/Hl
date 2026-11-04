@@ -1137,7 +1137,7 @@ audio.cp-media{background:none;max-height:none;padding:12px}
 .ll-est:is([data-f=aprobacion],[data-f=error]) i{background:var(--sig)}
 @keyframes ll-late{50%{transform:scale(.6);opacity:.55}}
 .ll-sub{min-height:18px;margin-top:6px;font-size:12.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ll-esc{position:relative;flex:1 1 auto;min-height:150px;display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.ll-esc{position:relative;flex:1 1 auto;min-height:150px;display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
 .ll-esc canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ll-esc:focus-visible{outline:2px solid var(--acc);outline-offset:-8px;border-radius:28px}
 .ll-esc .ll-cargando{color:var(--tx3);font-size:13px}
@@ -5137,6 +5137,26 @@ function crearRobot3D(T, cont, cerebro, op) {
   let cuadros = 0, t0fps = 0, fps = 0, arranque = 0;
   const alMover = (e) => { const r = canvas.getBoundingClientRect(); mir.puntero = { x: Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - 0.5) * 2)), y: Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height - 0.32) * 2)), t: performance.now() }; };
   cont.addEventListener("pointermove", alMover, { passive: true });
+  // Girar al robot arrastrando el dedo para verlo desde otro ángulo; un toque sin arrastre sigue
+  // interrumpiendo. A los 6 s sin tocarlo vuelve a mirarte de frente.
+  const giro = { x0: null, base: 0, obj: 0, ultimo: 0, arrastre: false };
+  const alApretar = (e) => { giro.x0 = e.clientX; giro.base = giro.obj; giro.arrastre = false; };
+  const alArrastrar = (e) => {
+    if (giro.x0 === null) return;
+    const dx = e.clientX - giro.x0;
+    if (!giro.arrastre && Math.abs(dx) < 10) return;
+    giro.arrastre = true;
+    giro.obj = Math.max(-1.2, Math.min(1.2, giro.base + dx * 0.012));
+    giro.ultimo = performance.now();
+  };
+  const alSoltar = () => {
+    if (giro.arrastre) cont.addEventListener("click", (ev) => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
+    giro.x0 = null;
+  };
+  cont.addEventListener("pointerdown", alApretar, { passive: true });
+  cont.addEventListener("pointermove", alArrastrar, { passive: true });
+  cont.addEventListener("pointerup", alSoltar, { passive: true });
+  cont.addEventListener("pointercancel", alSoltar, { passive: true });
   const perdido = (e) => { e.preventDefault(); op.alFallar?.(); };
   canvas.addEventListener("webglcontextlost", perdido);
 
@@ -5156,6 +5176,8 @@ function crearRobot3D(T, cont, cerebro, op) {
     brazos("hombro", 0, 0, 0.012 * r);
     const flota = (0.028 * Math.sin(t * 1.2) + 0.04 * w.entusiasmado * Math.abs(Math.sin(t * 4.3))) * (reducido ? 0.3 : 1);
     R.raiz.position.y = flota;
+    if (!giro.arrastre && giro.obj && now - giro.ultimo > 6000) giro.obj = 0;
+    R.raiz.rotation.y += (giro.obj - R.raiz.rotation.y) * Math.min(1, dt * 6);
     const sombraK = 1 - flota * 2.2;
     mancha.scale.set(sombraK, sombraK, 1);
     halo.material.uniforms.opacidad.value = (temaOscuro ? 0.3 : 0.16) * (0.85 + 0.15 * r + 0.4 * a * hab);
@@ -5240,6 +5262,10 @@ function crearRobot3D(T, cont, cerebro, op) {
     destruir() {
       ro.disconnect();
       cont.removeEventListener("pointermove", alMover);
+      cont.removeEventListener("pointerdown", alApretar);
+      cont.removeEventListener("pointermove", alArrastrar);
+      cont.removeEventListener("pointerup", alSoltar);
+      cont.removeEventListener("pointercancel", alSoltar);
       canvas.removeEventListener("webglcontextlost", perdido);
       mixer.stopAllAction();
       mixer.uncacheRoot(rig);
