@@ -30,10 +30,10 @@
 21. ✅ Misiones: proyectos con tareas y dependencias + Architect que divide el objetivo.
 22. ⛔ Infraestructura remota.
 23. ⛔ Editor visual de nodos.
-24. 🟡 Condicionales: rutinas + tareas con dependencias. Falta «si pasa X, hacé Y».
+24. ✅ Automatizaciones condicionales (Ajustes > Automatizaciones): si una tarea queda bloqueada, falla o se completa, o termina una reunión → un compañero hace lo indicado (una vez por evento, tope 20/hora).
 25. ✅ Investigaciones programadas: rutina + habilidad Investigación profunda.
 26. ✅ Aprobaciones antes de acciones sensibles.
-27. 🟡 Tareas bloqueadas: la auditoría las detecta y se puede pedir análisis a un compañero. Falta propuesta automática.
+27. ✅ Tareas bloqueadas: la auditoría las detecta, avisan por notificación y una automatización «tarea bloqueada» puede pedirle a un compañero que proponga la solución.
 28. ✅ Historial de acciones por compañero (Operaciones > Actividad reciente).
 29. 🟡 Reintentos: mensajes con reintento controlado, colas que sobreviven reinicios. Falta para tareas largas.
 30. ✅ Presupuestos: tope diario global y por compañero, gasto por compañero.

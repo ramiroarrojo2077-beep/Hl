@@ -62,6 +62,7 @@ import { auditar, informeComoTexto } from "./auditoria.ts";
 import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
+import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
 import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
@@ -856,6 +857,22 @@ ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
 
+// ---- Automatizaciones condicionales ----
+
+ruta("GET", "/api/automatizaciones", async () => ({ eventos: EVENTOS, reglas: listarAutomatizaciones() }));
+ruta("POST", "/api/automatizaciones", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(1).max(80), evento: z.enum(Object.keys(EVENTOS) as [keyof typeof EVENTOS, ...(keyof typeof EVENTOS)[]]), botId: z.string().min(1).max(64), instrucciones: z.string().trim().min(1).max(4000) }), await cuerpo());
+  return malPedido(() => crearAutomatizacion(d));
+});
+ruta("PUT", "/api/automatizaciones/:id", async ({ params, cuerpo }) => {
+  const { activa } = validar(z.object({ activa: z.boolean() }), await cuerpo());
+  return malPedido(() => cambiarAutomatizacion(params[0]!, activa));
+});
+ruta("DELETE", "/api/automatizaciones/:id", async ({ params }) => {
+  if (!borrarAutomatizacion(params[0]!)) throw new ErrorHttp(404, "No existe esa automatización.");
+  return { ok: true };
+});
+
 // ---- Webhooks entrantes ----
 
 ruta("GET", "/api/webhooks", async () => listarWebhooks());
@@ -1425,6 +1442,7 @@ iniciarAgentes();
 iniciarEquipo();
 iniciarProgramador(ejecutarRutina);
 iniciarTelegram();
+iniciarAutomatizaciones();
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {

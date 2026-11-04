@@ -2024,7 +2024,7 @@ function montar(antes) {
   if (v === "arquitecto") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="arq"></div></div>`; pintarArq(); return; }
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
   if (v === "conexiones") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="cx"></div></div>`; pintarConexiones(); cargarConexiones(); return; }
-  if (v === "ajustes") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="aj"></div></div>`; pintarAjustes(); cargarWebhooks(); return; }
+  if (v === "ajustes") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="aj"></div></div>`; pintarAjustes(); cargarWebhooks(); cargarAutomatizaciones(); return; }
 }
 
 function montarChats(antes) {
@@ -3427,6 +3427,9 @@ function pintarAjustes() {
         <p class="ayuda" style="margin-top:10px">Los pasos para abrir Gravity en el celular (misma red o túnel) están en <code>bots/MOVIL.md</code> del repositorio.</p></section>
       ${(S.archivados || []).length ? html`<section class="card" aria-labelledby="aj-ar"><h2 id="aj-ar">Compañeros archivados</h2><p class="sub">No trabajan ni aparecen en el equipo. Al restaurarlos vuelven con su memoria y su conversación.</p>
         <ul class="reglas">${S.archivados.map((b) => html`<li><span>${b.nombre} · ${b.titulo}<small>${b.temporal?.mision ? `Misión: ${b.temporal.mision.slice(0, 120)} · ` : ""}archivado ${diaHora(b.archivado)}</small></span><button class="btn out sm" data-a="restaurar-bot" data-id="${b.id}" aria-label="Restaurar a ${b.nombre}">Restaurar</button></li>`)}</ul></section>` : ""}
+      <section class="card" aria-labelledby="aj-au"><h2 id="aj-au">Automatizaciones</h2><p class="sub">«Si pasa esto, que tal compañero haga esto». Cada evento dispara una vez por regla (como mucho 20 por hora).</p>
+        ${(S.autom?.reglas || []).length ? html`<ul class="reglas">${S.autom.reglas.map((a) => html`<li><span><b>${a.nombre}</b> · si ${(S.autom.eventos[a.evento] || a.evento).toLowerCase()} → ${bot(a.botId)?.nombre || "(ya no está)"}<small>${a.instrucciones.slice(0, 140)} · ${a.disparos} disparos${a.ultimo ? ` · último ${diaHora(a.ultimo)}` : ""}</small></span><span style="display:flex;gap:6px"><button class="btn ghost sm" data-a="autom-activa" data-id="${a.id}" data-v="${a.activa ? "0" : "1"}" aria-pressed="${String(a.activa)}">${a.activa ? "Pausar" : "Activar"}</button><button class="btn ghost sm" data-a="autom-borrar" data-id="${a.id}" aria-label="Borrar ${a.nombre}">Borrar</button></span></li>`)}</ul>` : ""}
+        ${S.bots.length && S.autom ? html`<details class="mas" style="margin-top:8px"><summary>${ico("plus", "s")}Nueva automatización</summary><form class="form-card" data-f="automatizacion" style="margin-top:10px"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" placeholder="Ej.: Destrabar tareas"></label><label class="fld"><span>Cuando</span><select class="inp" name="evento">${Object.entries(S.autom.eventos).map(([k, t]) => html`<option value="${k}">${t}</option>`)}</select></label><label class="fld"><span>Quién se encarga</span><select class="inp" name="botId">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre} · ${b.titulo}</option>`)}</select></label><label class="fld"><span>Qué tiene que hacer</span><textarea class="inp" name="instrucciones" rows="2" required maxlength="4000" placeholder="Ej.: averiguá qué la bloquea y proponé una solución concreta"></textarea></label><p class="err" role="alert"></p><div class="acts"><button class="btn pri">Crear</button></div></form></details>` : ""}</section>
       <section class="card" aria-labelledby="aj-w"><h2 id="aj-w">Webhooks</h2><p class="sub">Una dirección secreta para que otro servicio (un formulario, una tienda, Zapier) le mande datos a un compañero con una indicación fija. Lo que llega se trata como contenido de afuera. Desde el celular solo se puede llamar con un túnel (ver <code>bots/MOVIL.md</code>).</p>
         ${S.webhookNuevo ? html`<div class="callout"><span>Copiá esta dirección ahora: no se vuelve a mostrar.<br><code style="word-break:break-all">${location.origin}/api/gancho/${S.webhookNuevo}</code><br><small>Llamala con POST y un cuerpo JSON (Content-Type: application/json).</small></span></div>` : ""}
         ${(S.webhooks || []).length ? html`<ul class="reglas">${S.webhooks.map((w) => html`<li><span>${w.nombre} → ${bot(w.botId)?.nombre || "(ya no está)"}<small>${w.recibidos} recibidos${w.ultimo ? ` · último ${diaHora(w.ultimo)}` : ""}</small></span><button class="btn ghost sm" data-a="webhook-borrar" data-id="${w.id}" aria-label="Borrar el webhook ${w.nombre}">Borrar</button></li>`)}</ul>` : ""}
@@ -3493,6 +3496,7 @@ function montarOps() {
   if (!S.proyectos) cargarProyectos();
   cargarActividad();
 }
+async function cargarAutomatizaciones() { try { S.autom = await api("GET", "/api/automatizaciones"); if (S.ruta.vista === "ajustes") pintarAjustes(); } catch {} }
 async function cargarWebhooks() { try { S.webhooks = await api("GET", "/api/webhooks"); if (S.ruta.vista === "ajustes") pintarAjustes(); } catch {} }
 async function cargarActividad() { try { S.actividad = await api("GET", "/api/actividad?limite=40"); pintarOps(); } catch {} }
 function pintarOps() {
@@ -5222,6 +5226,8 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "autom-activa": (t) => conCarga(t, async () => { await api("PUT", `/api/automatizaciones/${t.dataset.id}`, { activa: t.dataset.v === "1" }); await cargarAutomatizaciones(); }),
+  "autom-borrar": async (t) => { if (await confirmar("¿Borrar la automatización?", "Deja de dispararse.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/automatizaciones/${t.dataset.id}`, {}); await cargarAutomatizaciones(); }); },
   "webhook-borrar": async (t) => { if (await confirmar("¿Borrar el webhook?", "La dirección deja de funcionar.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/webhooks/${t.dataset.id}`, {}); S.webhookNuevo = null; await cargarWebhooks(); }); },
   "arq-descartar": () => { ARQ.propuesta = null; ARQ.fuera = new Set(); pintarArq(); },
   "arq-crear": (t) => conCarga(t, async () => {
@@ -5389,6 +5395,12 @@ const F = {
   },
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
+  async automatizacion(f) {
+    await conCarga(f.querySelector("button"), async () => {
+      try { await api("POST", "/api/automatizaciones", { nombre: f.nombre.value, evento: f.evento.value, botId: f.botId.value, instrucciones: f.instrucciones.value }); toast("Automatización creada."); await cargarAutomatizaciones(); }
+      catch (err) { f.querySelector(".err").textContent = err.message; }
+    });
+  },
   async webhook(f) {
     await conCarga(f.querySelector("button"), async () => {
       try { const r = await api("POST", "/api/webhooks", { nombre: f.nombre.value, botId: f.botId.value, instrucciones: f.instrucciones.value }); S.webhookNuevo = r.token; await cargarWebhooks(); }
