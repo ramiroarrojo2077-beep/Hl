@@ -7,7 +7,7 @@
 2. ✅ Personalidades: estilo de comunicación propio (Perfil > Personalidad y estilo) además de descripción, modelo, esfuerzo, enseñanza y permisos.
 3. ✅ Director: los managers coordinan, delegan y reciben resultados; Architect arma el equipo con un manager.
 4. ✅ Equipos automáticos según el proyecto: Gravity Architect (#/arquitecto).
-5. 🟡 Agentes que proponen agentes: Architect propone y el usuario aprueba. Falta una herramienta para que un compañero lo proponga desde el chat.
+5. ✅ Compañeros que proponen compañeros: herramienta `equipo_nuevo` (proponer con Architect; crear pide aprobación siempre, aunque esté «Aprobar todo solo»).
 6. ✅ Debates: reuniones tipo Debate con propuestas, críticas y votación.
 7. 🟡 Memoria compartida: carpeta de equipo + `recordar` (cada uno ve la suya y la de su equipo, no la de otros). Falta permiso por recuerdo.
 8. 🟡 Especialización progresiva: memoria persistente + lecciones. Falta un resumen automático de lo aprendido por proyecto.

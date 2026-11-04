@@ -41,3 +41,15 @@ test("el historial de acciones guarda y filtra por compañero", async () => {
   assert.equal(AC.leerActividad().length, 2);
   assert.deepEqual(AC.leerActividad({ botId: "b2" }).map((r) => r.que), ["Enviar correo"]);
 });
+
+test("crear un equipo nuevo desde un compañero pide aprobación siempre", async () => {
+  const bot = A.crearBot({ nombre: "Prop", titulo: "Manager", descripcion: "x" });
+  A.ajustes().autoAprobar = true;
+  const pedido = H.necesitaAprobacion("equipo_nuevo", { accion: "crear", propuesta: "p123" }, bot);
+  A.ajustes().autoAprobar = false;
+  assert.ok(pedido, "pide aprobación aunque esté Aprobar todo solo");
+  assert.equal(pedido.patron, "", "sin «siempre permitir»");
+  assert.equal(H.necesitaAprobacion("equipo_nuevo", { accion: "proponer", objetivo: "x" }, bot), null, "proponer no crea nada");
+  const t = (await H.herramientasDe(bot.id)).get("equipo_nuevo");
+  assert.match(await t.run({ accion: "crear", objetivo: null, propuesta: "p123" }), /no existe o venció/);
+});

@@ -22,6 +22,7 @@ import {
   guardarHabilidad,
   ajustes,
   buscarBot,
+  nuevoId,
   listarBots,
   jefes,
   subarbol,
@@ -240,7 +241,7 @@ export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas:
   web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
   mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
   conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
-  equipo: { nombre: "Delegar a su equipo", herramientas: ["delegar", "tareas"] },
+  equipo: { nombre: "Delegar a su equipo y proponer compañeros nuevos", herramientas: ["delegar", "tareas", "equipo_nuevo"] },
   reuniones: { nombre: "Reuniones", herramientas: ["reunion"] },
   rutinas: { nombre: "Rutinas y habilidades", herramientas: ["rutinas", "habilidades"] },
   proyectos: { nombre: "Proyectos", herramientas: ["proyectos"] },
@@ -278,6 +279,7 @@ async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunn
       herramientaMensajes(botId),
       herramientaRecordar(botId),
       herramientaProyectos(botId),
+      herramientaEquipoNuevo(botId),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
       // Mirar videos y audios lo hace Gemini: está si hay su clave, sea cual sea el proveedor de los bots.
@@ -295,7 +297,7 @@ export async function cerrarHerramientas(botId: string): Promise<void> {
   for (const t of mapa?.values() ?? []) await t.close?.();
 }
 
-const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion", "conexion", "mensajes", "analizar_video", "recordar", "proyectos"]);
+const ESTRICTAS = new Set(["rutinas", "habilidades", "delegar", "tareas", "entregar", "reunion", "conexion", "mensajes", "analizar_video", "recordar", "proyectos", "equipo_nuevo"]);
 
 // ---- Apps de afuera (Gmail, Microsoft 365, MCP…): una sola herramienta fija para todas ----
 
@@ -456,6 +458,59 @@ function herramientaRecordar(botId: string): BetaRunnableTool {
     run: (e) => formatearRecuerdos(buscarRecuerdos(botId, e.consulta, e.alcance ?? "todo"), e.consulta),
   });
   return Object.assign(herramienta, { input_schema: esquemaJson(EntradaRecordar) });
+}
+
+// ---- Equipo nuevo: un compañero propone (con Gravity Architect) y crea, con aprobación, otros compañeros ----
+
+const EntradaEquipoNuevo = z.strictObject({
+  accion: z.enum(["proponer", "crear"]),
+  objetivo: z.string().nullable().describe("Solo proponer: qué tiene que lograr el equipo nuevo, con detalle"),
+  propuesta: z.string().nullable().describe("Solo crear: el id de propuesta que devolvió proponer"),
+});
+// Propuestas hechas por compañeros, a la espera de que el usuario apruebe crearlas (en memoria, 1 hora).
+const propuestas = new Map<string, { p: import("./arquitecto.ts").Propuesta; botId: string; vence: number }>();
+
+function herramientaEquipoNuevo(botId: string): BetaRunnableTool {
+  const herramienta = betaZodTool({
+    name: "equipo_nuevo",
+    description:
+      "Cuando un trabajo necesita especialistas que no hay: «proponer» arma con Gravity Architect un equipo (puestos, herramientas mínimas, proyecto y tareas) y te devuelve la propuesta con su id; contásela al usuario. «crear» la crea, siempre con la aprobación del usuario. No lo uses para trabajos que el equipo actual puede hacer.",
+    inputSchema: EntradaEquipoNuevo,
+    run: async (e) => {
+      const A = await import("./arquitecto.ts");
+      if (e.accion === "proponer") {
+        if (!e.objetivo?.trim()) return "Falta el objetivo.";
+        const control = new AbortController();
+        const corte = setTimeout(() => control.abort(), 180_000);
+        try {
+          const p = await A.proponer(e.objetivo.trim(), control.signal);
+          const id = `p${nuevoId().slice(0, 6)}`;
+          propuestas.set(id, { p, botId, vence: Date.now() + 3600_000 });
+          return [
+            `Propuesta ${id}: ${p.resumen}`,
+            `Manager: ${p.manager.nombre} (${p.manager.titulo}). Miembros: ${p.miembros.map((m) => `${m.nombre} (${m.titulo}${m.temporal ? ", temporal" : ""})`).join(", ")}.`,
+            `Proyecto «${p.proyecto.nombre}» con ${p.proyecto.tareas.length} tareas. Flujo: ${p.flujo.join(" → ")}.`,
+            p.riesgos.length ? `A tener en cuenta: ${p.riesgos.join("; ")}` : "",
+            `Contale al usuario la propuesta. Para crearla usá crear con propuesta ${id} (le va a pedir aprobación).`,
+          ].filter(Boolean).join("\n");
+        } catch (err) {
+          return `No se pudo armar la propuesta: ${(err as Error).message}`;
+        } finally {
+          clearTimeout(corte);
+        }
+      }
+      const guardada = e.propuesta ? propuestas.get(e.propuesta) : undefined;
+      if (!guardada || guardada.vence < Date.now()) return "Esa propuesta no existe o venció: proponé de nuevo.";
+      propuestas.delete(e.propuesta!);
+      try {
+        const r = A.aplicar(guardada.p);
+        return `Listo: se crearon ${r.creados} compañeros y el proyecto «${r.proyecto.nombre}» (${r.proyecto.id}). Las primeras tareas ya les llegaron.`;
+      } catch (err) {
+        return `No se pudo crear: ${(err as Error).message}`;
+      }
+    },
+  });
+  return Object.assign(herramienta, { input_schema: esquemaJson(EntradaEquipoNuevo) });
 }
 
 // ---- Proyectos: objetivo, tareas con dependencias y criterio de "listo" ----
@@ -656,6 +711,18 @@ function rutaEnComputadora(ruta: string): string | null {
 const recortar = (s: string, n = 4000) => (s.length > n ? `${s.slice(0, n)}\n… (${s.length - n} caracteres más)` : s);
 
 export function necesitaAprobacion(nombre: string, entrada: Record<string, unknown>, bot: Bot): PedidoAprobacion | null {
+  // Crear compañeros nuevos se aprueba siempre, aunque esté «Aprobar todo solo».
+  if (nombre === "equipo_nuevo" && entrada.accion === "crear") {
+    const g = propuestas.get(String(entrada.propuesta ?? ""));
+    return {
+      herramienta: "rutinas",
+      patron: "",
+      titulo: g ? `Crear el equipo «${g.p.proyecto.nombre}» (${1 + g.p.miembros.length} compañeros)` : "Crear un equipo nuevo",
+      detalle: g ? `${g.p.resumen}\nManager: ${g.p.manager.nombre} · ${g.p.manager.titulo}\n${g.p.miembros.map((m) => `- ${m.nombre} · ${m.titulo}${m.temporal ? " (temporal)" : ""}${m.apagar.length ? ` · sin ${m.apagar.join(", ")}` : ""}`).join("\n")}\nTareas: ${g.p.proyecto.tareas.length}` : "La propuesta no existe o venció.",
+      regla: "",
+      firma: `equipo_nuevo:${String(entrada.propuesta ?? "")}`,
+    };
+  }
   // El usuario eligió que todo se apruebe solo (Ajustes). Los topes por hora de mensajería siguen valiendo.
   if (ajustes().autoAprobar) return null;
   if (nombre === "bash") {
