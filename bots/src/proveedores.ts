@@ -302,7 +302,7 @@ const aceptaNulo = (e: Json | undefined): boolean =>
 const sinNulo = (e: Json | undefined): Json | undefined =>
   e?.anyOf || e?.oneOf ? ([...((e.anyOf as Json[]) ?? []), ...((e.oneOf as Json[]) ?? [])].find((x) => x?.type !== "null") ?? e) : e;
 
-function completarNulos(esquema: Json | undefined, valor: unknown): unknown {
+export function completarNulos(esquema: Json | undefined, valor: unknown): unknown {
   const props = esquema?.properties as Record<string, Json> | undefined;
   if (!props || !valor || typeof valor !== "object" || Array.isArray(valor)) return valor;
   const salida: Json = { ...(valor as Json) };

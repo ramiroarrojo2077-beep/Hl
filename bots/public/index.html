@@ -820,6 +820,8 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--tx2)}
 .deps{display:flex;flex-wrap:wrap;gap:6px 14px}
 .reus{display:flex;flex-direction:column;gap:8px}
+.barra.prod{display:flex;height:10px}.barra.prod>i{transition:width .6s ease}.barra.prod>i.mal{background:var(--sig)}
+@media (prefers-reduced-motion: reduce){.barra.prod>i{transition:none}}
 .modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
@@ -3515,7 +3517,7 @@ function montarOps() {
 }
 async function cargarAutomatizaciones() { try { S.autom = await api("GET", "/api/automatizaciones"); if (S.ruta.vista === "ajustes") pintarAjustes(); } catch {} }
 async function cargarWebhooks() { try { S.webhooks = await api("GET", "/api/webhooks"); if (S.ruta.vista === "ajustes") pintarAjustes(); } catch {} }
-async function cargarActividad() { try { S.actividad = await api("GET", "/api/actividad?limite=40"); pintarOps(); } catch {} }
+async function cargarActividad() { try { [S.actividad, S.estadisticas] = await Promise.all([api("GET", "/api/actividad?limite=40"), api("GET", "/api/estadisticas")]); pintarOps(); } catch {} }
 function pintarOps() {
   const el = $("#ops");
   if (!el) return;
@@ -3543,6 +3545,14 @@ function pintarOps() {
     ${abiertas.length || S.aprobaciones.length ? html`<ul class="hist">${S.aprobaciones.map((x) => html`<li><b>${bot(x.botId)?.nombre || "Alguien"}</b> pide aprobación: ${x.titulo}</li>`)}${abiertas.slice(0, 30).map((t) => html`<li><b>${bot(t.paraId)?.nombre || "Alguien"}</b> · ${t.estado === "en_curso" ? "trabajando en" : "tiene pendiente"} «${t.titulo}»${bot(t.deId) ? ` (encargo de ${bot(t.deId).nombre})` : ""}</li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Nada esperando.</p>`}
     ${vivas.length ? html`<div class="sec-h"><h2>Reuniones en vivo <span>${vivas.length}</span></h2></div><div class="reus">${vivas.map((r) => filaReunion(r, true))}</div>` : ""}
     ${trabados.length ? html`<div class="sec-h"><h2>Proyectos trabados <span>${trabados.length}</span></h2></div><div class="proys">${trabados.map(tarjetaProyecto)}</div>` : ""}
+    ${(S.estadisticas || []).length ? (() => {
+      const xs = S.estadisticas.map((e) => ({ ...e, b: bot(e.botId) })).filter((e) => e.b).sort((x, y) => y.tareasCompletas - x.tareasCompletas || y.acciones - x.acciones);
+      const max = Math.max(1, ...xs.map((e) => e.tareasCompletas + e.tareasTrabadas));
+      return html`<div class="sec-h"><h2>Productividad · 7 días</h2></div>
+        <ul class="hist" aria-label="Tareas por compañero en 7 días">${xs.map((e) => html`<li style="display:grid;grid-template-columns:minmax(80px,140px) 1fr auto;gap:10px;align-items:center"><b>${e.b.nombre}</b>
+          <span class="barra prod" role="img" aria-label="${e.tareasCompletas} tareas completas y ${e.tareasTrabadas} trabadas"><i style="width:${(e.tareasCompletas / max) * 100}%"></i><i class="mal" style="width:${(e.tareasTrabadas / max) * 100}%"></i></span>
+          <small class="muted">${e.tareasCompletas} ✓ · ${e.acciones} acciones${e.errores ? ` (${e.errores} con error)` : ""}${e.gastoUsd ? ` · ${usd(e.gastoUsd)}` : ""}</small></li>`)}</ul>`;
+    })() : ""}
     <div class="sec-h"><h2>Actividad reciente</h2><button class="btn out sm" data-a="actividad">${ico("refresh", "s")}Actualizar</button></div>
     ${(S.actividad || []).length ? html`<ul class="hist">${S.actividad.map((x) => html`<li><span class="tag ${x.ok ? "" : "sig"}">${x.tipo === "aprobacion" ? (x.ok ? "Aprobado" : "Negado") : x.ok ? "OK" : "Error"}</span> <b>${bot(x.botId)?.nombre || "Un compañero"}</b> · ${x.que} <small class="muted">· ${diaHora(x.fecha)}${!x.ok && x.detalle ? ` — ${x.detalle.slice(0, 140)}` : ""}</small></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Todavía no hay acciones registradas.</p>`}
     <div class="sec-h"><h2>Rendimiento</h2><button class="btn out sm" data-a="rendimiento">${ico("refresh", "s")}${r ? "Actualizar" : "Medir"}</button></div>

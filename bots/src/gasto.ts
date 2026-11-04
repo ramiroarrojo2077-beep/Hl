@@ -52,6 +52,17 @@ export function nivelGasto(): "tope" | "suave" | null {
   return null;
 }
 
+/** Gasto por compañero en los últimos `dias` días (claves de día AAAA-MM-DD del registro). */
+export function gastoPorBotDesde(dias: number): Record<string, number> {
+  const desde = new Date(Date.now() - dias * 86_400_000).toISOString().slice(0, 10);
+  const salida: Record<string, number> = {};
+  for (const [dia, d] of Object.entries(registro)) {
+    if (dia < desde) continue;
+    for (const [id, usd] of Object.entries(d.porBot)) salida[id] = (salida[id] ?? 0) + usd;
+  }
+  return salida;
+}
+
 /** Lo que gastó hoy un compañero (solo modelos pagos; los gratis suman 0). */
 export const gastoBotHoy = (botId: string): number => registro[hoy()]?.porBot[botId] ?? 0;
 

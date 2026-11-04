@@ -69,7 +69,7 @@ import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as ex
 import { abierta, cancelarTarea, crearEquipo, iniciarEquipo, vistaTarea } from "./equipo.ts";
 import { aceptarAcciones, cancelar as cancelarReunion, convocar, iniciarReuniones, intervenir, pausar as pausarReunion, reanudar as reanudarReunion, terminar as terminarReunion, vistaReunion } from "./reuniones.ts";
 import { estadoCupo, ajustarLimite } from "./cupo.ts";
-import { hoy, resumenGasto } from "./gasto.ts";
+import { gastoPorBotDesde, hoy, resumenGasto } from "./gasto.ts";
 import { describirHorario, iniciarProgramador, normalizarHorario, proximaEjecucion } from "./rutinas.ts";
 import { vistaConversacion } from "./vista.ts";
 import { CATEGORIAS, ICONOS, MAX_MIEMBROS_EQUIPO, NOMBRES, PLANTILLAS, PLANTILLAS_EQUIPO } from "./plantillas.ts";
@@ -908,6 +908,24 @@ ruta("POST", "/api/webhooks", async ({ cuerpo }) => {
 ruta("DELETE", "/api/webhooks/:id", async ({ params }) => {
   if (!borrarWebhook(params[0]!)) throw new ErrorHttp(404, "No existe ese webhook.");
   return { ok: true };
+});
+
+// ---- Productividad de los últimos 7 días por compañero (datos reales del motor) ----
+
+ruta("GET", "/api/estadisticas", async () => {
+  const desde = Date.now() - 7 * 86_400_000;
+  const gasto = gastoPorBotDesde(7);
+  const acciones = leerActividad({ limite: 500 }).filter((r) => Date.parse(r.fecha) >= desde);
+  const tareas = listarTareas().filter((t) => t.fin && Date.parse(t.fin) >= desde);
+  const deProyectos = listarProyectos().flatMap((p) => p.tareas).filter((t) => t.estado === "completada" && Date.parse(t.actualizada) >= desde);
+  return listarBots().map((b) => ({
+    botId: b.id,
+    tareasCompletas: tareas.filter((t) => t.paraId === b.id && (t.estado === "completa" || t.estado === "parcial")).length + deProyectos.filter((t) => t.asignadoA === b.id).length,
+    tareasTrabadas: tareas.filter((t) => t.paraId === b.id && (t.estado === "bloqueada" || t.estado === "fallida")).length,
+    acciones: acciones.filter((r) => r.botId === b.id && r.tipo === "herramienta").length,
+    errores: acciones.filter((r) => r.botId === b.id && r.tipo === "herramienta" && !r.ok).length,
+    gastoUsd: Math.round((gasto[b.id] ?? 0) * 100) / 100,
+  }));
 });
 
 // ---- Historial de acciones ----

@@ -48,7 +48,7 @@
 51. ⛔ Gravity Universe. 52. ⛔ Laboratorio. 53. ⛔ Mercado de habilidades (hay habilidades locales). 54. ⛔ Simulador. 55. ⛔ Mapa de conocimiento. 56. ✅ Agentes temporales. 57. ✅ Modo enseñanza. 58. ✅ Auditor. 59. ✅ Centro de operaciones. 60. ✅ Gravity Architect.
 
 ## 7. Visual
-61–64. 🟡 Tema oscuro/claro con cian y naranja; diseño de referencia en el lienzo «Gravity · Interfaz profesional». Faltan efectos de cristal y neón. 65. 🟡 Transiciones básicas. 66. ⛔ Logo 3D animado. 67. 🟡 Centro de operaciones hace de panel. 68. ✅ Tarjetas con estado. 69. ✅ Navegación inferior en el celular. 70. ✅ Íconos propios. 71. ✅ Indicadores de actividad. 72. ⛔ Gráficos animados. 73. 🟡 Tema claro/oscuro. 74. ✅ Adaptable (360 px a escritorio). 75. 🟡 Calidad del robot adaptable.
+61–64. 🟡 Tema oscuro/claro con cian y naranja; diseño de referencia en el lienzo «Gravity · Interfaz profesional». Faltan efectos de cristal y neón. 65. 🟡 Transiciones básicas. 66. ⛔ Logo 3D animado. 67. 🟡 Centro de operaciones hace de panel. 68. ✅ Tarjetas con estado. 69. ✅ Navegación inferior en el celular. 70. ✅ Íconos propios. 71. ✅ Indicadores de actividad. 72. ✅ Gráfico de productividad animado (respeta «reducir movimiento»). 73. 🟡 Tema claro/oscuro. 74. ✅ Adaptable (360 px a escritorio). 75. 🟡 Calidad del robot adaptable.
 
 ## 8. Robot 3D
 76–82. ✅ (cuerpo, iluminación, movimientos independientes, estados, gestos con pausas e intensidad, ojos). 78. 🟡 símbolo en el pecho: verificar. 83. 🟡 Reacciones al terminar. 84. 🟡 Saludo. 85. ⛔ Cambiar ángulo de cámara. 86. 🟡 Personalización (color). 87. 🟡 Estilo por expresividad. 88–90. ✅.
@@ -69,7 +69,7 @@
 131. ✅ 132. ✅ 133. ✅ 134. ✅ 135. ✅ (contenido de afuera envuelto, suplantación neutralizada; ver PENDIENTE: pruebas de inyección a revisar) 136. ✅ 137. ✅ (Android vuelve a prender el motor) 138. 🟡 139. 🟡 140. ⛔ 141. ✅ 142. 🟡 143. ✅ (migraciones en almacen.ts) 144. ✅ (11 pruebas + e2e) 145. 🟡 (restaurar copia).
 
 ## 14. Experiencia
-146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ⛔ Etiquetas. 151. ✅ Prioridades en tareas. 152. ✅ Recordatorios de una sola vez (rutina «Una sola vez»; los compañeros también los programan con la herramienta rutinas). 153. ⛔ 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ✅ Notificaciones configurables (aprobaciones y tareas trabadas) 159. ✅ Panel de novedades en Ajustes 160. 🟡 (auditoría).
+146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ⛔ Etiquetas. 151. ✅ Prioridades en tareas. 152. ✅ Recordatorios de una sola vez (rutina «Una sola vez»; los compañeros también los programan con la herramienta rutinas). 153. ✅ Productividad de 7 días por compañero (Operaciones) 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ✅ Notificaciones configurables (aprobaciones y tareas trabadas) 159. ✅ Panel de novedades en Ajustes 160. 🟡 (auditoría).
 
 ## 15. Conservación
 161–170. ✅ Se mantiene todo lo anterior, con migraciones, copias y versiones en git. 168: los botones nuevos tienen función y prueba. 169: nada simulado (el robot 2D avisa si no hay 3D; la voz avisa si no hay).

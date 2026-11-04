@@ -31,6 +31,7 @@ import {
   type Tarea,
 } from "./almacen.ts";
 import { client, MODELO, MODELO_VISIBLE, ESFUERZO, BETA_FALLBACK, PROVEEDOR, modeloPara } from "./cliente.ts";
+import { completarNulos } from "./proveedores.ts";
 import { llamar, definirBloqueo, reanudarCupo, type Clase } from "./cupo.ts";
 import { registrarUso, nivelGasto, gastoBotHoy } from "./gasto.ts";
 import { herramientasDe, herramientasBloqueadas, GRUPOS_HERRAMIENTAS, normalizarBloqueadas, cerrarHerramientas, definiciones, entradaValida, necesitaAprobacion, conTerminal, type PedidoAprobacion } from "./herramientas.ts";
@@ -406,6 +407,8 @@ async function ejecutarHerramienta(
   if (signal.aborted) return resultado("El trabajo se detuvo.", true);
 
   const herramienta = (await herramientasDe(bot.id)).get(uso.name);
+  // Los campos opcionales (nullable) que el modelo omitió se completan con null antes de validar.
+  if (herramienta && "input_schema" in herramienta) uso.input = completarNulos((herramienta as { input_schema: unknown }).input_schema as never, uso.input as never) as typeof uso.input;
   if (!herramienta) {
     if (herramientasBloqueadas(bot.id).has(uso.name)) return resultado(`El usuario te desactivó ${uso.name}. No la uses; si hace falta, pedíselo o resolvelo de otra forma.`, true);
     return resultado(`No existe la herramienta ${uso.name}.`, true);
