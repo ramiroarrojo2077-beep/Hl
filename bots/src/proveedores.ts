@@ -35,14 +35,24 @@ const MODELOS_MISTRAL = (process.env.GRAVITY_MISTRAL_MODELOS ?? "mistral-large-l
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
+// Servidor propio compatible con OpenAI (Ollama, LM Studio, vLLM, llama.cpp…): va primero en la cadena.
+// Ej.: GRAVITY_LOCAL_URL=http://192.168.0.10:11434/v1 GRAVITY_LOCAL_MODELOS=qwen2.5:14b
+const LOCAL_BASE = (process.env.GRAVITY_LOCAL_URL ?? "").replace(/\/$/, "");
+const CLAVE_LOCAL = process.env.GRAVITY_LOCAL_CLAVE ?? "";
+const MODELOS_LOCAL = (process.env.GRAVITY_LOCAL_MODELOS ?? "")
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+export const hayLocal = !!(LOCAL_BASE && MODELOS_LOCAL.length);
 const ESPERA_RED_MS = 120_000;
 
 export const hayGemini = !!CLAVE_GEMINI;
-export const hayRespaldo = !!(CLAVE_GROQ || CLAVE_MISTRAL);
+export const hayRespaldo = !!(CLAVE_GROQ || CLAVE_MISTRAL || hayLocal);
 
 /** Para mostrar en la interfaz. */
 export function describirProveedor(): string {
   const partes = [];
+  if (hayLocal) partes.push(`servidor propio (${MODELOS_LOCAL.join(", ")})`);
   if (hayGemini) partes.push(`Google Gemini (${MODELOS_GEMINI.join(", ")})`);
   if (CLAVE_GROQ) partes.push(`respaldo gratis de Groq (${MODELOS_GROQ.join(", ")})`);
   if (CLAVE_MISTRAL) partes.push(`respaldo gratis de Mistral (${MODELOS_MISTRAL.join(", ")})`);
@@ -468,6 +478,7 @@ interface Compatible {
   maxSalida: number;
 }
 
+const LOCAL: Compatible = { nombre: "Servidor propio", base: LOCAL_BASE, clave: CLAVE_LOCAL, estricto: false, maxSalida: 8192 };
 const GROQ: Compatible = { nombre: "Groq", base: GROQ_BASE, clave: CLAVE_GROQ, estricto: false, maxSalida: 8192 };
 const MISTRAL: Compatible = { nombre: "Mistral", base: MISTRAL_BASE, clave: CLAVE_MISTRAL, estricto: true, maxSalida: 32_000 };
 
@@ -630,6 +641,7 @@ function ordenGemini(pref: Pedido["preferencia"]): string[] {
 
 async function eslabones(signal?: AbortSignal | null, pref: Pedido["preferencia"] = null): Promise<Eslabon[]> {
   const lista: Eslabon[] = [];
+  if (hayLocal) for (const m of MODELOS_LOCAL) lista.push({ clave: `local:${m}`, pedir: (p, s) => pedirCompatible(LOCAL, p, m, s) });
   if (hayGemini) for (const m of ordenGemini(pref)) lista.push({ clave: `gemini:${m}`, pedir: (p, s) => pedirGemini(p, m, s) });
   if (CLAVE_GROQ) for (const m of MODELOS_GROQ) lista.push({ clave: `groq:${m}`, pedir: (p, s) => pedirCompatible(GROQ, p, m, s) });
   if (CLAVE_MISTRAL) for (const m of MODELOS_MISTRAL) lista.push({ clave: `mistral:${m}`, pedir: (p, s) => pedirCompatible(MISTRAL, p, m, s) });
