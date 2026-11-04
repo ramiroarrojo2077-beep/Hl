@@ -237,6 +237,7 @@ El usuario puede asignarte conversaciones de las apps de mensajes de su celular 
 // Especialista temporal y modo enseñanza (los prende el usuario en el Perfil).
 function modos(bot: Bot): string {
   const partes: string[] = [];
+  if (bot.estilo?.trim()) partes.push(`## Tu personalidad y estilo\n${bot.estilo.trim()}\nMantenelo en todo lo que escribas (también en mensajes a terceros), sin dejar de ser claro y correcto.`);
   if (bot.temporal?.mision) {
     partes.push(`## Especialista temporal\nExistís para esta misión: ${bot.temporal.mision}\nConcentrate en ella. Cuando esté cumplida, entregá el resultado (archivos con su ruta y un resumen) y decile al usuario que la misión terminó y que puede archivarte desde tu Perfil.`);
   }

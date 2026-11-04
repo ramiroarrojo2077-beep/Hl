@@ -156,6 +156,8 @@ const DatosBot = z.object({
   ensenanza: z.boolean().optional(),
   modelo: z.enum(["rapido", "potente"]).nullish(),
   topeDiarioUsd: z.number().min(0).max(10_000).nullish(),
+  estilo: z.string().trim().max(1500).nullish(),
+  favorito: z.boolean().optional(),
   // Misión de un especialista temporal; "" o null lo vuelve permanente.
   mision: z.string().trim().max(2000).nullish(),
 });
@@ -566,8 +568,9 @@ ruta("POST", "/api/bots", async ({ cuerpo }) => {
   if (bloqueadas.length) bot.bloqueadas = bloqueadas;
   if (d.ensenanza) bot.ensenanza = true;
   if (d.modelo) bot.modelo = d.modelo;
+  if (d.estilo) bot.estilo = d.estilo;
   if (d.mision) bot.temporal = { mision: d.mision };
-  if (bloqueadas.length || d.ensenanza || d.mision || d.modelo) guardarEstado();
+  if (bloqueadas.length || d.ensenanza || d.mision || d.modelo || d.estilo) guardarEstado();
   emitir("bots");
   return vistaBot(bot);
 });
@@ -604,6 +607,8 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
     modelo: d.modelo === undefined ? (bot.modelo ?? null) : d.modelo,
     topeDiarioUsd: d.topeDiarioUsd === undefined ? (bot.topeDiarioUsd ?? null) : d.topeDiarioUsd || null,
+    estilo: d.estilo === undefined ? (bot.estilo ?? null) : d.estilo || null,
+    favorito: d.favorito ?? bot.favorito ?? false,
     temporal: d.mision === undefined ? (bot.temporal ?? null) : d.mision ? { mision: d.mision } : null,
   });
   if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);

@@ -72,6 +72,10 @@ export interface Bot {
   modelo?: "rapido" | "potente" | null;
   // Tope de gasto diario propio en USD (solo Claude); al llegar deja de arrancar trabajo automático.
   topeDiarioUsd?: number | null;
+  // Personalidad: cómo habla (tono, largo, formalidad, muletillas). Vacío = el estilo de siempre.
+  estilo?: string | null;
+  // Aparece primero en las listas.
+  favorito?: boolean;
 }
 
 export type Horario =

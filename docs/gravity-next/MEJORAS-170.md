@@ -4,7 +4,7 @@
 
 ## 1. IA y agentes autónomos
 1. 🟡 Aprender de errores: habilidad incluida «Aprender de errores» (lecciones en `/memories/lecciones.md`) + historial de acciones con errores. Falta que se dispare sola después de cada error.
-2. 🟡 Personalidades: descripción, modelo, esfuerzo, modo enseñanza y permisos por compañero. Falta un campo de estilo de comunicación separado.
+2. ✅ Personalidades: estilo de comunicación propio (Perfil > Personalidad y estilo) además de descripción, modelo, esfuerzo, enseñanza y permisos.
 3. ✅ Director: los managers coordinan, delegan y reciben resultados; Architect arma el equipo con un manager.
 4. ✅ Equipos automáticos según el proyecto: Gravity Architect (#/arquitecto).
 5. 🟡 Agentes que proponen agentes: Architect propone y el usuario aprueba. Falta una herramienta para que un compañero lo proponga desde el chat.
@@ -69,7 +69,7 @@
 131. ✅ 132. ✅ 133. ✅ 134. ✅ 135. ✅ (contenido de afuera envuelto, suplantación neutralizada; ver PENDIENTE: pruebas de inyección a revisar) 136. ✅ 137. ✅ (Android vuelve a prender el motor) 138. 🟡 139. 🟡 140. ⛔ 141. ✅ 142. 🟡 143. ✅ (migraciones en almacen.ts) 144. ✅ (11 pruebas + e2e) 145. 🟡 (restaurar copia).
 
 ## 14. Experiencia
-146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ⛔ Favoritos. 150. ⛔ Etiquetas. 151. ✅ Prioridades en tareas. 152. 🟡 Recordatorios por rutinas. 153. ⛔ 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ⛔ 159. ⛔ 160. 🟡 (auditoría).
+146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ⛔ Etiquetas. 151. ✅ Prioridades en tareas. 152. 🟡 Recordatorios por rutinas. 153. ⛔ 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ⛔ 159. ⛔ 160. 🟡 (auditoría).
 
 ## 15. Conservación
 161–170. ✅ Se mantiene todo lo anterior, con migraciones, copias y versiones en git. 168: los botones nuevos tienen función y prueba. 169: nada simulado (el robot 2D avisa si no hay 3D; la voz avisa si no hay).
