@@ -740,8 +740,13 @@ class MainActivity : Activity() {
         }
     }
 
-    /** URL de /#/compartido/<id> si el intent trae ese extra (consumiéndolo), o null. */
+    /** URL de /#/compartido/<id> o de un acceso rápido (pantalla de la lista permitida) si el intent trae
+     *  ese extra (consumiéndolo), o null. */
     private fun rutaCompartida(): String? {
+        intent?.getStringExtra(EXTRA_PANTALLA)?.let { p ->
+            intent?.removeExtra(EXTRA_PANTALLA)
+            if (p in PANTALLAS) return "${Gravity.DIRECCION}/#/$p"
+        }
         val id = intent?.getStringExtra(Compartir.EXTRA_COMPARTIDO) ?: return null
         // Se consume para que una recarga o un recreate no vuelvan a abrir lo mismo.
         intent?.removeExtra(Compartir.EXTRA_COMPARTIDO)
@@ -808,6 +813,9 @@ class MainActivity : Activity() {
     }
 
     private companion object {
+        // Accesos rápidos (res/xml/accesos.xml): solo estas pantallas, nada que venga armado de afuera.
+        const val EXTRA_PANTALLA = "ar.gravity.app.PANTALLA"
+        val PANTALLAS = setOf("operaciones", "proyectos", "arquitecto", "mensajes")
         const val CONSOLA_GEMINI = "https://aistudio.google.com/apikey"
         const val CONSOLA_ANTHROPIC = "https://console.anthropic.com/settings/keys"
         const val CONSOLA_GROQ = "https://console.groq.com/keys"

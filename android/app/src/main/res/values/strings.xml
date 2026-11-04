@@ -115,4 +115,10 @@
     <string name="voz_texto_invalido">El texto está vacío o es demasiado largo (hasta 4000 caracteres).</string>
     <string name="voz_id_invalido">Falta el id de la frase o es demasiado largo (hasta 64 caracteres).</string>
     <string name="voz_cola_llena">Hay demasiadas frases esperando para leerse.</string>
+    <string name="acceso_operaciones">Operaciones</string>
+    <string name="acceso_operaciones_largo">Centro de operaciones</string>
+    <string name="acceso_proyectos">Proyectos</string>
+    <string name="acceso_arquitecto">Architect</string>
+    <string name="acceso_arquitecto_largo">Armar un equipo nuevo</string>
+    <string name="acceso_mensajes">Mensajes</string>
 </resources>

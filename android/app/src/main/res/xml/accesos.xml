@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accesos rápidos del ícono. Cada uno abre MainActivity con la pantalla en un extra; MainActivity solo
+     acepta las pantallas de su lista (PANTALLAS). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="operaciones" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_operaciones" android:shortcutLongLabel="@string/acceso_operaciones_largo">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="ar.gravity.app" android:targetClass="ar.gravity.app.MainActivity">
+            <extra android:name="ar.gravity.app.PANTALLA" android:value="operaciones" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="proyectos" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_proyectos" android:shortcutLongLabel="@string/acceso_proyectos">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="ar.gravity.app" android:targetClass="ar.gravity.app.MainActivity">
+            <extra android:name="ar.gravity.app.PANTALLA" android:value="proyectos" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="arquitecto" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_arquitecto" android:shortcutLongLabel="@string/acceso_arquitecto_largo">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="ar.gravity.app" android:targetClass="ar.gravity.app.MainActivity">
+            <extra android:name="ar.gravity.app.PANTALLA" android:value="arquitecto" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="mensajes" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/acceso_mensajes" android:shortcutLongLabel="@string/acceso_mensajes">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="ar.gravity.app" android:targetClass="ar.gravity.app.MainActivity">
+            <extra android:name="ar.gravity.app.PANTALLA" android:value="mensajes" />
+        </intent>
+    </shortcut>
+</shortcuts>

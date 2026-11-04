@@ -46,6 +46,8 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Accesos rápidos (mantener apretado el ícono): abren una pantalla de Gravity. -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/accesos" />
         </activity>
 
         <!-- Node.js en su propio proceso: si el motor se cae, la pantalla sigue viva y lo vuelve a prender. -->

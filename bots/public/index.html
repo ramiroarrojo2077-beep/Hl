@@ -3476,8 +3476,12 @@ function pintarOps() {
   const vivas = reunionesVivas();
   const trabados = (S.proyectos || []).filter((p) => p.estado === "activo" && (p.progreso.bloqueadas || p.progreso.vencidas));
   const accion = (b) => { const e = est(b); return e === "work" ? b.accion || "Trabajando" : e === "wait" ? (aprobacionesDe(b.id).length ? "Espera tu aprobación" : b.accion || "Esperando") : "Libre"; };
+  const gastoDe = (b) => S.gasto?.porBot?.[b.id] || 0;
   const fila = (b) => html`<a class="ops-b" href="#/chats/${b.id}">${av(b, 32)}<span class="tt"><b>${b.nombre}</b><small>${b.titulo}</small></span>
-    <span class="ac ${est(b)}">${accion(b)}${b.enCola ? html`<span class="tag">${b.enCola} en cola</span>` : ""}${b.tareasAbiertas ? html`<span class="tag">${plural(b.tareasAbiertas, "tarea abierta", "tareas abiertas")}</span>` : ""}</span></a>`;
+    <span class="ac ${est(b)}">${accion(b)}${b.enCola ? html`<span class="tag">${b.enCola} en cola</span>` : ""}${b.tareasAbiertas ? html`<span class="tag">${plural(b.tareasAbiertas, "tarea abierta", "tareas abiertas")}</span>` : ""}${gastoDe(b) ? html`<span class="tag">${usd(gastoDe(b))} hoy</span>` : ""}</span></a>`;
+  const r = S.rendimiento;
+  const mb = (n) => `${Math.round(n / 1048576)} MB`;
+  const dur = (sg) => (sg >= 86400 ? `${Math.floor(sg / 86400)} d ${Math.floor((sg % 86400) / 3600)} h` : sg >= 3600 ? `${Math.floor(sg / 3600)} h ${Math.floor((sg % 3600) / 60)} min` : `${Math.floor(sg / 60)} min`);
   const nivel = { alto: ["Alto", "sig"], medio: ["Medio", ""], info: ["Info", ""] };
   const a = S.auditoria;
   pintar(el, html`<header class="pag-h"><div class="tt"><h1>Centro de operaciones</h1><p>Todo el equipo en vivo: quién trabaja y en qué, qué está esperando y qué conviene revisar.</p></div></header>
@@ -3490,6 +3494,8 @@ function pintarOps() {
     ${abiertas.length || S.aprobaciones.length ? html`<ul class="hist">${S.aprobaciones.map((x) => html`<li><b>${bot(x.botId)?.nombre || "Alguien"}</b> pide aprobación: ${x.titulo}</li>`)}${abiertas.slice(0, 30).map((t) => html`<li><b>${bot(t.paraId)?.nombre || "Alguien"}</b> · ${t.estado === "en_curso" ? "trabajando en" : "tiene pendiente"} «${t.titulo}»${bot(t.deId) ? ` (encargo de ${bot(t.deId).nombre})` : ""}</li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Nada esperando.</p>`}
     ${vivas.length ? html`<div class="sec-h"><h2>Reuniones en vivo <span>${vivas.length}</span></h2></div><div class="reus">${vivas.map((r) => filaReunion(r, true))}</div>` : ""}
     ${trabados.length ? html`<div class="sec-h"><h2>Proyectos trabados <span>${trabados.length}</span></h2></div><div class="proys">${trabados.map(tarjetaProyecto)}</div>` : ""}
+    <div class="sec-h"><h2>Rendimiento</h2><button class="btn out sm" data-a="rendimiento">${ico("refresh", "s")}${r ? "Actualizar" : "Medir"}</button></div>
+    ${r ? html`<div class="ops-k" style="margin-top:0"><div><b>${r.cpu}%</b><span>CPU del motor (1 núcleo)</span></div><div><b>${mb(r.memoria.rss)}</b><span>memoria del motor</span></div><div><b>${mb(r.memoria.sistemaLibre)}</b><span>libre de ${mb(r.memoria.sistemaTotal)}</span></div><div><b>${dur(r.prendidoSeg)}</b><span>prendido</span></div>${r.bateria ? html`<div><b>${r.bateria.nivel}%</b><span>batería${r.bateria.cargando ? " · cargando" : ""}</span></div>` : ""}</div><p class="muted" style="font-size:12.5px">Node ${r.node} · ${r.plataforma} · ${r.nucleos} núcleos · gasto de hoy ${usd(S.gasto?.hoy || 0)}${S.gasto?.llamadas ? ` en ${S.gasto.llamadas} llamadas al modelo` : ""}.</p>` : html`<p class="muted" style="font-size:13px">CPU y memoria del motor, memoria libre del equipo, batería y cuánto lleva prendido.</p>`}
     <div class="sec-h"><h2>Auditoría</h2><button class="btn out sm" data-a="auditar">${ico("shield", "s")}${a ? "Volver a auditar" : "Auditar ahora"}</button></div>
     ${a ? html`<p class="muted" style="font-size:13px">Revisé ${a.revisados.compañeros} compañeros, ${a.revisados.tareas} tareas, ${a.revisados.proyectos} proyectos activos y ${a.revisados.rutinas} rutinas · ${diaHora(a.fecha)}.</p>
       ${a.hallazgos.length ? html`<ul class="hall">${a.hallazgos.map((x) => html`<li><span class="tag ${nivel[x.nivel][1]}">${nivel[x.nivel][0]}</span><span>${x.texto}</span></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Sin hallazgos: permisos, errores y tareas en orden.</p>`}
@@ -5195,6 +5201,11 @@ const A = {
     await cargarEstado();
     S.proyectos = null;
     ir(`#/proyectos/${r.proyecto.id}`);
+  }),
+  rendimiento: (t) => conCarga(t, async () => {
+    const r = await api("GET", "/api/rendimiento");
+    try { const b = await navigator.getBattery?.(); if (b) r.bateria = { nivel: Math.round(b.level * 100), cargando: b.charging }; } catch {}
+    S.rendimiento = r; pintarOps();
   }),
   auditar: (t) => conCarga(t, async () => { S.auditoria = await api("GET", "/api/auditoria"); pintarOps(); }),
   "borrar-proyecto": async () => {

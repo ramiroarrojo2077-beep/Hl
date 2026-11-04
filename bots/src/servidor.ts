@@ -1,7 +1,7 @@
 import http from "node:http";
 import { readFile, readdir, stat, writeFile, mkdir, rm } from "node:fs/promises";
 import { createReadStream, createWriteStream, readFileSync, rmSync, statSync as statArchivo, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { cpus, freemem, tmpdir, totalmem } from "node:os";
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
@@ -832,6 +832,24 @@ ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
 });
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
+
+// ---- Rendimiento del motor (memoria, CPU desde la consulta anterior, tiempo prendido) ----
+
+let cpuAntes = { uso: process.cpuUsage(), t: Date.now() };
+ruta("GET", "/api/rendimiento", async () => {
+  const uso = process.cpuUsage(cpuAntes.uso);
+  const ms = Math.max(1, Date.now() - cpuAntes.t);
+  cpuAntes = { uso: process.cpuUsage(), t: Date.now() };
+  const m = process.memoryUsage();
+  return {
+    cpu: Math.round(((uso.user + uso.system) / 1000 / ms) * 1000) / 10, // % de un núcleo desde la consulta anterior
+    memoria: { rss: m.rss, heap: m.heapUsed, sistemaTotal: totalmem(), sistemaLibre: freemem() },
+    prendidoSeg: Math.round(process.uptime()),
+    node: process.version,
+    plataforma: `${process.platform} ${process.arch}`,
+    nucleos: cpus().length,
+  };
+});
 
 // ---- Auditoría (solo lectura) ----
 
