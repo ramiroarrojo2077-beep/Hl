@@ -29,10 +29,9 @@ npm run gravity          # http://127.0.0.1:3001
 | **Gemini (Google)** | Gratis con cupo diario | Clave en [aistudio.google.com/apikey](https://aistudio.google.com/apikey), sin tarjeta. En la app: «Gemini · gratis». En la compu: `GEMINI_API_KEY`. Usa Flash y, si se agota, Flash-Lite (cupos separados). |
 | **Groq** (respaldo) | Gratis | Clave en [console.groq.com/keys](https://console.groq.com/keys). Campo «Respaldo gratis» o `GROQ_API_KEY`. |
 | **Mistral** (respaldo) | Gratis («Experiment», verifica el teléfono) | Clave en [console.mistral.ai](https://console.mistral.ai/api-keys). Mismo campo (se reconoce sola) o `MISTRAL_API_KEY`. |
-
 | **Servidor propio** (Ollama, LM Studio, vLLM…) | Tu hardware | En la compu: `GRAVITY_LOCAL_URL=http://IP:11434/v1` y `GRAVITY_LOCAL_MODELOS=qwen2.5:14b` (y `GRAVITY_LOCAL_CLAVE` si pide). Va primero en la cadena. |
 
-Orden con modelos gratis: Gemini → Groq → Mistral; si uno se queda sin cupo, pasa al siguiente sin cortar la conversación. Con modelos gratis el gasto se muestra en 0 (es real: no hay costo); con Claude es una **estimación** a precio de lista. En los planes gratis Google y Mistral pueden usar lo que mandás para entrenar.
+Orden con modelos gratis: servidor propio (si hay) → Gemini → Groq → Mistral; si uno se queda sin cupo, pasa al siguiente sin cortar la conversación. Con modelos gratis el gasto se muestra en 0 (es real: no hay costo); con Claude es una **estimación** a precio de lista. En los planes gratis Google y Mistral pueden usar lo que mandás para entrenar.
 
 ## 4. Servicios externos (Conexiones)
 
