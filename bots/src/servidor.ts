@@ -152,6 +152,7 @@ const DatosBot = z.object({
   // Grupos de herramientas apagadas (ver GRUPOS_HERRAMIENTAS en herramientas.ts).
   bloqueadas: z.array(z.string().max(30)).max(20).optional(),
   ensenanza: z.boolean().optional(),
+  modelo: z.enum(["rapido", "potente"]).nullish(),
   // Misión de un especialista temporal; "" o null lo vuelve permanente.
   mision: z.string().trim().max(2000).nullish(),
 });
@@ -561,8 +562,9 @@ ruta("POST", "/api/bots", async ({ cuerpo }) => {
   const bloqueadas = normalizarBloqueadas(d.bloqueadas);
   if (bloqueadas.length) bot.bloqueadas = bloqueadas;
   if (d.ensenanza) bot.ensenanza = true;
+  if (d.modelo) bot.modelo = d.modelo;
   if (d.mision) bot.temporal = { mision: d.mision };
-  if (bloqueadas.length || d.ensenanza || d.mision) guardarEstado();
+  if (bloqueadas.length || d.ensenanza || d.mision || d.modelo) guardarEstado();
   emitir("bots");
   return vistaBot(bot);
 });
@@ -597,6 +599,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar,
     bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
     ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
+    modelo: d.modelo === undefined ? (bot.modelo ?? null) : d.modelo,
     temporal: d.mision === undefined ? (bot.temporal ?? null) : d.mision ? { mision: d.mision } : null,
   });
   if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);

@@ -81,6 +81,7 @@ interface Pedido {
   esquemaSalida: Json | null;
   maxTokens: number;
   esfuerzo: string | null;
+  preferencia: "rapido" | "potente" | null;
 }
 
 interface Respuesta {
@@ -258,6 +259,7 @@ function traducirPedido(cuerpo: Json): Pedido {
     esquemaSalida: formato?.type === "json_schema" ? ((formato.schema as Json) ?? null) : null,
     maxTokens: Number(cuerpo.max_tokens ?? 8192),
     esfuerzo: typeof (cuerpo.output_config as Json | undefined)?.effort === "string" ? String((cuerpo.output_config as Json).effort) : null,
+    preferencia: cuerpo.model === "gravity-rapido" ? "rapido" : cuerpo.model === "gravity-potente" ? "potente" : null,
   };
 }
 
@@ -617,16 +619,25 @@ interface Eslabon {
 /** Hasta cuándo no se prueba cada eslabón (sin cupo o caído). */
 const pausados = new Map<string, number>();
 
-async function eslabones(signal?: AbortSignal | null): Promise<Eslabon[]> {
+// Preferencia del compañero: rápido prueba primero los Flash-Lite; potente, Gemini Pro (cupo gratis
+// chico: si se agota, sigue la cadena de siempre).
+const MODELO_GEMINI_POTENTE = process.env.GRAVITY_GEMINI_POTENTE ?? "gemini-2.5-pro";
+function ordenGemini(pref: Pedido["preferencia"]): string[] {
+  if (pref === "rapido") return [...MODELOS_GEMINI.filter((m) => m.includes("lite")), ...MODELOS_GEMINI.filter((m) => !m.includes("lite"))];
+  if (pref === "potente") return [MODELO_GEMINI_POTENTE, ...MODELOS_GEMINI.filter((m) => m !== MODELO_GEMINI_POTENTE)];
+  return MODELOS_GEMINI;
+}
+
+async function eslabones(signal?: AbortSignal | null, pref: Pedido["preferencia"] = null): Promise<Eslabon[]> {
   const lista: Eslabon[] = [];
-  if (hayGemini) for (const m of MODELOS_GEMINI) lista.push({ clave: `gemini:${m}`, pedir: (p, s) => pedirGemini(p, m, s) });
+  if (hayGemini) for (const m of ordenGemini(pref)) lista.push({ clave: `gemini:${m}`, pedir: (p, s) => pedirGemini(p, m, s) });
   if (CLAVE_GROQ) for (const m of MODELOS_GROQ) lista.push({ clave: `groq:${m}`, pedir: (p, s) => pedirCompatible(GROQ, p, m, s) });
   if (CLAVE_MISTRAL) for (const m of MODELOS_MISTRAL) lista.push({ clave: `mistral:${m}`, pedir: (p, s) => pedirCompatible(MISTRAL, p, m, s) });
   return lista;
 }
 
 async function responder(p: Pedido, signal?: AbortSignal | null): Promise<Respuesta> {
-  const lista = await eslabones(signal);
+  const lista = await eslabones(signal, p.preferencia);
   if (!lista.length) throw new ErrorProveedor(401, "No hay ninguna clave cargada (Anthropic, Gemini, Groq o Mistral).");
   let ultimo: ErrorProveedor | null = null;
   let esperaMinima = Infinity;

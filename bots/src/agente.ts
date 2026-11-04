@@ -30,7 +30,7 @@ import {
   type Rutina,
   type Tarea,
 } from "./almacen.ts";
-import { client, MODELO, MODELO_VISIBLE, ESFUERZO, BETA_FALLBACK, PROVEEDOR } from "./cliente.ts";
+import { client, MODELO, MODELO_VISIBLE, ESFUERZO, BETA_FALLBACK, PROVEEDOR, modeloPara } from "./cliente.ts";
 import { llamar, definirBloqueo, reanudarCupo, type Clase } from "./cupo.ts";
 import { registrarUso, nivelGasto } from "./gasto.ts";
 import { herramientasDe, herramientasBloqueadas, GRUPOS_HERRAMIENTAS, normalizarBloqueadas, cerrarHerramientas, definiciones, entradaValida, necesitaAprobacion, conTerminal, type PedidoAprobacion } from "./herramientas.ts";
@@ -574,7 +574,7 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
           huboTexto = false;
           const stream = client.beta.messages.stream(
             {
-              model: MODELO,
+              model: modeloPara(bot.modelo),
               max_tokens: 64000,
               betas: [BETA_FALLBACK, "compact-2026-01-12", "thinking-display-updates-2026-08-18", "thinking-binding-controls-2026-08-01"],
               fallbacks: "default",

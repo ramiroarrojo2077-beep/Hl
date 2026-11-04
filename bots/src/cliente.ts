@@ -7,6 +7,17 @@ import { describirProveedor, fetchGratis, hayGemini, hayRespaldo } from "./prove
 export const PROVEEDOR: "anthropic" | "gratis" = process.env.ANTHROPIC_API_KEY || !(hayGemini || hayRespaldo) ? "anthropic" : "gratis";
 
 export const MODELO = process.env.BOTS_MODELO ?? "claude-opus-5-5";
+export type PreferenciaModelo = "rapido" | "potente";
+const MODELOS_ANTHROPIC: Record<PreferenciaModelo, string> = {
+  rapido: process.env.BOTS_MODELO_RAPIDO ?? "claude-haiku-5-5",
+  potente: process.env.BOTS_MODELO_POTENTE ?? MODELO,
+};
+/** El modelo para un compañero según su preferencia. Con los gratis va una marca que proveedores.ts
+ *  traduce a un orden de modelos (rápido: Flash-Lite primero; potente: Pro primero). */
+export function modeloPara(pref: PreferenciaModelo | null | undefined): string {
+  if (!pref) return MODELO;
+  return PROVEEDOR === "anthropic" ? MODELOS_ANTHROPIC[pref] : `gravity-${pref}`;
+}
 /** Lo que se muestra en la interfaz como modelo. */
 export const MODELO_VISIBLE = PROVEEDOR === "anthropic" ? MODELO : describirProveedor();
 const ESFUERZOS: Esfuerzo[] = ["low", "medium", "high", "xhigh", "max"];

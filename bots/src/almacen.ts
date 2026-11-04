@@ -68,6 +68,8 @@ export interface Bot {
   temporal?: { mision: string } | null;
   // Fecha en que se archivó; mientras tanto no trabaja, no recibe nada y no aparece en el equipo.
   archivado?: string | null;
+  // Preferencia de modelo: null = el de siempre; rápido = más barato y ágil; potente = el más capaz.
+  modelo?: "rapido" | "potente" | null;
 }
 
 export type Horario =
