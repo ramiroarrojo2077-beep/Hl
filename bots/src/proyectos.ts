@@ -253,6 +253,11 @@ export function cambiarTarea(id: string, tareaId: string, d: CambiosTarea, quien
     throw new Error("Para completar una tarea contá el resultado: qué hiciste, dónde quedó y cómo se verifica el criterio.");
   }
   if (d.estado === "en_curso" && !lista(p, t)) throw new Error("Esa tarea depende de otras que todavía no están completadas.");
+  // Revisión cruzada: si la completa un compañero que no es el coordinador, queda «verificando» y el
+  // coordinador la revisa antes de cerrarla (las que dependen de ella esperan la revisión).
+  const coord = p.coordinadorId && p.coordinadorId !== quien && quien !== "usuario" && quien !== "gravity" ? buscarBot(p.coordinadorId) : undefined;
+  const revisar = d.estado === "completada" && !!coord && !coord.archivado;
+  if (revisar) d = { ...d, estado: "verificando" };
   const cambios: string[] = [];
   if (d.titulo?.trim()) t.titulo = d.titulo.trim().slice(0, 200);
   if (d.detalle !== undefined) t.detalle = d.detalle.slice(0, 6000);
@@ -282,7 +287,26 @@ export function cambiarTarea(id: string, tareaId: string, d: CambiosTarea, quien
   guardar();
   emitir("proyectos", { id: p.id });
   void despachar(p);
+  if (revisar) void pedirRevision(p, t, coord!.id, quien);
   return t;
+}
+
+async function pedirRevision(p: Proyecto, t: TareaProyecto, revisorId: string, autorId: string): Promise<void> {
+  const { enviarMensaje } = await import("./agente.ts");
+  enviarMensaje(
+    revisorId,
+    [
+      `[Proyecto «${p.nombre}» · revisión de la tarea ${t.id}] ${nombreDe(autorId)} dio por terminada «${t.titulo}».`,
+      t.criterio && `Listo cuando: ${t.criterio}`,
+      `Resultado que entregó: ${t.resultado ?? "(sin resultado)"}`,
+      `Revisala siguiendo la habilidad «Revisión cruzada» (leé los archivos, verificá el criterio). Si está bien, marcala "completada" con la herramienta \`proyectos\` (proyecto ${p.id}, tarea ${t.id}) con tu dictamen en el resultado. Si falta algo, marcala "reintentando" y escribí en el resultado exactamente qué corregir: se la vuelvo a pasar a ${nombreDe(autorId)}.`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  );
+  anotar(p, "gravity", `«${t.titulo}» pasó a revisión de ${nombreDe(revisorId)}.`);
+  guardar();
+  emitir("proyectos", { id: p.id });
 }
 
 export function borrarTarea(id: string, tareaId: string): boolean {
@@ -301,18 +325,20 @@ export function borrarTarea(id: string, tareaId: string): boolean {
 /** Pasa a cada responsable las tareas que quedaron listas para arrancar (una sola vez por tarea). */
 async function despachar(p: Proyecto): Promise<void> {
   if (p.estado !== "activo") return;
-  const listas = p.tareas.filter((t) => t.estado === "pendiente" && t.asignadoA && !t.avisada && lista(p, t) && buscarBot(t.asignadoA));
+  const listas = p.tareas.filter((t) => (t.estado === "pendiente" || t.estado === "reintentando") && t.asignadoA && !t.avisada && lista(p, t) && buscarBot(t.asignadoA));
   if (!listas.length) return;
+  // Se marcan antes de la espera: dos despachos seguidos (agregar dos tareas) no la mandan dos veces.
+  for (const t of listas) t.avisada = true;
   // Import tardío: agente.ts usa estas herramientas, así se evita el ciclo al cargar.
   const { enviarMensaje } = await import("./agente.ts");
   for (const t of listas) {
-    t.avisada = true;
     t.actualizada = ahora();
     const deps = t.dependeDe.map((d) => p.tareas.find((x) => x.id === d)).filter(Boolean) as TareaProyecto[];
     enviarMensaje(
       t.asignadoA!,
       [
-        `[Proyecto «${p.nombre}» · tarea ${t.id}] ${t.titulo}`,
+        `[Proyecto «${p.nombre}» · tarea ${t.id}] ${t.estado === "reintentando" ? "Para corregir: " : ""}${t.titulo}`,
+        t.estado === "reintentando" && t.resultado ? `Lo que marcó la revisión: ${t.resultado}` : "",
         t.detalle && `Detalle: ${t.detalle}`,
         t.criterio && `Listo cuando: ${t.criterio}`,
         t.vence && `Fecha límite: ${t.vence.slice(0, 10)}`,

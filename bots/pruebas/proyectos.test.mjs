@@ -33,3 +33,22 @@ test("al borrar un compañero sus tareas quedan sin responsable", () => {
   assert.equal(P.buscarProyecto(p.id).coordinadorId, null);
   assert.equal(P.buscarProyecto(p.id).tareas.find((x) => x.id === t.id).asignadoA, null);
 });
+
+test("revisión cruzada: lo que completa un miembro pasa por el coordinador", async () => {
+  const jefa = A.crearBot({ nombre: "Rita", titulo: "Coordinadora", descripcion: "x" });
+  const dev = A.crearBot({ nombre: "Dino", titulo: "Dev", descripcion: "x" });
+  const p = P.crearProyecto({ nombre: "Con revisión", objetivo: "", coordinadorId: jefa.id });
+  const t = P.agregarTarea(p.id, { titulo: "Login", asignadoA: dev.id, criterio: "anda" });
+  const t2 = P.agregarTarea(p.id, { titulo: "Deploy", dependeDe: [t.id], asignadoA: dev.id });
+  P.cambiarTarea(p.id, t.id, { estado: "completada", resultado: "login.ts" }, dev.id);
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(P.buscarProyecto(p.id).tareas.find((x) => x.id === t.id).estado, "verificando");
+  assert.ok(JSON.stringify(A.conversacion(jefa.id).mensajes).includes("Revisión cruzada"), "la coordinadora recibe el pedido de revisión");
+  assert.equal(P.buscarProyecto(p.id).tareas.find((x) => x.id === t2.id).avisada, false, "lo que depende espera la revisión");
+  P.cambiarTarea(p.id, t.id, { estado: "reintentando", resultado: "Falta validar la clave" }, jefa.id);
+  await new Promise((r) => setTimeout(r, 200));
+  const pases = P.buscarProyecto(p.id).historial.filter((h) => /«Login» lista para arrancar: se la pasó a Dino/.test(h.que)).length;
+  assert.equal(pases, 2, "vuelve al autor con lo que hay que corregir");
+  P.cambiarTarea(p.id, t.id, { estado: "completada", resultado: "Aprobado" }, jefa.id);
+  assert.equal(P.buscarProyecto(p.id).tareas.find((x) => x.id === t.id).estado, "completada");
+});

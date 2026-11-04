@@ -11,7 +11,7 @@
 6. ✅ Debates: reuniones tipo Debate con propuestas, críticas y votación.
 7. 🟡 Memoria compartida: carpeta de equipo + `recordar` (cada uno ve la suya y la de su equipo, no la de otros). Falta permiso por recuerdo.
 8. 🟡 Especialización progresiva: memoria persistente + lecciones. Falta un resumen automático de lo aprendido por proyecto.
-9. ✅ Revisión cruzada: habilidad incluida «Revisión cruzada». Falta que se pida sola al completar una tarea de proyecto.
+9. ✅ Revisión cruzada: habilidad incluida y automática en proyectos (lo que completa un miembro pasa a «verificando» y lo revisa el coordinador; si falta algo vuelve al autor).
 10. ✅ Investigación profunda: habilidad incluida (varias fuentes verificadas, informe con citas).
 
 ## 2. Robots 3D y llamadas
