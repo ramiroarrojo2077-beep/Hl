@@ -61,6 +61,7 @@ import { iniciarTelegram } from "./telegram.ts";
 import { auditar, informeComoTexto } from "./auditoria.ts";
 import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
+import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
 import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
@@ -855,6 +856,18 @@ ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
 
+// ---- Webhooks entrantes ----
+
+ruta("GET", "/api/webhooks", async () => listarWebhooks());
+ruta("POST", "/api/webhooks", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(1).max(80), botId: z.string().min(1).max(64), instrucciones: z.string().trim().min(1).max(4000) }), await cuerpo());
+  return malPedido(() => crearWebhook(d));
+});
+ruta("DELETE", "/api/webhooks/:id", async ({ params }) => {
+  if (!borrarWebhook(params[0]!)) throw new ErrorHttp(404, "No existe ese webhook.");
+  return { ok: true };
+});
+
 // ---- Historial de acciones ----
 
 ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.searchParams.get("botId"), limite: Number(url.searchParams.get("limite")) || 100 }));
@@ -1329,6 +1342,15 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
     if (!/^[0-9a-f]{16,128}$/.test(reto)) throw new ErrorHttp(400, "Reto inválido.");
     res.writeHead(200, { "Content-Type": "text/plain", "Cache-Control": "no-store" });
     res.end(createHmac("sha256", TOKEN_APP).update(reto).digest("hex"));
+    return;
+  }
+  // Webhooks entrantes: los llama un servicio de afuera, sin sesión. El token secreto de la URL autoriza
+  // solo encargarle el trabajo configurado a un compañero, con los datos como contenido de afuera.
+  if (req.method === "POST" && url.pathname.startsWith("/api/gancho/")) {
+    const r = await recibirWebhook(url.pathname.slice("/api/gancho/".length), await leerCuerpo(req));
+    if (r === "no") throw new ErrorHttp(404, "No encontrado.");
+    if (r === "tope") throw new ErrorHttp(429, "Demasiadas llamadas: probá en un rato.");
+    responder(res, 202, { ok: true });
     return;
   }
   if (!tokenAppValido(req)) throw new ErrorHttp(401, "Acceso no autorizado.");

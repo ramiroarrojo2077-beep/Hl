@@ -60,7 +60,7 @@
 101. ✅ 102. 🟡 (carpeta de equipo) 103. 🟡 (carpeta por proyecto) 104. 🟡 búsqueda de texto (BM25), no semántica 105. ⛔ 106. 🟡 (sin duplicados en resultados) 107. ✅ (compactación del servidor) 108. ✅ (pestaña Memoria) 109. ✅ (copia) 110. 🟡.
 
 ## 11. Integraciones
-111. 🟡 WhatsApp por notificaciones; la API oficial necesita URL pública. 112. ✅ Telegram (bot oficial). 113. ✅ Gmail (IMAP/SMTP). 114–116. 🟡 por MCP / Microsoft 365. 117. ✅ MCP. 118. ⛔ Webhooks entrantes. 119. ✅ Claves cifradas (Keystore en el celular). 120. 🟡 Panel de Conexiones.
+111. 🟡 WhatsApp por notificaciones; la API oficial necesita URL pública. 112. ✅ Telegram (bot oficial). 113. ✅ Gmail (IMAP/SMTP). 114–116. 🟡 por MCP / Microsoft 365. 117. ✅ MCP. 118. ✅ Webhooks entrantes (Ajustes > Webhooks: URL secreta /api/gancho/<token>, 30 por hora, datos como contenido de afuera; desde el celular necesita túnel). 119. ✅ Claves cifradas (Keystore en el celular). 120. 🟡 Panel de Conexiones.
 
 ## 12. Modelos
 121. ✅ Claude, Gemini, Groq, Mistral. 122. ✅ Modelo por compañero (Automático/Rápido/Potente). 123. ⛔ Cambiar en medio de la conversación (se cambia en el Perfil). 124. 🟡 Mensajes y llamadas usan el rápido. 125. ⛔ Comparar. 126–127. ✅ consumo por compañero. 128–129. ⛔ (se puede con un servidor compatible OpenAI: falta configuración). 130. ✅ Cadena de respaldo entre proveedores.
