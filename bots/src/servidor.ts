@@ -59,6 +59,7 @@ import {
 import { GRUPOS_HERRAMIENTAS, cerrarHerramientas, normalizarBloqueadas } from "./herramientas.ts";
 import { iniciarTelegram } from "./telegram.ts";
 import { auditar, informeComoTexto } from "./auditoria.ts";
+import { buscarTodo } from "./buscador.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
 import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
@@ -832,6 +833,10 @@ ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
 });
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
+
+// ---- Buscador global ----
+
+ruta("GET", "/api/buscar", async ({ url }) => buscarTodo((url.searchParams.get("q") ?? "").slice(0, 200)));
 
 // ---- Rendimiento del motor (memoria, CPU desde la consulta anterior, tiempo prendido) ----
 

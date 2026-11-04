@@ -1723,7 +1723,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -1948,7 +1948,7 @@ function navegar() {
 }
 
 // ================================================================ marco: riel, barra inferior, avisos
-const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["proyectos", "Proyectos", "flag"], ["operaciones", "Operaciones", "grid"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
+const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["proyectos", "Proyectos", "flag"], ["operaciones", "Operaciones", "grid"], ["buscar", "Buscar", "search"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
 // Estado del satélite del logo: naranja si algo te necesita, late en cian si alguien trabaja.
 const derivadas = () => (S.chats || []).filter((c) => c.derivada);
 const estadoMarca = () => (S.aprobaciones.length || derivadas().length ? "wait" : S.bots.some((b) => b.estado === "trabajando") ? "work" : "idle");
@@ -2018,6 +2018,7 @@ function montar(antes) {
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
   if (v === "operaciones") return montarOps();
+  if (v === "buscar") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="busq"></div></div>`; pintarBusq(); $("#busq input")?.focus(); return; }
   if (v === "arquitecto") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="arq"></div></div>`; pintarArq(); return; }
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
   if (v === "conexiones") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="cx"></div></div>`; pintarConexiones(); cargarConexiones(); return; }
@@ -3431,6 +3432,19 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ buscador global
+const BQ = { q: "", res: null, cargando: false };
+const TIPOS_BQ = { "compañero": "user", "conversación": "chat", proyecto: "flag", tarea: "check", "reunión": "meet", memoria: "memory", archivo: "file" };
+function pintarBusq() {
+  const el = $("#busq");
+  if (!el) return;
+  const xs = BQ.res;
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Buscar</h1><p>En compañeros, conversaciones, proyectos y tareas, reuniones, memorias y archivos de la computadora.</p></div></header>
+    <form class="fila" data-f="buscar" role="search" style="margin-top:14px;gap:8px"><label class="fld" style="flex:1"><span class="sr">Qué buscás</span><input class="inp" type="search" name="q" value="${BQ.q}" placeholder="Ej.: presupuesto proveedores" autocomplete="off" data-k="bq-q"></label><button class="btn pri">${ico("search", "s")}Buscar</button></form>
+    ${BQ.cargando ? html`<p class="muted" role="status" style="margin-top:12px">Buscando…</p>` : ""}
+    ${xs ? (xs.length ? html`<p class="muted" style="font-size:13px;margin-top:12px" role="status">${plural(xs.length, "resultado", "resultados")}</p><ul class="hall">${xs.map((x) => html`<li><span class="tag">${ico(TIPOS_BQ[x.tipo] || "file", "s")}${x.tipo}</span><a href="${x.enlace}" style="color:inherit;text-decoration:none;display:flex;flex-direction:column;gap:2px;min-width:0"><b>${x.titulo}</b>${x.extracto ? html`<small class="muted">${x.extracto}</small>` : ""}</a></li>`)}</ul>` : html`<p class="muted" style="margin-top:12px" role="status">No encontré nada con «${BQ.q}».</p>`) : ""}`);
+}
+
 // ================================================================ Gravity Architect
 // Objetivo → propuesta del modelo (no crea nada) → revisar, sacar miembros → crear. Al crear, el
 // equipo arranca con las primeras tareas del proyecto.
@@ -3860,7 +3874,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5352,6 +5366,12 @@ const F = {
   },
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
+  async buscar(f) {
+    BQ.q = f.q.value.trim();
+    if (!BQ.q) return;
+    BQ.cargando = true; pintarBusq();
+    try { BQ.res = await api("GET", `/api/buscar?q=${encodeURIComponent(BQ.q)}`); } finally { BQ.cargando = false; pintarBusq(); }
+  },
   async arquitecto(f) {
     ARQ.objetivo = f.objetivo.value.trim();
     ARQ.cargando = true; ARQ.fuera = new Set(); pintarArq();

@@ -262,6 +262,8 @@ interface Estado {
   reuniones: string[];
   // Mensajes del usuario que esperaban en cola: sobreviven a un reinicio.
   colaUsuario: { botId: string; texto: string }[];
+  // Habilidades incluidas que ya se sembraron (si el usuario borra una, no vuelve).
+  semillas?: string[];
 }
 
 for (const dir of [DATOS, COMPUTADORA, MEMORIA, CONVERSACIONES, REUNIONES]) mkdirSync(dir, { recursive: true });
@@ -338,6 +340,48 @@ estado.reglas ??= [];
 estado.reuniones ??= [];
 estado.colaUsuario ??= [];
 estado.ajustes = { ...AJUSTES_INICIALES, ...estado.ajustes };
+
+// Habilidades incluidas: procedimientos que cualquier compañero puede seguir. Se agregan una sola vez.
+const HABILIDADES_BASE: { clave: string; nombre: string; descripcion: string; instrucciones: string }[] = [
+  {
+    clave: "investigacion-profunda",
+    nombre: "Investigación profunda",
+    descripcion: "Investigar un tema con varias fuentes, verificarlas y entregar un informe con citas.",
+    instrucciones: `1. Escribí en 3 a 6 preguntas concretas qué hay que averiguar y qué no está en alcance.
+2. Buscá cada pregunta con varias búsquedas distintas (términos en castellano y en inglés). Abrí y leé las fuentes; no te quedes con los resúmenes del buscador.
+3. Usá al menos 5 fuentes independientes. Preferí fuentes primarias (documentación oficial, estudios, datos) y anotá la fecha de cada una.
+4. Verificá cada dato importante con una segunda fuente. Si se contradicen, decilo y explicá cuál parece más confiable y por qué.
+5. Guardá el informe en la computadora (informes/<tema>-<fecha>.md) con: resumen de 5 líneas, hallazgos por pregunta, contradicciones, lo que no se pudo confirmar y la lista de fuentes con enlace y fecha.
+6. Al terminar, contale al usuario el resumen y la ruta del archivo. No presentes como hecho algo que no verificaste.`,
+  },
+  {
+    clave: "revision-cruzada",
+    nombre: "Revisión cruzada",
+    descripcion: "Revisar el trabajo de otro compañero antes de entregarlo: errores, faltantes y criterio de listo.",
+    instrucciones: `1. Leé el pedido original y el criterio de «listo». Después leé el entregable completo (archivos incluidos).
+2. Verificá: ¿cumple el criterio? ¿hay errores de hecho, cálculo o código? ¿falta algo pedido? ¿hay supuestos sin decir?
+3. Si es código, corrélo o corré sus pruebas; si son datos, recalculá una muestra; si son afirmaciones, chequeá 2 o 3 con una fuente.
+4. Escribí la revisión como lista: ✔ lo que está bien, ✘ los problemas (con ubicación exacta y cómo arreglarlos) y ? las dudas.
+5. Dictamen final: «aprobado», «aprobado con cambios menores» o «rehacer», con el motivo. No arregles el trabajo vos salvo que te lo pidan.`,
+  },
+  {
+    clave: "aprender-de-errores",
+    nombre: "Aprender de errores",
+    descripcion: "Después de un error o una corrección del usuario, dejar anotada la lección para no repetirla.",
+    instrucciones: `1. Cuando algo falle (una herramienta, un resultado que el usuario corrigió, una tarea bloqueada), identificá la causa real, no el síntoma.
+2. Anotalo en tu memoria, en /memories/lecciones.md, con fecha: qué pasó, la causa, cómo se resolvió y la regla para la próxima («antes de X, verificar Y»).
+3. Antes de un trabajo parecido, releé /memories/lecciones.md y aplicá las reglas que correspondan.
+4. Si la misma lección se repite 3 veces, proponele al usuario guardarla como habilidad para todo el equipo.`,
+  },
+];
+estado.semillas ??= [];
+for (const h of HABILIDADES_BASE) {
+  if (estado.semillas.includes(h.clave)) continue;
+  if (!estado.habilidades.some((x) => x.nombre === h.nombre)) {
+    estado.habilidades.push({ id: randomUUID().slice(0, 8), nombre: h.nombre, descripcion: h.descripcion, instrucciones: h.instrucciones, creada: new Date().toISOString() });
+  }
+  estado.semillas.push(h.clave);
+}
 
 // Migración de datos de versiones anteriores.
 for (const b of estado.bots) {
