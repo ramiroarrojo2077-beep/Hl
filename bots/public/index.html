@@ -807,6 +807,18 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .hoja hr{border:0;border-top:1px solid var(--line);margin:6px 8px}
 
 /* reuniones */
+.proys{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.proy{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);color:inherit;text-decoration:none}
+.proy:hover{border-color:var(--line2)}
+.barra{display:block;height:6px;border-radius:3px;background:var(--s3);overflow:hidden}.barra>i{display:block;height:100%;background:var(--ion);border-radius:3px}
+.tks{display:flex;flex-direction:column;gap:8px}
+.tk{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.tk.bloq{border-color:var(--sig-line)}
+.tk-h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.tk-m{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--tx2)}
+.tk-a{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tk-a .inp{width:auto;min-height:36px;padding:4px 8px}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--tx2)}
+.deps{display:flex;flex-wrap:wrap;gap:6px 14px}
 .reus{display:flex;flex-direction:column;gap:8px}
 .reu{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line)}
 .reu:hover{border-color:var(--line2)}
@@ -1701,7 +1713,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -1926,7 +1938,7 @@ function navegar() {
 }
 
 // ================================================================ marco: riel, barra inferior, avisos
-const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
+const RIEL = [["chats", "Chats", "chat"], ["equipo", "Equipo", "team"], ["mensajes", "Mensajes", "burbuja"], ["reuniones", "Reuniones", "meet"], ["proyectos", "Proyectos", "flag"], ["aprobaciones", "Aprobaciones", "inbox"], ["computadora", "Computadora", "computer"], ["conexiones", "Conexiones", "plug"]];
 // Estado del satélite del logo: naranja si algo te necesita, late en cian si alguien trabaja.
 const derivadas = () => (S.chats || []).filter((c) => c.derivada);
 const estadoMarca = () => (S.aprobaciones.length || derivadas().length ? "wait" : S.bots.some((b) => b.estado === "trabajando") ? "work" : "idle");
@@ -1994,6 +2006,7 @@ function montar(antes) {
   if (v === "mensajes") return montarMensajes(antes);
   if (v === "compartido") return montarCompartido(S.ruta.id);
   if (v === "llamada") return montarLlamada(S.ruta.id);
+  if (v === "proyectos") return montarProyectos();
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
   if (v === "conexiones") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="cx"></div></div>`; pintarConexiones(); cargarConexiones(); return; }
   if (v === "ajustes") { vista.innerHTML = `<div class="pag"><div class="pag-in" id="aj"></div></div>`; pintarAjustes(); return; }
@@ -3399,6 +3412,94 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ proyectos
+// Un objetivo con tareas (responsable, dependencias, prioridad, plazo y criterio de «listo»). El progreso
+// sale de las tareas completadas. Cuando una tarea queda lista, el motor se la pasa a su responsable.
+const EST_TAREA = { pendiente: "Pendiente", planificando: "Planificando", en_curso: "En curso", verificando: "Verificando", esperando_aprobacion: "Espera aprobación", pausada: "Pausada", reintentando: "Reintentando", completada: "Completada", fallida: "Falló", cancelada: "Cancelada" };
+const EST_PROY = { activo: "Activo", pausado: "Pausado", terminado: "Terminado", archivado: "Archivado" };
+const CERRADA = (t) => t.estado === "completada" || t.estado === "fallida" || t.estado === "cancelada";
+async function cargarProyectos() {
+  try { S.proyectos = await api("GET", "/api/proyectos"); } catch (err) { fallo(err); S.proyectos ??= []; }
+  programar("proyectos");
+}
+function guardarProyecto(p) {
+  S.proyectos ??= [];
+  const i = S.proyectos.findIndex((x) => x.id === p.id);
+  if (i >= 0) S.proyectos[i] = p; else S.proyectos.unshift(p);
+  programar("proyectos");
+}
+function montarProyectos() {
+  $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="proys"></div></div>`;
+  if (S.proyectos) pintarProyectos(); else $("#proys").innerHTML = `<div class="carga" role="status">Cargando proyectos…</div>`;
+  cargarProyectos();
+}
+function pintarProyectos() {
+  const el = $("#proys");
+  if (!el || !S.proyectos) return;
+  if (S.ruta.id) return pintarProyecto(el, S.proyectos.find((x) => x.id === S.ruta.id));
+  const xs = S.proyectos.filter((p) => p.estado !== "archivado");
+  const archivados = S.proyectos.length - xs.length;
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Proyectos</h1><p>Un objetivo con sus tareas, responsables y dependencias. Cuando una tarea queda lista para arrancar, Gravity se la pasa a quien la tiene.</p></div>
+    <div class="acts"><button class="btn pri" data-a="nuevo-proyecto">${ico("plus", "s")}Nuevo proyecto</button></div></header>
+    ${xs.length ? html`<div class="proys" style="margin-top:18px">${xs.map(tarjetaProyecto)}</div>` : html`<div class="vacio-p" style="margin-top:18px"><b>Todavía no hay proyectos</b><span>Creá uno con su objetivo y agregale tareas, o pedíselo a un compañero: ellos también pueden armarlos y avanzar sus tareas.</span></div>`}
+    ${archivados ? html`<p class="muted" style="font-size:13px;margin-top:12px">${plural(archivados, "proyecto archivado", "proyectos archivados")}: cambiá su estado para verlo acá.</p>${S.proyectos.filter((p) => p.estado === "archivado").map((p) => html`<a class="btn ghost sm" href="#/proyectos/${p.id}">${p.nombre}</a>`)}` : ""}`);
+}
+function tarjetaProyecto(p) {
+  const g = p.progreso;
+  return html`<a class="proy" href="#/proyectos/${p.id}"><b>${p.nombre}</b><span class="barra" role="img" aria-label="${g.porcentaje}% completado"><i style="width:${g.porcentaje}%"></i></span>
+    <span class="tk-m"><span>${g.hechas} de ${plural(g.total, "tarea", "tareas")}</span>${g.bloqueadas ? html`<span class="tag sig">${plural(g.bloqueadas, "bloqueada", "bloqueadas")}</span>` : ""}${g.vencidas ? html`<span class="tag sig">${plural(g.vencidas, "vencida", "vencidas")}</span>` : ""}${p.estado !== "activo" ? html`<span class="tag">${EST_PROY[p.estado]}</span>` : ""}${p.coordinadorId && bot(p.coordinadorId) ? html`<span>Coordina ${bot(p.coordinadorId).nombre}</span>` : ""}</span></a>`;
+}
+function pintarProyecto(el, p) {
+  if (!p) { pintar(el, html`<div class="vacio-p"><b>No existe ese proyecto</b><span>Puede que lo hayan borrado.</span><a class="btn out sm" href="#/proyectos">Volver a Proyectos</a></div>`); return; }
+  const g = p.progreso;
+  const titulo = (id) => p.tareas.find((x) => x.id === id)?.titulo || id;
+  const lista = (t) => t.dependeDe.every((d) => p.tareas.find((x) => x.id === d)?.estado === "completada");
+  const opcBots = (sel) => html`<option value="">Sin responsable</option>${S.bots.map((b) => html`<option value="${b.id}" ${si(sel === b.id, "selected")}>${b.nombre} · ${b.titulo}</option>`)}`;
+  const tarea = (t) => {
+    const bloq = t.estado === "pendiente" && !lista(t);
+    const etiqueta = bloq ? "Bloqueada" : EST_TAREA[t.estado] || t.estado;
+    return html`<article class="tk ${bloq ? "bloq" : ""}"><div class="tk-h"><b>${t.titulo}</b><span class="tag ${bloq || t.estado === "fallida" ? "sig" : ""}">${etiqueta}</span></div>
+      ${t.detalle ? html`<p class="muted" style="margin:0;font-size:13px;white-space:pre-wrap">${t.detalle}</p>` : ""}
+      ${t.criterio ? html`<span class="tk-m">Listo cuando: ${t.criterio}</span>` : ""}
+      ${t.dependeDe.length ? html`<span class="tk-m">Depende de: ${t.dependeDe.map(titulo).join(", ")}</span>` : ""}
+      ${t.resultado ? html`<span class="tk-m" style="white-space:pre-wrap">Resultado: ${t.resultado}</span>` : ""}
+      <span class="tk-m">${t.prioridad === 1 ? "Prioridad alta" : t.prioridad === 3 ? "Prioridad baja" : "Prioridad media"}${t.vence ? ` · vence ${t.vence.slice(0, 10)}` : ""}</span>
+      <div class="tk-a"><select class="inp" data-c="tk-asig" data-id="${t.id}" aria-label="Responsable de ${t.titulo}">${opcBots(t.asignadoA)}</select>
+        <select class="inp" data-c="tk-estado" data-id="${t.id}" aria-label="Estado de ${t.titulo}">${Object.entries(EST_TAREA).map(([k, n]) => html`<option value="${k}" ${si(t.estado === k, "selected")}>${n}</option>`)}</select>
+        <button class="ib" data-a="tk-borrar" data-id="${t.id}" aria-label="Borrar la tarea ${t.titulo}">${ico("trash", "s")}</button></div></article>`;
+  };
+  const abiertas = p.tareas.filter((t) => !CERRADA(t)).sort((a, b) => a.prioridad - b.prioridad);
+  const cerradas = p.tareas.filter(CERRADA);
+  pintar(el, html`<header class="pag-h"><div class="tt"><a class="btn ghost sm" href="#/proyectos">${ico("left", "s")}Proyectos</a><h1>${p.nombre}</h1><p>${p.objetivo || "Sin objetivo escrito."}</p></div>
+    <div class="acts"><select class="inp" data-c="proy-estado" aria-label="Estado del proyecto" style="width:auto">${Object.entries(EST_PROY).map(([k, n]) => html`<option value="${k}" ${si(p.estado === k, "selected")}>${n}</option>`)}</select><button class="btn ghost sm" data-a="borrar-proyecto">${ico("trash", "s")}Borrar</button></div></header>
+    <section class="card" style="margin-top:14px;display:flex;flex-direction:column;gap:10px" aria-label="Progreso">
+      <div class="tk-m"><span class="barra" style="flex:1" role="img" aria-label="${g.porcentaje}% completado"><i style="width:${g.porcentaje}%"></i></span><b>${g.hechas} de ${g.total}</b></div>
+      <div class="tk-a"><label class="tk-m">Coordina <select class="inp" data-c="proy-coord">${crudo(opcBots(p.coordinadorId).s.replace("Sin responsable", "Nadie"))}</select></label><span class="tk-m">Carpeta en la computadora: <code>${p.carpeta}</code></span></div></section>
+    <div class="sec-h"><h2>Abiertas <span>${abiertas.length}</span></h2></div>
+    ${abiertas.length ? html`<div class="tks">${abiertas.map(tarea)}</div>` : html`<p class="muted" style="font-size:13px">No hay tareas abiertas.</p>`}
+    <details class="mas" style="margin-top:14px" ${si(!p.tareas.length, "open")}><summary>${ico("plus", "s")}Agregar una tarea</summary>
+      <form class="form-card" data-f="tarea-proyecto" style="margin-top:10px">
+        <label class="fld"><span>Qué hay que hacer</span><input class="inp" name="titulo" required maxlength="200"></label>
+        <label class="fld"><span>Detalle</span><textarea class="inp" name="detalle" rows="3" maxlength="6000"></textarea></label>
+        <label class="fld"><span>Listo cuando</span><input class="inp" name="criterio" maxlength="1000" placeholder="Cómo se verifica que está terminada"></label>
+        <div class="g2"><label class="fld"><span>Responsable</span><select class="inp" name="asignadoA">${opcBots(null)}</select></label>
+          <label class="fld"><span>Prioridad</span><select class="inp" name="prioridad"><option value="1">Alta</option><option value="2" selected>Media</option><option value="3">Baja</option></select></label></div>
+        <label class="fld"><span>Fecha límite</span><input class="inp" type="date" name="vence"></label>
+        ${abiertas.length || cerradas.length ? html`<fieldset class="fld"><legend>Depende de</legend><div class="deps">${p.tareas.map((t) => html`<label class="chk"><input type="checkbox" name="dep" value="${t.id}"><span>${t.titulo}</span></label>`)}</div></fieldset>` : ""}
+        <p class="err" role="alert"></p><div class="acts"><button class="btn pri">Agregar</button></div></form></details>
+    ${cerradas.length ? html`<div class="sec-h"><h2>Cerradas <span>${cerradas.length}</span></h2></div><div class="tks">${cerradas.map(tarea)}</div>` : ""}
+    <div class="sec-h"><h2>Historial</h2></div>
+    <ul class="hist">${p.historial.slice(-40).reverse().map((h) => html`<li><b>${h.quien === "usuario" ? "Vos" : h.quien === "gravity" ? "Gravity" : bot(h.quien)?.nombre || "Un compañero"}</b> · ${diaHora(h.fecha)} — ${h.que}</li>`)}</ul>`);
+}
+function abrirNuevoProyecto() {
+  abrirDialogo(html`<form class="dlg-f" data-f="proyecto-nuevo" aria-labelledby="dlg-t"><h2 id="dlg-t">Nuevo proyecto</h2>
+    <label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="120" autofocus></label>
+    <label class="fld"><span>Objetivo</span><textarea class="inp" name="objetivo" rows="3" maxlength="4000" placeholder="Qué tiene que quedar logrado y para cuándo"></textarea></label>
+    <label class="fld"><span>Coordina</span><select class="inp" name="coordinadorId"><option value="">Nadie (lo coordino yo)</option>${S.bots.map((b) => html`<option value="${b.id}">${b.nombre} · ${b.titulo}</option>`)}</select></label>
+    <p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true);
+}
+const putTarea = async (id, cambios) => guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}/tareas/${id}`, cambios));
+
 // ================================================================ diálogos
 const dlg = () => $("#dlg");
 let alCerrarDlg = null, cierresIgnorados = 0;
@@ -3668,7 +3769,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -4987,6 +5088,13 @@ const A = {
   "ce-elegir": (t) => abrirEquipoPaso2(t.dataset.id),
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
+  "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "borrar-proyecto": async () => {
+    const p = S.proyectos?.find((x) => x.id === S.ruta.id);
+    if (!p || !(await confirmar(`¿Borrar «${p.nombre}»?`, "Se borran sus tareas y su historial. Los archivos de su carpeta en la computadora quedan.", "Borrar proyecto", true))) return;
+    await conCarga(null, async () => { await api("DELETE", `/api/proyectos/${p.id}`); S.proyectos = S.proyectos.filter((x) => x.id !== p.id); ir("#/proyectos"); });
+  },
+  "tk-borrar": async (t) => { if (await confirmar("¿Borrar la tarea?", "Las tareas que dependían de ella dejan de esperarla.", "Borrar tarea", true)) await conCarga(null, async () => guardarProyecto(await api("DELETE", `/api/proyectos/${S.ruta.id}/tareas/${t.dataset.id}`))); },
   "cerrar-dlg": () => cerrarDialogo(),
   "cerrar-dlg-ir": (t) => { cerrarDialogo(); ir(t.dataset.h); },
   mas: () => abrirMas(),
@@ -5122,6 +5230,21 @@ const F = {
   },
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
+  async "proyecto-nuevo"(f) {
+    const p = await api("POST", "/api/proyectos", { nombre: f.nombre.value.trim(), objetivo: f.objetivo.value, coordinadorId: f.coordinadorId.value || null }).catch((err) => { errDlg(err.message); return null; });
+    if (!p) return;
+    guardarProyecto(p);
+    cerrarDialogo();
+    ir(`#/proyectos/${p.id}`);
+  },
+  async "tarea-proyecto"(f) {
+    const d = new FormData(f);
+    const cuerpo = { titulo: String(d.get("titulo")).trim(), detalle: String(d.get("detalle") || ""), criterio: String(d.get("criterio") || ""), asignadoA: d.get("asignadoA") || null, prioridad: Number(d.get("prioridad")) || 2, vence: d.get("vence") || null, dependeDe: d.getAll("dep").map(String) };
+    await conCarga(f.querySelector("button"), async () => {
+      try { guardarProyecto(await api("POST", `/api/proyectos/${S.ruta.id}/tareas`, cuerpo)); toast(cuerpo.asignadoA ? "Tarea agregada: si está lista para arrancar, ya se la pasé." : "Tarea agregada."); }
+      catch (err) { f.querySelector(".err").textContent = err.message; }
+    });
+  },
   async cupo(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { maxLlamadas: Number(f.maxLlamadas.value), maxComandos: Number(f.maxComandos.value) }); toast("Límites guardados."); }); },
   async clave(f) { await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/ajustes/clave", { clave: f.clave.value }); f.reset(); toast("Clave guardada. Ya podés entrar desde otro dispositivo."); }); },
   async habilidad(f) {
@@ -5334,6 +5457,10 @@ const C = {
     toast(`Copia restaurada (${d.archivos} archivos). Reiniciando…`);
     setTimeout(() => location.reload(), 6000);
   },
+  "tk-asig": (t) => putTarea(t.dataset.id, { asignadoA: t.value || null }),
+  "tk-estado": (t) => putTarea(t.dataset.id, { estado: t.value }),
+  "proy-estado": async (t) => guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { estado: t.value })),
+  "proy-coord": async (t) => guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { coordinadorId: t.value || null })),
   alcance: (t) => { S.alcances[t.dataset.id] = t.value; },
   "alcance-lote": (t) => { S.alcanceLote = t.value; },
   "sel-ap": (t) => { t.checked ? S.sel.add(t.dataset.id) : S.sel.delete(t.dataset.id); pintarBandejas(); },
@@ -5436,6 +5563,7 @@ function repintar() {
   if ((v === "equipo" || v === "aprobaciones") && p.has("bandeja")) pintarBandejas();
   if (v === "reuniones" && p.has("reuniones")) S.ruta.id ? pintarSala() : pintarReuniones();
   if (v === "ajustes" && p.has("ajustes")) pintarAjustes();
+  if (v === "proyectos" && p.has("proyectos")) pintarProyectos();
   if (v === "mensajes" && p.has("msj")) { pintarMsjLista(); montarMsjChat(); }
   else if (v === "mensajes" && p.has("msj-chat")) { pintarMsjLista(); pintarMsjChat(); }
   if (v === "compartido" && p.has("compartido")) pintarCompartido();
@@ -5565,6 +5693,8 @@ function conectar() {
     programar("rail", "reuniones", "ctx", "equipo");
   });
   on("gasto", (g) => { S.gasto = g; programar("rail", "avisos", "ajustes"); });
+  let tProy = null;
+  on("proyectos", () => { if (S.ruta.vista !== "proyectos") { S.proyectos = null; return; } clearTimeout(tProy); tProy = setTimeout(cargarProyectos, 250); });
   on("cupo", (c) => { S.cupo = c; programar("avisos"); });
   on("conexiones", () => { if (S.ruta.vista === "conexiones") cargarConexiones(); });
   // Mensajería: lista y conversación abierta al día; las derivaciones avisan en naranja.
