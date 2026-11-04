@@ -99,6 +99,7 @@ import {
   type Saliente,
 } from "./mensajeria.ts";
 import { pedidoPorDefecto, pistaCompartido } from "./videos.ts";
+import { hayGemini } from "./proveedores.ts";
 import { bus, emitir } from "./eventos.ts";
 
 const PUERTO = Number(process.env.BOTS_PUERTO ?? 3001);
@@ -688,6 +689,26 @@ ruta("POST", "/api/bots/:id/mensajes", async ({ params, cuerpo }) => {
   );
   enviarMensaje(bot.id, texto, llamada ? { llamada } : {});
   return { ok: true };
+});
+
+// Foto durante una llamada (o desde el chat): se guarda en llamadas/ de la computadora y se le pide al
+// compañero que la mire con analizar_video (Gemini). La interfaz la achica antes de mandarla.
+const MAX_FOTO = 700_000;
+ruta("POST", "/api/bots/:id/foto", async ({ params, cuerpo }) => {
+  const bot = botDe(params[0]!);
+  const { datos, pedido, llamada } = validar(
+    z.object({ datos: z.string().max(Math.ceil((MAX_FOTO * 4) / 3) + 8), pedido: z.string().trim().max(2000).nullish(), llamada: z.string().regex(/^[\w-]{1,64}$/).optional() }),
+    await cuerpo(),
+  );
+  if (!hayGemini) throw new ErrorHttp(400, "Para que los compañeros vean fotos hace falta la clave gratis de Gemini.");
+  const bytes = Buffer.from(datos, "base64");
+  if (!bytes.length || bytes.length > MAX_FOTO || bytes[0] !== 0xff || bytes[1] !== 0xd8) throw new ErrorHttp(400, "La foto tiene que ser un JPEG de menos de 700 KB.");
+  const nombre = `foto-${new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15)}.jpg`;
+  await mkdir(path.join(COMPUTADORA, "llamadas"), { recursive: true });
+  await writeFile(path.join(COMPUTADORA, "llamadas", nombre), bytes);
+  const ruta = `llamadas/${nombre}`;
+  enviarMensaje(bot.id, `Te mando una foto: ${ruta}. Mirala con analizar_video (fuente ${JSON.stringify(ruta)}) y ${pedido?.trim() || "decime qué ves y qué tiene que ver con lo que estamos hablando"}.`, llamada ? { llamada } : {});
+  return { ok: true, ruta };
 });
 
 ruta("POST", "/api/bots/:id/detener", async ({ params }) => {

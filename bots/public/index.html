@@ -4222,6 +4222,7 @@ function pintarControlesLlamada() {
   pintar($("#ll-ctl"), html`
     <button class="ll-b" data-a="ll-mic" data-k="ll-mic" aria-pressed="${LL.mic ? "false" : "true"}" aria-label="Silenciar micrófono" ${si(!LL.info.stt, "disabled")}><span class="c">${ico(LL.mic ? "mic" : "mic-off")}</span><span aria-hidden="true">${LL.mic ? "Silenciar" : "Silenciado"}</span></button>
     ${LL.altavoz !== null ? html`<button class="ll-b" data-a="ll-altavoz" data-k="ll-alt" aria-pressed="${LL.altavoz ? "true" : "false"}" aria-label="Altavoz"><span class="c">${ico("speaker")}</span><span aria-hidden="true">Altavoz</span></button>` : ""}
+    <label class="ll-b" data-k="ll-foto" title="Mostrarle una foto"><input type="file" accept="image/*" capture="environment" data-c="ll-foto" hidden><span class="c">${ico("camara")}</span><span>Foto</span></label>
     <button class="ll-b" data-a="ll-cortar" data-k="ll-cortar" aria-label="Interrumpir a ${b.nombre}"><span class="c">${ico("hand")}</span><span aria-hidden="true">Interrumpir</span></button>
     <button class="ll-b colgar" data-a="ll-colgar" data-k="ll-colgar" aria-label="Colgar"><span class="c">${ico("hangup")}</span><span aria-hidden="true">Colgar</span></button>`);
 }
@@ -4328,7 +4329,21 @@ function errorVozLlamada(e) {
   fijarFase("error", { causa });
 }
 
-async function enviarLlamada(texto) {
+async function fotoComoJpeg(archivo, lado = 1280) {
+  const img = await createImageBitmap(archivo);
+  const k = Math.min(1, lado / Math.max(img.width, img.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  img.close?.();
+  for (const q of [0.82, 0.7, 0.55, 0.4]) {
+    const url = c.toDataURL("image/jpeg", q);
+    const b64 = url.slice(url.indexOf(",") + 1);
+    if (b64.length * 0.75 < 680_000) return b64;
+  }
+  throw new Error("demasiado grande");
+}
+async function enviarLlamada(texto, foto = null) {
   const b = bot(LL.botId);
   if (!b || !LL.activa) return;
   clearTimeout(LL.timer);
@@ -4340,7 +4355,8 @@ async function enviarLlamada(texto) {
   fijarFase("enviando");
   const ocupado = b.estado !== "libre";
   try {
-    await api("POST", `/api/bots/${b.id}/mensajes`, { texto, llamada: t.id });
+    if (foto) await api("POST", `/api/bots/${b.id}/foto`, { datos: foto, llamada: t.id });
+    else await api("POST", `/api/bots/${b.id}/mensajes`, { texto, llamada: t.id });
     t.enviado = true;
     if (LL.turno === t && !t.abierto && LL.fase === "enviando") fijarFase(ocupado ? "cola" : "pensando");
   } catch (err) {
@@ -5660,6 +5676,15 @@ const C = {
   "arq-incluir": (t) => { const i = Number(t.dataset.i); t.checked ? ARQ.fuera.delete(i) : ARQ.fuera.add(i); pintarArq(); },
   // Cambiar de modelo en medio de la charla: vale desde el próximo turno.
   "modelo-chat": async (t) => { const b = bot(t.dataset.id); if (!b) return; const nuevo = await api("PUT", `/api/bots/${b.id}`, { nombre: b.nombre, titulo: b.titulo, descripcion: b.descripcion, modelo: t.value || null }); Object.assign(b, nuevo); toast(`${b.nombre} usa ahora el modelo ${t.value === "rapido" ? "rápido" : t.value === "potente" ? "potente" : "automático"}.`); },
+  // Foto en la llamada: se achica a 1280 px en JPEG (menos de 700 KB) y el compañero la mira y la comenta en voz.
+  "ll-foto": async (t) => {
+    const archivo = t.files?.[0];
+    t.value = "";
+    if (!archivo || !LL.activa) return;
+    let datos;
+    try { datos = await fotoComoJpeg(archivo); } catch { toast("No pude abrir esa imagen.", "err"); return; }
+    enviarLlamada("(te mostré una foto)", datos);
+  },
   "tk-asig": (t) => putTarea(t.dataset.id, { asignadoA: t.value || null }),
   "tk-estado": (t) => putTarea(t.dataset.id, { estado: t.value }),
   "proy-estado": async (t) => guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { estado: t.value })),

@@ -21,8 +21,8 @@
 14. 🟡 Personalizable: color, expresividad, calidad, voz y velocidad. Faltan accesorios y estilos.
 15. ⛔ Sala holográfica con varios robots.
 16. ✅ Voz en tiempo real con interrupción (tocar al robot).
-17. ⛔ Imágenes durante la llamada (el chat sí acepta archivos).
-18. ⛔ Modo cámara.
+17. ✅ Fotos durante la llamada (botón Foto): se achica, se guarda en llamadas/ y el compañero la mira con Gemini y la comenta en voz.
+18. ✅ Cámara: el botón Foto abre la cámara o la galería solo cuando lo tocás (permiso explícito). Falta video en vivo.
 19. 🟡 Voces por compañero (las del sistema). Falta tono/estilo.
 20. ✅ Resumen automático al cortar (si hubo charla): el compañero deja en el chat decisiones, notas y tareas.
 

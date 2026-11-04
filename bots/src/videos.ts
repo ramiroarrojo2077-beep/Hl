@@ -35,7 +35,7 @@ const conVersion = /^(.*)\/(v\d\w*)$/.exec(GEMINI_BASE);
 const URL_SUBIDA = conVersion ? `${conVersion[1]}/upload/${conVersion[2]}/files` : `${GEMINI_BASE}/upload/v1beta/files`;
 
 export const DESCRIPCION_VIDEO =
-  "Mirá y escuchá un video (o un audio, como una nota de voz) y respondé lo que preguntes: lo analiza Gemini, que ve la imagen, oye el sonido y lee el texto en pantalla, con marcas de tiempo. " +
+  "Mirá y escuchá un video (o un audio, como una nota de voz, o una foto) y respondé lo que preguntes: lo analiza Gemini, que ve la imagen, oye el sonido y lee el texto en pantalla, con marcas de tiempo. " +
   "fuente: un enlace de YouTube público o no listado (video, short o vivo) o la ruta de un archivo en la computadora; lo que el usuario comparte desde el celular con «Compartir con Gravity» queda en compartidos/. " +
   `Archivos de hasta ${MAX_VIDEO_MB} MB: la primera vez se suben a Google y puede tardar unos minutos; después, las preguntas sobre el mismo archivo salen rápido (por 2 días). Para videos largos pedí un tramo con desde_segundos y hasta_segundos. ` +
   "Los enlaces de Instagram, TikTok, Facebook, X o Threads no se pueden bajar: pedile al usuario que guarde el video en el celular y lo comparta con «Compartir con Gravity», y analizá el archivo que llega a compartidos/. " +
@@ -127,12 +127,21 @@ const TIPOS: Record<string, string> = {
   ".oga": "audio/ogg",
   ".opus": "audio/ogg",
   ".flac": "audio/flac",
+  // Fotos: Gemini las ve igual (por ejemplo, las que se mandan durante una llamada).
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".heic": "image/heic",
 };
 
 /** Tipo según los primeros bytes (los archivos compartidos pueden venir sin extensión). */
 function olfatear(b: Buffer): string | null {
   const ascii = (desde: number, hasta: number) => b.subarray(desde, hasta).toString("latin1");
   const palabra = b.readUInt32BE(0);
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (palabra === 0x89504e47) return "image/png";
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
   if (ascii(4, 8) === "ftyp") {
     const marca = ascii(8, 12);
     if (marca === "qt  ") return "video/mov";
@@ -190,7 +199,7 @@ async function archivoLocal(fuente: string): Promise<Local> {
   }
   const mime = olfatear(cabeza) ?? TIPOS[path.extname(archivo).toLowerCase()];
   if (!mime) {
-    throw new Error(`No reconozco el formato de «${relativa}». Sirven videos (mp4, mov, webm, avi, mpeg, 3gp…) y audios (mp3, wav, ogg/opus, m4a, aac, flac).`);
+    throw new Error(`No reconozco el formato de «${relativa}». Sirven videos (mp4, mov, webm, avi, mpeg, 3gp…), audios (mp3, wav, ogg/opus, m4a, aac, flac) y fotos (jpg, png, webp).`);
   }
   return { archivo, relativa, nombre: path.basename(archivo), tamano: info.size, modificado: info.mtimeMs, mime };
 }
