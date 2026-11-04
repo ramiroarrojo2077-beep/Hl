@@ -820,6 +820,7 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--tx2)}
 .deps{display:flex;flex-wrap:wrap;gap:6px 14px}
 .reus{display:flex;flex-direction:column;gap:8px}
+.modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
 .ops-k b{font-size:22px;font-weight:600}.ops-k span{font-size:12.5px;color:var(--tx2)}
@@ -2190,6 +2191,7 @@ function pintarCabecera() {
       <div class="bh-meta" role="status">${pillEstado(b)}${b.enCola ? html`<span class="cola">${b.enCola} en cola</span>` : ""}<span class="dotsep"></span><span class="rep">${j ? html`Reporta a <a href="#/chats/${j.id}">${j.nombre}</a>` : "Trabaja directo con vos"}${eq ? ` · ${plural(eq, "persona a cargo", "personas a cargo")}` : ""}</span></div>
     </div></div>
     <div class="bh-act">
+      <select class="inp modelo-chat" data-c="modelo-chat" data-id="${b.id}" data-k="bh-mod" aria-label="Modelo de ${b.nombre}" title="Modelo (se puede cambiar en cualquier momento)"><option value="" ${si(!b.modelo, "selected")}>Auto</option><option value="rapido" ${si(b.modelo === "rapido", "selected")}>Rápido</option><option value="potente" ${si(b.modelo === "potente", "selected")}>Potente</option></select>
       <a class="btn out sm" href="#/llamada/${b.id}" data-k="bh-llamar" aria-label="Llamar a ${b.nombre}" title="Llamada de voz">${ico("phone", "s")}<span class="t">Llamar</span></a>
       ${eq ? html`<button class="btn out sm" data-a="nueva-reunion" data-id="${b.id}" data-k="bh-reu" aria-label="Reunión con el equipo de ${b.nombre}">${ico("meet", "s")}<span class="t">Reunión</span></button>` : ""}
       ${ocupado ? html`<button class="btn ghost sm" data-a="detener" data-id="${b.id}" data-k="bh-det" aria-label="Detener a ${b.nombre}">${ico("stop", "s")}<span class="t">Detener</span></button>` : ""}
@@ -2197,6 +2199,7 @@ function pintarCabecera() {
     </div>
     <div class="bh-m">
       ${ocupado ? html`<button class="btn out sm" data-a="detener" data-id="${b.id}" data-k="bhm-det" aria-label="Detener a ${b.nombre}">${ico("stop", "s")}Detener</button>` : ""}
+      <select class="inp modelo-chat" data-c="modelo-chat" data-id="${b.id}" data-k="bhm-mod" aria-label="Modelo de ${b.nombre}" title="Modelo (se puede cambiar en cualquier momento)"><option value="" ${si(!b.modelo, "selected")}>Auto</option><option value="rapido" ${si(b.modelo === "rapido", "selected")}>Rápido</option><option value="potente" ${si(b.modelo === "potente", "selected")}>Potente</option></select>
       <a class="ib" href="#/llamada/${b.id}" data-k="bhm-llamar" aria-label="Llamar a ${b.nombre}" title="Llamada de voz">${ico("phone")}</a>
       ${eq ? html`<button class="ib" data-a="acciones-bot" data-id="${b.id}" data-k="bhm-mas" aria-haspopup="dialog" aria-label="Más acciones con ${b.nombre}" title="Más acciones">${ico("dots")}</button>` : ""}
     </div>`);
@@ -5643,6 +5646,8 @@ const C = {
     setTimeout(() => location.reload(), 6000);
   },
   "arq-incluir": (t) => { const i = Number(t.dataset.i); t.checked ? ARQ.fuera.delete(i) : ARQ.fuera.add(i); pintarArq(); },
+  // Cambiar de modelo en medio de la charla: vale desde el próximo turno.
+  "modelo-chat": async (t) => { const b = bot(t.dataset.id); if (!b) return; const nuevo = await api("PUT", `/api/bots/${b.id}`, { nombre: b.nombre, titulo: b.titulo, descripcion: b.descripcion, modelo: t.value || null }); Object.assign(b, nuevo); toast(`${b.nombre} usa ahora el modelo ${t.value === "rapido" ? "rápido" : t.value === "potente" ? "potente" : "automático"}.`); },
   "tk-asig": (t) => putTarea(t.dataset.id, { asignadoA: t.value || null }),
   "tk-estado": (t) => putTarea(t.dataset.id, { estado: t.value }),
   "proy-estado": async (t) => guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { estado: t.value })),
