@@ -11,14 +11,13 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 
 ## Ya hecho en el motor, falta la interfaz (prioridad alta)
 
+Ya tienen interfaz: permisos por compañero (Perfil > «Herramientas que puede usar»), copia de seguridad (Ajustes > Copia de seguridad) y pausar/reanudar reuniones (botones en la sala).
+
 1. **Proyectos** (`bots/src/proyectos.ts`, rutas en `servidor.ts`):
    - `GET /api/proyectos`, `GET/PUT/DELETE /api/proyectos/:id`, `POST /api/proyectos` `{nombre, objetivo, coordinadorId?}`.
    - `POST /api/proyectos/:id/tareas` `{titulo, detalle?, criterio?, asignadoA?, dependeDe?[], prioridad? 1|2|3, vence?}`; `PUT/DELETE /api/proyectos/:id/tareas/:tarea` (más `estado` y `resultado`).
    - Cada respuesta trae `progreso {hechas,total,porcentaje,bloqueadas,vencidas}` e `historial`. El evento SSE `proyectos` avisa cambios.
-   - Falta: vista `#/proyectos` (lista + detalle con tareas por estado, dependencias, responsable, historial). Diseño de referencia: lienzo «Gravity · Interfaz profesional», pantalla «Proyecto».
-2. **Copia de seguridad** en Ajustes: botón Exportar → `GET /api/respaldo` (baja un .zip); Importar → `POST /api/respaldo/importar` con el .zip como cuerpo y `Content-Type: application/zip`; responde `{ok, archivos, reinicia:true}` y el motor se reinicia (mostrar «Restaurando…» y recargar a los pocos segundos).
-3. **Permisos por compañero** en Perfil: `GET /api/estado` trae `gruposHerramientas [{id,nombre}]`; `PUT /api/bots/:id` acepta `bloqueadas: string[]` (ids de grupo). Mostrar un interruptor por grupo (prendido = permitido).
-4. **Pausar/reanudar reuniones**: `POST /api/reuniones/:id/pausar` y `/reanudar`; la reunión trae `pausada: true`. Faltan los botones en la vista de la reunión.
+   - Falta: vista `#/proyectos` (lista + detalle con tareas por estado, dependencias, responsable, historial). Diseño de referencia: lienzo «Gravity · Interfaz profesional», pantalla «Proyecto». Los compañeros ya los manejan con la herramienta `proyectos`.
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 

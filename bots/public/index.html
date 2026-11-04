@@ -2709,10 +2709,10 @@ function pintarSala(primera = false) {
   const turnos = r.turnos.filter((t) => !t.paso);
   const habla = r.hablando || [];
   const cuenta = (id) => r.turnos.filter((t) => t.autor === id && !t.paso).length;
-  const estadoTxt = { en_curso: "En vivo", cierre: "Escribiendo el acta", terminada: "Terminada", cancelada: "Cancelada" }[r.estado] || r.estado;
+  const estadoTxt = { en_curso: r.pausada ? "En pausa" : "En vivo", cierre: "Escribiendo el acta", terminada: "Terminada", cancelada: "Cancelada" }[r.estado] || r.estado;
   pintar($("#sala-top"), html`<div class="tt"><span class="micro">Reunión · ${r.tipo === "standup" ? "Daily" : "Discusión"}</span><h1>${r.titulo}</h1>
     <div class="mt-meta">${viva || r.estado === "cierre" ? html`<span class="livep"><i></i>${estadoTxt}</span>` : html`<span class="tag">${estadoTxt}</span>`}<span>Empezó ${hora(r.creada)}${viva ? html` · <span class="mono" data-reloj="${r.creada}">${reloj(r.creada)}</span>` : r.fin ? ` · terminó ${hora(r.fin)}` : ""}</span><span>${plural(ps.length, "compañero", "compañeros")} + vos</span><span>Facilita <b style="color:var(--tx);font-weight:500">${fac.nombre}</b></span><span>Ronda ${r.ronda || 1}</span><span class="mono">${usd(r.gastoUsd)}</span></div></div>
-    <div class="acts">${viva ? html`<button class="btn out sm" data-a="terminar-reunion" data-k="reu-term">${ico("file", "s")}Terminar y escribir acta</button><button class="btn ghost sm" data-a="cancelar-reunion" data-k="reu-canc">${ico("x", "s")}Cancelar</button>` : html`<a class="btn ghost sm" href="#/reuniones">${ico("left", "s")}Reuniones</a>`}</div>`);
+    <div class="acts">${viva ? html`${r.pausada ? html`<button class="btn pri sm" data-a="reanudar-reunion" data-k="reu-pau">${ico("play", "s")}Reanudar</button>` : html`<button class="btn out sm" data-a="pausar-reunion" data-k="reu-pau">${ico("pause", "s")}Pausar</button>`}<button class="btn out sm" data-a="terminar-reunion" data-k="reu-term">${ico("file", "s")}Terminar y escribir acta</button><button class="btn ghost sm" data-a="cancelar-reunion" data-k="reu-canc">${ico("x", "s")}Cancelar</button>` : html`<a class="btn ghost sm" href="#/reuniones">${ico("left", "s")}Reuniones</a>`}</div>`);
   pintar($("#sala-ppl"), html`<span class="micro">Participantes</span>
     ${orbita(html`${av(fac, 50, { s: "idle", cls: habla.includes(fac.id) ? "talk" : "" })}<em class="ctag">Facilita</em>`, [...ps, { vos: true, id: "vos" }], 236, { sz: 30, habla, etiquetas: true, links: true, label: `Facilita ${fac.nombre}; participan ${ps.map((p) => p.nombre).join(", ")} y vos`, badge: (m) => (m.vos ? "" : habla.includes(m.id) ? html`<b class="ob talk">…</b>` : cuenta(m.id) ? html`<b class="ob done">${cuenta(m.id)}</b>` : "") })}
     <span class="micro">Turnos</span>
@@ -2922,6 +2922,7 @@ function pintarPerfil() {
       <label class="fld"><span>Reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${opcionesJefe(b).map((m) => html`<option value="${m.id}" ${si(b.reportaA === m.id, "selected")}>${m.nombre} · ${m.titulo}</option>`)}</select><small>Su manager le encarga trabajo y recibe sus resultados.</small></label></div>
     <fieldset class="fld"><legend>Esfuerzo</legend><div class="segc"><label><input type="radio" name="esfuerzo" value="low" ${si(esf === "low", "checked")}>Económico</label><label><input type="radio" name="esfuerzo" value="" ${si(esf === "" || esf === "medium", "checked")}>Normal</label><label><input type="radio" name="esfuerzo" value="high" ${si(esf === "high" || esf === "xhigh" || esf === "max", "checked")}>Cuidadoso</label></div><small>Económico gasta menos y responde antes; Cuidadoso piensa más (y cuesta más).</small></fieldset>
     <label class="chk"><input type="checkbox" class="sw" name="puedeEnviarAfuera" ${si(b.puedeEnviarAfuera, "checked")}><span>Puede enviar mensajes afuera<small>Mandar emails o mensajes con tus apps conectadas. Igual te pide aprobación cada vez.</small></span></label>
+    ${htmlPermisosPerfil(b)}
     ${htmlLlamadasPerfil(b)}
     <p class="err" role="alert"></p>
     <div class="acts"><button class="btn pri">Guardar cambios</button></div></form>
@@ -3386,6 +3387,9 @@ function pintarAjustes() {
         ${S.local ? (a.claveEnv ? html`<p class="sub">La clave está fijada por <code>BOTS_CLAVE</code> en el servidor.</p>` : html`<p class="sub">Para entrar desde otro dispositivo hace falta una clave${a.tieneClave ? " (ya hay una: cambiarla cierra las otras sesiones)" : ""}.</p><form class="fila" data-f="clave"><label class="fld"><span>${a.tieneClave ? "Nueva clave" : "Clave"}</span><input class="inp" type="password" name="clave" minlength="8" autocomplete="new-password" required placeholder="Al menos 8 caracteres"></label><button class="btn out">${a.tieneClave ? "Cambiar" : "Guardar"}</button></form>`)
           : html`<p class="sub">Estás entrando desde otro dispositivo.</p><button class="btn out sm" data-a="salir">${ico("logout", "s")}Salir</button>`}
         <p class="ayuda" style="margin-top:10px">Los pasos para abrir Gravity en el celular (misma red o túnel) están en <code>bots/MOVIL.md</code> del repositorio.</p></section>
+      <section class="card" aria-labelledby="aj-b"><h2 id="aj-b">Copia de seguridad</h2><p class="sub">Un .zip con compañeros, conversaciones, memoria, rutinas, tareas, proyectos, reuniones, mensajería y la computadora. Las claves de las conexiones no se incluyen: hay que volver a conectarlas.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn out sm" href="/api/respaldo" download>${ico("download", "s")}Exportar copia</a><label class="btn out sm" style="cursor:pointer">Importar copia<input type="file" accept=".zip,application/zip" data-c="respaldo" hidden></label></div>
+        <p class="ayuda" style="margin-top:8px">Importar reemplaza todo lo actual (lo de antes queda guardado en una carpeta aparte) y reinicia el motor.</p></section>
       <section class="card" aria-labelledby="aj-i"><h2 id="aj-i">Esta instalación</h2>
         <dl class="info"><dt>Modelo</dt><dd>${S.config.modelo}</dd><dt>Esfuerzo</dt><dd>${S.config.esfuerzo}</dd><dt>Computadora</dt><dd>${S.config.computadora}</dd><dt>Zona</dt><dd>${S.config.zona}</dd></dl>
         <label class="fld" style="margin-top:12px"><span>Tema</span><select class="inp" data-c="tema" style="max-width:220px"><option value="" ${si(!tema, "selected")}>Como el sistema</option><option value="dark" ${si(tema === "dark", "selected")}>Oscuro</option><option value="light" ${si(tema === "light", "selected")}>Claro</option></select></label></section>
@@ -4294,6 +4298,16 @@ function opcionesVoz(a) {
   if (a.voz && !voces.some((v) => v.id === a.voz)) voces = [{ id: a.voz, nombre: `${a.voz} (guardada)`, idioma: "" }, ...voces];
   return html`<option value="">La del sistema</option>${voces.map((v) => html`<option value="${v.id}" ${si(v.id === a.voz, "selected")}>${v.nombre}${v.idioma ? ` · ${v.idioma}` : ""}</option>`)}`;
 }
+// Permisos por compañero: cada grupo de herramientas se puede apagar. El motor no se las manda al modelo
+// ni las ejecuta (no es una instrucción que se pueda ignorar).
+function htmlPermisosPerfil(b) {
+  const grupos = S.gruposHerramientas || [];
+  if (!grupos.length) return "";
+  const fuera = new Set(b.bloqueadas || []);
+  return html`<fieldset class="fld" data-permisos><legend>Herramientas que puede usar</legend>
+    ${grupos.map((g) => html`<label class="chk"><input type="checkbox" class="sw" name="perm" value="${g.id}" ${si(!fuera.has(g.id), "checked")}><span>${g.nombre}</span></label>`)}
+    <small>Lo que apagues no lo tiene: Gravity no se lo ofrece ni lo ejecuta. Entregar sus tareas y su memoria quedan siempre.</small></fieldset>`;
+}
 function htmlLlamadasPerfil(b) {
   const a = avatarDe(b);
   const tts = Voz.disponible().tts;
@@ -5026,6 +5040,8 @@ const A = {
   "hab-cancelar": () => { S.editHab = null; document.activeElement?.blur(); pintarAjustes(); },
   "hab-borrar": async (t) => { const h = S.habilidades.find((x) => x.id === t.dataset.id); if (await confirmar(`¿Borrar «${h.nombre}»?`, "Las rutinas que la usan siguen sin ella.", "Borrar", true)) await conCarga(null, () => api("DELETE", `/api/habilidades/${h.id}`)); },
   salir: async () => { try { await api("POST", "/api/logout", {}); } catch {} location.reload(); },
+  "pausar-reunion": (t) => conCarga(t, async () => { Object.assign(S.reunion, await api("POST", `/api/reuniones/${S.reunion.id}/pausar`, {})); pintarSala(); toast("Reunión en pausa: termina quien está hablando y después nadie más."); }),
+  "reanudar-reunion": (t) => conCarga(t, async () => { Object.assign(S.reunion, await api("POST", `/api/reuniones/${S.reunion.id}/reanudar`, {})); pintarSala(); }),
   "terminar-reunion": (t) => conCarga(t, async () => { await api("POST", `/api/reuniones/${S.reunion.id}/terminar`, {}); toast("Cerrando: el acta llega en un momento."); }),
   "cancelar-reunion": async () => { if (await confirmar("¿Cancelar la reunión?", "Se corta sin acta y sin repartir tareas.", "Cancelar reunión", true)) await conCarga(null, () => api("POST", `/api/reuniones/${S.reunion.id}/cancelar`, {})); },
   "aceptar-reunion": (t) => conCarga(t, async () => { const r = await api("POST", `/api/reuniones/${S.reunion.id}/aceptar`, {}); toast(`Se repartieron ${plural(r.tareas?.length ?? 0, "tarea", "tareas")}.`); S.reunion.accionesPropuestas = false; pintarSala(); }),
@@ -5137,6 +5153,7 @@ const F = {
     const d = new FormData(f);
     const cuerpo = { nombre: d.get("nombre"), titulo: d.get("titulo"), descripcion: d.get("descripcion"), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on", esfuerzo: d.get("esfuerzo") || null, icono: d.get("icono") || null };
     if (f.avColor) cuerpo.avatar = datosAvatar(f);
+    if (f.querySelector("[data-permisos]")) { const si_ = new Set(d.getAll("perm")); cuerpo.bloqueadas = (S.gruposHerramientas || []).map((g) => g.id).filter((id) => !si_.has(id)); }
     const boton = f.querySelector("button:not([type=button])");
     boton.setAttribute("aria-busy", "true");
     try {
@@ -5304,6 +5321,19 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  // Importar una copia: el .zip va crudo (application/zip), el motor lo valida, lo aplica y se reinicia.
+  async respaldo(t) {
+    const archivo = t.files?.[0];
+    t.value = "";
+    if (!archivo) return;
+    if (!(await confirmar("Importar la copia", `Se reemplaza todo lo que hay ahora por «${archivo.name}». Lo actual queda guardado en una carpeta aparte. Gravity se reinicia.`, "Importar", true))) return;
+    toast("Restaurando la copia…");
+    const r = await fetch("/api/respaldo/importar", { method: "POST", headers: { "Content-Type": "application/zip" }, body: archivo });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new ErrorApi(r.status, d.error || `Error ${r.status}`);
+    toast(`Copia restaurada (${d.archivos} archivos). Reiniciando…`);
+    setTimeout(() => location.reload(), 6000);
+  },
   alcance: (t) => { S.alcances[t.dataset.id] = t.value; },
   "alcance-lote": (t) => { S.alcanceLote = t.value; },
   "sel-ap": (t) => { t.checked ? S.sel.add(t.dataset.id) : S.sel.delete(t.dataset.id); pintarBandejas(); },
@@ -5422,7 +5452,7 @@ function anotarAp(id, a) { cambiosAps.set(id, { ver: ++verAps, a }); }
 async function cargarEstado() {
   const v0 = verAps;
   const d = await api("GET", "/api/estado");
-  for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local"]) S[k] = d[k];
+  for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local", "gruposHerramientas"]) S[k] = d[k];
   // Catálogo (servidores viejos no lo traen: se arma con lo que haya).
   S.categorias = d.categorias || [...new Set(S.plantillas.map((p) => p.categoria).filter(Boolean))];
   S.iconos = d.iconos || [];
