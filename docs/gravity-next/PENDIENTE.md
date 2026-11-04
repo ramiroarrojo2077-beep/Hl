@@ -21,11 +21,11 @@ Ya tienen interfaz: permisos por compañero (Perfil > «Herramientas que puede u
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
-Prueba e2e de la llamada (Playwright, con un `GravityVoz` falso): 15 de 19 pasan. Fallan:
-- «compat: un bot viejo sin avatar»: la prueba hace un pedido sin `Content-Type: application/json` (415/400). Revisar si es la prueba o el helper `api()` en `index.html`.
-- «silenciar el micrófono»: el botón no cambia `aria-pressed` ni muestra «En silencio» (función `pintarControlesLlamada` y su manejador).
-- «errores del reconocedor»: después de un evento `silencio` no vuelve a escuchar a tiempo (`escucharLlamada(350)` / reintentos en `errorVozLlamada`).
-- «Web Speech (Chrome)»: después de hablar no vuelve a escuchar (fin de `speechSynthesis` → `finVozLlamada`).
+Prueba e2e de la llamada (Playwright, con un `GravityVoz` falso): 16 de 19 pasan. Fallan:
+- «compat: un bot viejo sin avatar»: la prueba hace un pedido sin `Content-Type: application/json` (415/400): es la prueba, no la app.
+- «errores del reconocedor»: después de un evento `silencio` no vuelve a «Escuchando…» a tiempo (`escucharLlamada(350)` / reintentos en `errorVozLlamada`).
+- «Web Speech (Chrome)»: después de hablar no vuelve a escuchar (fin de `speechSynthesis` → `finVozLlamada`). Solo afecta a Chrome en la compu; en el celular se usa el puente nativo.
+Ojo con el helper `html```: convierte `true`/`false` en texto vacío; para atributos como `aria-pressed` usar `String(...)`.
 Contrato del puente de voz nativo: `android/VOZ.md`.
 
 ## Pedidos del usuario todavía sin hacer

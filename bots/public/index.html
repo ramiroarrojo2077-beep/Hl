@@ -2075,7 +2075,7 @@ function pintarSide() {
     ${c.work + c.wait ? seg(c) : ""}
     ${esperan ? html`<a class="agg-a" href="#/aprobaciones" data-k="agg-a">${ico("shield", "s")}<span><b>${esperan}</b> ${esperan === 1 ? "espera" : "esperan"} tu aprobación</span><span class="go">Revisar ${ico("right", "s")}</span></a>` : ""}` : "");
   const F = [["todos", "Todos"], ["work", "Trabajando"], ["wait", "Esperan"], ["idle", "Libres"]];
-  pintar($("#side-chips"), F.map(([k, t]) => html`<button class="chip" data-a="filtro" data-v="${k}" data-k="f-${k}" aria-pressed="${S.filtro === k}">${t}</button>`));
+  pintar($("#side-chips"), F.map(([k, t]) => html`<button class="chip" data-a="filtro" data-v="${k}" data-k="f-${k}" aria-pressed="${String(S.filtro === k)}">${t}</button>`));
   pintar($("#side-lista"), htmlLista());
 }
 
@@ -2463,7 +2463,7 @@ function pintarEquipo() {
     ${bots.length ? html`<div class="tree" aria-label="Organigrama">${htmlArbol(dirs, leads, solos)}</div>` : html`<div class="tree"><div class="sistemas" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${tarjetaNueva()}</div></div>`}
     ${bots.length ? html`<div class="sec-h" id="todos"><h2>Todos <span>${bots.length}</span></h2></div>
       <div class="bar" style="margin-top:0"><label class="field">${ico("search", "s")}<input type="search" placeholder="Buscar en el equipo" aria-label="Buscar en el equipo" data-i="eq-buscar" data-k="eq-buscar" value="${S.eqBusqueda}" autocomplete="off"></label>
-      <div class="chips" role="group" aria-label="Filtrar por estado">${[["todos", "Todos"], ["work", "Trabajando"], ["wait", "Esperan"], ["idle", "Libres"]].map(([k, t]) => html`<button class="chip" data-a="eq-filtro" data-v="${k}" data-k="eqf-${k}" aria-pressed="${S.eqFiltro === k}">${k !== "todos" ? html`<i class="d ${{ work: "w", wait: "a", idle: "l" }[k]}"></i>` : ""}${t}</button>`)}</div></div>
+      <div class="chips" role="group" aria-label="Filtrar por estado">${[["todos", "Todos"], ["work", "Trabajando"], ["wait", "Esperan"], ["idle", "Libres"]].map(([k, t]) => html`<button class="chip" data-a="eq-filtro" data-v="${k}" data-k="eqf-${k}" aria-pressed="${String(S.eqFiltro === k)}">${k !== "todos" ? html`<i class="d ${{ work: "w", wait: "a", idle: "l" }[k]}"></i>` : ""}${t}</button>`)}</div></div>
       ${tablaEquipo()}
       ${htmlTablero()}` : ""}`);
 }
@@ -2788,7 +2788,7 @@ function htmlArbolCompu(n, q) {
       return html`<li><button data-a="compu-carpeta" data-ruta="${h.ruta}" aria-expanded="${!!abierta}">${ico(abierta ? "down" : "right", "s")}${ico("folder", "s")}<span>${h.nombre}</span></button>${abierta ? html`<ul>${dentro}</ul>` : ""}</li>`;
     }
     if (q && !norm(h.ruta).includes(q)) return "";
-    return html`<li><button data-a="compu-archivo" data-ruta="${h.ruta}" aria-current="${S.compuSel === h.ruta}">${ico("file", "s")}<span>${h.nombre}</span><small>${tamano(h.archivo?.tamano || 0)}</small></button></li>`;
+    return html`<li><button data-a="compu-archivo" data-ruta="${h.ruta}" aria-current="${String(S.compuSel === h.ruta)}">${ico("file", "s")}<span>${h.nombre}</span><small>${tamano(h.archivo?.tamano || 0)}</small></button></li>`;
   }).filter((x) => x);
 }
 function pintarCompu() {
@@ -3559,7 +3559,7 @@ function abrirNuevoBot(plantilla = null) {
     <div class="dlg-hd"><div><span class="micro">Nuevo compañero</span><h2 id="dlg-t">Elegí un puesto</h2><p class="lead">${S.plantillas.length} puestos listos para trabajar. Después le cambiás el nombre, el puesto o lo que hace.</p></div>${btnCerrar()}</div>
     <div class="cat-top">
       <label class="field">${ico("search", "s")}<input type="search" placeholder="Buscar: ventas, contable, videos…" aria-label="Buscar un puesto" aria-controls="nb-lista" data-i="nb-buscar" data-k="nb-buscar" autocomplete="off" enterkeyhint="search" value="${NB.q}" autofocus></label>
-      <div class="cat-chips" role="group" aria-label="Filtrar por categoría">${[["", "Todos"], ...S.categorias.map((c) => [c, c])].map(([k, t]) => html`<button type="button" class="chip" data-a="nb-cat" data-v="${k}" aria-pressed="${NB.cat === k}">${t}</button>`)}</div>
+      <div class="cat-chips" role="group" aria-label="Filtrar por categoría">${[["", "Todos"], ...S.categorias.map((c) => [c, c])].map(([k, t]) => html`<button type="button" class="chip" data-a="nb-cat" data-v="${k}" aria-pressed="${String(NB.cat === k)}">${t}</button>`)}</div>
       <p class="cat-n" id="nb-n" role="status" aria-live="polite"></p>
     </div>
     <div id="nb-lista"></div>
@@ -3994,8 +3994,8 @@ function pintarControlesLlamada() {
   const b = bot(LL.botId);
   if (!b || !$("#ll-ctl")) return;
   pintar($("#ll-ctl"), html`
-    <button class="ll-b" data-a="ll-mic" data-k="ll-mic" aria-pressed="${!LL.mic}" aria-label="Silenciar micrófono" ${si(!LL.info.stt, "disabled")}><span class="c">${ico(LL.mic ? "mic" : "mic-off")}</span><span aria-hidden="true">${LL.mic ? "Silenciar" : "Silenciado"}</span></button>
-    ${LL.altavoz !== null ? html`<button class="ll-b" data-a="ll-altavoz" data-k="ll-alt" aria-pressed="${!!LL.altavoz}" aria-label="Altavoz"><span class="c">${ico("speaker")}</span><span aria-hidden="true">Altavoz</span></button>` : ""}
+    <button class="ll-b" data-a="ll-mic" data-k="ll-mic" aria-pressed="${LL.mic ? "false" : "true"}" aria-label="Silenciar micrófono" ${si(!LL.info.stt, "disabled")}><span class="c">${ico(LL.mic ? "mic" : "mic-off")}</span><span aria-hidden="true">${LL.mic ? "Silenciar" : "Silenciado"}</span></button>
+    ${LL.altavoz !== null ? html`<button class="ll-b" data-a="ll-altavoz" data-k="ll-alt" aria-pressed="${LL.altavoz ? "true" : "false"}" aria-label="Altavoz"><span class="c">${ico("speaker")}</span><span aria-hidden="true">Altavoz</span></button>` : ""}
     <button class="ll-b" data-a="ll-cortar" data-k="ll-cortar" aria-label="Interrumpir a ${b.nombre}"><span class="c">${ico("hand")}</span><span aria-hidden="true">Interrumpir</span></button>
     <button class="ll-b colgar" data-a="ll-colgar" data-k="ll-colgar" aria-label="Colgar"><span class="c">${ico("hangup")}</span><span aria-hidden="true">Colgar</span></button>`);
 }
