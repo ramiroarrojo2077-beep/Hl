@@ -13,6 +13,8 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 
 - Pantalla de **Proyectos** (`#/proyectos`): lista con progreso, detalle con tareas abiertas/cerradas, responsable, estado, dependencias (bloqueadas en naranja), prioridad, fecha límite, historial y carpeta. API: `/api/proyectos` (ver `servidor.ts`).
 - **Permisos por compañero** (Perfil), **copia de seguridad** (Ajustes) y **pausar/reanudar reuniones**.
+- **56 Agentes temporales**: Perfil > «Misión (especialista temporal)» y «Archivar». Archivar deja de trabajar, cancela sus tareas, pausa rutinas y saca sus chats; Ajustes > «Compañeros archivados» para restaurar. API: `POST /api/bots/:id/archivar` y `/restaurar`; `listarBots()` excluye archivados.
+- **57 Modo enseñanza**: Perfil > «Modo enseñanza» (campo `ensenanza`): explica cada paso y resume el procedimiento.
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
@@ -25,8 +27,6 @@ Contrato del puente de voz nativo: `android/VOZ.md`.
 
 ## Pedidos del usuario todavía sin hacer
 
-- **56. Agentes temporales**: crear especialistas para una misión y archivarlos al terminar. Sugerencia: campo `Bot.temporal {mision, venceAl, archivado}`; archivar = detener, sacar de la lista activa y guardar su memoria/conversación (no borrar); ruta para restaurar.
-- **57. Modo enseñanza**: un compañero explica su procedimiento paso a paso. Sugerencia: interruptor por chat que agrega una instrucción de sistema («explicá cada paso: qué vas a hacer, por qué, con qué herramienta y qué resultó») y muestra los pasos de herramientas en lenguaje simple.
 - **58. Auditor inteligente**: un compañero con plantilla «Auditor» que revisa, con una rutina, aprobaciones, errores de herramientas (en las conversaciones), tareas bloqueadas/fallidas y permisos (`bloqueadas`, `puedeEnviarAfuera`, reglas «siempre permitir») y entrega un informe. Solo lectura: no cambia nada sin aprobación.
 - **59. Centro de operaciones en vivo**: vista con todos los compañeros, su estado (`estado`, `accion` de `/api/estado`), la herramienta que usan ahora (eventos SSE `cambio`/`estado`), tareas en espera (`tareas`), aprobaciones pendientes y uso de cupo (`cupo`). Todo está en `/api/estado` y el SSE `/api/eventos`; falta la pantalla.
 - **60. Gravity Architect**: describís un objetivo y la IA propone equipo, herramientas, permisos y flujo. Sugerencia: `POST /api/arquitecto {objetivo}` que pide al modelo una propuesta en JSON (esquema: manager, miembros con puesto/descripción/grupos bloqueados, rutinas, proyecto con tareas) y la interfaz la muestra para aprobar; al aprobar usa `POST /api/equipos`, `PUT /api/bots/:id` (bloqueadas), `POST /api/proyectos` y sus tareas.

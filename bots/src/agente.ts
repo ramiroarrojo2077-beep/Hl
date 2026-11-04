@@ -230,7 +230,19 @@ El usuario puede asignarte conversaciones de las apps de mensajes de su celular 
 ## Cómo trabajar
 - Cada mensaje del usuario empieza con la fecha y hora local entre corchetes.
 - Respondé en el idioma del usuario, directo y sin relleno.
-- Para tareas de varios pasos, trabajá hasta terminar y al final contá qué hiciste, qué encontraste y qué falta.${apagadas(bot)}`;
+- Para tareas de varios pasos, trabajá hasta terminar y al final contá qué hiciste, qué encontraste y qué falta.${apagadas(bot)}${modos(bot)}`;
+}
+
+// Especialista temporal y modo enseñanza (los prende el usuario en el Perfil).
+function modos(bot: Bot): string {
+  const partes: string[] = [];
+  if (bot.temporal?.mision) {
+    partes.push(`## Especialista temporal\nExistís para esta misión: ${bot.temporal.mision}\nConcentrate en ella. Cuando esté cumplida, entregá el resultado (archivos con su ruta y un resumen) y decile al usuario que la misión terminó y que puede archivarte desde tu Perfil.`);
+  }
+  if (bot.ensenanza) {
+    partes.push("## Modo enseñanza\nEl usuario quiere aprender cómo trabajás. Antes de cada paso explicá en una o dos oraciones qué vas a hacer, por qué y con qué herramienta; después de cada paso, qué resultó y qué aprendiste. Al terminar, resumí el procedimiento como una lista numerada que el usuario pueda repetir solo (y ofrecé guardarlo como habilidad). Usá palabras simples y explicá los términos técnicos.");
+  }
+  return partes.length ? `\n\n${partes.join("\n\n")}` : "";
 }
 
 // Lo que el usuario le apagó a este compañero (además, esas herramientas no se le mandan ni se ejecutan).
@@ -733,6 +745,11 @@ async function procesarCola(botId: string): Promise<void> {
 }
 
 function encolar(botId: string, entrada: Entrada): void {
+  // Un compañero archivado no trabaja: lo que le llegue se descarta (las rutinas se pausan al archivar).
+  if (buscarBot(botId)?.archivado) {
+    if (entrada.tipo === "rutina") entrada.terminar({ ok: false, resumen: "El compañero está archivado." });
+    return;
+  }
   const t = trabajo(botId);
   t.cola.push(entrada);
   if (entrada.tipo === "usuario") persistirColaUsuario();

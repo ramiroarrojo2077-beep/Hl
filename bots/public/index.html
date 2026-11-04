@@ -2935,10 +2935,13 @@ function pintarPerfil() {
       <label class="fld"><span>Reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${opcionesJefe(b).map((m) => html`<option value="${m.id}" ${si(b.reportaA === m.id, "selected")}>${m.nombre} · ${m.titulo}</option>`)}</select><small>Su manager le encarga trabajo y recibe sus resultados.</small></label></div>
     <fieldset class="fld"><legend>Esfuerzo</legend><div class="segc"><label><input type="radio" name="esfuerzo" value="low" ${si(esf === "low", "checked")}>Económico</label><label><input type="radio" name="esfuerzo" value="" ${si(esf === "" || esf === "medium", "checked")}>Normal</label><label><input type="radio" name="esfuerzo" value="high" ${si(esf === "high" || esf === "xhigh" || esf === "max", "checked")}>Cuidadoso</label></div><small>Económico gasta menos y responde antes; Cuidadoso piensa más (y cuesta más).</small></fieldset>
     <label class="chk"><input type="checkbox" class="sw" name="puedeEnviarAfuera" ${si(b.puedeEnviarAfuera, "checked")}><span>Puede enviar mensajes afuera<small>Mandar emails o mensajes con tus apps conectadas. Igual te pide aprobación cada vez.</small></span></label>
+    <label class="chk"><input type="checkbox" class="sw" name="ensenanza" ${si(b.ensenanza, "checked")}><span>Modo enseñanza<small>Explica cada paso (qué hace, por qué y con qué herramienta) y al final resume el procedimiento para que lo puedas repetir.</small></span></label>
+    <label class="fld"><span>Misión (especialista temporal)</span><textarea class="inp" name="mision" rows="2" maxlength="2000" placeholder="Vacío = compañero permanente">${b.temporal?.mision || ""}</textarea><small>Si tiene una misión, se concentra en ella y te avisa al terminarla para que lo archives.</small></label>
     ${htmlPermisosPerfil(b)}
     ${htmlLlamadasPerfil(b)}
     <p class="err" role="alert"></p>
     <div class="acts"><button class="btn pri">Guardar cambios</button></div></form>
+    <section class="card"><h2>Archivar a ${b.nombre}</h2><p class="sub">Deja de trabajar y sale del equipo, pero su conversación, su memoria y sus archivos quedan. Lo restaurás cuando quieras desde Ajustes.</p><button class="btn out sm" data-a="archivar-bot" data-id="${b.id}">${ico("download", "s")}Archivar a ${b.nombre}</button></section>
     <section class="card peligro"><h2>Borrar a ${b.nombre}</h2><p class="sub">Se borran su conversación, su memoria y sus rutinas. Sus tareas abiertas se cancelan. No se puede deshacer.</p><button class="btn out sm" data-a="borrar-bot" data-id="${b.id}">${ico("trash", "s")}Borrar a ${b.nombre}</button></section>`);
 }
 
@@ -3400,6 +3403,8 @@ function pintarAjustes() {
         ${S.local ? (a.claveEnv ? html`<p class="sub">La clave está fijada por <code>BOTS_CLAVE</code> en el servidor.</p>` : html`<p class="sub">Para entrar desde otro dispositivo hace falta una clave${a.tieneClave ? " (ya hay una: cambiarla cierra las otras sesiones)" : ""}.</p><form class="fila" data-f="clave"><label class="fld"><span>${a.tieneClave ? "Nueva clave" : "Clave"}</span><input class="inp" type="password" name="clave" minlength="8" autocomplete="new-password" required placeholder="Al menos 8 caracteres"></label><button class="btn out">${a.tieneClave ? "Cambiar" : "Guardar"}</button></form>`)
           : html`<p class="sub">Estás entrando desde otro dispositivo.</p><button class="btn out sm" data-a="salir">${ico("logout", "s")}Salir</button>`}
         <p class="ayuda" style="margin-top:10px">Los pasos para abrir Gravity en el celular (misma red o túnel) están en <code>bots/MOVIL.md</code> del repositorio.</p></section>
+      ${(S.archivados || []).length ? html`<section class="card" aria-labelledby="aj-ar"><h2 id="aj-ar">Compañeros archivados</h2><p class="sub">No trabajan ni aparecen en el equipo. Al restaurarlos vuelven con su memoria y su conversación.</p>
+        <ul class="reglas">${S.archivados.map((b) => html`<li><span>${b.nombre} · ${b.titulo}<small>${b.temporal?.mision ? `Misión: ${b.temporal.mision.slice(0, 120)} · ` : ""}archivado ${diaHora(b.archivado)}</small></span><button class="btn out sm" data-a="restaurar-bot" data-id="${b.id}" aria-label="Restaurar a ${b.nombre}">Restaurar</button></li>`)}</ul></section>` : ""}
       <section class="card" aria-labelledby="aj-b"><h2 id="aj-b">Copia de seguridad</h2><p class="sub">Un .zip con compañeros, conversaciones, memoria, rutinas, tareas, proyectos, reuniones, mensajería y la computadora. Las claves de las conexiones no se incluyen: hay que volver a conectarlas.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn out sm" href="/api/respaldo" download>${ico("download", "s")}Exportar copia</a><label class="btn out sm" style="cursor:pointer">Importar copia<input type="file" accept=".zip,application/zip" data-c="respaldo" hidden></label></div>
         <p class="ayuda" style="margin-top:8px">Importar reemplaza todo lo actual (lo de antes queda guardado en una carpeta aparte) y reinicia el motor.</p></section>
@@ -5139,6 +5144,8 @@ const A = {
   "rutina-activa": (t) => conCarga(t, async () => { const r = S.rutinas.find((x) => x.id === t.dataset.id); await api("PUT", `/api/rutinas/${r.id}`, { nombre: r.nombre, instrucciones: r.instrucciones, habilidadId: r.habilidadId, horario: r.horario, activa: !r.activa, reunion: r.reunion }); await cargarRutinas(); }),
   "rutina-borrar": async (t) => { const r = S.rutinas.find((x) => x.id === t.dataset.id); if (await confirmar(`¿Borrar «${r.nombre}»?`, "Deja de ejecutarse y se pierde su historial.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/rutinas/${r.id}`); await cargarRutinas(); }); },
   "memoria-borrar": async (t) => { if (await confirmar(`¿Borrar ${t.dataset.ruta}?`, "Se borra de la memoria del compañero.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/bots/${S.botId}/memoria?ruta=${encodeURIComponent(t.dataset.ruta)}`); S.memSucias.delete(t.dataset.ruta); await cargarMemoria(); }); },
+  "archivar-bot": async (t) => { const b = bot(t.dataset.id); if (b && await confirmar(`¿Archivar a ${b.nombre}?`, "Deja de trabajar, se cancelan sus tareas abiertas, se pausan sus rutinas y sus chats de mensajería quedan sin asignar. Su memoria y su conversación se guardan.", `Archivar a ${b.nombre}`)) await conCarga(null, async () => { await api("POST", `/api/bots/${b.id}/archivar`, {}); toast(`${b.nombre} quedó archivado. Lo restaurás desde Ajustes.`); S.botId = null; ir("#/chats"); }); },
+  "restaurar-bot": (t) => conCarga(t, async () => { const b = await api("POST", `/api/bots/${t.dataset.id}/restaurar`, {}); toast(`${b.nombre} volvió al equipo.`); await cargarEstado(); programar("ajustes", "side", "rail"); }),
   "borrar-bot": async (t) => { const b = bot(t.dataset.id); if (await confirmar(`¿Borrar a ${b.nombre}?`, "Se borran su conversación, su memoria y sus rutinas, y se cancelan sus tareas abiertas. No se puede deshacer.", `Borrar a ${b.nombre}`, true)) await conCarga(null, async () => { await api("DELETE", `/api/bots/${b.id}`); toast(`${b.nombre} ya no está.`); S.botId = null; ir("#/chats"); }); },
   pausa: (t) => conCarga(t, async () => { const p = t.dataset.v === "1"; await api("POST", "/api/pausa", { pausa: p }); S.ajustes.pausa = p; pintarAvisos(); pintarAjustes(); toast(p ? "Gravity quedó en pausa." : "Gravity sigue trabajando."); }),
   "detener-todo": async () => { if (await confirmar("¿Detener todo?", "Se pausa Gravity y se corta todo lo que esté corriendo, reuniones incluidas. Después reanudás desde acá.", "Detener todo", true)) await conCarga(null, async () => { await api("POST", "/api/detener-todo", {}); S.ajustes.pausa = true; pintarAvisos(); pintarAjustes(); toast("Se detuvo todo."); }); },
@@ -5276,6 +5283,8 @@ const F = {
     const d = new FormData(f);
     const cuerpo = { nombre: d.get("nombre"), titulo: d.get("titulo"), descripcion: d.get("descripcion"), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on", esfuerzo: d.get("esfuerzo") || null, icono: d.get("icono") || null };
     if (f.avColor) cuerpo.avatar = datosAvatar(f);
+    cuerpo.ensenanza = d.get("ensenanza") === "on";
+    if (f.mision) cuerpo.mision = String(d.get("mision") || "").trim() || null;
     if (f.querySelector("[data-permisos]")) { const si_ = new Set(d.getAll("perm")); cuerpo.bloqueadas = (S.gruposHerramientas || []).map((g) => g.id).filter((id) => !si_.has(id)); }
     const boton = f.querySelector("button:not([type=button])");
     boton.setAttribute("aria-busy", "true");
@@ -5580,7 +5589,7 @@ function anotarAp(id, a) { cambiosAps.set(id, { ver: ++verAps, a }); }
 async function cargarEstado() {
   const v0 = verAps;
   const d = await api("GET", "/api/estado");
-  for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local", "gruposHerramientas"]) S[k] = d[k];
+  for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local", "gruposHerramientas", "archivados"]) S[k] = d[k];
   // Catálogo (servidores viejos no lo traen: se arma con lo que haya).
   S.categorias = d.categorias || [...new Set(S.plantillas.map((p) => p.categoria).filter(Boolean))];
   S.iconos = d.iconos || [];

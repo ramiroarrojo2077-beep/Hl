@@ -29,6 +29,7 @@ import {
   directos,
   guardarEstado,
   guardarHabilidad,
+  listarArchivados,
   listarBots,
   listarHabilidades,
   listarReglas,
@@ -148,6 +149,9 @@ const DatosBot = z.object({
   avatar: DatosAvatar.nullish(),
   // Grupos de herramientas apagadas (ver GRUPOS_HERRAMIENTAS en herramientas.ts).
   bloqueadas: z.array(z.string().max(30)).max(20).optional(),
+  ensenanza: z.boolean().optional(),
+  // Misión de un especialista temporal; "" o null lo vuelve permanente.
+  mision: z.string().trim().max(2000).nullish(),
 });
 const DatosHorario = z.object({
   tipo: z.string(),
@@ -503,6 +507,7 @@ ruta("GET", "/api/estado", async ({ local }) => {
   const recientes = listarTareas().filter((t) => abierta(t) || Date.now() - Date.parse(t.fin ?? t.creada) < 2 * 86_400_000);
   return {
     bots: listarBots().map(vistaBot),
+    archivados: listarArchivados().map((b) => ({ id: b.id, nombre: b.nombre, titulo: b.titulo, color: b.color, icono: b.icono, temporal: b.temporal ?? null, archivado: b.archivado })),
     habilidades: listarHabilidades(),
     reglas: listarReglas(),
     aprobaciones: listarAprobaciones(),
@@ -552,10 +557,10 @@ ruta("POST", "/api/bots", async ({ cuerpo }) => {
   if (error) throw new ErrorHttp(400, error);
   const bot = crearBot({ ...d, reportaA: d.reportaA ?? null, esfuerzo: d.esfuerzo ?? null, icono: d.icono ?? null, avatar: d.avatar ?? null });
   const bloqueadas = normalizarBloqueadas(d.bloqueadas);
-  if (bloqueadas.length) {
-    bot.bloqueadas = bloqueadas;
-    guardarEstado();
-  }
+  if (bloqueadas.length) bot.bloqueadas = bloqueadas;
+  if (d.ensenanza) bot.ensenanza = true;
+  if (d.mision) bot.temporal = { mision: d.mision };
+  if (bloqueadas.length || d.ensenanza || d.mision) guardarEstado();
   emitir("bots");
   return vistaBot(bot);
 });
@@ -589,6 +594,8 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     icono: d.icono === undefined ? bot.icono : d.icono,
     avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar,
     bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
+    ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
+    temporal: d.mision === undefined ? (bot.temporal ?? null) : d.mision ? { mision: d.mision } : null,
   });
   if (cargo === "manager" && !bot.carpetaEquipo) bot.carpetaEquipo = carpetaDeEquipo(bot.nombre, bot.id);
   guardarEstado();
@@ -607,6 +614,35 @@ ruta("DELETE", "/api/bots/:id", async ({ params }) => {
   await cerrarHerramientas(bot.id);
   emitir("bots");
   return { ok: true };
+});
+
+// Archivar: el compañero deja de trabajar y sale del equipo, pero su conversación, memoria y archivos
+// quedan. Se usa sobre todo con los especialistas temporales al terminar su misión.
+ruta("POST", "/api/bots/:id/archivar", async ({ params }) => {
+  const bot = botDe(params[0]!);
+  if (bot.archivado) return vistaBot(bot);
+  if (directos(bot.id).length) throw new ErrorHttp(409, `${bot.nombre} tiene gente a cargo: reasigná su equipo antes de archivarlo.`);
+  detener(bot.id);
+  for (const t of listarTareas()) if (t.paraId === bot.id && abierta(t)) cancelarTarea(t.id, `${bot.nombre} fue archivado.`);
+  for (const r of listarRutinas(bot.id)) r.activa = false;
+  quitarBotDeMensajeria(bot.id);
+  quitarBotDeProyectos(bot.id);
+  bot.archivado = ahora();
+  guardarEstado();
+  emitir("bots");
+  emitir("rutinas", { botId: bot.id });
+  return vistaBot(bot);
+});
+
+ruta("POST", "/api/bots/:id/restaurar", async ({ params }) => {
+  const bot = botDe(params[0]!);
+  if (!bot.archivado) return vistaBot(bot);
+  if (listarBots().length >= MAX_BOTS) throw new ErrorHttp(400, `Ya tenés ${MAX_BOTS} compañeros activos: archivá o borrá alguno primero.`);
+  if (bot.reportaA && (!buscarBot(bot.reportaA) || buscarBot(bot.reportaA)!.archivado)) bot.reportaA = null;
+  bot.archivado = null;
+  guardarEstado();
+  emitir("bots");
+  return vistaBot(bot);
 });
 
 ruta("GET", "/api/bots/:id/conversacion", async ({ params }) => vistaConversacion(conversacion(botDe(params[0]!).id)));

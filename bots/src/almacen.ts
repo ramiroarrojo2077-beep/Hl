@@ -62,6 +62,12 @@ export interface Bot {
   avatar?: Avatar | null;
   // Grupos de herramientas que el usuario le apagó (ver GRUPOS_HERRAMIENTAS); ausente = todas prendidas.
   bloqueadas?: string[];
+  // Modo enseñanza: explica cada paso (qué hace, por qué, con qué herramienta y qué resultó).
+  ensenanza?: boolean;
+  // Especialista temporal: existe para una misión y se archiva al terminarla.
+  temporal?: { mision: string } | null;
+  // Fecha en que se archivó; mientras tanto no trabaja, no recibe nada y no aparece en el equipo.
+  archivado?: string | null;
 }
 
 export type Horario =
@@ -365,7 +371,10 @@ export function cambiarAjustes(cambios: Partial<Ajustes>): Ajustes {
 
 const COLORES = ["#63D3B1", "#9DA9FF", "#C9A9FF", "#F0A6CA", "#7DD9F2", "#B5E48C", "#FFD166", "#A0C4FF"];
 
-export const listarBots = (): Bot[] => estado.bots;
+// Los archivados quedan guardados (conversación y memoria) pero fuera del equipo: no se listan, no
+// reciben trabajo ni mensajes. buscarBot los sigue encontrando para verlos o restaurarlos.
+export const listarBots = (): Bot[] => estado.bots.filter((b) => !b.archivado);
+export const listarArchivados = (): Bot[] => estado.bots.filter((b) => !!b.archivado);
 export const buscarBot = (id: string): Bot | undefined => estado.bots.find((b) => b.id === id);
 
 export type DatosBot = Pick<Bot, "nombre" | "titulo" | "descripcion"> & Partial<Pick<Bot, "cargo" | "reportaA" | "puedeEnviarAfuera" | "esfuerzo" | "color" | "icono" | "avatar">>;
@@ -433,7 +442,7 @@ export function jefes(botId: string): Bot[] {
   return cadena;
 }
 
-export const directos = (managerId: string): Bot[] => estado.bots.filter((b) => b.reportaA === managerId);
+export const directos = (managerId: string): Bot[] => estado.bots.filter((b) => b.reportaA === managerId && !b.archivado);
 
 // Todos los que están debajo de un manager, en cualquier nivel.
 export function subarbol(managerId: string): Bot[] {
