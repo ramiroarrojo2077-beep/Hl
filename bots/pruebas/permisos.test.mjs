@@ -53,3 +53,17 @@ test("crear un equipo nuevo desde un compañero pide aprobación siempre", async
   const t = (await H.herramientasDe(bot.id)).get("equipo_nuevo");
   assert.match(await t.run({ accion: "crear", objetivo: null, propuesta: "p123" }), /no existe o venció/);
 });
+
+test("los errores de herramientas quedan en la memoria del compañero (últimos 40)", async () => {
+  const AC = await import("../src/actividad.ts");
+  const { readFileSync } = await import("node:fs");
+  const path = (await import("node:path")).default;
+  const bot = A.crearBot({ nombre: "Errático", titulo: "x", descripcion: "x" });
+  for (let i = 0; i < 45; i++) AC.anotarError(bot.id, "bash", `falló el comando ${i}`);
+  AC.anotarError(bot.id, "bash", "El trabajo se detuvo.");
+  const t = readFileSync(path.join(A.raizMemoria(bot.id), "errores-recientes.md"), "utf8");
+  assert.equal(t.split("\n").filter((l) => l.startsWith("- ")).length, 40);
+  assert.match(t, /falló el comando 44/);
+  assert.doesNotMatch(t, /falló el comando 4\b/);
+  assert.doesNotMatch(t, /se detuvo/);
+});

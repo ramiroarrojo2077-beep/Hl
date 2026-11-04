@@ -3,7 +3,7 @@
 ✅ hecho y probado · 🟡 parcial (qué falta) · ⛔ falta. Estado al 4/11/2026. Detalles técnicos en `PENDIENTE.md`.
 
 ## 1. IA y agentes autónomos
-1. 🟡 Aprender de errores: habilidad incluida «Aprender de errores» (lecciones en `/memories/lecciones.md`) + historial de acciones con errores. Falta que se dispare sola después de cada error.
+1. ✅ Aprender de errores: cada error de herramienta se anota solo en `/memories/errores-recientes.md` (últimos 40); el prompt le pide revisar y dejar lecciones en `/memories/lecciones.md`; habilidad incluida «Aprender de errores».
 2. ✅ Personalidades: estilo de comunicación propio (Perfil > Personalidad y estilo) además de descripción, modelo, esfuerzo, enseñanza y permisos.
 3. ✅ Director: los managers coordinan, delegan y reciben resultados; Architect arma el equipo con un manager.
 4. ✅ Equipos automáticos según el proyecto: Gravity Architect (#/arquitecto).

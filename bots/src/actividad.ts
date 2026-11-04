@@ -1,9 +1,9 @@
 // Historial unificado de acciones: qué herramienta usó cada compañero y con qué resultado, y qué
 // decidió el usuario en cada aprobación. Se guarda en DATOS/actividad.jsonl (se recorta solo).
 
-import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { DATOS } from "./almacen.ts";
+import { DATOS, raizMemoria } from "./almacen.ts";
 
 export interface Registro {
   fecha: string;
@@ -28,6 +28,23 @@ export function registrar(r: Omit<Registro, "fecha">): void {
     }
   } catch (err) {
     console.warn("Actividad:", (err as Error).message);
+  }
+}
+
+/** Registro de fallos en la memoria del compañero (/memories/errores-recientes.md, últimos 40), para que
+ *  los revise y saque la lección antes de repetir algo que ya falló. */
+export function anotarError(botId: string, herramienta: string, texto: string): void {
+  if (/^El trabajo se detuvo|^Presupuesto agotado/.test(texto)) return;
+  try {
+    const dir = raizMemoria(botId);
+    mkdirSync(dir, { recursive: true });
+    const archivo = path.join(dir, "errores-recientes.md");
+    const previas = existsSync(archivo) ? readFileSync(archivo, "utf8").split("\n").filter((l) => l.startsWith("- ")) : [];
+    const linea = `- ${new Date().toISOString().slice(0, 16).replace("T", " ")} · ${herramienta}: ${texto.replace(/\s+/g, " ").slice(0, 200)}`;
+    const lineas = [...previas, linea].slice(-40);
+    writeFileSync(archivo, `# Errores recientes de herramientas (los anota Gravity)\n\nRevisalos antes de repetir algo parecido y anotá la lección en /memories/lecciones.md.\n\n${lineas.join("\n")}\n`);
+  } catch (err) {
+    console.warn("Errores recientes:", (err as Error).message);
   }
 }
 

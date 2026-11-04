@@ -46,7 +46,7 @@ import {
   type FinTurno,
 } from "./equipo.ts";
 import { conectarReuniones, convocar } from "./reuniones.ts";
-import { registrar } from "./actividad.ts";
+import { anotarError, registrar } from "./actividad.ts";
 import { describirConexionesPara } from "./conexiones.ts";
 import { buscarChat, conectarMensajeria, describirMensajeriaPara, turnoDeMensajeria } from "./mensajeria.ts";
 import { describirHorario } from "./rutinas.ts";
@@ -231,7 +231,8 @@ El usuario puede asignarte conversaciones de las apps de mensajes de su celular 
 ## Cómo trabajar
 - Cada mensaje del usuario empieza con la fecha y hora local entre corchetes.
 - Respondé en el idioma del usuario, directo y sin relleno.
-- Para tareas de varios pasos, trabajá hasta terminar y al final contá qué hiciste, qué encontraste y qué falta.${apagadas(bot)}${modos(bot)}`;
+- Para tareas de varios pasos, trabajá hasta terminar y al final contá qué hiciste, qué encontraste y qué falta.
+- Aprendé de tus errores: Gravity anota los de tus herramientas en /memories/errores-recientes.md. Si algo falla o el usuario te corrige, buscá la causa y dejá la regla en /memories/lecciones.md («antes de X, verificar Y»); antes de un trabajo parecido, releé tus lecciones.${apagadas(bot)}${modos(bot)}`;
 }
 
 // Especialista temporal y modo enseñanza (los prende el usuario en el Perfil).
@@ -663,6 +664,7 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
             ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "Presupuesto agotado: no se ejecutan más herramientas. Entregá ya lo que tengas." }
             : await ejecutarHerramienta(bot, mensaje, uso, control.signal, entrada.tipo === "mensajeria" ? entrada.clave : null).then((r) => {
                 registrar({ botId: bot.id, tipo: "herramienta", que: describirUso(uso.name, uso.input as Record<string, unknown>) || uso.name, ok: !r.is_error, detalle: typeof r.content === "string" ? r.content : "" });
+                if (r.is_error && typeof r.content === "string") anotarError(bot.id, uso.name, r.content);
                 return r;
               }),
       );
