@@ -249,13 +249,18 @@ function quienEs(m: Mensaje): string {
   return m.propio ? `${nombreSeguro(m.de)} (el usuario, dueño del celular)` : nombreSeguro(m.de);
 }
 
+// Un tercero no puede escribir como si fuera el usuario o un bot: las marcas de autor que aparezcan
+// dentro de su texto se citan («El usuario (citado: desde Gravity)»), así no pasan por mensajes reales.
+const sinImpostar = (t: string) => t.replace(/\((desde gravity|bot de gravity|el usuario, due[ñn]o del celular)\)/gi, "(citado: $1)");
+
 function transcripcion(c: Chat, mensajes: Mensaje[], desdeN: number | null): string {
   const lineas = mensajes.map((m) => {
     const nuevo = desdeN !== null && m.n > desdeN && !m.autor ? " · nuevo" : "";
-    return `[${horaCorta(m.hora)}${nuevo}] ${quienEs(m)}: ${m.texto.replace(/\r?\n/g, "\n    ")}`;
+    const texto = m.autor ? m.texto : sinImpostar(m.texto);
+    return `[${horaCorta(m.hora)}${nuevo}] ${quienEs(m)}: ${texto.replace(/\r?\n/g, "\n    ")}`;
   });
   const atributos = `app="${nombreSeguro(c.appNombre)}" conversacion="${nombreSeguro(c.conversacion).replace(/"/g, "'")}" grupo="${c.esGrupo ? "sí" : "no"}"`;
-  return `<chat ${atributos}>\n${lineas.join("\n").replaceAll("</chat", "<\\/chat") || "(sin mensajes)"}\n</chat>`;
+  return `<chat ${atributos}>\n${lineas.join("\n").replace(/<\/(chat)/gi, "<\\/$1") || "(sin mensajes)"}\n</chat>`;
 }
 
 const ordenar = (c: Chat) => c.mensajes.sort((a, b) => a.hora - b.hora || a.n - b.n);
@@ -272,13 +277,25 @@ function despertarApp(): void {
   for (const d of ds) d();
 }
 
+// Lo pendiente que ya venció no se entrega nunca: sin esto, después de un reinicio una respuesta de
+// hace una hora salía antes de que pasara el control periódico de vencimientos.
+function vencerPendientes(): void {
+  const t = Date.now();
+  for (const s of salientes) {
+    if (s.estado === "pendiente" && t - Date.parse(s.creado) > VENCE_PENDIENTE_MS) terminarSaliente(s, false, "La app del celular no lo tomó a tiempo (¿está abierta Gravity y con acceso a las notificaciones?).");
+  }
+}
+
 /** Lo que la app del celular puede mandar ya: pendientes de conversaciones cuya última notificación tiene
  * "Responder". Los del bot de Telegram los manda el motor por la API (telegram.ts). */
-const entregables = () =>
-  salientesPendientes().filter((s) => !s.clave.startsWith(`${APP_TELEGRAM}|`) && buscarChat(s.clave)?.puedeResponder !== false);
+const entregables = () => {
+  vencerPendientes();
+  return salientesPendientes().filter((s) => !s.clave.startsWith(`${APP_TELEGRAM}|`) && buscarChat(s.clave)?.puedeResponder !== false);
+};
 
 /** Para los que mandan desde el motor (bot de Telegram): toma los pendientes de esa app. */
 export function tomarSalientesDe(app: string): { id: string; clave: string; texto: string }[] {
+  vencerPendientes();
   const listos = salientesPendientes().filter((s) => s.clave.startsWith(`${app}|`));
   for (const s of listos) Object.assign(s, { estado: "enviando", tomado: ahora() });
   if (listos.length) guardarSalientes();

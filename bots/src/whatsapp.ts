@@ -200,7 +200,7 @@ Reglas:
           messages: [
             {
               role: "user",
-              content: `<informacion_del_negocio>\n${memoriaDe(bot.id) || "(todavía no hay información guardada)"}\n</informacion_del_negocio>\n\n<chat con="${(chat.nombre || chat.numero).replace(/["<>]/g, "")}">\n${transcripcion.replaceAll("</chat", "<\\/chat")}\n</chat>\n\nRespondé al último mensaje del cliente.`,
+              content: `<informacion_del_negocio>\n${memoriaDe(bot.id) || "(todavía no hay información guardada)"}\n</informacion_del_negocio>\n\n<chat con="${(chat.nombre || chat.numero).replace(/["<>]/g, "")}">\n${transcripcion.replace(/<\/(chat)/gi, "<\\/$1")}\n</chat>\n\nRespondé al último mensaje del cliente.`,
             },
           ],
         },

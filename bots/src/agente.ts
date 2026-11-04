@@ -461,7 +461,8 @@ function envolver(etiqueta: string, atributos: Record<string, string>, texto: st
   const attrs = Object.entries(atributos)
     .map(([k, v]) => ` ${k}="${v.replace(/["<>\n]/g, " ").slice(0, 120)}"`)
     .join("");
-  const seguro = texto.replaceAll(`</${etiqueta}`, `<\\/${etiqueta}`).replace(/^\[(Tarea|Resultados|Rutina|Mensajería)/gm, "(\\$1");
+  // Sin importar mayúsculas: «</TAREA>» también cerraría la etiqueta para el modelo.
+  const seguro = texto.replace(new RegExp(`</(${etiqueta})`, "gi"), "<\\/$1").replace(/^\[(Tarea|Resultados|Rutina|Mensajería)/gm, "(\\$1");
   return `<${etiqueta}${attrs}>\n${seguro}\n</${etiqueta}>`;
 }
 
