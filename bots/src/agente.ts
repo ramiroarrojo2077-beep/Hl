@@ -46,6 +46,7 @@ import {
   type FinTurno,
 } from "./equipo.ts";
 import { conectarReuniones, convocar } from "./reuniones.ts";
+import { registrar } from "./actividad.ts";
 import { describirConexionesPara } from "./conexiones.ts";
 import { buscarChat, conectarMensajeria, describirMensajeriaPara, turnoDeMensajeria } from "./mensajeria.ts";
 import { describirHorario } from "./rutinas.ts";
@@ -418,6 +419,7 @@ async function ejecutarHerramienta(
   if (pedido) {
     cambiarEstado(bot.id, "esperando", `Esperando tu aprobación: ${pedido.titulo}`);
     const { decision, alcance } = await pedirAprobacion(bot, pedido, textoPrevio(mensaje, uso), signal);
+    if (!signal.aborted) registrar({ botId: bot.id, tipo: "aprobacion", que: pedido.titulo, ok: decision !== "negar", detalle: decision === "negar" ? "Negada por el usuario." : decision === "siempre" ? "Aprobada siempre." : "Aprobada una vez." });
     cambiarEstado(bot.id, "trabajando");
     if (signal.aborted) return resultado("El trabajo se detuvo.", true);
     if (decision === "negar") {
@@ -658,7 +660,10 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
           ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "La entrada quedó cortada por el límite de salida. Hacelo en partes más chicas." }
           : gracia !== null
             ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "Presupuesto agotado: no se ejecutan más herramientas. Entregá ya lo que tengas." }
-            : await ejecutarHerramienta(bot, mensaje, uso, control.signal, entrada.tipo === "mensajeria" ? entrada.clave : null),
+            : await ejecutarHerramienta(bot, mensaje, uso, control.signal, entrada.tipo === "mensajeria" ? entrada.clave : null).then((r) => {
+                registrar({ botId: bot.id, tipo: "herramienta", que: describirUso(uso.name, uso.input as Record<string, unknown>) || uso.name, ok: !r.is_error, detalle: typeof r.content === "string" ? r.content : "" });
+                return r;
+              }),
       );
     }
     agregarMensajes(bot.id, { role: "user", content: resultados });

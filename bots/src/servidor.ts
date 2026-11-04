@@ -60,6 +60,7 @@ import { GRUPOS_HERRAMIENTAS, cerrarHerramientas, normalizarBloqueadas } from ".
 import { iniciarTelegram } from "./telegram.ts";
 import { auditar, informeComoTexto } from "./auditoria.ts";
 import { buscarTodo } from "./buscador.ts";
+import { leerActividad } from "./actividad.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
 import { aplicar as aplicarRespaldo, exportar as exportarRespaldo, extraer as extraerRespaldo, rutaTemporal as rutaRespaldo } from "./respaldo.ts";
@@ -833,6 +834,10 @@ ruta("POST", "/api/reuniones/:id/cancelar", async ({ params }) => {
 });
 
 ruta("POST", "/api/reuniones/:id/aceptar", async ({ params }) => ({ tareas: malPedido(() => aceptarAcciones(params[0]!)) }));
+
+// ---- Historial de acciones ----
+
+ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.searchParams.get("botId"), limite: Number(url.searchParams.get("limite")) || 100 }));
 
 // ---- Buscador global ----
 

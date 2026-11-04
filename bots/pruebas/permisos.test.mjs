@@ -33,3 +33,11 @@ test("el tope de gasto propio se cuenta por compañero y la auditoría lo avisa"
   assert.ok(G.gastoBotHoy(bot.id) >= 0.001);
   assert.ok(AU.auditar().hallazgos.some((h) => h.botId === bot.id && /tope de gasto/.test(h.texto)));
 });
+
+test("el historial de acciones guarda y filtra por compañero", async () => {
+  const AC = await import("../src/actividad.ts");
+  AC.registrar({ botId: "b1", tipo: "herramienta", que: "Corriendo ls", ok: true, detalle: "x" });
+  AC.registrar({ botId: "b2", tipo: "aprobacion", que: "Enviar correo", ok: false, detalle: "Negada por el usuario." });
+  assert.equal(AC.leerActividad().length, 2);
+  assert.deepEqual(AC.leerActividad({ botId: "b2" }).map((r) => r.que), ["Enviar correo"]);
+});

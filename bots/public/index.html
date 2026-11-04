@@ -3480,7 +3480,9 @@ function montarOps() {
   $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="ops"></div></div>`;
   pintarOps();
   if (!S.proyectos) cargarProyectos();
+  cargarActividad();
 }
+async function cargarActividad() { try { S.actividad = await api("GET", "/api/actividad?limite=40"); pintarOps(); } catch {} }
 function pintarOps() {
   const el = $("#ops");
   if (!el) return;
@@ -3508,6 +3510,8 @@ function pintarOps() {
     ${abiertas.length || S.aprobaciones.length ? html`<ul class="hist">${S.aprobaciones.map((x) => html`<li><b>${bot(x.botId)?.nombre || "Alguien"}</b> pide aprobación: ${x.titulo}</li>`)}${abiertas.slice(0, 30).map((t) => html`<li><b>${bot(t.paraId)?.nombre || "Alguien"}</b> · ${t.estado === "en_curso" ? "trabajando en" : "tiene pendiente"} «${t.titulo}»${bot(t.deId) ? ` (encargo de ${bot(t.deId).nombre})` : ""}</li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Nada esperando.</p>`}
     ${vivas.length ? html`<div class="sec-h"><h2>Reuniones en vivo <span>${vivas.length}</span></h2></div><div class="reus">${vivas.map((r) => filaReunion(r, true))}</div>` : ""}
     ${trabados.length ? html`<div class="sec-h"><h2>Proyectos trabados <span>${trabados.length}</span></h2></div><div class="proys">${trabados.map(tarjetaProyecto)}</div>` : ""}
+    <div class="sec-h"><h2>Actividad reciente</h2><button class="btn out sm" data-a="actividad">${ico("refresh", "s")}Actualizar</button></div>
+    ${(S.actividad || []).length ? html`<ul class="hist">${S.actividad.map((x) => html`<li><span class="tag ${x.ok ? "" : "sig"}">${x.tipo === "aprobacion" ? (x.ok ? "Aprobado" : "Negado") : x.ok ? "OK" : "Error"}</span> <b>${bot(x.botId)?.nombre || "Un compañero"}</b> · ${x.que} <small class="muted">· ${diaHora(x.fecha)}${!x.ok && x.detalle ? ` — ${x.detalle.slice(0, 140)}` : ""}</small></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Todavía no hay acciones registradas.</p>`}
     <div class="sec-h"><h2>Rendimiento</h2><button class="btn out sm" data-a="rendimiento">${ico("refresh", "s")}${r ? "Actualizar" : "Medir"}</button></div>
     ${r ? html`<div class="ops-k" style="margin-top:0"><div><b>${r.cpu}%</b><span>CPU del motor (1 núcleo)</span></div><div><b>${mb(r.memoria.rss)}</b><span>memoria del motor</span></div><div><b>${mb(r.memoria.sistemaLibre)}</b><span>libre de ${mb(r.memoria.sistemaTotal)}</span></div><div><b>${dur(r.prendidoSeg)}</b><span>prendido</span></div>${r.bateria ? html`<div><b>${r.bateria.nivel}%</b><span>batería${r.bateria.cargando ? " · cargando" : ""}</span></div>` : ""}</div><p class="muted" style="font-size:12.5px">Node ${r.node} · ${r.plataforma} · ${r.nucleos} núcleos · gasto de hoy ${usd(S.gasto?.hoy || 0)}${S.gasto?.llamadas ? ` en ${S.gasto.llamadas} llamadas al modelo` : ""}.</p>` : html`<p class="muted" style="font-size:13px">CPU y memoria del motor, memoria libre del equipo, batería y cuánto lleva prendido.</p>`}
     <div class="sec-h"><h2>Auditoría</h2><button class="btn out sm" data-a="auditar">${ico("shield", "s")}${a ? "Volver a auditar" : "Auditar ahora"}</button></div>
@@ -5216,6 +5220,7 @@ const A = {
     S.proyectos = null;
     ir(`#/proyectos/${r.proyecto.id}`);
   }),
+  actividad: (t) => conCarga(t, cargarActividad),
   rendimiento: (t) => conCarga(t, async () => {
     const r = await api("GET", "/api/rendimiento");
     try { const b = await navigator.getBattery?.(); if (b) r.bateria = { nivel: Math.round(b.level * 100), cargando: b.charging }; } catch {}
