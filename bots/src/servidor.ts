@@ -538,6 +538,20 @@ ruta("GET", "/api/estado", async ({ local }) => {
 
 // Para la app de Android: si hay trabajo en marcha mantiene el celular despierto; si no, programa
 // una alarma para la próxima rutina. Liviano a propósito: se consulta cada 30 segundos.
+// Avisos para las notificaciones del celular (Motor.kt los muestra si la app no está a la vista):
+// tareas que quedan bloqueadas o fallan. Se entregan una sola vez.
+const avisosMotor: string[] = [];
+const yaAvisadas = new Set<string>();
+bus.on("evento", (tipo: string, d: { id?: string; estado?: string; titulo?: string; paraId?: string }) => {
+  if (tipo !== "tarea" || !d?.id || (d.estado !== "bloqueada" && d.estado !== "fallida")) return;
+  const clave = `${d.id}:${d.estado}`;
+  if (yaAvisadas.has(clave)) return;
+  yaAvisadas.add(clave);
+  const quien = d.paraId ? (buscarBot(d.paraId)?.nombre ?? "Un compañero") : "Un compañero";
+  avisosMotor.push(`${quien}: «${String(d.titulo ?? "una tarea").slice(0, 80)}» ${d.estado === "bloqueada" ? "quedó bloqueada y necesita algo de vos" : "falló"}.`);
+  if (avisosMotor.length > 10) avisosMotor.shift();
+});
+
 ruta("GET", "/api/motor", async () => {
   const { pausa } = ajustes();
   const estados = listarBots().map((b) => estadoDe(b.id));
@@ -554,6 +568,7 @@ ruta("GET", "/api/motor", async () => {
     ocupado: trabajando > 0 || reunionesActivas > 0 || (!pausa && (enCola > 0 || tareasActivas > 0)),
     trabajando,
     aprobaciones: listarAprobaciones().length,
+    avisos: avisosMotor.splice(0),
     proximaRutina: proximas.length ? Math.min(...proximas) : null,
   };
 });

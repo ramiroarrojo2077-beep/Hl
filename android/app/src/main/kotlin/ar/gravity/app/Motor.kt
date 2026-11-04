@@ -309,10 +309,15 @@ class Motor : Service() {
         programarAlarma(if (estado.ocupado) null else proxima)
         actualizarNotificacion(estado)
         avisarAprobaciones(estado.aprobaciones)
+        // Tareas bloqueadas o que fallaron: una notificación por aviso, si no estás mirando Gravity.
+        if (!Gravity.pantallaVisible(this)) {
+            for (texto in estado.avisos) avisar(ID_AVISOS + (siguienteAviso++ % 20), texto, abrirApp = true)
+        }
         revisarPronto(30_000)
     }
 
-    private class Estado(val ocupado: Boolean, val trabajando: Int, val aprobaciones: Int, val proximaRutina: Long?)
+    private class Estado(val ocupado: Boolean, val trabajando: Int, val aprobaciones: Int, val proximaRutina: Long?, val avisos: List<String>)
+    private var siguienteAviso = 0
 
     private fun consultar(): Estado? = try {
         // Antes de mandar el token se comprueba que del otro lado esté nuestro motor y no otra app.
@@ -331,6 +336,7 @@ class Motor : Service() {
                     trabajando = json.optInt("trabajando"),
                     aprobaciones = json.optInt("aprobaciones"),
                     proximaRutina = if (json.isNull("proximaRutina")) null else json.optLong("proximaRutina"),
+                    avisos = json.optJSONArray("avisos")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() } } ?: emptyList(),
                 )
             }
         } finally {
@@ -472,6 +478,7 @@ class Motor : Service() {
         private const val ID_MOTOR = 1
         private const val ID_APROBACIONES = 2
         private const val ID_ERROR = 3
+        private const val ID_AVISOS = 100
 
         @Volatile
         private var nodeArrancado = false

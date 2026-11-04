@@ -42,7 +42,7 @@
 31. ⛔ Gravity Studio. 32. 🟡 Equipos de programación (Architect puede armarlos; la computadora tiene terminal). 33. 🟡 Editor: la Computadora muestra archivos; falta editar desde la interfaz. 34. ⛔ Vista previa web. 35. ⛔ Detección automática de errores de código. 36. ⛔ Generar interfaces. 37. 🟡 GitHub: por conexión MCP. 38. 🟡 Versiones: copia de seguridad completa; falta por archivo. 39. ⛔ Pruebas aisladas. 40. 🟡 Exportar: copia .zip completa.
 
 ## 5. Android
-41. ⛔ Widget. 42. 🟡 Notificaciones de fin de trabajo y aprobaciones (faltan errores). 43. ✅ Accesos rápidos del ícono. 44. 🟡 Offline: todo corre en el celular; solo el modelo necesita internet. 45. ✅ Compartir a Gravity. 46. ⛔ Comandos de voz fuera de llamadas. 47. ✅ Panel de rendimiento (CPU, memoria, batería). 48. ⛔ Sincronización entre dispositivos (se puede exportar/importar). 49. ✅ Copias de seguridad. 50. ⛔ Modo privado con huella.
+41. ⛔ Widget. 42. ✅ Notificaciones de aprobaciones y de tareas bloqueadas o fallidas (desde el servicio nativo, con la app cerrada). 43. ✅ Accesos rápidos del ícono. 44. 🟡 Offline: todo corre en el celular; solo el modelo necesita internet. 45. ✅ Compartir a Gravity. 46. ⛔ Comandos de voz fuera de llamadas. 47. ✅ Panel de rendimiento (CPU, memoria, batería). 48. ⛔ Sincronización entre dispositivos (se puede exportar/importar). 49. ✅ Copias de seguridad. 50. ⛔ Modo privado con huella.
 
 ## 6. Experimentales
 51. ⛔ Gravity Universe. 52. ⛔ Laboratorio. 53. ⛔ Mercado de habilidades (hay habilidades locales). 54. ⛔ Simulador. 55. ⛔ Mapa de conocimiento. 56. ✅ Agentes temporales. 57. ✅ Modo enseñanza. 58. ✅ Auditor. 59. ✅ Centro de operaciones. 60. ✅ Gravity Architect.
