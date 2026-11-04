@@ -80,6 +80,7 @@ interface Pedido {
   herramientas: Herramienta[];
   esquemaSalida: Json | null;
   maxTokens: number;
+  esfuerzo: string | null;
 }
 
 interface Respuesta {
@@ -256,8 +257,14 @@ function traducirPedido(cuerpo: Json): Pedido {
     herramientas,
     esquemaSalida: formato?.type === "json_schema" ? ((formato.schema as Json) ?? null) : null,
     maxTokens: Number(cuerpo.max_tokens ?? 8192),
+    esfuerzo: typeof (cuerpo.output_config as Json | undefined)?.effort === "string" ? String((cuerpo.output_config as Json).effort) : null,
   };
 }
+
+// Cuánto razona Gemini según el esfuerzo pedido. Sin tope, Flash razona mucho incluso para un "hola" y
+// la respuesta tarda; con estos topes contesta rápido lo simple y sigue pensando lo difícil.
+const PRESUPUESTO_RAZONAMIENTO: Record<string, number> = { low: 0, medium: 1024, high: 3072, xhigh: 8192, max: -1 };
+const PRESUPUESTO_POR_DEFECTO = Number(process.env.GRAVITY_GEMINI_RAZONAMIENTO ?? 2048);
 
 /** Saca del esquema lo que solo entiende Anthropic. */
 function limpiarEsquema(esquema: unknown): unknown {
@@ -336,7 +343,7 @@ async function pedirGemini(p: Pedido, modelo: string, signal?: AbortSignal | nul
     contents,
     generationConfig: {
       maxOutputTokens: Math.min(p.maxTokens, 65_536),
-      thinkingConfig: { includeThoughts: true },
+      thinkingConfig: { includeThoughts: true, thinkingBudget: p.esfuerzo && p.esfuerzo in PRESUPUESTO_RAZONAMIENTO ? PRESUPUESTO_RAZONAMIENTO[p.esfuerzo] : PRESUPUESTO_POR_DEFECTO },
       ...(p.esquemaSalida ? { responseMimeType: "application/json", responseJsonSchema: limpiarEsquema(p.esquemaSalida) } : {}),
     },
   };

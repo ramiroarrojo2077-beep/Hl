@@ -541,7 +541,8 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
   emitir("cambio", { botId: bot.id, inicio: entrada.tipo, llamada: entrada.tipo === "usuario" ? (entrada.llamada ?? null) : null });
 
   const herramientas = await herramientasDe(bot.id);
-  const esfuerzo = bot.esfuerzo ?? ESFUERZO;
+  // En una llamada de voz importa contestar ya: se razona poco (las respuestas son cortas y habladas).
+  const esfuerzo = entrada.tipo === "usuario" && entrada.llamada ? "low" : (bot.esfuerzo ?? ESFUERZO);
   let ultimoTexto = "";
   let reintentosJson = 0;
   let gracia: number | null = null;
