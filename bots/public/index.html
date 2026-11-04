@@ -5288,7 +5288,8 @@ const A = {
   "ll-mic": () => alternarMicrofono(),
   "ll-altavoz": () => alternarAltavoz(),
   "ll-colgar": () => colgarLlamada(),
-  "ll-reintentar": () => { LL.errores = 0; escucharLlamada(); },
+  // Reintentar lo pide la persona (por ejemplo, después de dar el permiso del micrófono): se limpia el error grave.
+  "ll-reintentar": () => { LL.errores = 0; LL.fatal = false; escucharLlamada(); },
   "probar-voz": (t) => probarVoz(t.closest("form")),
   "av-color-pre": (t) => { const f = t.closest("form"); if (!f?.avColor) return; f.avColor.value = t.dataset.v; I["av-color"](f.avColor); },
 };

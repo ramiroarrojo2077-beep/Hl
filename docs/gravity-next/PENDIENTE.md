@@ -21,11 +21,9 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
-Prueba e2e de la llamada (Playwright, con un `GravityVoz` falso): 16 de 19 pasan. Fallan:
-- «compat: un bot viejo sin avatar»: la prueba hace un pedido sin `Content-Type: application/json` (415/400): es la prueba, no la app.
-- «errores del reconocedor»: después de un evento `silencio` no vuelve a «Escuchando…» a tiempo (`escucharLlamada(350)` / reintentos en `errorVozLlamada`).
-- «Web Speech (Chrome)»: después de hablar no vuelve a escuchar (fin de `speechSynthesis` → `finVozLlamada`). Solo afecta a Chrome en la compu; en el celular se usa el puente nativo.
-Ojo con el helper `html```: convierte `true`/`false` en texto vacío; para atributos como `aria-pressed` usar `String(...)`.
+Prueba e2e de la llamada (Playwright, con un `GravityVoz` falso, en `scratchpad`): ya se corrigieron Silenciar (aria-pressed), «Reintentar» después de un error grave (quedaba trabado) y la espera de Web Speech. Queda:
+- «hablando con envolvente: pocos gestos para 3 s de voz»: en un contenedor sin GPU el robot corre a 2–4 cuadros por segundo y hace pocos gestos; cuando falla, los pasos siguientes de la prueba quedan esperando. Revisar que los gestos se programen por tiempo y no por cuadro (en `crearRobot3D`/cerebro), y probar en un celular real.
+- «compat: un bot viejo sin avatar»: la prueba manda un pedido sin `Content-Type: application/json`; es la prueba, no la app.
 Contrato del puente de voz nativo: `android/VOZ.md`.
 
 ## Pedidos del usuario todavía sin hacer
