@@ -1775,6 +1775,18 @@ function equipoDe(b) {
   return jefe(b) || (b.cargo === "manager" ? b : null);
 }
 const nombreEquipo = (m) => (m ? m.titulo : "Directo con vos");
+// Panel de novedades (Ajustes): lo último que se sumó, para descubrir funciones.
+const NOVEDADES = [
+  ["Gravity Architect", "contá un objetivo y te propone el equipo, los permisos, las rutinas y el proyecto (Equipo > Architect)."],
+  ["Centro de operaciones", "quién trabaja y en qué, qué espera, actividad reciente, rendimiento y auditoría."],
+  ["Proyectos", "tareas con responsables, dependencias y revisión cruzada automática del coordinador."],
+  ["Reuniones tipo Debate", "propuestas, críticas y votación con el conteo en el acta; se pueden pausar."],
+  ["Llamadas con robot 3D", "con fotos (botón Foto), interrupción tocando al robot y resumen automático al cortar."],
+  ["Compañeros a medida", "personalidad, modelo (Auto/Rápido/Potente, también desde el chat), tope de gasto, permisos, modo enseñanza, temporales y archivo."],
+  ["Buscador", "compañeros, chats, proyectos, reuniones, memorias y archivos."],
+  ["Automatizaciones y webhooks", "«si pasa X, que tal compañero haga Y» y direcciones para que otros servicios le encarguen trabajo."],
+  ["Copia de seguridad", "exportar e importar todo en un .zip."],
+];
 const tipoReu = (t) => ({ standup: "Daily", discusion: "Discusión", debate: "Debate" })[t] || t;
 const reunionesVivas = () => S.reuniones.filter((r) => r.estado === "en_curso" || r.estado === "cierre");
 const tareaAbierta = (t) => ["pendiente", "en_curso", "esperando_equipo"].includes(t.estado);
@@ -3427,6 +3439,10 @@ function pintarAjustes() {
         <p class="ayuda" style="margin-top:10px">Los pasos para abrir Gravity en el celular (misma red o túnel) están en <code>bots/MOVIL.md</code> del repositorio.</p></section>
       ${(S.archivados || []).length ? html`<section class="card" aria-labelledby="aj-ar"><h2 id="aj-ar">Compañeros archivados</h2><p class="sub">No trabajan ni aparecen en el equipo. Al restaurarlos vuelven con su memoria y su conversación.</p>
         <ul class="reglas">${S.archivados.map((b) => html`<li><span>${b.nombre} · ${b.titulo}<small>${b.temporal?.mision ? `Misión: ${b.temporal.mision.slice(0, 120)} · ` : ""}archivado ${diaHora(b.archivado)}</small></span><button class="btn out sm" data-a="restaurar-bot" data-id="${b.id}" aria-label="Restaurar a ${b.nombre}">Restaurar</button></li>`)}</ul></section>` : ""}
+      <section class="card" aria-labelledby="aj-no"><h2 id="aj-no">Notificaciones del celular</h2><p class="sub">Con Gravity cerrada. Con la app abierta todo se ve en pantalla.</p>
+        <form data-f="avisos" style="display:flex;flex-direction:column;gap:10px"><label class="fila"><input type="checkbox" name="avisoAprobaciones" ${a.avisoAprobaciones !== false ? "checked" : ""}><span><b>Aprobaciones</b> — cuando un compañero necesita tu permiso</span></label><label class="fila"><input type="checkbox" name="avisoTareas" ${a.avisoTareas !== false ? "checked" : ""}><span><b>Tareas trabadas</b> — cuando una tarea queda bloqueada o falla</span></label><div><button class="btn out sm">Guardar</button></div></form></section>
+      <section class="card" aria-labelledby="aj-nv"><h2 id="aj-nv">Novedades</h2>
+        <ul class="hist">${NOVEDADES.map(([t, d]) => html`<li><b>${t}</b> — ${d}</li>`)}</ul></section>
       <section class="card" aria-labelledby="aj-au"><h2 id="aj-au">Automatizaciones</h2><p class="sub">«Si pasa esto, que tal compañero haga esto». Cada evento dispara una vez por regla (como mucho 20 por hora).</p>
         ${(S.autom?.reglas || []).length ? html`<ul class="reglas">${S.autom.reglas.map((a) => html`<li><span><b>${a.nombre}</b> · si ${(S.autom.eventos[a.evento] || a.evento).toLowerCase()} → ${bot(a.botId)?.nombre || "(ya no está)"}<small>${a.instrucciones.slice(0, 140)} · ${a.disparos} disparos${a.ultimo ? ` · último ${diaHora(a.ultimo)}` : ""}</small></span><span style="display:flex;gap:6px"><button class="btn ghost sm" data-a="autom-activa" data-id="${a.id}" data-v="${a.activa ? "0" : "1"}" aria-pressed="${String(a.activa)}">${a.activa ? "Pausar" : "Activar"}</button><button class="btn ghost sm" data-a="autom-borrar" data-id="${a.id}" aria-label="Borrar ${a.nombre}">Borrar</button></span></li>`)}</ul>` : ""}
         ${S.bots.length && S.autom ? html`<details class="mas" style="margin-top:8px"><summary>${ico("plus", "s")}Nueva automatización</summary><form class="form-card" data-f="automatizacion" style="margin-top:10px"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" placeholder="Ej.: Destrabar tareas"></label><label class="fld"><span>Cuando</span><select class="inp" name="evento">${Object.entries(S.autom.eventos).map(([k, t]) => html`<option value="${k}">${t}</option>`)}</select></label><label class="fld"><span>Quién se encarga</span><select class="inp" name="botId">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre} · ${b.titulo}</option>`)}</select></label><label class="fld"><span>Qué tiene que hacer</span><textarea class="inp" name="instrucciones" rows="2" required maxlength="4000" placeholder="Ej.: averiguá qué la bloquea y proponé una solución concreta"></textarea></label><p class="err" role="alert"></p><div class="acts"><button class="btn pri">Crear</button></div></form></details>` : ""}</section>
@@ -5411,6 +5427,7 @@ const F = {
   },
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
+  async avisos(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { avisoAprobaciones: f.avisoAprobaciones.checked, avisoTareas: f.avisoTareas.checked }); toast("Notificaciones guardadas."); }); },
   async automatizacion(f) {
     await conCarga(f.querySelector("button"), async () => {
       try { await api("POST", "/api/automatizaciones", { nombre: f.nombre.value, evento: f.evento.value, botId: f.botId.value, instrucciones: f.instrucciones.value }); toast("Automatización creada."); await cargarAutomatizaciones(); }

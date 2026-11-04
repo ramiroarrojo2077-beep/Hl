@@ -145,6 +145,9 @@ export interface Ajustes {
   autoAprobar: boolean;
   // Cada conversación nueva de WhatsApp o redes la atiende sola un compañero, sin asignar nada.
   autoResponder: boolean;
+  // Notificaciones del celular (con la app cerrada).
+  avisoAprobaciones: boolean;
+  avisoTareas: boolean;
 }
 
 export interface Nota {
@@ -336,6 +339,8 @@ const AJUSTES_INICIALES: Ajustes = {
   // Apagado de fábrica: se prende en Ajustes > Automático.
   autoAprobar: process.env.BOTS_AUTO_APROBAR === "1",
   autoResponder: process.env.BOTS_AUTO_RESPONDER !== "0",
+  avisoAprobaciones: true,
+  avisoTareas: true,
 };
 
 const estado: Estado = leerJson(ESTADO, {} as Estado);

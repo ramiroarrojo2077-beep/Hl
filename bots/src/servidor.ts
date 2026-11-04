@@ -570,8 +570,9 @@ ruta("GET", "/api/motor", async () => {
   return {
     ocupado: trabajando > 0 || reunionesActivas > 0 || (!pausa && (enCola > 0 || tareasActivas > 0)),
     trabajando,
-    aprobaciones: listarAprobaciones().length,
-    avisos: avisosMotor.splice(0),
+    // Solo las usa el celular para notificar: si el usuario las apagó, no se cuentan ni se mandan.
+    aprobaciones: ajustes().avisoAprobaciones === false ? 0 : listarAprobaciones().length,
+    avisos: ajustes().avisoTareas === false ? avisosMotor.splice(0) && [] : avisosMotor.splice(0),
     proximaRutina: proximas.length ? Math.min(...proximas) : null,
   };
 });
@@ -1070,7 +1071,7 @@ ruta("DELETE", "/api/reglas/:id", async ({ params }) => {
 
 ruta("PUT", "/api/ajustes", async ({ cuerpo }) => {
   const d = validar(
-    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean() }).partial(),
+    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean(), avisoAprobaciones: z.boolean(), avisoTareas: z.boolean() }).partial(),
     await cuerpo(),
   );
   const a = cambiarAjustes(d);
