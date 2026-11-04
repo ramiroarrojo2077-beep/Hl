@@ -9,6 +9,7 @@ export interface HorarioCrudo {
   minutos?: number | null;
   hora?: string | null;
   dia?: number | null;
+  fecha?: string | null;
 }
 
 // Valida un horario que viene de la interfaz o del modelo. Tira un Error con un mensaje para mostrar.
@@ -33,14 +34,25 @@ export function normalizarHorario(h: HorarioCrudo): Horario {
       if (!horaValida) throw new Error('La hora tiene que tener el formato "HH:MM".');
       return { tipo: "semanal", dia, hora: horaNormal };
     }
+    case "una": {
+      const fecha = (h.fecha ?? "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(Date.parse(fecha))) throw new Error('La fecha tiene que tener el formato "AAAA-MM-DD".');
+      if (!horaValida) throw new Error('La hora tiene que tener el formato "HH:MM".');
+      const [hh, mm] = horaNormal.split(":").map(Number);
+      const cuando = new Date(`${fecha}T00:00:00`);
+      cuando.setHours(hh!, mm!, 0, 0);
+      if (cuando.getTime() < Date.now() - 60_000) throw new Error("Esa fecha y hora ya pasaron.");
+      return { tipo: "una", fecha, hora: horaNormal };
+    }
     default:
-      throw new Error('El tipo de horario tiene que ser "intervalo", "diaria" o "semanal".');
+      throw new Error('El tipo de horario tiene que ser "intervalo", "diaria", "semanal" o "una".');
   }
 }
 
 export function describirHorario(h: Horario): string {
   if (h.tipo === "intervalo") return h.minutos % 60 === 0 ? `cada ${h.minutos / 60} h` : `cada ${h.minutos} min`;
   if (h.tipo === "diaria") return `todos los días a las ${h.hora}`;
+  if (h.tipo === "una") return `una vez, el ${h.fecha.split("-").reverse().join("/")} a las ${h.hora}`;
   return `todos los ${DIAS[h.dia]} a las ${h.hora}`;
 }
 
@@ -49,6 +61,14 @@ export function proximaEjecucion(r: Rutina): Date {
   const base = new Date(r.ultimaEjecucion ?? r.creada);
   const h = r.horario;
   if (h.tipo === "intervalo") return new Date(base.getTime() + h.minutos * 60_000);
+  if (h.tipo === "una") {
+    // Ya corrió: no vuelve a correr.
+    if (r.ultimaEjecucion) return new Date(8.64e15);
+    const [hh, mm] = h.hora.split(":").map(Number);
+    const cuando = new Date(`${h.fecha}T00:00:00`);
+    cuando.setHours(hh!, mm!, 0, 0);
+    return cuando;
+  }
   const [hh, mm] = h.hora.split(":").map(Number);
   const candidata = new Date(base);
   candidata.setHours(hh!, mm!, 0, 0);

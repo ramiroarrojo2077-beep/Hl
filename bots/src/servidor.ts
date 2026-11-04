@@ -169,6 +169,7 @@ const DatosHorario = z.object({
   minutos: z.number().nullish(),
   hora: z.string().nullish(),
   dia: z.number().nullish(),
+  fecha: z.string().max(10).nullish(),
 });
 const DatosRutina = z.object({
   nombre: z.string().trim().min(1).max(80),
@@ -352,7 +353,9 @@ function vistaBot(b: Bot) {
 }
 
 function vistaRutina(r: Rutina) {
-  return { ...r, descripcionHorario: describirHorario(r.horario), proxima: r.activa ? proximaEjecucion(r).toISOString() : null };
+  // Un recordatorio que ya corrió no tiene próxima.
+  const yaCorrio = r.horario.tipo === "una" && !!r.ultimaEjecucion;
+  return { ...r, descripcionHorario: describirHorario(r.horario), proxima: r.activa && !yaCorrio ? proximaEjecucion(r).toISOString() : null };
 }
 
 function resumenReunion(r: ReturnType<typeof vistaReunion>) {
@@ -565,7 +568,7 @@ ruta("GET", "/api/motor", async () => {
   const proximas = pausa
     ? []
     : listarRutinas()
-        .filter((r) => r.activa && buscarBot(r.botId))
+        .filter((r) => r.activa && buscarBot(r.botId) && !(r.horario.tipo === "una" && r.ultimaEjecucion))
         .map((r) => proximaEjecucion(r).getTime());
   return {
     ocupado: trabajando > 0 || reunionesActivas > 0 || (!pausa && (enCola > 0 || tareasActivas > 0)),

@@ -68,10 +68,11 @@ const EntradaRutinas = z.strictObject({
   habilidad_id: z.string().nullable().describe("Habilidad a seguir en cada ejecución, si corresponde"),
   horario: z
     .strictObject({
-      tipo: z.enum(["intervalo", "diaria", "semanal"]),
+      tipo: z.enum(["intervalo", "diaria", "semanal", "una"]).describe("una: un recordatorio o trabajo que corre una sola vez"),
       minutos: z.number().nullable().describe("Solo intervalo: cada cuántos minutos (mínimo 5)"),
-      hora: z.string().nullable().describe('Solo diaria y semanal: "HH:MM" en hora local'),
+      hora: z.string().nullable().describe('Solo diaria, semanal y una: "HH:MM" en hora local'),
       dia: z.number().nullable().describe("Solo semanal: 0 = domingo … 6 = sábado"),
+      fecha: z.string().nullable().describe('Solo una: "AAAA-MM-DD"'),
     })
     .nullable(),
   activa: z.boolean().nullable(),

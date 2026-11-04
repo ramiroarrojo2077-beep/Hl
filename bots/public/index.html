@@ -2881,7 +2881,7 @@ async function cargarRutinas() {
   const id = S.botId;
   try { const xs = await api("GET", `/api/bots/${id}/rutinas`); if (id === S.botId) { S.rutinas = xs; pintarRutinas(); } } catch (err) { fallo(err); }
 }
-const HUMANO_H = (h) => (h.tipo === "intervalo" ? `cada ${h.minutos} min` : h.tipo === "diaria" ? `todos los días a las ${h.hora}` : `todos los ${DIAS[h.dia]} a las ${h.hora}`);
+const HUMANO_H = (h) => (h.tipo === "intervalo" ? `cada ${h.minutos} min` : h.tipo === "una" ? `una vez, el ${String(h.fecha).split("-").reverse().join("/")} a las ${h.hora}` : h.tipo === "diaria" ? `todos los días a las ${h.hora}` : `todos los ${DIAS[h.dia]} a las ${h.hora}`);
 function pintarRutinas() {
   const el = $("#rut"), b = bot(S.botId);
   if (!el || !b) return;
@@ -2912,7 +2912,8 @@ function formRutina(b, r) {
     <div class="g2 rut-reu" ${si(!esReu, "hidden")}><label class="fld"><span>Tipo</span><select class="inp" name="tipoReunion"><option value="standup" ${si(r?.reunion?.tipo !== "discusion", "selected")}>Daily (ronda corta)</option><option value="discusion" ${si(r?.reunion?.tipo === "discusion", "selected")}>Discusión</option><option value="debate" ${si(r?.reunion?.tipo === "debate", "selected")}>Debate con votación</option></select></label>
       <label class="chk" style="align-self:end"><input type="checkbox" class="cb" name="confirmar" ${si(r?.reunion?.confirmarAcciones, "checked")}><span>Confirmar las tareas antes de repartirlas</span></label></div>
     <label class="fld"><span class="rut-lbl">${esReu ? "Agenda" : "Instrucciones"}</span><textarea class="inp" name="instrucciones" required maxlength="8000" rows="4" placeholder="Qué tiene que hacer cada vez">${r?.instrucciones || ""}</textarea></label>
-    <div class="fila"><label class="fld"><span>Cuándo</span><select class="inp" name="tipo" data-c="rut-tipo"><option value="diaria" ${si(h.tipo === "diaria", "selected")}>Todos los días</option><option value="semanal" ${si(h.tipo === "semanal", "selected")}>Una vez por semana</option><option value="intervalo" ${si(h.tipo === "intervalo", "selected")}>Cada tantos minutos</option></select></label>
+    <div class="fila"><label class="fld"><span>Cuándo</span><select class="inp" name="tipo" data-c="rut-tipo"><option value="diaria" ${si(h.tipo === "diaria", "selected")}>Todos los días</option><option value="semanal" ${si(h.tipo === "semanal", "selected")}>Una vez por semana</option><option value="intervalo" ${si(h.tipo === "intervalo", "selected")}>Cada tantos minutos</option><option value="una" ${si(h.tipo === "una", "selected")}>Una sola vez (recordatorio)</option></select></label>
+      <label class="fld h-fecha" ${si(h.tipo !== "una", "hidden")}><span>Fecha</span><input class="inp" type="date" name="fecha" value="${h.fecha || new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}"></label>
       <label class="fld h-dia" ${si(h.tipo !== "semanal", "hidden")}><span>Día</span><select class="inp" name="dia">${DIAS.map((d, i) => html`<option value="${i}" ${si((h.dia ?? 1) === i, "selected")}>${d}</option>`)}</select></label>
       <label class="fld h-hora" ${si(h.tipo === "intervalo", "hidden")}><span>Hora</span><input class="inp" type="time" name="hora" value="${(h.hora || "09:00").padStart(5, "0")}"></label>
       <label class="fld h-min" ${si(h.tipo !== "intervalo", "hidden")}><span>Minutos</span><input class="inp" type="number" name="minutos" min="5" max="10080" value="${h.minutos || 60}"></label></div>
@@ -2923,7 +2924,7 @@ function formRutina(b, r) {
 function datosRutina(f) {
   const d = new FormData(f);
   const tipo = d.get("tipo");
-  const horario = tipo === "intervalo" ? { tipo, minutos: Number(d.get("minutos")) } : tipo === "semanal" ? { tipo, dia: Number(d.get("dia")), hora: d.get("hora") } : { tipo, hora: d.get("hora") };
+  const horario = tipo === "intervalo" ? { tipo, minutos: Number(d.get("minutos")) } : tipo === "una" ? { tipo, fecha: d.get("fecha"), hora: d.get("hora") } : tipo === "semanal" ? { tipo, dia: Number(d.get("dia")), hora: d.get("hora") } : { tipo, hora: d.get("hora") };
   const esReu = d.get("esReunion") === "on";
   return { nombre: d.get("nombre"), instrucciones: d.get("instrucciones"), habilidadId: d.get("habilidadId") || null, horario, activa: d.get("activa") === "on", reunion: esReu ? { tipo: d.get("tipoReunion"), participantes: null, confirmarAcciones: d.get("confirmar") === "on" } : null };
 }
@@ -5717,7 +5718,7 @@ const C = {
   "reu-pmodo": () => pintarParticipantes(),
   "reu-tipo": (t) => { const f = t.form; if (t.value === "discusion" && /^Daily de /.test(f.titulo.value)) f.titulo.value = f.titulo.value.replace(/^Daily de /, "Discusión de "); if (t.value === "standup" && /^Discusión de /.test(f.titulo.value)) f.titulo.value = f.titulo.value.replace(/^Discusión de /, "Daily de "); },
   "reu-rep": (t) => { const f = t.form, v = t.value; $(".reu-hora", f).hidden = !v; $(".reu-dia", f).hidden = v !== "semanal"; $("#reu-ok").innerHTML = v ? html`${ico("clock", "s")}Programar`.s : html`${ico("meet", "s")}Convocar ahora`.s; },
-  "rut-tipo": (t) => { const f = t.form, v = t.value; $(".h-dia", f).hidden = v !== "semanal"; $(".h-hora", f).hidden = v === "intervalo"; $(".h-min", f).hidden = v !== "intervalo"; },
+  "rut-tipo": (t) => { const f = t.form, v = t.value; $(".h-dia", f).hidden = v !== "semanal"; $(".h-hora", f).hidden = v === "intervalo"; $(".h-min", f).hidden = v !== "intervalo"; if ($(".h-fecha", f)) $(".h-fecha", f).hidden = v !== "una"; },
   "rut-reu": (t) => { const f = t.form; $(".rut-reu", f).hidden = !t.checked; $(".rut-lbl", f).textContent = t.checked ? "Agenda" : "Instrucciones"; },
   tema: (t) => { guardarLocal("gravity-tema", t.value); aplicarTema(); },
   "msj-activa": async (t) => { try { S.msjEstado = await api("PUT", "/api/mensajeria/estado", { activa: t.checked }); toast(t.checked ? "Gravity vuelve a escuchar los mensajes." : "Gravity dejó de escuchar los mensajes."); } catch (err) { t.checked = !t.checked; fallo(err); } pintarAppsAbiertas(); },

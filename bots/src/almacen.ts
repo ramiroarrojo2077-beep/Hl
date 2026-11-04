@@ -81,7 +81,9 @@ export interface Bot {
 export type Horario =
   | { tipo: "intervalo"; minutos: number }
   | { tipo: "diaria"; hora: string }
-  | { tipo: "semanal"; dia: number; hora: string };
+  | { tipo: "semanal"; dia: number; hora: string }
+  // Recordatorio: una sola vez, en esa fecha y hora local.
+  | { tipo: "una"; fecha: string; hora: string };
 
 export interface Ejecucion {
   inicio: string;
