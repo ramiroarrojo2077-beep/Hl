@@ -538,7 +538,7 @@ function herramientaProyectos(botId: string): BetaRunnableTool {
 const EntradaReunion = z.strictObject({
   accion: z.enum(["convocar", "programar"]),
   titulo: z.string(),
-  tipo: z.enum(["standup", "discusion"]).describe("standup: daily corta; discusion: un tema"),
+  tipo: z.enum(["standup", "discusion", "debate"]).describe("standup: daily corta; discusion: un tema; debate: propuestas, críticas y votación"),
   agenda: z.string(),
   participantes: z.array(z.string()).nullable().describe("Nombres o ids; null = tu equipo directo"),
   horario: z

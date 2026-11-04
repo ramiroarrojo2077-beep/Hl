@@ -172,7 +172,7 @@ const DatosRutina = z.object({
   horario: DatosHorario,
   activa: z.boolean().default(true),
   reunion: z
-    .object({ tipo: z.enum(["standup", "discusion"]), participantes: z.array(z.string()).nullable(), confirmarAcciones: z.boolean() })
+    .object({ tipo: z.enum(["standup", "discusion", "debate"]), participantes: z.array(z.string()).nullable(), confirmarAcciones: z.boolean() })
     .nullish(),
 });
 const DatosHabilidad = z.object({
@@ -207,7 +207,7 @@ const DatosEquipo = z.object({
 });
 const DatosReunion = z.object({
   titulo: z.string().trim().min(1).max(120),
-  tipo: z.enum(["standup", "discusion"]),
+  tipo: z.enum(["standup", "discusion", "debate"]),
   agenda: z.string().max(4000).default(""),
   facilitadorId: z.string(),
   participantes: z.array(z.string()).nullable().default(null),

@@ -212,7 +212,7 @@ export interface Tarea {
   avisada: boolean;
 }
 
-export type TipoReunion = "standup" | "discusion";
+export type TipoReunion = "standup" | "discusion" | "debate";
 
 export interface Turno {
   autor: string; // id de bot, "usuario" o "sistema"
@@ -251,6 +251,8 @@ export interface Reunion {
   error: string | null;
   // El usuario la pausó: nadie habla hasta que la reanude (se puede seguir escribiendo en la sala).
   pausada?: boolean;
+  // Debate: las propuestas que se votaron y quién votó cada una.
+  votacion?: { opcion: string; votos: { botId: string; nombre: string; motivo: string }[] }[] | null;
 }
 
 interface Estado {

@@ -1774,6 +1774,7 @@ function equipoDe(b) {
   return jefe(b) || (b.cargo === "manager" ? b : null);
 }
 const nombreEquipo = (m) => (m ? m.titulo : "Directo con vos");
+const tipoReu = (t) => ({ standup: "Daily", discusion: "Discusión", debate: "Debate" })[t] || t;
 const reunionesVivas = () => S.reuniones.filter((r) => r.estado === "en_curso" || r.estado === "cierre");
 const tareaAbierta = (t) => ["pendiente", "en_curso", "esperando_equipo"].includes(t.estado);
 function iniciales(n) {
@@ -2609,7 +2610,7 @@ function detalleLegible(a) {
     if (d.activa === false) f.push(["Estado", "Queda pausada"]);
   } else if (h === "reunion") {
     if (d.titulo) f.push(["Reunión", d.titulo]);
-    if (d.tipo) f.push(["Tipo", d.tipo === "standup" ? "Daily" : "Discusión"]);
+    if (d.tipo) f.push(["Tipo", tipoReu(d.tipo)]);
     if (cuandoLegible(d.horario)) f.push(["Cuándo", cuandoLegible(d.horario)]);
     if (d.agenda) f.push(["Agenda", d.agenda, true]);
   } else {
@@ -2694,7 +2695,7 @@ function pintarReuniones() {
     <div class="acts"><button class="btn pri" data-a="nueva-reunion" ${si(!S.bots.length, "disabled")}>${ico("plus", "s")}Nueva reunión</button></div></header>
     ${vivas.length ? html`<div class="sec-h"><h2>En vivo <span>${vivas.length}</span></h2></div><div class="reus">${vivas.map((r) => filaReunion(r, true))}</div>` : ""}
     <div class="sec-h"><h2>Programadas <span>${S.programadas.length}</span></h2></div>
-    ${S.programadas.length ? html`<div class="reus">${S.programadas.map((r) => { const f = bot(r.botId); return html`<div class="reu"><span class="stack">${av(f, 30)}</span><div class="tt"><b>${r.nombre}</b><p>${r.descripcionHorario}${r.activa && r.proxima ? ` · próxima ${diaHora(r.proxima)}` : " · pausada"}</p><div class="meta"><span class="tag">${r.reunion.tipo === "standup" ? "Daily" : "Discusión"}</span><span>Facilita ${f?.nombre || "?"}</span><span>${r.reunion.participantes ? plural(r.reunion.participantes.length, "participante", "participantes") : "Su equipo"}</span></div></div><a class="btn ghost sm" href="#/chats/${r.botId}/rutinas">Editar</a></div>`; })}</div>`
+    ${S.programadas.length ? html`<div class="reus">${S.programadas.map((r) => { const f = bot(r.botId); return html`<div class="reu"><span class="stack">${av(f, 30)}</span><div class="tt"><b>${r.nombre}</b><p>${r.descripcionHorario}${r.activa && r.proxima ? ` · próxima ${diaHora(r.proxima)}` : " · pausada"}</p><div class="meta"><span class="tag">${tipoReu(r.reunion.tipo)}</span><span>Facilita ${f?.nombre || "?"}</span><span>${r.reunion.participantes ? plural(r.reunion.participantes.length, "participante", "participantes") : "Su equipo"}</span></div></div><a class="btn ghost sm" href="#/chats/${r.botId}/rutinas">Editar</a></div>`; })}</div>`
       : html`<p class="muted" style="font-size:13px">Nada programado. Al crear una reunión elegí «Repetir: todos los días» para armar una daily.</p>`}
     <div class="sec-h"><h2>Recientes <span>${pasadas.length}</span></h2></div>
     ${pasadas.length ? html`<div class="reus">${pasadas.map((r) => filaReunion(r, false))}</div>` : html`<div class="vacio-p"><b>Todavía no hubo reuniones</b><span>${hayManagers ? "Convocá a un equipo: cada uno cuenta en qué está y el manager reparte lo que sigue." : "Las reuniones las facilita un manager. Creá un equipo primero."}</span></div>`}`);
@@ -2704,7 +2705,7 @@ function filaReunion(r, viva) {
   const estado = { en_curso: "En vivo", cierre: "Escribiendo el acta", terminada: "Terminada", cancelada: "Cancelada" }[r.estado] || r.estado;
   return html`<a class="reu ${viva ? "viva" : ""}" href="#/reuniones/${r.id}"><span class="stack">${ps.slice(0, 4).map((p) => av(p, 26, { s: "idle" }))}</span>
     <div class="tt"><b>${r.titulo}</b><p>${r.acta?.resumen || (viva ? `Facilita ${r.facilitadorNombre}` : r.error || r.agenda || "")}</p>
-      <div class="meta">${viva ? html`<span class="livep"><i></i>${estado}</span>` : html`<span class="tag">${estado}</span>`}<span class="tag">${r.tipo === "standup" ? "Daily" : "Discusión"}</span><span>${diaHora(r.creada)}</span><span>Facilita ${r.facilitadorNombre}</span>${r.accionesPropuestas ? html`<span class="tag sig">Tareas por confirmar</span>` : ""}</div></div>
+      <div class="meta">${viva ? html`<span class="livep"><i></i>${estado}</span>` : html`<span class="tag">${estado}</span>`}<span class="tag">${tipoReu(r.tipo)}</span><span>${diaHora(r.creada)}</span><span>Facilita ${r.facilitadorNombre}</span>${r.accionesPropuestas ? html`<span class="tag sig">Tareas por confirmar</span>` : ""}</div></div>
     <span class="btn ${viva ? "out" : "ghost"} sm">${viva ? "Entrar" : "Ver"} ${ico("right", "s")}</span></a>`;
 }
 
@@ -2736,7 +2737,7 @@ function pintarSala(primera = false) {
   const habla = r.hablando || [];
   const cuenta = (id) => r.turnos.filter((t) => t.autor === id && !t.paso).length;
   const estadoTxt = { en_curso: r.pausada ? "En pausa" : "En vivo", cierre: "Escribiendo el acta", terminada: "Terminada", cancelada: "Cancelada" }[r.estado] || r.estado;
-  pintar($("#sala-top"), html`<div class="tt"><span class="micro">Reunión · ${r.tipo === "standup" ? "Daily" : "Discusión"}</span><h1>${r.titulo}</h1>
+  pintar($("#sala-top"), html`<div class="tt"><span class="micro">Reunión · ${tipoReu(r.tipo)}</span><h1>${r.titulo}</h1>
     <div class="mt-meta">${viva || r.estado === "cierre" ? html`<span class="livep"><i></i>${estadoTxt}</span>` : html`<span class="tag">${estadoTxt}</span>`}<span>Empezó ${hora(r.creada)}${viva ? html` · <span class="mono" data-reloj="${r.creada}">${reloj(r.creada)}</span>` : r.fin ? ` · terminó ${hora(r.fin)}` : ""}</span><span>${plural(ps.length, "compañero", "compañeros")} + vos</span><span>Facilita <b style="color:var(--tx);font-weight:500">${fac.nombre}</b></span><span>Ronda ${r.ronda || 1}</span><span class="mono">${usd(r.gastoUsd)}</span></div></div>
     <div class="acts">${viva ? html`${r.pausada ? html`<button class="btn pri sm" data-a="reanudar-reunion" data-k="reu-pau">${ico("play", "s")}Reanudar</button>` : html`<button class="btn out sm" data-a="pausar-reunion" data-k="reu-pau">${ico("pause", "s")}Pausar</button>`}<button class="btn out sm" data-a="terminar-reunion" data-k="reu-term">${ico("file", "s")}Terminar y escribir acta</button><button class="btn ghost sm" data-a="cancelar-reunion" data-k="reu-canc">${ico("x", "s")}Cancelar</button>` : html`<a class="btn ghost sm" href="#/reuniones">${ico("left", "s")}Reuniones</a>`}</div>`);
   pintar($("#sala-ppl"), html`<span class="micro">Participantes</span>
@@ -2766,6 +2767,7 @@ function pintarSala(primera = false) {
   const quien = (p) => bot(p)?.nombre || botPorNombre(p)?.nombre || p;
   pintar($("#sala-sum"), html`<header class="sum-h"><h2>Acta</h2><p>${viva ? html`<i></i>Se escribe cuando termina la reunión` : r.estado === "cierre" ? html`<i></i>${fac.nombre} está escribiendo el acta…` : acta ? `Lista · ${hora(r.fin)}` : r.estado === "cancelada" ? "La reunión se canceló" : ""}</p></header>
     <div class="sum-b">
+      ${r.votacion?.length ? html`<section><h3 class="micro"><span>Votación</span><span>${r.votacion.reduce((n, o) => n + o.votos.length, 0)}</span></h3><ul class="dec">${[...r.votacion].sort((x, y) => y.votos.length - x.votos.length).map((o) => html`<li>${ico("check")}<span><b>${o.votos.length}</b> · ${o.opcion}${o.votos.length ? html`<small class="muted" style="display:block">${o.votos.map((v) => `${v.nombre}: ${v.motivo}`).join(" · ")}</small>` : ""}</span></li>`)}</ul></section>` : ""}
       ${acta ? html`<section><h3 class="micro"><span>Resumen</span></h3><p class="res">${acta.resumen}</p></section>
         <section><h3 class="micro"><span>Decisiones</span><span>${acta.decisiones.length}</span></h3>${acta.decisiones.length ? html`<ul class="dec">${acta.decisiones.map((d) => html`<li>${ico("flag")}<span>${d}</span></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Sin decisiones.</p>`}</section>
         <section><h3 class="micro"><span>Tareas</span><span>${acta.acciones.length}</span></h3>${acta.acciones.length ? html`<ul class="tasks">${acta.acciones.map((x) => { const p = bot(x.para) || botPorNombre(x.para); const t = tareasReu.find((y) => y.titulo === x.titulo); return html`<li>${av(p, 20, { s: "idle" })}<span class="tt"><b>${x.titulo}</b><small>${quien(x.para)}${x.entregable ? ` · ${x.entregable}` : ""}${t ? html` · ${chipTarea(t.estado)}` : ""}</small></span></li>`; })}</ul>` : html`<p class="muted" style="font-size:13px">Sin tareas.</p>`}</section>
@@ -2879,7 +2881,7 @@ function pintarRutinas() {
 function htmlRutina(r) {
   const corriendo = r.ejecuciones[0]?.estado === "en_curso";
   const EE = { ok: ["OK", "ok", "check"], error: ["Error", "n", "x"], salteada: ["Salteada", "n", "dot"], en_curso: ["En curso", "w", null] };
-  return html`<article class="rut"><div class="rut-h"><div class="tt"><b>${r.nombre}</b>${r.reunion ? html` <span class="tag">${r.reunion.tipo === "standup" ? "Daily" : "Reunión"}</span>` : ""}<p>${r.descripcionHorario}${r.activa ? (r.proxima ? ` · próxima ${diaHora(r.proxima)}` : "") : " · pausada"}</p></div>
+  return html`<article class="rut"><div class="rut-h"><div class="tt"><b>${r.nombre}</b>${r.reunion ? html` <span class="tag">${tipoReu(r.reunion.tipo)}</span>` : ""}<p>${r.descripcionHorario}${r.activa ? (r.proxima ? ` · próxima ${diaHora(r.proxima)}` : "") : " · pausada"}</p></div>
     <div class="rut-a"><button class="btn out sm" data-a="rutina-ejecutar" data-id="${r.id}" ${si(corriendo, "disabled")}>${ico("play", "s")}${corriendo ? "Ejecutando…" : "Ejecutar ahora"}</button><button class="btn ghost sm" data-a="rutina-activa" data-id="${r.id}">${ico(r.activa ? "pause" : "play", "s")}${r.activa ? "Pausar" : "Activar"}</button><button class="btn ghost sm" data-a="rutina-editar" data-id="${r.id}">${ico("edit", "s")}Editar</button><button class="ib" data-a="rutina-borrar" data-id="${r.id}" aria-label="Borrar la rutina ${r.nombre}" title="Borrar">${ico("trash", "s")}</button></div></div>
     <p class="muted" style="font-size:13px;white-space:pre-wrap">${r.instrucciones.length > 240 ? `${r.instrucciones.slice(0, 240)}…` : r.instrucciones}</p>
     ${r.ejecuciones.length ? html`<ul class="runs" aria-label="Últimas ejecuciones">${r.ejecuciones.slice(0, 5).map((e) => { const [t, c, i] = EE[e.estado] || [e.estado, "n", null]; return html`<li><time>${diaHora(e.inicio)}</time><span class="pill ${c}">${i ? ico(i) : html`<span class="orbita-mini" aria-hidden="true"></span>`}${t}</span>${e.reunionId ? html`<a class="lnk" href="#/reuniones/${e.reunionId}">Ver reunión</a>` : ""}<span>${e.resumen || ""}</span></li>`; })}</ul>` : html`<p class="muted" style="font-size:12.5px">Todavía no se ejecutó.</p>`}</article>`;
@@ -2892,7 +2894,7 @@ function formRutina(b, r) {
     <div class="g2"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${r?.nombre || ""}" placeholder="Resumen de la mañana"></label>
     <label class="fld"><span>Habilidad (opcional)</span><select class="inp" name="habilidadId"><option value="">Ninguna</option>${S.habilidades.map((x) => html`<option value="${x.id}" ${si(r?.habilidadId === x.id, "selected")}>${x.nombre}</option>`)}</select></label></div>
     ${puedeReu ? html`<label class="chk"><input type="checkbox" class="sw" name="esReunion" data-c="rut-reu" ${si(esReu, "checked")}><span>Es una reunión con su equipo<small>${b.nombre} la convoca a la hora indicada; lo de abajo es la agenda.</small></span></label>` : ""}
-    <div class="g2 rut-reu" ${si(!esReu, "hidden")}><label class="fld"><span>Tipo</span><select class="inp" name="tipoReunion"><option value="standup" ${si(r?.reunion?.tipo !== "discusion", "selected")}>Daily (ronda corta)</option><option value="discusion" ${si(r?.reunion?.tipo === "discusion", "selected")}>Discusión</option></select></label>
+    <div class="g2 rut-reu" ${si(!esReu, "hidden")}><label class="fld"><span>Tipo</span><select class="inp" name="tipoReunion"><option value="standup" ${si(r?.reunion?.tipo !== "discusion", "selected")}>Daily (ronda corta)</option><option value="discusion" ${si(r?.reunion?.tipo === "discusion", "selected")}>Discusión</option><option value="debate" ${si(r?.reunion?.tipo === "debate", "selected")}>Debate con votación</option></select></label>
       <label class="chk" style="align-self:end"><input type="checkbox" class="cb" name="confirmar" ${si(r?.reunion?.confirmarAcciones, "checked")}><span>Confirmar las tareas antes de repartirlas</span></label></div>
     <label class="fld"><span class="rut-lbl">${esReu ? "Agenda" : "Instrucciones"}</span><textarea class="inp" name="instrucciones" required maxlength="8000" rows="4" placeholder="Qué tiene que hacer cada vez">${r?.instrucciones || ""}</textarea></label>
     <div class="fila"><label class="fld"><span>Cuándo</span><select class="inp" name="tipo" data-c="rut-tipo"><option value="diaria" ${si(h.tipo === "diaria", "selected")}>Todos los días</option><option value="semanal" ${si(h.tipo === "semanal", "selected")}>Una vez por semana</option><option value="intervalo" ${si(h.tipo === "intervalo", "selected")}>Cada tantos minutos</option></select></label>
@@ -3827,7 +3829,7 @@ function abrirNuevaReunion(facId = null) {
   const fac = bot(facId) || mgrs[0] || otros[0];
   abrirDialogo(html`<form class="dlg-f" data-f="reunion"><div><span class="micro">Nueva reunión</span><h2 id="dlg-t">Reunión</h2><p class="lead">Quien facilita da la palabra a cada uno y al final escribe un acta con decisiones y tareas.</p></div>
     <div class="g2"><label class="fld"><span>Título</span><input class="inp" name="titulo" required maxlength="120" value="Daily de ${nombreEquipo(fac)}" autofocus></label>
-      <fieldset class="fld"><legend>Tipo</legend><div class="segc"><label><input type="radio" name="tipo" value="standup" checked data-c="reu-tipo">Daily</label><label><input type="radio" name="tipo" value="discusion" data-c="reu-tipo">Discusión</label></div></fieldset></div>
+      <fieldset class="fld"><legend>Tipo</legend><div class="segc"><label><input type="radio" name="tipo" value="standup" checked data-c="reu-tipo">Daily</label><label><input type="radio" name="tipo" value="discusion" data-c="reu-tipo">Discusión</label><label><input type="radio" name="tipo" value="debate" data-c="reu-tipo">Debate</label></div><small>Debate: cada uno propone, se critican las propuestas y al final votan.</small></fieldset></div>
     <label class="fld"><span>Facilita</span><select class="inp" name="facilitadorId" data-c="reu-fac">${mgrs.length ? html`<optgroup label="Managers">${mgrs.map((m) => html`<option value="${m.id}" ${si(m.id === fac.id, "selected")}>${m.nombre} · ${m.titulo}</option>`)}</optgroup>` : ""}<optgroup label="${mgrs.length ? "Otros" : "Compañeros"}">${otros.map((m) => html`<option value="${m.id}" ${si(m.id === fac.id, "selected")}>${m.nombre} · ${m.titulo}</option>`)}</optgroup></select></label>
     <fieldset class="fld"><legend>Participantes</legend><div class="segc" id="reu-modo"></div><div class="lista-chk" id="reu-lista" hidden></div></fieldset>
     <label class="fld"><span>Agenda</span><textarea class="inp" name="agenda" rows="3" maxlength="4000" placeholder="Qué hicieron, qué sigue y qué los frena.">Qué hicieron, qué sigue y qué los frena.</textarea></label>
