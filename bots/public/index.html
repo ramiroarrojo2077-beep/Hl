@@ -4554,7 +4554,14 @@ function crearCerebro(op = {}) {
       for (const s of ESTADOS_ROBOT) pesos[s] += ((s === c.estado ? 1 : 0) - pesos[s]) * k;
       let a = 0;
       const p = c.pista;
-      if (p) { const i = Math.floor((now - p.t0) / (p.paso || 20)); if (i >= 0 && i < p.env.length) a = Math.max(0, Math.min(1, Number(p.env[i]) || 0)); }
+      // Pico de la envolvente desde el cuadro anterior: con pocos cuadros por segundo (celular lento) no se
+      // pierden los acentos que caen entre cuadro y cuadro.
+      if (p) {
+        const i = Math.floor((now - p.t0) / (p.paso || 20));
+        const desde = Math.max(0, Math.min(i, p.ult ?? i));
+        for (let j = desde; j <= i && j < p.env.length; j++) if (j >= 0) a = Math.max(a, Math.min(1, Number(p.env[j]) || 0));
+        p.ult = i + 1;
+      }
       // RMS suavizado: ataque rápido y caída más lenta (la rápida marca los acentos contra la lenta)
       c.rapida += (a - c.rapida) * (1 - Math.exp(-dt / (a > c.rapida ? 0.035 : 0.12)));
       c.lenta += (a - c.lenta) * (1 - Math.exp(-dt / 0.7));

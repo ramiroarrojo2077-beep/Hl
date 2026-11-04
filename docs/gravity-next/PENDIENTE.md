@@ -21,9 +21,7 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 
 ## Llamadas con el robot 3D (hecho, con 4 detalles a corregir)
 
-Prueba e2e de la llamada (Playwright, con un `GravityVoz` falso, en `scratchpad`): ya se corrigieron Silenciar (aria-pressed), «Reintentar» después de un error grave (quedaba trabado) y la espera de Web Speech. Queda:
-- «hablando con envolvente: pocos gestos para 3 s de voz»: en un contenedor sin GPU el robot corre a 2–4 cuadros por segundo y hace pocos gestos; cuando falla, los pasos siguientes de la prueba quedan esperando. Revisar que los gestos se programen por tiempo y no por cuadro (en `crearRobot3D`/cerebro), y probar en un celular real.
-- «compat: un bot viejo sin avatar»: la prueba manda un pedido sin `Content-Type: application/json`; es la prueba, no la app.
+Prueba e2e de la llamada (Playwright, con un `GravityVoz` falso): 18 de 19 pasan, incluso con el robot a 3 cuadros por segundo. Se corrigieron Silenciar (aria-pressed), «Reintentar» después de un error grave y los gestos con pocos cuadros por segundo (ahora toma el pico del audio entre cuadros). La que falla («compat: un bot viejo sin avatar») es de la prueba: manda un pedido sin `Content-Type: application/json`. Falta probar en un celular real.
 Contrato del puente de voz nativo: `android/VOZ.md`.
 
 ## Pedidos del usuario todavía sin hacer
