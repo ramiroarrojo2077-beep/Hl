@@ -24,7 +24,7 @@
 17. ⛔ Imágenes durante la llamada (el chat sí acepta archivos).
 18. ⛔ Modo cámara.
 19. 🟡 Voces por compañero (las del sistema). Falta tono/estilo.
-20. ⛔ Resumen automático de la llamada (todo queda en el chat).
+20. ✅ Resumen automático al cortar (si hubo charla): el compañero deja en el chat decisiones, notas y tareas.
 
 ## 3. Automatizaciones
 21. ✅ Misiones: proyectos con tareas y dependencias + Architect que divide el objetivo.

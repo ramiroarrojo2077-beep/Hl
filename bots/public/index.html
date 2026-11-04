@@ -4474,9 +4474,14 @@ function alternarAltavoz() {
 }
 function colgarLlamada() {
   if (!LL.activa) { ir("#/chats"); return; }
-  const id = LL.botId, dur = reloj(LL.inicio);
+  const id = LL.botId, dur = reloj(LL.inicio), dichos = LL.n || 0;
   cerrarLlamada();
-  toast(`Llamada terminada (${dur}). Quedó todo en el chat.`);
+  // Resumen automático: si hubo charla (2 o más cosas dichas), el compañero deja en el chat las
+  // decisiones, notas y tareas que salieron. Es un mensaje normal: se ve y se puede seguir desde ahí.
+  if (dichos >= 2) {
+    api("POST", `/api/bots/${id}/mensajes`, { texto: "[Fin de la llamada] Resumí lo que hablamos en la llamada: decisiones, notas y tareas que salieron (quién hace qué). Si alguna tarea es tuya, anotala o arrancala; no repitas lo que ya dijiste." }).catch(fallo);
+    toast(`Llamada terminada (${dur}). Te dejo el resumen en el chat.`);
+  } else toast(`Llamada terminada (${dur}). Quedó todo en el chat.`);
   ir(`#/chats/${id}`);
 }
 function cerrarLlamada() {
