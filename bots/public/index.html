@@ -848,6 +848,9 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .nodo small{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3)}.nodo b{font-size:13.5px}.nodo span{font-size:12px;color:var(--tx2)}
 .nodo.ev{border-left:3px solid var(--sig)}.nodo.qui{border-left:3px solid var(--ion)}.nodo.acc{border-left:3px solid #9B7BFF}
 button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outline:2px solid var(--ion);background:var(--ion-bg)}
+.univ{height:min(62vh,520px);border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#05070d;margin-top:14px}.univ canvas{display:block;width:100%;height:100%;cursor:grab}
+.univ-l{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}.univ-l a{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--s1);border:1px solid var(--line);color:inherit;text-decoration:none;min-height:44px}.univ-l span{display:flex;flex-direction:column;min-width:0}.univ-l small{font-size:12px}
+.u-e{font-weight:500}.u-work{color:var(--ion)}.u-wait{color:var(--sig)}.u-idle{color:var(--tx3)}
 .flecha{display:grid;place-items:center;color:var(--tx3)}
 .armar{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.armar .col{display:flex;flex-direction:column;gap:6px}.armar .col>small{font-weight:600;color:var(--tx2)}
 .armar .col>.nodo{flex:none}
@@ -1755,7 +1758,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2065,6 +2068,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "universo") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="univ"></div></div>`; montarUniverso(); return; }
   if (v === "mapa") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="mapa"></div></div>`; pintarMapa(); if (!S.proyectos) cargarProyectos().then(pintarMapa); return; }
   if (v === "laboratorio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="lab"></div></div>`; pintarLab(); return; }
   if (v === "buscar") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="busq"></div></div>`; pintarBusq(); $("#busq input")?.focus(); return; }
@@ -3661,6 +3665,130 @@ function mesaRobots(fac, ps, habla) {
     ${robots}</svg>`);
 }
 
+// ================================================================ Gravity Universe
+// Un entorno 3D donde cada compañero tiene su estación: plataforma, escritorio, pantalla holográfica y su
+// robot. La pantalla y la luz muestran el estado real (trabajando, espera tu aprobación, libre) y se
+// actualizan solas. Tocar una estación abre su chat. Sin WebGL o con «reducir movimiento» queda la lista.
+const UNIV_EST = { work: ["Trabajando", 0x6cd3f0], wait: ["Espera tu aprobación", 0xffb07a], idle: ["Libre", 0x5b6478] };
+function montarUniverso() {
+  const el = $("#univ");
+  if (!el) return;
+  el.innerHTML = html`<header class="pag-h"><div class="tt"><h1>Gravity Universe</h1><p>Cada compañero en su estación. Cian: trabajando · naranja: espera tu aprobación · gris: libre. Arrastrá para girar y tocá una estación para abrir su chat.</p></div></header>
+    <div class="univ" id="univ-3d" aria-hidden="true"></div><h2 class="sr">Estaciones</h2><ul class="univ-l" id="univ-l"></ul>`.s;
+  pintarUnivLista();
+  if (!S.bots.length || matchMedia("(prefers-reduced-motion: reduce)").matches) { $("#univ-3d").hidden = true; return; }
+  cargarThree().then((T) => escenaUniverso(T, $("#univ-3d"))).catch(() => { const c = $("#univ-3d"); if (c) c.hidden = true; });
+}
+function pintarUnivLista() {
+  const el = $("#univ-l");
+  if (!el) return;
+  pintar(el, S.bots.length ? ordenar(S.bots, "estado").map((b) => { const e = est(b); return html`<li><a href="#/chats/${b.id}">${av(b, 30)}<span><b>${b.nombre}</b> <small class="muted">${b.titulo}</small><small class="u-e u-${e}">${UNIV_EST[e][0]}${e === "work" && b.accion ? ` · ${b.accion}` : ""}</small></span></a></li>`; }) : html`<li class="muted">Todavía no hay compañeros: creá uno desde Equipo.</li>`);
+}
+function escenaUniverso(T, cont) {
+  if (!cont?.isConnected) return;
+  let renderer;
+  try { renderer = new T.WebGLRenderer({ antialias: true }); } catch { cont.hidden = true; return; }
+  const ancho = () => cont.clientWidth || 360, alto = () => cont.clientHeight || 360;
+  renderer.setPixelRatio(Math.min(1.75, devicePixelRatio || 1));
+  renderer.setSize(ancho(), alto());
+  const escena = new T.Scene();
+  escena.background = new T.Color(0x05070d);
+  escena.fog = new T.Fog(0x05070d, 18, 40);
+  const camara = new T.PerspectiveCamera(48, ancho() / alto(), 0.1, 100);
+  escena.add(new T.HemisphereLight(0xbfd8ff, 0x10131c, 0.9));
+  const sol = new T.DirectionalLight(0xffffff, 1.2); sol.position.set(4, 10, 6); escena.add(sol);
+  // Estrellas
+  const pos = new Float32Array(900 * 3);
+  for (let i = 0; i < 900; i++) { const r = 30 + Math.random() * 20, a = Math.random() * Math.PI * 2, y = (Math.random() - 0.2) * 30; pos.set([Math.cos(a) * r, y, Math.sin(a) * r], i * 3); }
+  const geoE = new T.BufferGeometry(); geoE.setAttribute("position", new T.BufferAttribute(pos, 3));
+  escena.add(new T.Points(geoE, new T.PointsMaterial({ color: 0x9fb3d9, size: 0.12 })));
+  // Piso con anillos
+  const piso = new T.Mesh(new T.CircleGeometry(16, 64), new T.MeshStandardMaterial({ color: 0x0b101b, roughness: 0.9 }));
+  piso.rotation.x = -Math.PI / 2; escena.add(piso);
+  for (const [r, c] of [[4, 0x6cd3f0], [8, 0x9b7bff], [12, 0x6cd3f0]]) { const an = new T.Mesh(new T.RingGeometry(r - 0.03, r + 0.03, 96), new T.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.35 })); an.rotation.x = -Math.PI / 2; an.position.y = 0.01; escena.add(an); }
+  // Núcleo central (la marca) con su satélite
+  const nucleo = new T.Mesh(new T.SphereGeometry(0.9, 32, 20), new T.MeshStandardMaterial({ color: 0xe8ecf5, roughness: 0.35 }));
+  nucleo.position.y = 1.4; escena.add(nucleo);
+  const satelite = new T.Mesh(new T.SphereGeometry(0.28, 20, 12), new T.MeshStandardMaterial({ color: 0x6cd3f0, emissive: 0x6cd3f0, emissiveIntensity: 0.8 }));
+  escena.add(satelite);
+  const blanco = new T.MeshStandardMaterial({ color: 0xe3e7ee, roughness: 0.4 });
+  const visorM = new T.MeshStandardMaterial({ color: 0x05070d, roughness: 0.2 });
+  const etiqueta = (texto) => {
+    const c = document.createElement("canvas"); c.width = 256; c.height = 64;
+    const g = c.getContext("2d"); g.font = "600 30px Geist, system-ui, sans-serif"; g.textAlign = "center"; g.fillStyle = "#e8ecf5"; g.fillText(String(texto).slice(0, 16), 128, 42);
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false })); sp.scale.set(2.8, 0.7, 1); return sp;
+  };
+  // Estaciones en anillos alrededor del núcleo; los managers, en el de adentro.
+  const bots = [...S.bots].sort((a, b) => (a.cargo === "manager" ? 0 : 1) - (b.cargo === "manager" ? 0 : 1) || porNombre(a, b)).slice(0, 30);
+  const estaciones = [];
+  let k = 0;
+  for (const [radio, cap] of [[4, 6], [8, 12], [12, 12]]) {
+    const n = Math.min(cap, bots.length - k);
+    for (let i = 0; i < n; i++, k++) {
+      const b = bots[k], ang = (i / n) * Math.PI * 2 + radio * 0.3;
+      const g = new T.Group(); g.position.set(Math.cos(ang) * radio, 0, Math.sin(ang) * radio); g.lookAt(0, 0, 0);
+      const base = new T.Mesh(new T.CylinderGeometry(1.25, 1.35, 0.18, 40), new T.MeshStandardMaterial({ color: 0x18213a, roughness: 0.6 })); base.position.y = 0.09; g.add(base);
+      const luz = new T.Mesh(new T.TorusGeometry(1.3, 0.04, 8, 64), new T.MeshBasicMaterial({ color: UNIV_EST.idle[1] })); luz.rotation.x = Math.PI / 2; luz.position.y = 0.19; g.add(luz);
+      const mesa = new T.Mesh(new T.BoxGeometry(1.5, 0.08, 0.6), blanco); mesa.position.set(0, 0.85, 0.45); g.add(mesa);
+      const pata = new T.Mesh(new T.BoxGeometry(0.1, 0.7, 0.1), blanco); pata.position.set(0, 0.5, 0.45); g.add(pata);
+      const pantallaM = new T.MeshBasicMaterial({ color: UNIV_EST.idle[1], transparent: true, opacity: 0.55, side: T.DoubleSide });
+      const pantalla = new T.Mesh(new T.PlaneGeometry(1.3, 0.7), pantallaM); pantalla.position.set(0, 1.45, 0.62); g.add(pantalla);
+      const robot = new T.Group(); robot.position.set(0, 0, -0.35);
+      const cuerpo = new T.Mesh(new T.CapsuleGeometry(0.32, 0.4, 6, 16), blanco); cuerpo.position.y = 0.75; robot.add(cuerpo);
+      const cabeza = new T.Mesh(new T.SphereGeometry(0.38, 24, 16), blanco); cabeza.position.y = 1.45; robot.add(cabeza);
+      const visor = new T.Mesh(new T.BoxGeometry(0.5, 0.24, 0.12), visorM); visor.position.set(0, 1.47, 0.32); robot.add(visor);
+      const ojoM = new T.MeshBasicMaterial({ color: new T.Color(avatarDe(b).color || "#6CD3F0") });
+      for (const x of [-0.11, 0.11]) { const ojo = new T.Mesh(new T.BoxGeometry(0.08, 0.08, 0.02), ojoM); ojo.position.set(x, 1.47, 0.39); robot.add(ojo); }
+      g.add(robot);
+      const nombre = etiqueta(b.nombre); nombre.position.set(0, 2.35, 0); g.add(nombre);
+      g.traverse((o) => { o.userData.botId = b.id; });
+      escena.add(g);
+      estaciones.push({ id: b.id, g, luz, pantallaM, robot, fase: Math.random() * 6, estado: "idle" });
+    }
+  }
+  cont.replaceChildren(renderer.domElement);
+  // Cámara en órbita: gira sola y se arrastra; la rueda acerca y aleja.
+  let giro = 0.6, inclin = 0.55, dist = bots.length > 6 ? 22 : 14, arrastre = null, movido = false, ultimoToque = 0;
+  const el = renderer.domElement;
+  el.style.touchAction = "none";
+  el.addEventListener("pointerdown", (e) => { arrastre = { x: e.clientX, y: e.clientY, g: giro, i: inclin }; movido = false; try { el.setPointerCapture(e.pointerId); } catch {} });
+  el.addEventListener("pointermove", (e) => { if (!arrastre) return; const dx = e.clientX - arrastre.x, dy = e.clientY - arrastre.y; if (Math.abs(dx) + Math.abs(dy) > 6) movido = true; giro = arrastre.g - dx * 0.008; inclin = Math.max(0.2, Math.min(1.2, arrastre.i + dy * 0.005)); ultimoToque = performance.now(); });
+  el.addEventListener("pointerup", (e) => {
+    const a = arrastre; arrastre = null;
+    if (!a || movido) return;
+    const r = el.getBoundingClientRect();
+    const ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camara);
+    const hit = ray.intersectObjects(estaciones.map((x) => x.g), true).find((h) => h.object.userData.botId);
+    if (hit) ir(`#/chats/${hit.object.userData.botId}`);
+  });
+  el.addEventListener("wheel", (e) => { e.preventDefault(); dist = Math.max(8, Math.min(30, dist + e.deltaY * 0.01)); }, { passive: false });
+  const medir = () => { renderer.setSize(ancho(), alto()); camara.aspect = ancho() / alto(); camara.updateProjectionMatrix(); };
+  const ro = new ResizeObserver(medir); ro.observe(cont);
+  const t0 = performance.now();
+  let ultimoEstado = -1e9;
+  const cuadro = (now) => {
+    if (!cont.isConnected) { ro.disconnect(); renderer.dispose(); return; }
+    const t = (now - t0) / 1000;
+    if (!arrastre && now - ultimoToque > 2500) giro += 0.0015;
+    camara.position.set(Math.cos(giro) * dist * Math.cos(inclin), Math.sin(inclin) * dist, Math.sin(giro) * dist * Math.cos(inclin));
+    camara.lookAt(0, 1, 0);
+    satelite.position.set(Math.cos(t * 0.9) * 1.6, 1.4 + Math.sin(t * 0.6) * 0.4, Math.sin(t * 0.9) * 1.6);
+    if (now - ultimoEstado > 500) {
+      ultimoEstado = now;
+      for (const x of estaciones) { x.estado = est(bot(x.id)); x.luz.material.color.setHex(UNIV_EST[x.estado][1]); x.pantallaM.color.setHex(UNIV_EST[x.estado][1]); }
+    }
+    for (const x of estaciones) {
+      const trabaja = x.estado === "work", espera = x.estado === "wait";
+      x.robot.position.y = trabaja ? Math.abs(Math.sin(t * 3 + x.fase)) * 0.05 : Math.sin(t * 1.2 + x.fase) * 0.03;
+      x.robot.rotation.y = espera ? Math.sin(t * 2 + x.fase) * 0.5 : trabaja ? Math.sin(t * 5 + x.fase) * 0.08 : 0;
+      x.pantallaM.opacity = trabaja ? 0.55 + Math.sin(t * 8 + x.fase) * 0.2 : espera ? 0.45 + Math.sin(t * 3) * 0.25 : 0.25;
+    }
+    renderer.render(escena, camara);
+    if (!document.hidden) requestAnimationFrame(cuadro); else setTimeout(() => requestAnimationFrame(cuadro), 700);
+  };
+  requestAnimationFrame(cuadro);
+}
+
 // ================================================================ mapa de conocimiento
 // Compañeros a la izquierda (agrupados por equipo, con su manager), proyectos a la derecha y una línea
 // por cada participación (coordina o tiene tareas). Todo sale de los datos reales.
@@ -4188,7 +4316,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -6242,6 +6370,7 @@ function repintar() {
   if (v === "ajustes" && p.has("ajustes")) pintarAjustes();
   if (v === "proyectos" && p.has("proyectos")) pintarProyectos();
   if (v === "mapa" && ["proyectos", "rail", "equipo"].some((k) => p.has(k))) pintarMapa();
+  if (v === "universo" && ["rail", "equipo", "side", "bandeja"].some((k) => p.has(k))) pintarUnivLista();
   if (v === "operaciones" && ["rail", "equipo", "ctx", "avisos", "side", "reuniones", "proyectos", "ops", "bandeja"].some((k) => p.has(k))) pintarOps();
   if (v === "mensajes" && p.has("msj")) { pintarMsjLista(); montarMsjChat(); }
   else if (v === "mensajes" && p.has("msj-chat")) { pintarMsjLista(); pintarMsjChat(); }

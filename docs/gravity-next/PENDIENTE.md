@@ -1,6 +1,6 @@
 # Gravity · Lo que falta (para seguir con otro asistente)
 
-Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (workflow `android.yml`, release `apk-latest`).
+Estado al 5/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (workflow `android.yml`, release `apk-latest`).
 
 ## Cómo trabajar en el repo
 
@@ -22,6 +22,8 @@ Estado al 4/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 - **Tope de gasto diario por compañero** (Perfil, campo `topeDiarioUsd`; solo cuenta con Claude): al llegar no arranca tareas, rutinas ni mensajes solo; lo que pide el usuario sigue. La auditoría lo avisa.
 - **Modelo por tipo de trabajo**: los turnos de mensajería (WhatsApp, Telegram, redes) y las llamadas usan el modelo rápido y razonan poco, salvo que el compañero tenga un modelo o esfuerzo elegido (en `turno()` de `agente.ts`).
 
+- **Últimos agregados (5/11)**: editor visual de automatizaciones (`#/automatizaciones`), sugerencias de mejora en la auditoría (`sugerir()` en `auditoria.ts`), idioma por compañero (campo `idioma`, sección «Idioma» del prompt en `modos()` de `agente.ts`; la llamada usa `IDIOMAS_BOT` en la interfaz), herramienta `probar_aislado` (`bots/src/aislado.ts`: copia descartable, sin claves, tiempo límite, sin red con `unshare -rn` donde existe) y Gravity Universe (`#/universo`, `escenaUniverso()` en `index.html`).
+
 ## Revisar primero (prioridad alta)
 
 - **Prueba de mensajería** (harness `scratchpad/msj`): revisado. La protección contra inyecciones funciona: `bots/pruebas/inyeccion.test.mjs` prueba directo `prohibidoEnMensajeria` (en un turno de mensajería solo se puede contestar en esa conversación, ver la memoria y buscar en la web) y la neutralización de etiquetas y suplantación. Los «MAL» del harness de la sección 18 eran de la prueba: desde la sección 12 el envío fallido ya no se da por error (se reintenta con la próxima notificación), el modelo falso cae en su respuesta por defecto (un comando que pide aprobación) y el compañero queda esperando, así que los mensajes de la inyección nunca llegan. Para arreglar el harness: actualizar la sección 12 al reintento y aprobar o negar esa aprobación. Arreglado en el motor: al arrancar se retoman los chats con mensajes sin contestar de las últimas 2 horas (la fase de reinicio da 4 de 4).
@@ -36,6 +38,8 @@ Contrato del puente de voz nativo: `android/VOZ.md`.
 Ninguno de la lista 56–60: están todos hechos (ver arriba).
 
 ## Pendientes del plan Gravity NEXT (ver `PLAN.md`)
+
+- **Lo que queda de la lista de 170** (detalle en `MEJORAS-170.md`): 22 infraestructura remota (necesita un servidor propio; hoy todo corre en el celular), 48 sincronización entre dispositivos (hoy: copia de seguridad exportar/importar), 114–115 Google Calendar/Drive propios (requieren registrar una app OAuth en Google; hoy sirven Microsoft 365 o un MCP), 157 traducir la interfaz (los compañeros ya trabajan en 6 idiomas), y los 🟡 marcados ahí.
 
 - Base SQLite (`node:sqlite`) con búsqueda FTS5, en paralelo a los JSON actuales (no reemplazar de golpe).
 - Google Calendar / Drive / GitHub / webhooks como conexiones (`bots/src/conexiones.ts`, ver cómo está hecho Telegram).
