@@ -62,6 +62,7 @@ import { iniciarTelegram } from "./telegram.ts";
 import { auditar, informeComoTexto } from "./auditoria.ts";
 import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
+import { guardarVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
 import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
@@ -1273,9 +1274,18 @@ ruta("PUT", "/api/computadora/archivo", async ({ cuerpo }) => {
   if (info && !info.isFile()) throw new ErrorHttp(400, "Esa ruta es una carpeta.");
   if (info && d.modificado && Math.abs(info.mtimeMs - Date.parse(d.modificado)) > 2) throw new ErrorHttp(409, "El archivo cambió mientras lo editabas (quizás lo tocó un compañero). Copiá tus cambios, recargalo y volvé a intentar.");
   await mkdir(path.dirname(archivo), { recursive: true });
+  guardarVersion(archivo);
   await writeFile(archivo, d.contenido);
   emitir("computadora");
   return { ok: true, modificado: (await stat(archivo)).mtime.toISOString() };
+});
+
+ruta("GET", "/api/computadora/versiones", async ({ url }) => listarVersiones(url.searchParams.get("ruta") ?? ""));
+ruta("POST", "/api/computadora/restaurar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), id: z.string().min(1).max(80) }), await cuerpo());
+  malPedido(() => restaurarVersion(d.ruta, d.id));
+  emitir("computadora");
+  return { ok: true };
 });
 
 // ---- Copia de seguridad (ver respaldo.ts) ----

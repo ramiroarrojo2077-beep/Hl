@@ -48,6 +48,7 @@ import {
 } from "./equipo.ts";
 import { conectarReuniones, convocar } from "./reuniones.ts";
 import { anotarError, registrar } from "./actividad.ts";
+import { guardarVersion } from "./versiones.ts";
 import { describirConexionesPara } from "./conexiones.ts";
 import { buscarChat, conectarMensajeria, describirMensajeriaPara, turnoDeMensajeria } from "./mensajeria.ts";
 import { describirHorario } from "./rutinas.ts";
@@ -668,7 +669,11 @@ async function turno(bot: Bot, entrada: Entrada, control: AbortController): Prom
           ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "La entrada quedó cortada por el límite de salida. Hacelo en partes más chicas." }
           : gracia !== null
             ? { type: "tool_result", tool_use_id: uso.id, is_error: true, content: "Presupuesto agotado: no se ejecutan más herramientas. Entregá ya lo que tengas." }
-            : await ejecutarHerramienta(bot, mensaje, uso, control.signal, entrada.tipo === "mensajeria" ? entrada.clave : null).then((r) => {
+            : await (async () => {
+                // Antes de que un compañero escriba o edite un archivo, se guarda la versión anterior.
+                if ((uso.name === "write" || uso.name === "edit") && typeof (uso.input as { file_path?: unknown })?.file_path === "string") guardarVersion((uso.input as { file_path: string }).file_path);
+                return ejecutarHerramienta(bot, mensaje, uso, control.signal, entrada.tipo === "mensajeria" ? entrada.clave : null);
+              })().then((r) => {
                 registrar({ botId: bot.id, tipo: "herramienta", que: describirUso(uso.name, uso.input as Record<string, unknown>) || uso.name, ok: !r.is_error, detalle: typeof r.content === "string" ? r.content : "" });
                 if (r.is_error && typeof r.content === "string") anotarError(bot.id, uso.name, r.content);
                 return r;

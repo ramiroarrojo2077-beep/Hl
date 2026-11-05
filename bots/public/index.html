@@ -2871,7 +2871,7 @@ function pintarCompu() {
       <label class="field" style="margin-top:6px">${ico("search", "s")}<input type="search" placeholder="Filtrar archivos" aria-label="Filtrar archivos" data-i="compu-filtro" data-k="compu-filtro" value="${S.compuFiltro}"></label>
       <div class="arbol-w">${arbol.length ? html`<ul class="arbol">${arbol}</ul>` : html`<p class="muted" style="font-size:13px;padding:8px 4px">${archivos.length ? "Nada coincide." : "La computadora está vacía. Lo que escriban los compañeros aparece acá."}</p>`}</div></section>
     <div class="pc-col">
-      <section class="card visor" aria-label="Visor de archivos">${sel ? html`<div class="visor-h">${ico("file", "s")}<b>${sel.ruta}</b><span class="muted" style="font-size:12px">${tamano(sel.tamano)} · ${diaHora(sel.modificado)}</span><span class="sp"></span>${S.compuTexto?.ruta === sel.ruta && S.compuTexto.editable && !S.compuEdit ? html`<button class="btn out sm" data-a="compu-editar">${ico("edit", "s")}Editar</button>` : ""}${/\.html?$/i.test(sel.ruta) && S.vista ? html`<button class="btn out sm" data-a="vista-previa" data-ruta="${sel.ruta}">${ico("play", "s")}Vista previa</button>` : ""}<a class="btn out sm" href="/api/computadora/archivo?ruta=${encodeURIComponent(sel.ruta)}&descargar=1" download>${ico("download", "s")}Descargar</a></div><pre class="pre" id="visor-pre"></pre>` : html`<p class="muted" style="font-size:13px">Elegí un archivo para verlo acá.</p>`}</section>
+      <section class="card visor" aria-label="Visor de archivos">${sel ? html`<div class="visor-h">${ico("file", "s")}<b>${sel.ruta}</b><span class="muted" style="font-size:12px">${tamano(sel.tamano)} · ${diaHora(sel.modificado)}</span><span class="sp"></span><button class="btn ghost sm" data-a="compu-versiones" data-ruta="${sel.ruta}">${ico("clock", "s")}Versiones</button>${S.compuTexto?.ruta === sel.ruta && S.compuTexto.editable && !S.compuEdit ? html`<button class="btn out sm" data-a="compu-editar">${ico("edit", "s")}Editar</button>` : ""}${/\.html?$/i.test(sel.ruta) && S.vista ? html`<button class="btn out sm" data-a="vista-previa" data-ruta="${sel.ruta}">${ico("play", "s")}Vista previa</button>` : ""}<a class="btn out sm" href="/api/computadora/archivo?ruta=${encodeURIComponent(sel.ruta)}&descargar=1" download>${ico("download", "s")}Descargar</a></div><pre class="pre" id="visor-pre"></pre>` : html`<p class="muted" style="font-size:13px">Elegí un archivo para verlo acá.</p>`}</section>
       <section class="card" aria-label="Terminal"><div class="box-h"><span class="micro">Terminal${b ? ` de ${b.nombre}` : ""} · últimos ${comandos.length}</span></div>
         ${comandos.length ? html`<ul class="term" style="margin-top:8px">${comandos.map((x, i) => { const k = `cmd-${x.fecha}-${i}`; return html`<li><details data-k="${k}" ${si(S.abiertos.has(k), "open")}><summary>${ico("term", "s")}<code>$ ${x.comando}</code>${x.error ? html`<span class="tag-err">${ico("x")}error</span>` : ""}<small>${b ? "" : `${x.bot} · `}${hora(x.fecha)}</small></summary><pre class="pre">${x.salida || "(sin salida)"}</pre></details></li>`; })}</ul>` : html`<p class="muted" style="font-size:13px;margin-top:6px">Todavía no hubo comandos${b ? ` de ${b.nombre}` : ""}.</p>`}</section>
     </div></div>`);
@@ -5360,6 +5360,17 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "compu-versiones": async (t) => {
+    const ruta = t.dataset.ruta;
+    const xs = await api("GET", `/api/computadora/versiones?ruta=${encodeURIComponent(ruta)}`);
+    abrirDialogo(html`<div class="dlg-f"><h2 id="dlg-t">Versiones de <code>${ruta}</code></h2><p class="sub">Se guarda la anterior cada vez que un compañero o vos lo cambian (las últimas 20).</p>
+      ${xs.length ? html`<ul class="reglas">${xs.map((v) => html`<li><span>${diaHora(v.fecha)}<small>${tamano(v.tamano)}</small></span><button class="btn out sm" data-a="compu-restaurar" data-ruta="${ruta}" data-id="${v.id}">Restaurar</button></li>`)}</ul>` : html`<p class="muted">Todavía no hay versiones anteriores.</p>`}
+      <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cerrar</button></div></div>`, true);
+  },
+  "compu-restaurar": async (t) => {
+    if (!(await confirmar("¿Restaurar esta versión?", "Lo que hay ahora también queda guardado como versión.", "Restaurar"))) return;
+    await conCarga(null, async () => { await api("POST", "/api/computadora/restaurar", { ruta: t.dataset.ruta, id: t.dataset.id }); S.compuTexto = null; toast("Versión restaurada."); await cargarCompu(); });
+  },
   "compu-editar": () => { S.compuEdit = S.compuSel; pintarCompu(); },
   "compu-cancelar": () => { S.compuEdit = null; pintarCompu(); },
   // Vista previa de una página de la computadora en un marco aislado (sin acceso a Gravity).
