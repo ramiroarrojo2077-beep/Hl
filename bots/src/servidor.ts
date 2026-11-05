@@ -130,6 +130,7 @@ class ErrorHttp extends Error {
 const DatosAvatar = z.object({
   activo: z.boolean().default(true),
   accesorio: z.enum(["ninguno", "antena", "cresta", "visera"]).default("ninguno"),
+  tono: z.number().min(0.5).max(2).transform((v) => Math.round(v * 100) / 100).default(1),
   color: z
     .string()
     .trim()

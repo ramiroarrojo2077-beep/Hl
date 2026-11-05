@@ -4364,7 +4364,7 @@ function extraerOraciones(t, final) {
 // ================================================================ llamada de voz con un compañero
 // La llamada es el mismo chat: lo que decís se manda como mensaje (POST /api/bots/:id/mensajes, con el id del
 // turno en `llamada`) y la respuesta se escucha del SSE (cambio con ese id → delta → cambio → estado libre).
-const AVATAR_DEF = { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto", voz: null, velocidad: 1, accesorio: "ninguno" };
+const AVATAR_DEF = { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto", voz: null, velocidad: 1, tono: 1, accesorio: "ninguno" };
 const avatarDe = (b) => ({ ...AVATAR_DEF, ...(b?.avatar || {}) });
 const LL = { activa: false, voces: new Map() };
 const DICT = { fin: null, quitar: null };
@@ -4663,7 +4663,7 @@ function decirLlamada(texto, turno = null) {
   else agregarTrans("sis", texto, id);
   if (!LL.info.tts) return;
   LL.voces.set(id, { texto, turno });
-  try { Voz.hablar(id, texto, { voz: LL.av.voz, velocidad: LL.av.velocidad, tono: 1 }); }
+  try { Voz.hablar(id, texto, { voz: LL.av.voz, velocidad: LL.av.velocidad, tono: LL.av.tono || 1 }); }
   catch (err) { console.warn(err); LL.voces.delete(id); }
 }
 async function terminarTurno(t) {
@@ -4831,6 +4831,7 @@ function htmlLlamadasPerfil(b) {
     <div class="g2">
       <label class="fld"><span>Voz</span><select class="inp" name="avVoz" data-k="pf-voz">${opcionesVoz(a)}</select>${tts ? "" : html`<small>Este dispositivo no tiene voces.</small>`}</label>
       <label class="fld"><span>Velocidad · <output id="av-vel-v">${fmtVel(a.velocidad)}×</output></span><input type="range" class="rng" name="avVel" min="0.5" max="2" step="0.05" value="${a.velocidad}" data-i="av-vel"></label>
+      <label class="fld"><span>Tono · <output id="av-tono-v">${fmtVel(a.tono || 1)}</output></span><input type="range" class="rng" name="avTono" min="0.6" max="1.6" step="0.05" value="${a.tono || 1}" data-i="av-tono"><small>Más grave o más agudo, con la misma voz.</small></label>
     </div>
     <div><button type="button" class="btn out sm" data-a="probar-voz" ${si(!tts, "disabled")}>${ico("speaker", "s")}Probar la voz</button></div>
   </section>`;
@@ -4843,14 +4844,14 @@ function refrescarVocesPerfil() {
 }
 function datosAvatar(f) {
   const d = new FormData(f);
-  return { accesorio: d.get("avAccesorio") || "ninguno", activo: d.get("avActivo") === "on", color: String(d.get("avColor") || AVATAR_DEF.color).toUpperCase(), expresividad: Math.round(Number(d.get("avExpr")) || 0), calidad: d.get("avCalidad") || "auto", voz: d.get("avVoz") || null, velocidad: Number(d.get("avVel")) || 1 };
+  return { tono: Number(d.get("avTono")) || 1, accesorio: d.get("avAccesorio") || "ninguno", activo: d.get("avActivo") === "on", color: String(d.get("avColor") || AVATAR_DEF.color).toUpperCase(), expresividad: Math.round(Number(d.get("avExpr")) || 0), calidad: d.get("avCalidad") || "auto", voz: d.get("avVoz") || null, velocidad: Number(d.get("avVel")) || 1 };
 }
 function probarVoz(f) {
   const b = bot(S.botId);
   if (!Voz.disponible().tts) { toast("Este dispositivo no tiene voces.", "err"); return; }
   if (LL.activa) return;
   const a = f?.avColor ? datosAvatar(f) : avatarDe(b);
-  try { Voz.callar(); Voz.hablar(`prueba-${Date.now()}`, `Hola, soy ${b?.nombre || "tu compañero"}. Así voy a sonar en las llamadas.`, { voz: a.voz, velocidad: a.velocidad, tono: 1 }); } catch (err) { fallo(err); }
+  try { Voz.callar(); Voz.hablar(`prueba-${Date.now()}`, `Hola, soy ${b?.nombre || "tu compañero"}. Así voy a sonar en las llamadas.`, { voz: a.voz, velocidad: a.velocidad, tono: a.tono || 1 }); } catch (err) { fallo(err); }
 }
 
 // ================================================================ robot: cerebro (estados, mezcla, gestos según el audio)
@@ -4934,7 +4935,10 @@ function elegirGesto(c, texto, inicio, fuerte) {
 // ---- motor: un solo requestAnimationFrame, mientras la llamada esté abierta y la pestaña a la vista
 function arrancarMotor() {
   const esc = $("#ll-esc");
-  const cerebro = crearCerebro({ expresividad: LL.av.expresividad / 100, reducido: matchMedia("(prefers-reduced-motion: reduce)").matches });
+  // Movimiento según la personalidad: un estilo tranquilo o formal gesticula menos; uno entusiasta, más.
+  const estilo = (bot(LL.botId)?.estilo || "").toLowerCase();
+  const factor = /tranquil|seri[oa]|formal|calm|sobri|pausad/.test(estilo) ? 0.6 : /entusiast|energ|divertid|alegr|humor|expresiv|euf/.test(estilo) ? 1.35 : 1;
+  const cerebro = crearCerebro({ expresividad: Math.min(1, (LL.av.expresividad / 100) * factor), reducido: matchMedia("(prefers-reduced-motion: reduce)").matches });
   const m = { cerebro, robot: null, raf: 0, fin: false, ultimo: 0 };
   LL.motor = m;
   exponerRobot(m);
@@ -6123,6 +6127,7 @@ const I = {
   "compu-filtro": (t) => { S.compuFiltro = t.value; pintarCompu(); },
   "av-expr": (t) => { const o = $("#av-expr-v"); if (o) o.textContent = `${t.value}%`; },
   "av-vel": (t) => { const o = $("#av-vel-v"); if (o) o.textContent = `${fmtVel(t.value)}×`; },
+  "av-tono": (t) => { const o = $("#av-tono-v"); if (o) o.textContent = fmtVel(t.value); },
   "av-color": (t) => { const o = $("#av-col-v"); if (o) o.textContent = t.value.toUpperCase(); },
 };
 document.addEventListener("click", (e) => {

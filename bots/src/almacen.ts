@@ -36,6 +36,8 @@ export interface Avatar {
   voz: string | null;
   // Velocidad del habla (1 = normal).
   velocidad: number;
+  // Tono de la voz (1 = normal; menos es más grave).
+  tono?: number;
   // Accesorio del robot.
   accesorio?: "ninguno" | "antena" | "cresta" | "visera";
 }
