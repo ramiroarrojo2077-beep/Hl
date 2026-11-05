@@ -58,6 +58,7 @@ class MainActivity : Activity() {
 
     private lateinit var raiz: FrameLayout
     private lateinit var web: WebView
+    private lateinit var bloqueo: Bloqueo
     private lateinit var progreso: ProgressBar
     private lateinit var panelEstado: View
     private lateinit var estadoGirando: ProgressBar
@@ -107,6 +108,7 @@ class MainActivity : Activity() {
 
         raiz = findViewById(R.id.raiz)
         web = findViewById(R.id.web)
+        bloqueo = Bloqueo(this, raiz)
         progreso = findViewById(R.id.progreso)
         panelEstado = findViewById(R.id.panelEstado)
         estadoGirando = findViewById(R.id.estadoGirando)
@@ -668,7 +670,8 @@ class MainActivity : Activity() {
             if (accesoNotificaciones()) " " + getString(R.string.activado) else ""
         menu.menu.add(0, MENU_MENSAJERIA, 3, etiquetaMensajeria)
         if (!sinRestriccionDeBateria()) menu.menu.add(0, MENU_BATERIA, 4, R.string.menu_bateria)
-        menu.menu.add(0, MENU_APAGAR, 5, R.string.menu_apagar)
+        menu.menu.add(0, MENU_PRIVADO, 5, getString(R.string.menu_privado) + if (bloqueo.activo) " " + getString(R.string.activado) else "")
+        menu.menu.add(0, MENU_APAGAR, 6, R.string.menu_apagar)
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 MENU_RECARGAR -> if (!rendererCaido) web.reload()
@@ -677,6 +680,7 @@ class MainActivity : Activity() {
                 MENU_MENSAJERIA -> pedirAccesoNotificaciones()
                 MENU_BATERIA -> pedirSinRestriccion()
                 MENU_APAGAR -> confirmarApagado()
+                MENU_PRIVADO -> bloqueo.alternar()
                 else -> return@setOnMenuItemClickListener false
             }
             true
@@ -756,6 +760,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        bloqueo.alVolver()
         // Al volver del diálogo de batería sigue con el acceso a notificaciones.
         if (cargada) principal.postDelayed({ ofrecerBateria() }, 800)
         Gravity.marcarVisible(this, true)
@@ -766,6 +771,7 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
+        bloqueo.alSalir()
         Gravity.marcarVisible(this, false)
         if (!rendererCaido) web.onPause()
         CookieManager.getInstance().flush()
@@ -827,5 +833,6 @@ class MainActivity : Activity() {
         const val MENU_MENSAJERIA = 6
         const val MENU_BATERIA = 4
         const val MENU_APAGAR = 5
+        const val MENU_PRIVADO = 7
     }
 }

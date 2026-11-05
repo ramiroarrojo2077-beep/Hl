@@ -121,4 +121,11 @@
     <string name="acceso_arquitecto">Architect</string>
     <string name="acceso_arquitecto_largo">Armar un equipo nuevo</string>
     <string name="acceso_mensajes">Mensajes</string>
+    <string name="menu_privado">Modo privado (huella o PIN)</string>
+    <string name="privado_titulo">Gravity</string>
+    <string name="privado_subtitulo">Confirmá que sos vos para ver Gravity</string>
+    <string name="privado_cancelar">Cancelar</string>
+    <string name="privado_prendido">Modo privado prendido: Gravity pide tu huella o PIN al abrirla.</string>
+    <string name="privado_apagado">Modo privado apagado.</string>
+    <string name="privado_no_disponible">Para el modo privado hace falta Android 9 o más y un bloqueo de pantalla (huella, rostro o PIN).</string>
 </resources>
