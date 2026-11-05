@@ -214,6 +214,7 @@ Gravity organiza a los compañeros en equipos: cada uno es manager o miembro y l
 ## Tu computadora
 Tenés una computadora con terminal y archivos, en la carpeta ${COMPUTADORA}. La comparten todos los compañeros del usuario.
 - \`bash\` corre comandos en una terminal persistente que empieza en esa carpeta.
+- \`probar_aislado\` corre pruebas o scripts en una copia descartable de una carpeta (sin claves, con tiempo límite y sin red si se puede): usalo para verificar código antes de entregarlo.
 - \`read\`, \`write\`, \`edit\`, \`glob\` y \`grep\` trabajan con archivos de esa carpeta (rutas relativas a ella).
 - Guardá los entregables (informes, planillas, scripts, borradores) como archivos y decí la ruta. En una tarea asignada, usá la carpeta de la tarea.
 - Para archivos que tocan otros compañeros usá \`edit\`, no \`write\` ni redirecciones de bash, y leelos antes de cambiarlos.
@@ -240,9 +241,15 @@ El usuario puede asignarte conversaciones de las apps de mensajes de su celular 
 - Aprendé de tus errores: Gravity anota los de tus herramientas en /memories/errores-recientes.md. Si algo falla o el usuario te corrige, buscá la causa y dejá la regla en /memories/lecciones.md («antes de X, verificar Y»); antes de un trabajo parecido, releé tus lecciones.${apagadas(bot)}${modos(bot)}`;
 }
 
+// Idiomas en que puede trabajar un compañero (Perfil > Idioma). El castellano es el de siempre.
+export const IDIOMAS: Record<string, string> = { es: "castellano", en: "inglés (English)", pt: "portugués (Português)", fr: "francés (Français)", it: "italiano (Italiano)", de: "alemán (Deutsch)" };
+
 // Especialista temporal y modo enseñanza (los prende el usuario en el Perfil).
 function modos(bot: Bot): string {
   const partes: string[] = [];
+  if (bot.idioma && bot.idioma !== "es" && IDIOMAS[bot.idioma]) {
+    partes.push(`## Idioma\nHablá y escribí siempre en ${IDIOMAS[bot.idioma]}: respuestas, archivos, mensajes a terceros y llamadas, aunque estas instrucciones estén en castellano. Si el usuario te escribe en otro idioma y te pide cambiar, hacelo solo en esa respuesta.`);
+  }
   if (bot.estilo?.trim()) partes.push(`## Tu personalidad y estilo\n${bot.estilo.trim()}\nMantenelo en todo lo que escribas (también en mensajes a terceros), sin dejar de ser claro y correcto.`);
   if (bot.temporal?.mision) {
     partes.push(`## Especialista temporal\nExistís para esta misión: ${bot.temporal.mision}\nConcentrate en ella. Cuando esté cumplida, entregá el resultado (archivos con su ruta y un resumen) y decile al usuario que la misión terminó y que puede archivarte desde tu Perfil.`);
@@ -328,6 +335,8 @@ function describirUso(nombre: string, entrada: Record<string, unknown>): string 
   switch (nombre) {
     case "bash":
       return `Ejecutando: ${String(entrada.command ?? "reiniciar terminal").split("\n")[0]}`;
+    case "probar_aislado":
+      return `Probando en una copia aislada: ${String(entrada.comando ?? "").split("\n")[0]}`;
     case "read":
       return `Leyendo ${String(entrada.file_path ?? "")}`;
     case "write":

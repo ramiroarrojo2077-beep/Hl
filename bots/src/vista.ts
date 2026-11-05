@@ -25,6 +25,8 @@ function describir(nombre: string, e: Record<string, unknown>): string {
   switch (nombre) {
     case "bash":
       return e.command ? s("command") : "Reinició la terminal";
+    case "probar_aislado":
+      return `Probó aislado en ${s("carpeta") || "la computadora"}: ${s("comando")}`;
     case "read":
       return `Leyó ${s("file_path")}`;
     case "write":

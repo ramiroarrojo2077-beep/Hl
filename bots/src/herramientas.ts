@@ -37,6 +37,7 @@ import { emitir } from "./eventos.ts";
 import { PROVEEDOR } from "./cliente.ts";
 import { buscarConGoogle, hayGemini } from "./proveedores.ts";
 import { buscarSemantico as buscarRecuerdos, formatear as formatearRecuerdos } from "./recuerdos.ts";
+import { ejecutarAislado, resultadoComoTexto } from "./aislado.ts";
 import { ESTADOS_TAREA, agregarTarea, buscarProyecto, cambiarTarea, crearProyecto, describirProyecto, listarProyectos, progreso as progresoProyecto } from "./proyectos.ts";
 import { DESCRIPCION_VIDEO, analizarVideo } from "./videos.ts";
 import { derivarDesdeBot, enviarDesdeBot, leerParaBot, listarParaBot, pedidoDeMensajes } from "./mensajeria.ts";
@@ -238,7 +239,7 @@ const porBot = new Map<string, Map<string, BetaRunnableTool>>();
 // Permisos por compañero: el usuario puede apagarle grupos de herramientas. Se hace cumplir acá (no se
 // le mandan al modelo y no se ejecutan), no con una instrucción. Entregar una tarea queda siempre.
 export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas: string[] }> = {
-  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep"] },
+  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep", "probar_aislado"] },
   web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
   mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
   conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
@@ -281,6 +282,7 @@ async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunn
       herramientaRecordar(botId),
       herramientaProyectos(botId),
       herramientaEquipoNuevo(botId),
+      herramientaAislado(),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
       // Mirar videos y audios lo hace Gemini: está si hay su clave, sea cual sea el proveedor de los bots.
@@ -468,6 +470,29 @@ const EntradaEquipoNuevo = z.strictObject({
   objetivo: z.string().nullable().describe("Solo proponer: qué tiene que lograr el equipo nuevo, con detalle"),
   propuesta: z.string().nullable().describe("Solo crear: el id de propuesta que devolvió proponer"),
 });
+const EntradaAislado = z.strictObject({
+  carpeta: z.string().describe("Carpeta de la computadora que se copia, relativa a ella (\"\" = toda). Ej.: proyectos/app"),
+  comando: z.string().describe("Comando a correr dentro de la copia. Ej.: npm test, node pruebas.mjs, python -m pytest"),
+  segundos: z.number().nullable().describe("Tiempo límite en segundos (por defecto 120, máximo 600)"),
+});
+
+function herramientaAislado(): BetaRunnableTool {
+  return betaZodTool({
+    name: "probar_aislado",
+    description:
+      "Corre un comando (pruebas, un script, una compilación) en una COPIA aislada de una carpeta de la computadora: no cambia los archivos reales, no ve claves, tiene tiempo límite y corre sin red si el sistema lo permite. Usalo para probar código antes de darlo por bueno o cuando no querés arriesgar los archivos. Lo que el comando cree o cambie se descarta: para guardar algo, hacelo después con las herramientas normales.",
+    inputSchema: EntradaAislado,
+    run: async (e, contexto) => {
+      try {
+        const r = await ejecutarAislado(e.carpeta, e.comando, { timeoutMs: (e.segundos ?? 120) * 1000, signal: (contexto as { signal?: AbortSignal } | undefined)?.signal });
+        return resultadoComoTexto(r);
+      } catch (err) {
+        return `No se pudo ejecutar aislado: ${(err as Error).message}`;
+      }
+    },
+  });
+}
+
 // Propuestas hechas por compañeros, a la espera de que el usuario apruebe crearlas (en memoria, 1 hora).
 const propuestas = new Map<string, { p: import("./arquitecto.ts").Propuesta; botId: string; vence: number }>();
 
@@ -738,6 +763,20 @@ export function necesitaAprobacion(nombre: string, entrada: Record<string, unkno
       detalle: recortar(comando),
       regla: programa ? `Comandos «${programa}» sin operadores de shell` : "",
       firma: programa ? `bash:${programa}` : `bash:${comando.slice(0, 40)}`,
+    };
+  }
+  if (nombre === "probar_aislado") {
+    // Corre en una copia y sin claves, pero puede usar la red donde no se puede cortar: se aprueba como un comando.
+    const comando = String(entrada.comando ?? "");
+    const programa = programaDe(comando);
+    if (programa && permitido("bash", (p) => p === programa, bot)) return null;
+    return {
+      herramienta: "bash",
+      patron: programa ?? "",
+      titulo: `Probar en una copia aislada de ${String(entrada.carpeta ?? "") || "la computadora"}`,
+      detalle: recortar(comando),
+      regla: programa ? `Comandos «${programa}» sin operadores de shell` : "",
+      firma: programa ? `bash:${programa}` : `aislado:${comando.slice(0, 40)}`,
     };
   }
   if (nombre === "write" || nombre === "edit") {

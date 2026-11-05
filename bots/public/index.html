@@ -3064,6 +3064,7 @@ function pintarPerfil() {
     <label class="chk"><input type="checkbox" class="sw" name="puedeEnviarAfuera" ${si(b.puedeEnviarAfuera, "checked")}><span>Puede enviar mensajes afuera<small>Mandar emails o mensajes con tus apps conectadas. Igual te pide aprobación cada vez.</small></span></label>
     <fieldset class="fld"><legend>Modelo</legend><div class="segc"><label><input type="radio" name="modelo" value="" ${si(!b.modelo, "checked")}>Automático</label><label><input type="radio" name="modelo" value="rapido" ${si(b.modelo === "rapido", "checked")}>Rápido</label><label><input type="radio" name="modelo" value="potente" ${si(b.modelo === "potente", "checked")}>Potente</label></div><small>Rápido contesta antes y gasta menos (ideal para atención y mensajes); Potente piensa mejor los trabajos difíciles (con los gratis tiene menos cupo y, si se agota, usa el automático).</small></fieldset>
     <label class="fld"><span>Personalidad y estilo</span><textarea class="inp" name="estilo" rows="2" maxlength="1500" placeholder="Ej.: cálido y con humor, frases cortas, tutea, nada de tecnicismos">${b.estilo || ""}</textarea><small>Cómo habla: tono, largo de las respuestas, formalidad. Vacío = el estilo de siempre.</small></label>
+    <label class="fld"><span>Idioma</span><select class="inp" name="idioma" style="max-width:240px">${Object.entries(IDIOMAS_BOT).map(([k, [n]]) => html`<option value="${k}" ${si((b.idioma || "es") === k, "selected")}>${n}</option>`)}</select><small>En qué idioma responde, escribe y habla en las llamadas (la voz usa una del celular en ese idioma si hay).</small></label>
     <label class="chk"><input type="checkbox" class="sw" name="favorito" ${si(b.favorito, "checked")}><span>Favorito<small>Aparece primero en las listas.</small></span></label>
     <label class="fld"><span>Tope de gasto diario (US$)</span><input class="inp" type="number" name="topeDiarioUsd" min="0" max="10000" step="0.5" value="${b.topeDiarioUsd ?? ""}" placeholder="Sin tope propio" style="max-width:200px"><small>Al llegar, no arranca tareas, rutinas ni mensajes solo (lo que le pidas vos sigue). Solo cuenta con Claude: los modelos gratis no gastan. Hoy lleva ${usd(b.gastoHoy || 0)}.</small></label>
     <label class="chk"><input type="checkbox" class="sw" name="ensenanza" ${si(b.ensenanza, "checked")}><span>Modo enseñanza<small>Explica cada paso (qué hace, por qué y con qué herramienta) y al final resume el procedimiento para que lo puedas repetir.</small></span></label>
@@ -3821,6 +3822,7 @@ function pintarOps() {
     <div class="sec-h"><h2>Auditoría</h2><button class="btn out sm" data-a="auditar">${ico("shield", "s")}${a ? "Volver a auditar" : "Auditar ahora"}</button></div>
     ${a ? html`<p class="muted" style="font-size:13px">Revisé ${a.revisados.compañeros} compañeros, ${a.revisados.tareas} tareas, ${a.revisados.proyectos} proyectos activos y ${a.revisados.rutinas} rutinas · ${diaHora(a.fecha)}.</p>
       ${a.hallazgos.length ? html`<ul class="hall">${a.hallazgos.map((x) => html`<li><span class="tag ${nivel[x.nivel][1]}">${nivel[x.nivel][0]}</span><span>${x.texto}</span></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Sin hallazgos: permisos, errores y tareas en orden.</p>`}
+      ${(a.sugerencias || []).length ? html`<h3 style="font-size:14px;margin:14px 0 6px">Sugerencias para mejorar el flujo de trabajo</h3><ul class="hall">${a.sugerencias.map((x) => html`<li><span class="tag">${ico("bolt", "s")}Idea</span><span>${x.texto} <a href="${x.enlace}">${x.accion}</a></span></li>`)}</ul>` : ""}
       ${S.bots.length ? html`<form class="fila" data-f="analizar-auditoria" style="margin-top:12px;gap:8px;flex-wrap:wrap"><label class="fld" style="flex:1;min-width:200px"><span>Pedirle a un compañero que lo analice</span><select class="inp" name="botId">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre} · ${b.titulo}</option>`)}</select></label><button class="btn out">Mandarle el informe</button></form>` : ""}`
       : html`<p class="muted" style="font-size:13px">Revisa permisos amplios, errores de herramientas, tareas bloqueadas o viejas, proyectos con tareas vencidas, rutinas que fallaron y aprobaciones sin responder. No cambia nada.</p>`}`);
 }
@@ -4197,6 +4199,11 @@ const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = tex
 // escuchando · nivel {db} · parcial {texto} · final {texto} · silencio · hablando {id, duracionMs, pasoMs,
 // envolvente} · posicion {id, ms} (solo web) · fin {id, cortado} · error {origen: "stt"|"tts", codigo, mensaje}.
 const IDIOMA_VOZ = "es-AR";
+// Idioma de cada compañero: nombre y etiqueta para el reconocimiento y la voz.
+const IDIOMAS_BOT = { es: ["Castellano", "es-AR"], en: ["English", "en-US"], pt: ["Português", "pt-BR"], fr: ["Français", "fr-FR"], it: ["Italiano", "it-IT"], de: ["Deutsch", "de-DE"] };
+const etiquetaIdioma = (b) => (b?.idioma && IDIOMAS_BOT[b.idioma] ? IDIOMAS_BOT[b.idioma][1] : null);
+// Primera voz del celular en el idioma pedido (para un compañero que no habla castellano y no eligió voz).
+const vozParaIdioma = (voces, etiqueta) => { if (!etiqueta) return null; const len = etiqueta.split("-")[0].toLowerCase(); return (voces || []).find((v) => v.idioma?.toLowerCase().replace("_", "-") === etiqueta.toLowerCase())?.id || (voces || []).find((v) => v.idioma?.toLowerCase().startsWith(len))?.id || null; };
 const Voz = (() => {
   const oyentes = new Set();
   const emitir = (e) => { for (const f of [...oyentes]) { try { f(e); } catch (err) { console.warn(err); } } };
@@ -4253,9 +4260,10 @@ const Voz = (() => {
     const s = sintetizador();
     if (!s) { emitir({ tipo: "error", origen: "tts", id, codigo: "no-disponible", mensaje: "Este navegador no tiene voces." }); return; }
     const u = new SpeechSynthesisUtterance(texto);
-    const v = vozPorId(op.voz) || vozCastellano();
+    const len = op.idioma ? op.idioma.split("-")[0] : null;
+    const v = vozPorId(op.voz) || (len ? (sintetizador()?.getVoices() || []).find((x) => x.lang?.toLowerCase().startsWith(len)) : null) || (len ? null : vozCastellano());
     if (v) u.voice = v;
-    u.lang = v?.lang || IDIOMA_VOZ;
+    u.lang = v?.lang || op.idioma || IDIOMA_VOZ;
     u.rate = Math.max(0.5, Math.min(2, op.velocidad || 1));
     u.pitch = Math.max(0, Math.min(2, op.tono || 1));
     const aprox = envolventeAprox(texto, u.rate);
@@ -4285,7 +4293,7 @@ const Voz = (() => {
     dejarDeEscuchar() { const p = puente(); if (p) { try { p.dejarDeEscuchar?.(); } catch {} return; } const r = rec; rec = null; if (r) { try { r.abort(); } catch {} } },
     // Las frases se encolan y suenan en orden.
     hablar(id, texto, op = {}) {
-      const o = { voz: op.voz || null, velocidad: Number(op.velocidad) || 1, tono: Number(op.tono) || 1 };
+      const o = { voz: op.voz || null, velocidad: Number(op.velocidad) || 1, tono: Number(op.tono) || 1, idioma: op.idioma || null };
       const p = puente();
       if (p) { p.hablar(String(id), String(texto), JSON.stringify(o)); return; }
       hablarWeb(String(id), String(texto), o);
@@ -4455,7 +4463,7 @@ function montarLlamada(id) {
   Object.assign(LL, {
     activa: true, botId: b.id, id: `ll${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, n: 0, k: 0,
     fase: "iniciando", sub: "", causa: "", fatal: false, inicio: new Date().toISOString(), mic: true, altavoz: info.altavoz,
-    info, av: avatarDe(b), turno: null, parcial: "", voces: new Map(), apAvisadas: new Set(), errores: 0, timer: null, motor: null, oyendo: false,
+    info, av: avatarDe(b), idioma: etiquetaIdioma(b), turno: null, parcial: "", voces: new Map(), apAvisadas: new Set(), errores: 0, timer: null, motor: null, oyendo: false,
   });
   vista.innerHTML = htmlLlamada(b).s;
   LL.desuscribir = Voz.on(eventoVoz);
@@ -4573,7 +4581,7 @@ function escucharLlamada(demora = 0) {
     LL.parcial = ""; pintarParcial();
     fijarFase("escuchando", { sub: LL.sub && LL.fase === "escuchando" ? LL.sub : "" });
     LL.oyendo = true;
-    try { Voz.escuchar(LL.info.idioma); } catch (err) { errorVozLlamada({ origen: "stt", codigo: "inicio", mensaje: String(err?.message || err) }); }
+    try { Voz.escuchar(LL.idioma || LL.info.idioma); } catch (err) { errorVozLlamada({ origen: "stt", codigo: "inicio", mensaje: String(err?.message || err) }); }
   };
   if (demora) { if (LL.fase !== "escuchando") fijarFase("escuchando"); LL.timer = setTimeout(ya, demora); } else ya();
 }
@@ -4698,7 +4706,7 @@ function decirLlamada(texto, turno = null) {
   else agregarTrans("sis", texto, id);
   if (!LL.info.tts) return;
   LL.voces.set(id, { texto, turno });
-  try { Voz.hablar(id, texto, { voz: LL.av.voz, velocidad: LL.av.velocidad, tono: LL.av.tono || 1 }); }
+  try { Voz.hablar(id, texto, { voz: LL.av.voz || vozParaIdioma(LL.info.voces, LL.idioma), velocidad: LL.av.velocidad, tono: LL.av.tono || 1, idioma: LL.idioma }); }
   catch (err) { console.warn(err); LL.voces.delete(id); }
 }
 async function terminarTurno(t) {
@@ -5616,7 +5624,7 @@ const A = {
       } else if (e.tipo === "silencio") { terminar(); toast("No te escuché. Probá de nuevo."); }
       else if (e.tipo === "error" && e.origen === "stt") { terminar(); toast(e.mensaje || "No se pudo usar el micrófono.", "err"); }
     });
-    try { Voz.escuchar(); } catch (err) { terminar(); toast(String(err?.message || err), "err"); }
+    try { Voz.escuchar(etiquetaIdioma(bot(S.botId)) || IDIOMA_VOZ); } catch (err) { terminar(); toast(String(err?.message || err), "err"); }
   },
   "compu-versiones": async (t) => {
     const ruta = t.dataset.ruta;
@@ -5927,6 +5935,7 @@ const F = {
     cuerpo.ensenanza = d.get("ensenanza") === "on";
     if (f.querySelector("[name=favorito]")) cuerpo.favorito = d.get("favorito") === "on";
     if (f.estilo) cuerpo.estilo = String(d.get("estilo") || "").trim() || null;
+    if (f.idioma) cuerpo.idioma = d.get("idioma") || "es";
     if (f.querySelector("[name=modelo]")) cuerpo.modelo = d.get("modelo") || null;
     if (f.topeDiarioUsd) cuerpo.topeDiarioUsd = f.topeDiarioUsd.value === "" ? null : Number(f.topeDiarioUsd.value);
     if (f.mision) cuerpo.mision = String(d.get("mision") || "").trim() || null;

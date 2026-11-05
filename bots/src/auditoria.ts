@@ -5,7 +5,8 @@
 import { ajustes, conversacion, listarBots, listarReglas, listarRutinas, listarTareas, TERMINALES, type Bot } from "./almacen.ts";
 import { listarAprobaciones } from "./agente.ts";
 import { normalizarBloqueadas } from "./herramientas.ts";
-import { gastoBotHoy } from "./gasto.ts";
+import { gastoBotHoy, gastoPorBotDesde } from "./gasto.ts";
+import { listarAutomatizaciones } from "./automatizaciones.ts";
 import { listarProyectos, progreso } from "./proyectos.ts";
 
 export type Nivel = "alto" | "medio" | "info";
@@ -15,10 +16,17 @@ export interface Hallazgo {
   texto: string;
   botId?: string;
 }
+export interface Sugerencia {
+  texto: string;
+  // Pantalla de Gravity donde se hace el cambio (la interfaz la muestra como enlace).
+  enlace: string;
+  accion: string;
+}
 export interface Informe {
   fecha: string;
   revisados: { compañeros: number; tareas: number; proyectos: number; rutinas: number };
   hallazgos: Hallazgo[];
+  sugerencias: Sugerencia[];
 }
 
 const HORA = 3600_000;
@@ -108,7 +116,53 @@ export function auditar(): Informe {
   }
 
   h.sort((x, y) => ORDEN[x.nivel] - ORDEN[y.nivel]);
-  return { fecha: new Date().toISOString(), revisados: { compañeros: bots.length, tareas: tareas.length, proyectos: proyectos.length, rutinas: rutinas.length }, hallazgos: h };
+  return { fecha: new Date().toISOString(), revisados: { compañeros: bots.length, tareas: tareas.length, proyectos: proyectos.length, rutinas: rutinas.length }, hallazgos: h, sugerencias: sugerir(bots, tareas, proyectos, rutinas) };
+}
+
+/**
+ * Sugerencias para mejorar cómo trabaja el equipo, sacadas de lo que pasó de verdad (no inventa
+ * datos). Solo propone: cada una lleva a la pantalla donde el usuario decide si la aplica.
+ */
+function sugerir(bots: Bot[], tareas: ReturnType<typeof listarTareas>, proyectos: ReturnType<typeof listarProyectos>, rutinas: ReturnType<typeof listarRutinas>): Sugerencia[] {
+  const out: Sugerencia[] = [];
+  const ahoraMs = Date.now();
+  const flujos = listarAutomatizaciones().filter((a) => a.activa);
+  const hay = (ev: string) => flujos.some((a) => a.evento === ev);
+  const semana = tareas.filter((t) => ahoraMs - Date.parse(t.fin ?? t.creada) < 7 * 24 * HORA);
+  const trabadas = semana.filter((t) => t.estado === "bloqueada" || t.estado === "fallida");
+  if (trabadas.length >= 2 && !hay("tarea_bloqueada") && !hay("tarea_fallida")) {
+    out.push({ texto: `Esta semana ${trabadas.length} tareas quedaron bloqueadas o fallaron y nadie las revisa solo.`, accion: "Conectar un flujo: cuando una tarea se traba, un manager averigua qué pasó", enlace: "#/automatizaciones" });
+  }
+  const hechas = semana.filter((t) => t.estado === "completa").length;
+  if (hechas >= 5 && !hay("tarea_completada")) {
+    out.push({ texto: `Se completaron ${hechas} tareas esta semana sin que nadie junte los resultados.`, accion: "Conectar un flujo que resuma cada resultado en la carpeta del proyecto", enlace: "#/automatizaciones" });
+  }
+  const sueltos = bots.filter((b) => b.cargo !== "manager" && !b.reportaA);
+  if (bots.length >= 4 && sueltos.length >= 3 && !bots.some((b) => b.cargo === "manager")) {
+    out.push({ texto: `Tenés ${bots.length} compañeros y ninguno coordina: el trabajo se reparte solo a mano.`, accion: "Armar un equipo con un manager (Gravity Architect)", enlace: "#/arquitecto" });
+  }
+  for (const b of bots) {
+    const e = erroresDe(b);
+    if (e.cantidad >= 5) out.push({ texto: `${b.nombre} se equivoca seguido con sus herramientas (${e.cantidad} errores recientes).`, accion: `Prender el modo enseñanza de ${b.nombre} para ver cada paso, o darle la habilidad «Aprender de errores»`, enlace: `#/chats/${b.id}/perfil` });
+  }
+  const gasto = gastoPorBotDesde(7);
+  for (const b of bots) {
+    const usd = gasto[b.id] ?? 0;
+    if (usd >= 2 && b.modelo !== "rapido" && !b.topeDiarioUsd) out.push({ texto: `${b.nombre} gastó US$ ${usd.toFixed(2)} en 7 días con el modelo de siempre.`, accion: `Probar el modelo Rápido o ponerle un tope diario a ${b.nombre}`, enlace: `#/chats/${b.id}/perfil` });
+  }
+  for (const p of proyectos) {
+    const sinResp = p.tareas.filter((t) => !t.asignadoA && t.estado === "pendiente").length;
+    if (sinResp >= 3) out.push({ texto: `El proyecto «${p.nombre}» tiene ${sinResp} tareas sin responsable.`, accion: "Asignarlas en el proyecto", enlace: `#/proyectos/${p.id}` });
+  }
+  for (const r of rutinas) {
+    const ult = r.ejecuciones.slice(-3);
+    if (r.activa && ult.length === 3 && ult.every((x) => x.estado === "error")) out.push({ texto: `La rutina «${r.nombre}» falló sus últimas 3 veces.`, accion: "Revisar sus instrucciones o pausarla", enlace: `#/chats/${r.botId}/rutinas` });
+  }
+  const lider = bots.find((b) => b.cargo === "manager") ?? bots[0];
+  if (!rutinas.length && lider && bots.length >= 2 && tareas.length >= 10) {
+    out.push({ texto: "El equipo trabaja seguido pero no tiene rutinas: todo arranca cuando vos pedís.", accion: `Programarle a ${lider.nombre} un resumen diario o una revisión semanal`, enlace: `#/chats/${lider.id}/rutinas` });
+  }
+  return out.slice(0, 8);
 }
 
 /** El informe como texto, para pasárselo a un compañero que lo analice. */
@@ -117,6 +171,7 @@ export function informeComoTexto(i: Informe): string {
   return [
     `[Auditoría de Gravity · ${i.fecha.slice(0, 16).replace("T", " ")}] Revisé ${i.revisados.compañeros} compañeros, ${i.revisados.tareas} tareas, ${i.revisados.proyectos} proyectos activos y ${i.revisados.rutinas} rutinas.`,
     i.hallazgos.length ? i.hallazgos.map((x) => `- [${n[x.nivel]}] (${x.area}) ${x.texto}`).join("\n") : "Sin hallazgos.",
+    ...(i.sugerencias.length ? [`Sugerencias:\n${i.sugerencias.map((x) => `- ${x.texto} → ${x.accion}`).join("\n")}`] : []),
     "Analizá este informe: qué es urgente, la causa probable de cada problema y qué propondrías cambiar (permisos, tareas, rutinas). No cambies nada sin preguntarme.",
   ].join("\n\n");
 }
