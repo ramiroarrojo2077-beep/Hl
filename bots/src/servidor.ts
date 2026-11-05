@@ -62,7 +62,8 @@ import { iniciarTelegram } from "./telegram.ts";
 import { auditar, informeComoTexto } from "./auditoria.ts";
 import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
-import { guardarVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
+import { guardarVersion, leerVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
+import * as Code from "./codigo.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
 import { instalarDelMercado, vistaMercado } from "./mercado.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
@@ -77,7 +78,7 @@ import { gastoPorBotDesde, hoy, resumenGasto } from "./gasto.ts";
 import { describirHorario, iniciarProgramador, normalizarHorario, proximaEjecucion } from "./rutinas.ts";
 import { vistaConversacion } from "./vista.ts";
 import { CATEGORIAS, ICONOS, MAX_MIEMBROS_EQUIPO, NOMBRES, PLANTILLAS, PLANTILLAS_EQUIPO } from "./plantillas.ts";
-import { actualizarConexion, borrarConexion, catalogo, crearConexion, listarConexiones, probarConexion, quitarBotDeConexiones } from "./conexiones.ts";
+import { actualizarConexion, borrarConexion, catalogo, crearConexion, listarConexiones, probarConexion, quitarBotDeConexiones, tokenGithub } from "./conexiones.ts";
 import {
   TOPE_MAXIMO,
   activarMensajeria,
@@ -412,7 +413,7 @@ async function rutaSegura(raiz: string, ruta: string): Promise<string> {
   }
 }
 
-async function enviarArchivo(res: http.ServerResponse, archivo: string, descargar: boolean): Promise<void> {
+async function enviarArchivo(res: http.ServerResponse, archivo: string, descargar: boolean, nombre?: string): Promise<void> {
   const info = await stat(archivo).catch(() => null);
   if (!info?.isFile()) throw new ErrorHttp(404, "No existe el archivo.");
   const contenido = await readFile(archivo);
@@ -420,7 +421,7 @@ async function enviarArchivo(res: http.ServerResponse, archivo: string, descarga
   // Nunca se sirve como HTML: un archivo creado por un bot no puede correr código en esta página.
   res.writeHead(200, {
     "Content-Type": esTexto && !descargar ? "text/plain; charset=utf-8" : "application/octet-stream",
-    "Content-Disposition": `${descargar || !esTexto ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(path.basename(archivo))}`,
+    "Content-Disposition": `${descargar || !esTexto ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(nombre ?? path.basename(archivo))}`,
     "X-Content-Type-Options": "nosniff",
     "Content-Security-Policy": "sandbox",
     "Cache-Control": "no-store",
@@ -477,7 +478,7 @@ const TIPOS: Record<string, string> = {
 };
 
 async function servirPublico(res: http.ServerResponse, ruta: string): Promise<boolean> {
-  if (!/^\/(manifest\.webmanifest|sw\.js|(iconos|fuentes|vendor\/three)\/[\w-]+(\.[\w-]+)*)$/.test(ruta)) return false;
+  if (!/^\/(manifest\.webmanifest|sw\.js|(iconos|fuentes|vendor\/three|vendor\/codemirror)\/[\w-]+(\.[\w-]+)*)$/.test(ruta)) return false;
   const archivo = new URL(`.${ruta}`, PUBLICO);
   const contenido = await readFile(archivo).catch(() => null);
   if (!contenido) return false;
@@ -1357,6 +1358,81 @@ ruta("PUT", "/api/computadora/archivo", async ({ cuerpo }) => {
 });
 
 ruta("GET", "/api/computadora/versiones", async ({ url }) => listarVersiones(url.searchParams.get("ruta") ?? ""));
+ruta("GET", "/api/computadora/version", async ({ url }) => {
+  const b = malPedido(() => leerVersion(url.searchParams.get("ruta") ?? "", url.searchParams.get("id") ?? "")) as Buffer;
+  return { contenido: b.subarray(0, 8000).includes(0) ? null : b.toString("utf8") };
+});
+
+// ---- Gravity Code (ver codigo.ts): el proyecto va en ?p= o en el cuerpo, porque puede tener espacios ----
+
+const codeDe = (url: URL) => {
+  const p = url.searchParams.get("p") ?? "";
+  if (!Code.listarProyectosCodigo().some((x) => x.nombre === p)) throw new ErrorHttp(404, "No existe ese proyecto.");
+  return p;
+};
+ruta("GET", "/api/code", async () => ({ proyectos: Code.listarProyectosCodigo(), plantillas: Code.PLANTILLAS_CODIGO, carpeta: Code.CARPETA_CODIGO }));
+ruta("POST", "/api/code", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(1).max(60), plantilla: z.string().max(20).default("vacio"), descripcion: z.string().trim().max(2000).default("") }), await cuerpo());
+  const p = malPedido(() => Code.crearProyectoCodigo(d.nombre, d.plantilla, d.descripcion));
+  emitir("computadora");
+  return p;
+});
+ruta("POST", "/api/code/importar", async ({ cuerpo }) => {
+  const d = validar(z.object({ repo: z.string().trim().min(3).max(300), nombre: z.string().trim().max(60).nullish() }), await cuerpo());
+  try {
+    const p = await Code.importarGithub(d.repo, d.nombre ?? null, tokenGithub(), AbortSignal.timeout(180_000));
+    emitir("computadora");
+    return p;
+  } catch (err) {
+    throw new ErrorHttp(400, (err as Error).message);
+  }
+});
+ruta("DELETE", "/api/code", async ({ url }) => {
+  Code.borrarProyecto(codeDe(url));
+  emitir("computadora");
+  return { ok: true };
+});
+ruta("GET", "/api/code/memoria", async ({ url }) => ({ texto: Code.leerMemoriaCodigo(codeDe(url)) }));
+ruta("PUT", "/api/code/memoria", async ({ url, cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().max(200_000) }), await cuerpo());
+  Code.guardarMemoriaCodigo(codeDe(url), d.texto);
+  return { ok: true };
+});
+ruta("GET", "/api/code/buscar", async ({ url }) => {
+  const q = url.searchParams.get("q") ?? "";
+  if (!q) return { coincidencias: [], recortado: false };
+  return malPedido(() => Code.buscarEnProyecto(codeDe(url), q, { regex: url.searchParams.get("regex") === "1", mayusculas: url.searchParams.get("mayus") === "1" }));
+});
+ruta("POST", "/api/code/reemplazar", async ({ url, cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().min(1).max(500), reemplazo: z.string().max(5000), regex: z.boolean().default(false), mayusculas: z.boolean().default(false) }), await cuerpo());
+  const r = malPedido(() => Code.reemplazarEnProyecto(codeDe(url), d.texto, d.reemplazo, d));
+  emitir("computadora");
+  return r;
+});
+ruta("POST", "/api/code/archivos", async ({ url, cuerpo }) => {
+  const d = validar(z.object({ op: z.enum(["carpeta", "renombrar", "borrar"]), ruta: z.string().min(1).max(500), a: z.string().max(500).nullish() }), await cuerpo());
+  const p = codeDe(url);
+  malPedido(() => (d.op === "carpeta" ? Code.crearCarpeta(p, d.ruta) : d.op === "renombrar" ? Code.renombrar(p, d.ruta, d.a ?? "") : Code.borrar(p, d.ruta)));
+  emitir("computadora");
+  return { ok: true };
+});
+ruta("POST", "/api/code/ejecutar", async ({ url, cuerpo }) => {
+  const d = validar(z.object({ comando: z.string().trim().min(1).max(2000), aislado: z.boolean().default(false) }), await cuerpo());
+  return malPedido(() => Code.ejecutarEnProyecto(codeDe(url), d.comando, d.aislado, () => emitir("computadora")));
+});
+ruta("GET", "/api/code/ejecuciones", async ({ url }) => Code.listarEjecuciones(url.searchParams.get("p") ?? undefined));
+ruta("POST", "/api/code/ejecuciones/:id/detener", async ({ params }) => ({ ok: Code.detenerEjecucion(params[0]!) }));
+ruta("GET", "/api/code/exportar", async ({ url, res }) => {
+  const p = codeDe(url);
+  const zip = path.join(tmpdir(), `gravity-code-${Date.now()}.zip`);
+  try {
+    Code.exportarProyecto(p, zip);
+    await enviarArchivo(res, zip, true, `${p}.zip`);
+  } finally {
+    await rm(zip, { force: true });
+  }
+  return undefined;
+});
 ruta("POST", "/api/computadora/restaurar", async ({ cuerpo }) => {
   const d = validar(z.object({ ruta: z.string().min(1).max(500), id: z.string().min(1).max(80) }), await cuerpo());
   malPedido(() => restaurarVersion(d.ruta, d.id));

@@ -42,15 +42,9 @@ function fechaDos(d: Date): { hora: number; fecha: number } {
   };
 }
 
-/** Escribe el respaldo en `destino` (zip con deflate). */
-export function exportar(destino: string): ResumenRespaldo {
-  vaciarEscrituras();
-  const todos = listar(DATOS);
-  const omitidos = todos.filter((a) => a.tam > MAX_ARCHIVO).map((a) => a.ruta);
-  const archivos = todos.filter((a) => a.tam <= MAX_ARCHIVO);
-  if (archivos.length + 1 > MAX_ENTRADAS) throw new Error("Hay demasiados archivos para un respaldo.");
-  const manifiesto = Buffer.from(JSON.stringify({ formato: FORMATO, app: "Gravity", creado: new Date().toISOString(), excluidos: [...EXCLUIDOS], omitidos }, null, 2));
-
+/** Escribe un zip (deflate) con las entradas dadas, en orden. Devuelve los bytes sin comprimir. */
+function escribirZip(destino: string, entradas: { ruta: string; leer: () => Buffer; mtime: Date }[]): number {
+  if (entradas.length > MAX_ENTRADAS) throw new Error("Hay demasiados archivos para un zip.");
   const fd = openSync(destino, "w");
   const central: Buffer[] = [];
   let desplazamiento = 0;
@@ -98,25 +92,87 @@ export function exportar(destino: string): ResumenRespaldo {
     central.push(c, nom);
   };
   try {
-    agregar(MANIFIESTO, manifiesto, new Date());
-    for (const a of archivos) {
-      total += a.tam;
+    for (const e of entradas) {
+      const datos = e.leer();
+      total += datos.length;
       if (total > MAX_TOTAL) throw new Error("Los datos pasan los 2 GB: borrá archivos grandes de la computadora de los bots y probá de nuevo.");
-      agregar(a.ruta, readFileSyncSeguro(a.abs), statSync(a.abs).mtime);
+      agregar(e.ruta, datos, e.mtime);
     }
     const inicioCentral = desplazamiento;
     for (const b of central) escribir(b);
     const fin = Buffer.alloc(22);
     fin.writeUInt32LE(0x06054b50, 0);
-    fin.writeUInt16LE(archivos.length + 1, 8);
-    fin.writeUInt16LE(archivos.length + 1, 10);
+    fin.writeUInt16LE(entradas.length, 8);
+    fin.writeUInt16LE(entradas.length, 10);
     fin.writeUInt32LE(desplazamiento - inicioCentral, 12);
     fin.writeUInt32LE(inicioCentral, 16);
     escribir(fin);
   } finally {
     closeSync(fd);
   }
+  return total;
+}
+
+/** Escribe el respaldo en `destino` (zip con deflate). */
+export function exportar(destino: string): ResumenRespaldo {
+  vaciarEscrituras();
+  const todos = listar(DATOS);
+  const omitidos = todos.filter((a) => a.tam > MAX_ARCHIVO).map((a) => a.ruta);
+  const archivos = todos.filter((a) => a.tam <= MAX_ARCHIVO);
+  const manifiesto = Buffer.from(JSON.stringify({ formato: FORMATO, app: "Gravity", creado: new Date().toISOString(), excluidos: [...EXCLUIDOS], omitidos }, null, 2));
+  const total = escribirZip(destino, [
+    { ruta: MANIFIESTO, leer: () => manifiesto, mtime: new Date() },
+    ...archivos.map((a) => ({ ruta: a.ruta, leer: () => readFileSyncSeguro(a.abs), mtime: statSync(a.abs).mtime })),
+  ]);
   return { archivos: archivos.length, bytes: total, omitidos };
+}
+
+/** Zip de una carpeta cualquiera (por ejemplo un proyecto de código), sin node_modules ni .git. */
+export function exportarCarpeta(dir: string, destino: string, prefijo = ""): number {
+  const archivos = listar(dir).filter((a) => a.tam <= MAX_ARCHIVO && !/(^|\/)(node_modules|\.git)\//.test(a.ruta));
+  escribirZip(destino, archivos.map((a) => ({ ruta: prefijo ? `${prefijo}/${a.ruta}` : a.ruta, leer: () => readFileSyncSeguro(a.abs), mtime: statSync(a.abs).mtime })));
+  return archivos.length;
+}
+
+/**
+ * Extrae un zip común en `destino` (carpeta nueva) validando rutas, tamaños y CRC. Con `quitarRaiz`,
+ * si todo está dentro de una sola carpeta (como los zip de GitHub), se saca ese nivel.
+ */
+export function extraerZip(zip: string, destino: string, op: { quitarRaiz?: boolean; maxBytes?: number } = {}): number {
+  const fd = openSync(zip, "r");
+  let archivos = 0;
+  let bytes = 0;
+  const max = op.maxBytes ?? 300 * 1024 * 1024;
+  try {
+    const entradas = leerIndice(fd, statSync(zip).size).filter((e) => !e.nombre.endsWith("/"));
+    const raices = new Set(entradas.map((e) => e.nombre.split("/")[0]));
+    const quitar = op.quitarRaiz && raices.size === 1 && entradas.every((e) => e.nombre.includes("/")) ? [...raices][0]!.length + 1 : 0;
+    mkdirSync(destino, { recursive: true });
+    for (const e of entradas) {
+      if (!rutaValida(e.nombre)) throw new Error(`Ruta inválida en el zip: ${e.nombre}`);
+      const nombre = e.nombre.slice(quitar);
+      if (!nombre) continue;
+      bytes += e.tam;
+      if (e.tam > MAX_ARCHIVO || bytes > max) throw new Error("El zip es demasiado grande.");
+      const cab = Buffer.alloc(30);
+      readSync(fd, cab, 0, 30, e.local);
+      if (cab.readUInt32LE(0) !== 0x04034b50) throw new Error("El zip está dañado.");
+      const inicio = e.local + 30 + cab.readUInt16LE(26) + cab.readUInt16LE(28);
+      const cuerpo = Buffer.alloc(e.comprimido);
+      readSync(fd, cuerpo, 0, e.comprimido, inicio);
+      const datos = e.metodo === 8 ? inflateRawSync(cuerpo, { maxOutputLength: MAX_ARCHIVO }) : e.metodo === 0 ? cuerpo : null;
+      if (!datos) throw new Error(`Compresión no soportada en ${e.nombre}.`);
+      if (datos.length !== e.tam || crc32(datos) !== e.crc) throw new Error(`El archivo ${e.nombre} llegó dañado.`);
+      const abs = path.join(destino, ...nombre.split("/"));
+      if (!abs.startsWith(destino + path.sep)) throw new Error(`Ruta inválida en el zip: ${e.nombre}`);
+      mkdirSync(path.dirname(abs), { recursive: true });
+      writeFileSync(abs, datos);
+      archivos++;
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return archivos;
 }
 
 function readFileSyncSeguro(abs: string): Buffer {

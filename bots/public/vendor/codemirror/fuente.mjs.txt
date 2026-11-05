@@ -1,0 +1,72 @@
+// Editor de Gravity Code: CodeMirror 6 con los lenguajes más usados, tema oscuro y vista de diferencias.
+import { EditorView, basicSetup } from "codemirror";
+import { EditorState, Compartment } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
+import { indentWithTab } from "@codemirror/commands";
+import { openSearchPanel } from "@codemirror/search";
+import { StreamLanguage } from "@codemirror/language";
+import { javascript } from "@codemirror/lang-javascript";
+import { html } from "@codemirror/lang-html";
+import { css } from "@codemirror/lang-css";
+import { python } from "@codemirror/lang-python";
+import { json } from "@codemirror/lang-json";
+import { markdown } from "@codemirror/lang-markdown";
+import { java } from "@codemirror/lang-java";
+import { cpp } from "@codemirror/lang-cpp";
+import { sql } from "@codemirror/lang-sql";
+import { xml } from "@codemirror/lang-xml";
+import { kotlin, csharp, dart } from "@codemirror/legacy-modes/mode/clike";
+import { shell } from "@codemirror/legacy-modes/mode/shell";
+import { go } from "@codemirror/legacy-modes/mode/go";
+import { rust } from "@codemirror/legacy-modes/mode/rust";
+import { yaml } from "@codemirror/legacy-modes/mode/yaml";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { MergeView, unifiedMergeView } from "@codemirror/merge";
+
+const POR_EXT = {
+  js: () => javascript(), mjs: () => javascript(), cjs: () => javascript(), jsx: () => javascript({ jsx: true }),
+  ts: () => javascript({ typescript: true }), mts: () => javascript({ typescript: true }), tsx: () => javascript({ typescript: true, jsx: true }),
+  html: () => html(), htm: () => html(), css: () => css(), py: () => python(), json: () => json(), md: () => markdown(),
+  java: () => java(), c: () => cpp(), h: () => cpp(), cpp: () => cpp(), hpp: () => cpp(), cc: () => cpp(), sql: () => sql(),
+  xml: () => xml(), svg: () => xml(), kt: () => StreamLanguage.define(kotlin), kts: () => StreamLanguage.define(kotlin),
+  cs: () => StreamLanguage.define(csharp), dart: () => StreamLanguage.define(dart), sh: () => StreamLanguage.define(shell),
+  bash: () => StreamLanguage.define(shell), go: () => StreamLanguage.define(go), rs: () => StreamLanguage.define(rust),
+  yml: () => StreamLanguage.define(yaml), yaml: () => StreamLanguage.define(yaml), gradle: () => StreamLanguage.define(kotlin),
+};
+export const lenguajeDe = (ruta) => { const ext = String(ruta).split(".").pop().toLowerCase(); return POR_EXT[ext] ? ext : null; };
+
+export function crearEditor(padre, { doc = "", ruta = "", alCambiar, soloLectura = false, oscuro = true } = {}) {
+  const lenguaje = new Compartment();
+  const ext = lenguajeDe(ruta);
+  const vista = new EditorView({
+    parent: padre,
+    state: EditorState.create({
+      doc,
+      extensions: [
+        basicSetup, keymap.of([indentWithTab]), lenguaje.of(ext ? POR_EXT[ext]() : []), oscuro ? oneDark : [],
+        EditorState.readOnly.of(soloLectura), EditorView.lineWrapping,
+        EditorView.updateListener.of((u) => { if (u.docChanged) alCambiar?.(u.state.doc.toString()); }),
+      ],
+    }),
+  });
+  return {
+    vista,
+    texto: () => vista.state.doc.toString(),
+    poner: (t) => vista.dispatch({ changes: { from: 0, to: vista.state.doc.length, insert: t } }),
+    buscar: () => openSearchPanel(vista),
+    irALinea: (n) => { const l = vista.state.doc.line(Math.max(1, Math.min(n, vista.state.doc.lines))); vista.dispatch({ selection: { anchor: l.from }, scrollIntoView: true }); vista.focus(); },
+    seleccion: () => { const r = vista.state.selection.main; return vista.state.sliceDoc(r.from, r.to); },
+    destruir: () => vista.destroy(),
+  };
+}
+
+export function crearDiff(padre, antes, despues, { ruta = "", oscuro = true, unificado = false } = {}) {
+  const ext = lenguajeDe(ruta);
+  if (unificado) {
+    const v = new EditorView({ parent: padre, state: EditorState.create({ doc: despues, extensions: [basicSetup, ext ? POR_EXT[ext]() : [], oscuro ? oneDark : [], EditorState.readOnly.of(true), EditorView.editable.of(false), EditorView.lineWrapping, unifiedMergeView({ original: antes, mergeControls: false, collapseUnchanged: { margin: 3, minSize: 6 } })] }) });
+    return { destruir: () => v.destroy() };
+  }
+  const comunes = [basicSetup, ext ? POR_EXT[ext]() : [], oscuro ? oneDark : [], EditorState.readOnly.of(true), EditorView.editable.of(false), EditorView.lineWrapping];
+  const m = new MergeView({ parent: padre, a: { doc: antes, extensions: comunes }, b: { doc: despues, extensions: comunes }, collapseUnchanged: { margin: 3, minSize: 6 } });
+  return { destruir: () => m.destroy() };
+}

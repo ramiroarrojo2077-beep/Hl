@@ -2,7 +2,7 @@
 // cambie un archivo, se guarda la versión anterior en DATOS/versiones/<ruta>/<fecha>. Quedan las últimas
 // 20 por archivo (hasta 2 MB cada una) y se pueden restaurar.
 
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
 import { COMPUTADORA, DATOS } from "./almacen.ts";
 
@@ -61,4 +61,13 @@ export function restaurarVersion(ruta: string, id: string): void {
   guardarVersion(destino);
   mkdirSync(path.dirname(destino), { recursive: true });
   copyFileSync(origen, destino);
+}
+
+/** Contenido de una versión guardada (para comparar con el actual). */
+export function leerVersion(ruta: string, id: string): Buffer {
+  const rel = relativa(ruta);
+  if (!rel || !/^[\w~-]+\.v$/.test(id)) throw new Error("Versión inválida.");
+  const f = path.join(carpetaDe(rel), id);
+  if (!existsSync(f)) throw new Error("No existe esa versión.");
+  return readFileSync(f);
 }

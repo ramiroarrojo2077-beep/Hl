@@ -929,3 +929,9 @@ export function quitarBotDeConexiones(botId: string): void {
   }
   if (cambio) guardar();
 }
+
+/** Token de la primera conexión de GitHub conectada (para importar repos privados en Gravity Code), o null. */
+export function tokenGithub(): string | null {
+  const c = conexiones.find((x) => x.tipo === "github" && x.estado === "conectada");
+  return c ? (secretoDe(c).token ?? null) : null;
+}

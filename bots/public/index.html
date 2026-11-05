@@ -848,6 +848,43 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .nodo small{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3)}.nodo b{font-size:13.5px}.nodo span{font-size:12px;color:var(--tx2)}
 .nodo.ev{border-left:3px solid var(--sig)}.nodo.qui{border-left:3px solid var(--ion)}.nodo.acc{border-left:3px solid #9B7BFF}
 button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outline:2px solid var(--ion);background:var(--ion-bg)}
+.code-pag{height:100%;min-height:0;display:flex;background:#0b0f19;color:#e3e8f2}
+.cd{--cl:#1a2133;flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;height:100%}
+.cd-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--cl);background:#0e1320}
+.cd-t{display:flex;align-items:center;gap:8px;min-width:0}.cd-t b{font-size:15px}.cd-logo{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6cd3f0,#9b7bff);color:#05070d}
+.cd-sel{width:auto;max-width:200px;min-height:34px;padding:2px 8px}
+.cd-acc{display:flex;gap:6px;flex-wrap:wrap}.cd .btn.out,.cd .btn.ghost{color:#cfd7e6;border-color:#2a3550;background:transparent}.cd .btn.pri{background:#6cd3f0;color:#05070d;border-color:#6cd3f0}.cd .btn.pri:disabled{background:#1a2133;color:#5b6478;border-color:#1a2133}.cd .chk>span{color:#e3e8f2}.cd .chk small{color:#8d98b0}.cd .btn.ghost:hover,.cd .btn.out:hover{background:#18213a}
+.cd-seg{display:none;gap:6px;padding:6px 10px;border-bottom:1px solid var(--cl)}.cd-seg .chip{background:#121a2b;color:#cfd7e6;border-color:#26304a}.cd-seg .chip[aria-pressed=true]{background:#6cd3f0;color:#05070d}
+.cd-cuerpo{flex:1;min-height:0;display:grid;grid-template-columns:230px minmax(0,1fr) 380px}
+.cd-arbol{border-right:1px solid var(--cl);overflow:auto;padding:6px 0;background:#0d1220;display:flex;flex-direction:column}
+.cd-arbol-h{display:flex;align-items:center;justify-content:space-between;padding:2px 8px 6px 12px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d98b0}
+.cd-lista,.cd-lista ul{list-style:none;margin:0;padding:0}.cd-f{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;color:#cfd7e6;font:inherit;font-size:13px;padding:5px 8px 5px calc(12px + var(--n) * 14px);min-height:32px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd-f:hover{background:#151d30}.cd-f.on{background:#1a2742;color:#fff;box-shadow:inset 2px 0 0 #6cd3f0}.cd-f.dir{color:#e3e8f2;font-weight:500}.cd-memb{margin:8px 10px 0;align-self:flex-start}
+.cd-vacio{padding:18px}.cd-vacio h2{font-size:16px;margin:0 0 6px}
+.cd-centro{display:flex;flex-direction:column;min-width:0;min-height:0}
+.cd-tabs{display:flex;overflow-x:auto;background:#0d1220;border-bottom:1px solid var(--cl);min-height:36px}
+.cd-tab{display:flex;align-items:center;border-right:1px solid var(--cl);color:#8d98b0;font-size:13px;flex:none}.cd-tab button{border:0;background:none;color:inherit;font:inherit;padding:8px 6px 8px 12px;cursor:pointer;display:flex;gap:6px;align-items:center}.cd-tab .x{padding:8px 10px 8px 2px;font-size:15px}
+.cd-tab.on{background:#0b0f19;color:#fff;box-shadow:inset 0 2px 0 #6cd3f0}.cd-sucio{font-style:normal;color:#ffb07a;font-size:10px}
+.cd-barra{display:flex;align-items:center;gap:6px;padding:4px 10px;border-bottom:1px solid var(--cl);min-height:38px;flex-wrap:wrap}.cd-ruta{flex:1;min-width:0;font-size:12.5px;color:#8d98b0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,monospace}
+.cd-ed{flex:1;min-height:0;overflow:hidden;background:#282c34}.cd-ed .cm-editor{height:100%;font-size:13.5px}.cd-ed .cm-scroller{font-family:ui-monospace,"JetBrains Mono",Menlo,monospace}
+.cd-panel{border-left:1px solid var(--cl);display:flex;flex-direction:column;min-height:0;background:#0d1220}
+.cd-ptabs{display:flex;border-bottom:1px solid var(--cl)}.cd-ptabs button{flex:1;border:0;background:none;color:#8d98b0;font:inherit;font-size:13px;padding:10px 6px;cursor:pointer;min-height:40px}.cd-ptabs button.on{color:#fff;box-shadow:inset 0 -2px 0 #6cd3f0}
+.cd-pc{flex:1;min-height:0;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.cd .inp{background:#121a2b;color:#e3e8f2;border-color:#26304a}.cd .muted{color:#8d98b0}
+.cd-term-f{display:flex;gap:6px;align-items:center}.cd-prompt{font-family:ui-monospace,monospace;color:#6cd3f0}.cd-term-f .inp{font-family:ui-monospace,monospace;font-size:13px}
+.cd-ais small{color:#8d98b0}.cd-rap{display:flex;gap:6px;flex-wrap:wrap}.cd-rap .chip,.cd-modos .chip{background:#121a2b;color:#cfd7e6;border-color:#26304a;font-size:12px}
+.cd-modos{display:flex;gap:6px;flex-wrap:wrap}.cd-modos .chip[aria-checked=true]{background:#9b7bff;color:#05070d;border-color:#9b7bff}
+.cd-ejec{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.cd-ej-h{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12.5px}.cd-ej-h code{font-size:12.5px;color:#e3e8f2}
+.cd .tag.ok{background:rgba(99,211,177,.15);color:#63d3b1}.cd .tag.ion{background:rgba(108,211,240,.15);color:#6cd3f0}.cd .tag.sig{background:rgba(255,176,122,.15);color:#ffb07a}
+.cd-sal{margin:4px 0 0;max-height:260px;overflow:auto;background:#05070d;border:1px solid var(--cl);border-radius:8px;padding:8px;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word;color:#cfd7e6}
+.cd-bus{display:flex;flex-direction:column;gap:6px}.chk-s{font-size:12.5px;display:inline-flex;gap:6px;align-items:center}
+.cd-res{list-style:none;margin:0;padding:0}.cd-res button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:6px;border-radius:6px;cursor:pointer}.cd-res button:hover{background:#151d30}.cd-res b{font-size:12px;color:#6cd3f0;font-weight:500}.cd-res code{font-size:12px;color:#cfd7e6;white-space:pre-wrap;word-break:break-all}
+.cd-ag{display:flex;flex-direction:column;gap:8px}.cd-ag select.inp{width:auto;flex:1}.cd-est{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cfd7e6}
+.cd-conv{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.cd-conv li{padding:8px 10px;border-radius:10px;background:#121a2b;overflow-wrap:anywhere}.cd-conv li.u{background:#1a2742;align-self:flex-end;max-width:92%;white-space:pre-wrap}.cd-conv li.a{background:none;padding:2px 4px;color:#8d98b0;font-size:12px;display:flex;gap:6px}.cd-conv li.a.e{color:#ffb07a}.cd-conv pre{white-space:pre-wrap;font-size:12px}
+.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-msg button{align-self:flex-end}
+.cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
+@media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
+@media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
 .univ{height:min(62vh,520px);border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#05070d;margin-top:14px}.univ canvas{display:block;width:100%;height:100%;cursor:grab}
 .univ-l{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}.univ-l a{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--s1);border:1px solid var(--line);color:inherit;text-decoration:none;min-height:44px}.univ-l span{display:flex;flex-direction:column;min-width:0}.univ-l small{font-size:12px}
 .u-e{font-weight:500}.u-work{color:var(--ion)}.u-wait{color:var(--sig)}.u-idle{color:var(--tx3)}
@@ -1148,6 +1185,7 @@ audio.cp-media{background:none;max-height:none;padding:12px}
 
 /* ---------- llamada de voz: robot 3D al centro, transcripción y controles grandes ---------- */
 .vista.v-llam{display:block;overflow:hidden}
+.vista.v-code{display:flex;overflow:hidden;padding:0}.vista.v-code>.code-pag{flex:1}
 .llam{--acc:var(--ion);--vio:#9B7BFF;position:relative;height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;
   background:radial-gradient(52% 40% at 50% 46%,color-mix(in oklab,var(--acc) 13%,transparent),transparent 72%),radial-gradient(70% 50% at 20% 85%,color-mix(in oklab,var(--vio) 9%,transparent),transparent 70%),radial-gradient(900px 480px at 50% -10%,var(--glow),transparent 70%),var(--bg)}
 .ll-deco{position:absolute;left:50%;top:46%;width:min(150vw,980px);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
@@ -1758,7 +1796,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2068,6 +2106,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "code") { vista.classList.add("v-code"); $("#vista").innerHTML = `<div class="code-pag" id="code"></div>`; montarCode().catch((e) => toast(e.message, "err")); return; }
   if (v === "universo") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="univ"></div></div>`; montarUniverso(); return; }
   if (v === "mapa") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="mapa"></div></div>`; pintarMapa(); if (!S.proyectos) cargarProyectos().then(pintarMapa); return; }
   if (v === "laboratorio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="lab"></div></div>`; pintarLab(); return; }
@@ -3665,6 +3704,177 @@ function mesaRobots(fac, ps, habla) {
     ${robots}</svg>`);
 }
 
+// ================================================================ Gravity Code
+// Entorno de programación: proyectos en codigo/ de la computadora, explorador, pestañas, editor con
+// resaltado y autocompletado (CodeMirror), buscar y reemplazar en todo el proyecto, diferencias contra
+// versiones, terminal real (en la carpeta o en una copia aislada), vista previa, memoria técnica y
+// compañeros que trabajan en el proyecto en distintos modos. Nada se simula: cada comando muestra su
+// salida y su código de salida reales.
+const CD = { proyectos: null, p: null, archivos: [], tabs: [], activa: null, panel: "terminal", movil: "editor", ejec: [], botId: null, modo: "agente", conv: [], q: "", res: null, regex: false, mayus: false, aislado: false, abiertas: new Set(), cm: null, editor: null, mem: null, sondeo: null };
+const CD_MODOS = {
+  chat: ["Chat", "Respondé y explicá; no cambies archivos."],
+  editor: ["Editor", "Proponé y aplicá cambios solo en el archivo abierto (y lo mínimo necesario)."],
+  agente: ["Agente", "Planificá y hacé la tarea en el proyecto con tus herramientas. Probá con probar_aislado antes de darla por terminada."],
+  equipo: ["Equipo", "Coordiná a tu equipo: repartí partes independientes (delegar), integrá los resultados y verificá que todo funcione junto."],
+  supervisado: ["Autónomo supervisado", "Ejecutá un plan de varias etapas. Antes de empezar contá el plan en pasos numerados; pedí aprobación para lo sensible (borrar, publicar, gastar) y al terminar resumí qué cambió y cómo lo verificaste."],
+  reparacion: ["Reparación", "Encontrá la causa del error, corregila con el cambio mínimo y demostrá con un comando real (probar_aislado) que quedó arreglado."],
+};
+const cdRutaRel = (r) => (CD.p ? r.slice(`codigo/${CD.p}/`.length) : r);
+const cdLeer = (ruta) => fetch(`/api/computadora/archivo?ruta=${encodeURIComponent(ruta)}`, { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error((await r.text()) || `Error ${r.status}`); return r.text(); });
+const cargarCodeEditor = () => (CD.cm ??= import("/vendor/codemirror/editor.js?v=1").catch((e) => { CD.cm = null; throw e; }));
+
+async function montarCode() {
+  const el = $("#code");
+  if (!el) return;
+  el.innerHTML = html`<div class="cd">
+    <header class="cd-h" id="cd-h"></header>
+    <nav class="cd-seg" id="cd-seg" aria-label="Partes de Gravity Code"></nav>
+    <div class="cd-cuerpo">
+      <aside class="cd-arbol" id="cd-arbol" aria-label="Archivos del proyecto"></aside>
+      <section class="cd-centro"><div class="cd-tabs" id="cd-tabs" role="tablist" aria-label="Archivos abiertos"></div><div class="cd-barra" id="cd-barra"></div><div class="cd-ed" id="cd-ed"></div></section>
+      <section class="cd-panel" id="cd-panel" aria-label="Terminal, búsqueda y compañeros"></section>
+    </div></div>`.s;
+  await cargarCodeProyectos();
+  if (!CD.p && CD.proyectos?.length) CD.p = CD.proyectos[0].nombre;
+  if (CD.p) await cargarCodeArchivos();
+  pintarCode();
+}
+async function cargarCodeProyectos() { const r = await api("GET", "/api/code"); CD.proyectos = r.proyectos; CD.plantillas = r.plantillas; }
+async function cargarCodeArchivos() {
+  if (!CD.p) { CD.archivos = []; return; }
+  const r = await api("GET", "/api/computadora");
+  const pre = `codigo/${CD.p}/`;
+  CD.archivos = r.archivos.filter((a) => a.ruta.startsWith(pre));
+  CD.ejec = await api("GET", `/api/code/ejecuciones?p=${encodeURIComponent(CD.p)}`);
+}
+function pintarCode() {
+  if (!$("#code")) return;
+  pintarCodeCabecera(); pintarCodeSeg(); pintarCodeArbol(); pintarCodeTabs(); pintarCodePanel(); montarCodeEditor();
+  $("#code .cd").dataset.movil = CD.movil;
+}
+function pintarCodeCabecera() {
+  const p = CD.proyectos?.find((x) => x.nombre === CD.p);
+  pintar($("#cd-h"), html`<div class="cd-t"><span class="cd-logo" aria-hidden="true">${ico("term", "s")}</span><b>Gravity Code</b>
+      ${CD.proyectos?.length ? html`<select class="inp cd-sel" data-c="cd-proyecto" aria-label="Proyecto">${CD.proyectos.map((x) => html`<option value="${x.nombre}" ${si(x.nombre === CD.p, "selected")}>${x.nombre}</option>`)}</select>` : ""}
+      ${p ? html`<small class="muted">${plural(p.archivos, "archivo", "archivos")}</small>` : ""}</div>
+    <div class="cd-acc">
+      <button class="btn out sm" data-a="cd-nuevo">${ico("plus", "s")}Nuevo</button>
+      <button class="btn out sm" data-a="cd-importar">${ico("download", "s")}GitHub</button>
+      ${p ? html`<a class="btn ghost sm" href="/api/code/exportar?p=${encodeURIComponent(p.nombre)}" download>Exportar .zip</a>
+      <button class="btn ghost sm" data-a="cd-equipo">${ico("team", "s")}Equipo de desarrollo</button>
+      <button class="btn ghost sm" data-a="cd-borrar-proy">Borrar</button>` : ""}
+    </div>`);
+}
+function pintarCodeSeg() {
+  pintar($("#cd-seg"), [["archivos", "Archivos"], ["editor", "Editor"], ["panel", "Terminal y agentes"]].map(([k, t]) => html`<button class="chip" data-a="cd-movil" data-v="${k}" aria-pressed="${String(CD.movil === k)}">${t}</button>`));
+}
+// Árbol de carpetas a partir de la lista plana de archivos.
+function pintarCodeArbol() {
+  const el = $("#cd-arbol");
+  if (!el) return;
+  if (!CD.p) { pintar(el, html`<div class="cd-vacio"><h2>Empezá un proyecto</h2><p class="muted">Creá uno desde una plantilla (web, Node, Python) o importá un repositorio de GitHub. Cada proyecto tiene su memoria técnica que los compañeros leen y actualizan.</p><button class="btn pri" data-a="cd-nuevo">${ico("plus", "s")}Nuevo proyecto</button></div>`); return; }
+  const pre = `codigo/${CD.p}/`;
+  const hijos = new Map();
+  for (const a of CD.archivos) {
+    const rel = a.ruta.slice(pre.length);
+    const padre = rel.includes("/") ? rel.slice(0, rel.lastIndexOf("/")) : "";
+    if (!hijos.has(padre)) hijos.set(padre, []);
+    hijos.get(padre).push({ ...a, rel, nombre: rel.split("/").pop() });
+  }
+  const rama = (dir, nivel) => (hijos.get(dir) || []).sort((x, y) => (y.carpeta - x.carpeta) || x.nombre.localeCompare(y.nombre)).map((a) => a.carpeta
+    ? html`<li><button class="cd-f dir" style="--n:${nivel}" data-a="cd-dir" data-r="${a.rel}" aria-expanded="${String(CD.abiertas.has(a.rel))}">${ico(CD.abiertas.has(a.rel) ? "down" : "right", "s")}${a.nombre}</button>${CD.abiertas.has(a.rel) ? html`<ul>${rama(a.rel, nivel + 1)}</ul>` : ""}</li>`
+    : html`<li><button class="cd-f ${CD.activa === a.ruta ? "on" : ""}" style="--n:${nivel}" data-a="cd-abrir" data-r="${a.ruta}">${ico("file", "s")}${a.nombre}</button></li>`);
+  pintar(el, html`<div class="cd-arbol-h"><span>${CD.p}</span><span><button class="btn ghost sm" data-a="cd-nuevo-archivo" title="Archivo nuevo" aria-label="Archivo nuevo">${ico("plus", "s")}</button><button class="btn ghost sm" data-a="cd-nueva-carpeta" title="Carpeta nueva" aria-label="Carpeta nueva">${ico("folder", "s")}</button></span></div>
+    <ul class="cd-lista">${rama("", 0)}</ul>
+    <button class="btn ghost sm cd-memb" data-a="cd-memoria">${ico("memory", "s")}Memoria técnica</button>`);
+}
+function pintarCodeTabs() {
+  pintar($("#cd-tabs"), CD.tabs.map((t) => html`<span class="cd-tab ${t.ruta === CD.activa ? "on" : ""}" role="tab" aria-selected="${String(t.ruta === CD.activa)}"><button data-a="cd-tab" data-r="${t.ruta}">${t.ruta.split("/").pop()}${t.texto !== t.original ? html`<i class="cd-sucio" aria-label="sin guardar">●</i>` : ""}</button><button class="x" data-a="cd-cerrar" data-r="${t.ruta}" aria-label="Cerrar ${t.ruta.split("/").pop()}">×</button></span>`));
+  const t = CD.tabs.find((x) => x.ruta === CD.activa);
+  const html_ = t && /\.html?$/i.test(t.ruta);
+  pintar($("#cd-barra"), t ? html`<span class="cd-ruta" title="${t.ruta}">${cdRutaRel(t.ruta)}</span>
+    <button class="btn pri sm" data-a="cd-guardar" ${si(t.texto === t.original, "disabled")}>Guardar</button>
+    <button class="btn ghost sm" data-a="cd-buscar-archivo" title="Buscar y reemplazar en el archivo">${ico("search", "s")}</button>
+    <button class="btn ghost sm" data-a="cd-diff">Cambios</button>
+    ${html_ ? html`<a class="btn ghost sm" href="/vista/${S.vista}/${t.ruta.split("/").map(encodeURIComponent).join("/")}" target="_blank" rel="noopener">Vista previa</a>` : ""}` : html`<span class="muted" style="font-size:13px">${CD.p ? "Abrí un archivo del explorador." : ""}</span>`);
+}
+async function montarCodeEditor() {
+  const host = $("#cd-ed");
+  if (!host) return;
+  const t = CD.tabs.find((x) => x.ruta === CD.activa);
+  if (CD.editor && CD.editor.ruta === CD.activa) return;
+  CD.editor?.destruir(); CD.editor = null; host.replaceChildren();
+  if (!t) return;
+  let M;
+  try { M = await cargarCodeEditor(); } catch { host.innerHTML = html`<p class="err">No se pudo cargar el editor.</p>`.s; return; }
+  if (CD.activa !== t.ruta || !host.isConnected) return;
+  host.replaceChildren();
+  const ed = M.crearEditor(host, { doc: t.texto, ruta: t.ruta, alCambiar: (v) => { const sucio0 = t.texto !== t.original; t.texto = v; if ((t.texto !== t.original) !== sucio0) pintarCodeTabs(); } });
+  ed.ruta = t.ruta;
+  CD.editor = ed;
+}
+async function cdAbrir(ruta, linea) {
+  let t = CD.tabs.find((x) => x.ruta === ruta);
+  if (!t) {
+    const a = CD.archivos.find((x) => x.ruta === ruta);
+    if (a && a.tamano > 1_000_000) { toast("Ese archivo es muy grande para el editor (más de 1 MB).", "err"); return; }
+    const texto = await cdLeer(ruta);
+    t = { ruta, texto, original: texto, modificado: a?.modificado || null };
+    CD.tabs.push(t);
+  }
+  CD.activa = ruta; CD.movil = "editor";
+  pintarCode();
+  if (linea) setTimeout(() => CD.editor?.irALinea(linea), 120);
+}
+function pintarCodePanel() {
+  const el = $("#cd-panel");
+  if (!el) return;
+  const PANELES = [["terminal", "Terminal"], ["agentes", "Compañeros"], ["buscar", "Buscar"]];
+  const cab = html`<div class="cd-ptabs" role="tablist">${PANELES.map(([k, t]) => html`<button role="tab" aria-selected="${String(CD.panel === k)}" class="${CD.panel === k ? "on" : ""}" data-a="cd-panel" data-v="${k}">${t}</button>`)}</div>`;
+  if (!CD.p) { pintar(el, cab); return; }
+  let cuerpo = "";
+  if (CD.panel === "terminal") {
+    const est = { corriendo: ["Corriendo…", "ion"], ok: ["OK", "ok"], error: ["Error", "sig"], cortado: ["Cortado", "sig"] };
+    cuerpo = html`<form class="cd-term-f" data-f="cd-ejecutar"><span class="cd-prompt" aria-hidden="true">$</span><input class="inp" name="comando" placeholder="npm test · node index.js · python -m unittest" autocomplete="off" spellcheck="false" data-k="cd-cmd" aria-label="Comando"><button class="btn pri sm">Ejecutar</button></form>
+      <label class="chk cd-ais"><input type="checkbox" class="sw" data-c="cd-aislado" ${si(CD.aislado, "checked")}><span>En una copia aislada<small>No cambia los archivos reales, sin claves${CD.ejec[0]?.sinRed === false ? "" : " y sin red si el sistema lo permite"}.</small></span></label>
+      <div class="cd-rap">${["npm install", "npm test", "npm start", "node --test", "python -m unittest", "ls -la"].map((c) => html`<button class="chip" data-a="cd-cmd" data-v="${c}">${c}</button>`)}</div>
+      <ol class="cd-ejec">${CD.ejec.map((e) => html`<li><div class="cd-ej-h"><span class="tag ${est[e.estado][1]}">${est[e.estado][0]}</span><code>${e.comando}</code>${e.aislado ? html`<span class="tag">aislado</span>` : ""}<small class="muted">${e.segundos != null ? `${e.segundos} s` : ""}${e.codigo != null ? ` · código ${e.codigo}` : ""}</small>
+        ${e.estado === "corriendo" ? html`<button class="btn ghost sm" data-a="cd-detener" data-id="${e.id}">Detener</button>` : e.estado !== "ok" ? html`<button class="btn ghost sm" data-a="cd-reparar" data-id="${e.id}">Reparar con un compañero</button>` : ""}</div>
+        <pre class="cd-sal">${e.salida.slice(-6000) || (e.estado === "corriendo" ? "…" : "(sin salida)")}</pre></li>`)}</ol>`;
+  } else if (CD.panel === "buscar") {
+    cuerpo = html`<form class="cd-bus" data-f="cd-buscar"><input class="inp" name="q" value="${CD.q}" placeholder="Buscar en todo el proyecto" data-k="cd-q" aria-label="Buscar"><input class="inp" name="r" placeholder="Reemplazar por (opcional)" data-k="cd-r" aria-label="Reemplazar por">
+      <div class="fila" style="gap:10px;flex-wrap:wrap"><label class="chk-s"><input type="checkbox" name="regex" ${si(CD.regex, "checked")}> Expresión regular</label><label class="chk-s"><input type="checkbox" name="mayus" ${si(CD.mayus, "checked")}> Distinguir mayúsculas</label><span class="sp"></span><button class="btn out sm" name="accion" value="buscar">Buscar</button><button class="btn ghost sm" name="accion" value="reemplazar">Reemplazar todo</button></div></form>
+      ${CD.res ? html`<p class="muted" style="font-size:12.5px">${plural(CD.res.coincidencias.length, "coincidencia", "coincidencias")}${CD.res.recortado ? " (se muestran las primeras 500)" : ""}</p><ul class="cd-res">${CD.res.coincidencias.map((c) => html`<li><button data-a="cd-ir" data-r="${c.ruta}" data-l="${c.linea}"><b>${cdRutaRel(c.ruta)}:${c.linea}</b><code>${c.texto}</code></button></li>`)}</ul>` : ""}`;
+  } else {
+    const b = bot(CD.botId) || null;
+    cuerpo = html`<div class="cd-ag">${S.bots.length ? html`<div class="fila" style="gap:8px;flex-wrap:wrap">
+        <select class="inp" data-c="cd-bot" aria-label="Compañero">${S.bots.map((x) => html`<option value="${x.id}" ${si(x.id === CD.botId, "selected")}>${x.nombre} · ${x.titulo}</option>`)}</select>
+        ${b ? html`<select class="inp modelo-chat" data-c="modelo-chat" data-id="${b.id}" aria-label="Modelo de ${b.nombre}"><option value="" ${si(!b.modelo, "selected")}>Auto</option><option value="rapido" ${si(b.modelo === "rapido", "selected")}>Rápido</option><option value="potente" ${si(b.modelo === "potente", "selected")}>Potente</option></select>` : ""}</div>
+      <div class="cd-modos" role="radiogroup" aria-label="Modo">${Object.entries(CD_MODOS).map(([k, [t]]) => html`<button class="chip" role="radio" aria-checked="${String(CD.modo === k)}" data-a="cd-modo" data-v="${k}">${t}</button>`)}</div>
+      <p class="muted" style="font-size:12.5px;margin:4px 0">${CD_MODOS[CD.modo][1]}${CD.modo === "equipo" && b && b.cargo !== "manager" ? " (elegí un manager: «Equipo de desarrollo» crea uno)." : ""}</p>
+      ${b ? html`<span class="cd-est">${av(b, 22)}<span>${b.nombre}: ${est(b) === "work" ? `trabajando${b.accion ? ` · ${b.accion}` : ""}` : est(b) === "wait" ? "espera tu aprobación" : "libre"}</span>${est(b) === "wait" ? html`<a class="btn ghost sm" href="#/aprobaciones">Ver</a>` : ""}</span>` : ""}
+      <ol class="cd-conv">${CD.conv.slice(-14).map((x) => x.tipo === "bot" ? html`<li class="b">${md(x.texto)}</li>` : x.tipo === "usuario" ? html`<li class="u">${x.texto.slice(0, 600)}</li>` : x.tipo === "accion" ? html`<li class="a ${x.error ? "e" : ""}">${ico("bolt", "s")}${x.texto}</li>` : "")}</ol>
+      <form class="cd-msg" data-f="cd-pedir"><textarea class="inp" name="texto" rows="2" placeholder="Ej.: agregá un botón para borrar la lista y una prueba" data-k="cd-pedido" aria-label="Pedido"></textarea><label class="chk-s"><input type="checkbox" name="seleccion"> Incluir la selección del editor</label><button class="btn pri sm">Mandar</button></form>` : html`<p class="muted">Creá un compañero (o «Equipo de desarrollo») para que trabaje en el proyecto.</p>`}</div>`;
+  }
+  pintar(el, html`${cab}<div class="cd-pc">${cuerpo}</div>`);
+}
+async function cdCargarConv() {
+  if (!CD.botId) { CD.conv = []; return; }
+  try { CD.conv = await api("GET", `/api/bots/${CD.botId}/conversacion`); } catch { CD.conv = []; }
+}
+// Mientras corre un comando o trabaja el compañero elegido, se actualiza solo.
+function cdSondear() {
+  clearTimeout(CD.sondeo);
+  if (!$("#code") || !CD.p) return;
+  const corriendo = CD.ejec.some((e) => e.estado === "corriendo");
+  if (!corriendo) return;
+  CD.sondeo = setTimeout(async () => { try { CD.ejec = await api("GET", `/api/code/ejecuciones?p=${encodeURIComponent(CD.p)}`); } catch {} if (CD.panel === "terminal") pintarCodePanel(); cdSondear(); }, 900);
+}
+function cdContexto() {
+  const t = CD.tabs.find((x) => x.ruta === CD.activa);
+  return [`[Gravity Code · proyecto «${CD.p}» en la carpeta codigo/${CD.p}/ de la computadora · modo ${CD_MODOS[CD.modo][0]}]`, CD_MODOS[CD.modo][1], `Leé primero la memoria técnica: codigo/${CD.p}/.gravity/memoria.md, y actualizala al terminar.`, t ? `Archivo abierto: ${t.ruta}${t.texto !== t.original ? " (tiene cambios sin guardar en el editor del usuario: no lo pises sin avisar)" : ""}` : ""].filter(Boolean).join("\n");
+}
+
 // ================================================================ Gravity Universe
 // Un entorno 3D donde cada compañero tiene su estación: plataforma, escritorio, pantalla holográfica y su
 // robot. La pantalla y la luz muestran el estado real (trabajando, espera tu aprobación, libre) y se
@@ -4455,7 +4665,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5850,6 +6060,103 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "cd-movil": (t) => { CD.movil = t.dataset.v; pintarCode(); },
+  "cd-panel": (t) => { CD.panel = t.dataset.v; CD.movil = "panel"; if (CD.panel === "agentes") { CD.botId ??= (S.bots.find((b) => b.cargo === "manager") || S.bots[0])?.id || null; cdCargarConv().then(pintarCodePanel); } pintarCode(); },
+  "cd-dir": (t) => { const r = t.dataset.r; CD.abiertas.has(r) ? CD.abiertas.delete(r) : CD.abiertas.add(r); pintarCodeArbol(); },
+  "cd-abrir": (t) => cdAbrir(t.dataset.r).catch((e) => toast(e.message, "err")),
+  "cd-ir": (t) => cdAbrir(t.dataset.r, Number(t.dataset.l)).catch((e) => toast(e.message, "err")),
+  "cd-tab": (t) => { CD.activa = t.dataset.r; pintarCode(); },
+  "cd-cerrar": async (t) => {
+    const tab = CD.tabs.find((x) => x.ruta === t.dataset.r);
+    if (tab && tab.texto !== tab.original && !(await confirmar("¿Cerrar sin guardar?", `Se pierden los cambios de ${tab.ruta.split("/").pop()}.`, "Cerrar", true))) return;
+    CD.tabs = CD.tabs.filter((x) => x.ruta !== t.dataset.r);
+    if (CD.activa === t.dataset.r) CD.activa = CD.tabs.at(-1)?.ruta || null;
+    pintarCode();
+  },
+  "cd-guardar": (t) => conCarga(t, async () => {
+    const tab = CD.tabs.find((x) => x.ruta === CD.activa);
+    if (!tab) return;
+    const r = await api("PUT", "/api/computadora/archivo", { ruta: tab.ruta, contenido: tab.texto, modificado: tab.modificado });
+    tab.original = tab.texto; tab.modificado = r.modificado;
+    toast("Guardado.");
+    pintarCodeTabs();
+  }),
+  "cd-buscar-archivo": () => CD.editor?.buscar(),
+  "cd-diff": async () => {
+    const tab = CD.tabs.find((x) => x.ruta === CD.activa);
+    if (!tab) return;
+    const vs = await api("GET", `/api/computadora/versiones?ruta=${encodeURIComponent(tab.ruta)}`);
+    const base = tab.texto !== tab.original ? { nombre: "lo guardado", texto: tab.original } : vs[0] ? { nombre: `la versión del ${diaHora(vs[0].fecha)}`, texto: (await api("GET", `/api/computadora/version?ruta=${encodeURIComponent(tab.ruta)}&id=${encodeURIComponent(vs[0].id)}`)).contenido } : null;
+    if (!base || base.texto == null) { toast("No hay cambios ni versiones anteriores para comparar.", "info"); return; }
+    abrirDialogo(html`<div class="dlg-f cd-dlg"><h2 id="dlg-t">Cambios en ${tab.ruta.split("/").pop()}</h2><p class="muted" style="font-size:13px">Izquierda: ${base.nombre}. Derecha: ${tab.texto !== tab.original ? "el editor (sin guardar)" : "lo actual"}.</p><div id="cd-diff" class="cd-diff"></div>
+      ${vs.length ? html`<details class="mas"><summary>${ico("right", "s")}Versiones (${vs.length})</summary><ul class="hist">${vs.map((v) => html`<li>${diaHora(v.fecha)} · ${tamano(v.tamano)} <button class="btn ghost sm" data-a="cd-restaurar" data-id="${v.id}">Restaurar</button></li>`)}</ul></details>` : ""}
+      <div class="acts"><button type="button" class="btn pri" data-a="cerrar-dlg">Listo</button></div></div>`);
+    const M = await cargarCodeEditor();
+    const d = M.crearDiff($("#cd-diff"), base.texto, tab.texto, { ruta: tab.ruta, unificado: innerWidth < 760 });
+    CD.diff = d;
+  },
+  "cd-restaurar": (t) => conCarga(t, async () => {
+    const tab = CD.tabs.find((x) => x.ruta === CD.activa);
+    if (!tab || !(await confirmar("¿Restaurar esta versión?", "Lo actual queda guardado como otra versión.", "Restaurar"))) return;
+    await api("POST", "/api/computadora/restaurar", { ruta: tab.ruta, id: t.dataset.id });
+    const texto = await cdLeer(tab.ruta);
+    Object.assign(tab, { texto, original: texto, modificado: new Date().toISOString() });
+    cerrarDialogo(); CD.editor?.destruir(); CD.editor = null; await cargarCodeArchivos(); pintarCode();
+    toast("Versión restaurada.");
+  }),
+  "cd-nuevo": () => {
+    abrirDialogo(html`<form class="dlg-f" data-f="cd-crear"><h2 id="dlg-t">Proyecto nuevo</h2>
+      <label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="60" pattern="[\\w][\\w .\\-]{0,59}" placeholder="mi-app"></label>
+      <fieldset class="fld"><legend>Plantilla</legend><div class="segc">${(CD.plantillas || ["vacio"]).map((p, i) => html`<label><input type="radio" name="plantilla" value="${p}" ${si(i === 0, "checked")}>${{ vacio: "Vacío", web: "Web", node: "Node.js", python: "Python" }[p] || p}</label>`)}</div></fieldset>
+      <label class="fld"><span>Qué va a hacer (para la memoria técnica)</span><textarea class="inp" name="descripcion" rows="3" maxlength="2000"></textarea></label>
+      <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true);
+  },
+  "cd-importar": () => {
+    abrirDialogo(html`<form class="dlg-f" data-f="cd-importar"><h2 id="dlg-t">Importar de GitHub</h2><p class="muted" style="font-size:13px">Repositorio público (o privado, si conectaste GitHub en Conexiones). Se descarga como copia: los cambios no se suben solos.</p>
+      <label class="fld"><span>Repositorio</span><input class="inp" name="repo" required placeholder="dueño/nombre o https://github.com/dueño/nombre"></label>
+      <label class="fld"><span>Nombre del proyecto (opcional)</span><input class="inp" name="nombre" maxlength="60"></label>
+      <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Importar</button></div></form>`, true);
+  },
+  "cd-borrar-proy": async () => {
+    if (!CD.p || !(await confirmar(`¿Borrar el proyecto «${CD.p}»?`, "Se mueve a codigo/.papelera de la computadora: se puede recuperar desde ahí.", "Borrar", true))) return;
+    await api("DELETE", `/api/code?p=${encodeURIComponent(CD.p)}`);
+    CD.p = null; CD.tabs = []; CD.activa = null;
+    await cargarCodeProyectos(); CD.p = CD.proyectos[0]?.nombre || null; await cargarCodeArchivos(); pintarCode();
+  },
+  "cd-nuevo-archivo": () => abrirDialogo(html`<form class="dlg-f" data-f="cd-nuevo-archivo"><h2 id="dlg-t">Archivo nuevo</h2><label class="fld"><span>Ruta dentro del proyecto</span><input class="inp" name="ruta" required placeholder="src/utilidades.js"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true),
+  "cd-nueva-carpeta": () => abrirDialogo(html`<form class="dlg-f" data-f="cd-nueva-carpeta"><h2 id="dlg-t">Carpeta nueva</h2><label class="fld"><span>Ruta dentro del proyecto</span><input class="inp" name="ruta" required placeholder="src/componentes"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true),
+  "cd-memoria": async () => {
+    const r = await api("GET", `/api/code/memoria?p=${encodeURIComponent(CD.p)}`);
+    abrirDialogo(html`<form class="dlg-f cd-dlg" data-f="cd-memoria"><h2 id="dlg-t">Memoria técnica · ${CD.p}</h2><p class="muted" style="font-size:13px">Arquitectura, dependencias, decisiones, convenciones, errores y soluciones verificadas, pendientes e historial. Los compañeros la leen antes de trabajar y la actualizan al terminar.</p><textarea class="inp mono" name="texto" rows="18">${r.texto}</textarea><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Guardar</button></div></form>`);
+  },
+  "cd-cmd": (t) => { const i = $("#cd-panel input[name=comando]"); if (i) { i.value = t.dataset.v; i.focus(); } },
+  "cd-detener": (t) => conCarga(t, async () => { await api("POST", `/api/code/ejecuciones/${t.dataset.id}/detener`, {}); }),
+  "cd-reparar": async (t) => {
+    const e = CD.ejec.find((x) => x.id === t.dataset.id);
+    if (!e) return;
+    CD.modo = "reparacion"; CD.panel = "agentes"; CD.movil = "panel";
+    CD.botId ??= (S.bots.find((b) => b.cargo === "manager") || S.bots[0])?.id || null;
+    if (!CD.botId) { toast("Primero creá un compañero.", "err"); return; }
+    await api("POST", `/api/bots/${CD.botId}/mensajes`, { texto: `${cdContexto()}\n\nFalló este comando en codigo/${CD.p}/${e.aislado ? " (en copia aislada)" : ""}:\n$ ${e.comando}\nCódigo de salida: ${e.codigo}\nSalida (final):\n${e.salida.slice(-3500)}` });
+    await cdCargarConv(); pintarCode(); toast(`${bot(CD.botId)?.nombre} está investigando el error.`);
+  },
+  "cd-modo": (t) => { CD.modo = t.dataset.v; pintarCodePanel(); },
+  "cd-equipo": async () => {
+    if (!(await confirmar("¿Crear un equipo de desarrollo?", "Coordinador (manager) con Arquitecto, Programador, Diseñador, Tester, Debugger y Revisor. Trabajan en paralelo en partes independientes; todo lo sensible sigue pidiendo tu aprobación.", "Crear equipo"))) return;
+    const r = await api("POST", "/api/equipos", { manager: { titulo: "Coordinador de desarrollo", descripcion: "Coordina el equipo de desarrollo: divide el trabajo en partes independientes, reparte con delegar, integra los cambios, pide revisión y pruebas, y mantiene la memoria técnica de cada proyecto en codigo/<proyecto>/.gravity/memoria.md." },
+      puestos: [
+        { titulo: "Arquitecto de software", descripcion: "Diseña la estructura del proyecto, módulos, interfaces y dependencias, y deja las decisiones en la memoria técnica.", cantidad: 1 },
+        { titulo: "Programador", descripcion: "Implementa funcionalidades con código claro y pruebas; verifica con probar_aislado antes de entregar.", cantidad: 1 },
+        { titulo: "Diseñador de interfaces", descripcion: "Diseña y construye interfaces accesibles y prolijas (HTML/CSS, Android).", cantidad: 1 },
+        { titulo: "Tester", descripcion: "Escribe y corre pruebas reales; informa fallas con el comando y la salida exacta.", cantidad: 1 },
+        { titulo: "Debugger", descripcion: "Investiga errores: reproduce, encuentra la causa y propone el arreglo mínimo verificado.", cantidad: 1 },
+        { titulo: "Revisor de código", descripcion: "Revisa calidad, seguridad y consistencia de los cambios antes de integrarlos; no aprueba sin haber corrido las pruebas.", cantidad: 1 },
+      ] });
+    await cargarEstado();
+    CD.botId = r.manager.id; CD.modo = "equipo"; CD.panel = "agentes"; CD.movil = "panel";
+    await cdCargarConv(); pintarCode();
+    toast(`Equipo creado: ${r.manager.nombre} coordina a ${r.miembros.length}.`);
+  },
   "crear-equipo": () => abrirCrearEquipo(),
   "nuevo-bot": () => { NB.q = ""; NB.cat = ""; abrirNuevoBot(); },
   "sumar-plantilla": (t) => abrirNuevoBot(S.plantillas.find((p) => p.id === t.dataset.id)),
@@ -6063,6 +6370,75 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "cd-crear"(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      const d = new FormData(f);
+      const p = await api("POST", "/api/code", { nombre: String(d.get("nombre")).trim(), plantilla: d.get("plantilla") || "vacio", descripcion: String(d.get("descripcion") || "").trim() });
+      cerrarDialogo(); CD.p = p.nombre; CD.tabs = []; CD.activa = null; await cargarCodeProyectos(); await cargarCodeArchivos(); pintarCode();
+      toast(`Proyecto «${p.nombre}» creado con su memoria técnica.`);
+    });
+  },
+  async "cd-importar"(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      const p = await api("POST", "/api/code/importar", { repo: f.repo.value.trim(), nombre: f.nombre.value.trim() || null });
+      cerrarDialogo(); CD.p = p.nombre; CD.tabs = []; CD.activa = null; await cargarCodeProyectos(); await cargarCodeArchivos(); pintarCode();
+      toast(`Importado: ${plural(p.archivos, "archivo", "archivos")}.`);
+    });
+  },
+  async "cd-nuevo-archivo"(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      const rel = f.ruta.value.trim().replace(/^\/+/, "");
+      const ruta = `codigo/${CD.p}/${rel}`;
+      if (CD.archivos.some((a) => a.ruta === ruta)) throw new Error("Ya existe ese archivo.");
+      const r = await api("PUT", "/api/computadora/archivo", { ruta, contenido: "" });
+      cerrarDialogo();
+      for (let i = rel.indexOf("/"); i > 0; i = rel.indexOf("/", i + 1)) CD.abiertas.add(rel.slice(0, i));
+      await cargarCodeArchivos();
+      CD.tabs.push({ ruta, texto: "", original: "", modificado: r.modificado }); CD.activa = ruta; CD.movil = "editor"; pintarCode();
+    });
+  },
+  async "cd-nueva-carpeta"(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      await api("POST", `/api/code/archivos?p=${encodeURIComponent(CD.p)}`, { op: "carpeta", ruta: f.ruta.value.trim() });
+      cerrarDialogo(); CD.abiertas.add(f.ruta.value.trim()); await cargarCodeArchivos(); pintarCodeArbol();
+    });
+  },
+  async "cd-memoria"(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => { await api("PUT", `/api/code/memoria?p=${encodeURIComponent(CD.p)}`, { texto: f.texto.value }); cerrarDialogo(); toast("Memoria técnica guardada."); });
+  },
+  async "cd-ejecutar"(f) {
+    const comando = f.comando.value.trim();
+    if (!comando) return;
+    const e = await api("POST", `/api/code/ejecutar?p=${encodeURIComponent(CD.p)}`, { comando, aislado: CD.aislado });
+    CD.ejec = [e, ...CD.ejec.filter((x) => x.id !== e.id)];
+    f.comando.value = "";
+    pintarCodePanel(); cdSondear();
+  },
+  async "cd-buscar"(f, ev) {
+    CD.q = f.q.value; CD.regex = f.regex.checked; CD.mayus = f.mayus.checked;
+    if (!CD.q) return;
+    if (ev?.submitter?.value === "reemplazar") {
+      const sucias = CD.tabs.filter((t) => t.texto !== t.original);
+      if (sucias.length) throw new Error("Guardá o cerrá los archivos con cambios antes de reemplazar en todo el proyecto.");
+      if (!(await confirmar("¿Reemplazar en todo el proyecto?", `«${CD.q}» → «${f.r.value}». Cada archivo que cambie queda con su versión anterior para restaurar.`, "Reemplazar"))) return;
+      const r = await api("POST", `/api/code/reemplazar?p=${encodeURIComponent(CD.p)}`, { texto: CD.q, reemplazo: f.r.value, regex: CD.regex, mayusculas: CD.mayus });
+      toast(`${plural(r.reemplazos, "reemplazo", "reemplazos")} en ${plural(r.archivos, "archivo", "archivos")}.`);
+      for (const t of CD.tabs) { const texto = await cdLeer(t.ruta).catch(() => t.texto); Object.assign(t, { texto, original: texto }); }
+      CD.editor?.destruir(); CD.editor = null;
+    }
+    CD.res = await api("GET", `/api/code/buscar?p=${encodeURIComponent(CD.p)}&q=${encodeURIComponent(CD.q)}&regex=${CD.regex ? 1 : 0}&mayus=${CD.mayus ? 1 : 0}`);
+    pintarCode();
+  },
+  async "cd-pedir"(f) {
+    const texto = f.texto.value.trim();
+    if (!texto || !CD.botId) return;
+    const sel = f.seleccion.checked ? CD.editor?.seleccion() : "";
+    await conCarga(f.querySelector("button"), async () => {
+      await api("POST", `/api/bots/${CD.botId}/mensajes`, { texto: `${cdContexto()}${sel ? `\n\nSelección del editor:\n\`\`\`\n${sel.slice(0, 6000)}\n\`\`\`` : ""}\n\nPedido: ${texto}` });
+      f.texto.value = "";
+      await cdCargarConv(); pintarCodePanel();
+    });
+  },
   async enviar(f) {
     const ta = $("#ta"), b = bot(S.botId);
     const texto = ta.value.trim();
@@ -6374,6 +6750,9 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; await cargarCodeArchivos(); pintarCode(); },
+  "cd-aislado": (t) => { CD.aislado = t.checked; },
+  "cd-bot": async (t) => { CD.botId = t.value; await cdCargarConv(); pintarCodePanel(); },
   // Importar una copia: el .zip va crudo (application/zip), el motor lo valida, lo aplica y se reinicia.
   async respaldo(t) {
     const archivo = t.files?.[0];
@@ -6607,6 +6986,7 @@ function conectar() {
   on("delta-reinicio", (d) => { S.stream[d.botId] = ""; S.corte[d.botId] = 0; if (d.botId === S.botId) pintarVivo(); });
   on("cambio", (d) => {
     const id = d.botId;
+    if (id === CD.botId && $("#code") && CD.panel === "agentes") cdCargarConv().then(pintarCodePanel);
     if (id === S.botId && S.ruta.vista === "chats" && S.pestana === "chat") { S.corte[id] = (S.stream[id] || "").length; cargarConv(id); }
     else { S.stream[id] = ""; S.corte[id] = 0; delete S.items[id]; S.cola[id] = []; }
   });
@@ -6626,7 +7006,7 @@ function conectar() {
   });
   on("memoria", (d) => { if (d.botId === S.botId && S.pestana === "memoria") cargarMemoria(); });
   let tCompu = null;
-  on("computadora", () => { if ($("#pc")) { clearTimeout(tCompu); tCompu = setTimeout(cargarCompu, 400); } });
+  on("computadora", () => { if ($("#pc")) { clearTimeout(tCompu); tCompu = setTimeout(cargarCompu, 400); } if ($("#code") && CD.p) { clearTimeout(CD.tArch); CD.tArch = setTimeout(async () => { await cargarCodeArchivos().catch(() => {}); pintarCodeArbol(); if (CD.panel === "terminal") pintarCodePanel(); }, 400); } });
   on("tarea", (t) => {
     const i = S.tareas.findIndex((x) => x.id === t.id);
     if (i >= 0) S.tareas[i] = t; else S.tareas.push(t);

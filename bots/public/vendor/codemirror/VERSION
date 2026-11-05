@@ -1,0 +1,2 @@
+Editor de Gravity Code: CodeMirror 6 empaquetado con esbuild a partir de fuente.mjs.txt (versiones en versiones.json).
+Al volver a empaquetar, subí el ?v= del import("/vendor/codemirror/editor.js?v=N") en index.html para que el service worker no sirva el viejo.
