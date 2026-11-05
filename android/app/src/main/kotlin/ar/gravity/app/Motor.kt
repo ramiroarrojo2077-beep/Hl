@@ -220,7 +220,16 @@ class Motor : Service() {
         // Sin ANTHROPIC_API_KEY el motor usa Gemini y, si se acaba su cupo, el respaldo gratis (Groq o Mistral).
         val claves = buildMap {
             put(if (proveedor == Clave.ANTHROPIC) "ANTHROPIC_API_KEY" else "GEMINI_API_KEY", clave)
-            if (!respaldo.isNullOrBlank()) put(if (respaldo.startsWith("gsk_")) "GROQ_API_KEY" else "MISTRAL_API_KEY", respaldo)
+            when {
+                respaldo.isNullOrBlank() -> {}
+                // Servidor de modelos propio (Ollama, LM Studio…): «http://IP:11434/v1#modelo[,otro]».
+                respaldo.startsWith("http://") || respaldo.startsWith("https://") -> {
+                    put("GRAVITY_LOCAL_URL", respaldo.substringBefore("#"))
+                    put("GRAVITY_LOCAL_MODELOS", respaldo.substringAfter("#", ""))
+                }
+                respaldo.startsWith("gsk_") -> put("GROQ_API_KEY", respaldo)
+                else -> put("MISTRAL_API_KEY", respaldo)
+            }
         }
         val variables = claves + mapOf(
             "GRAVITY_TOKEN" to Gravity.token(contexto),
