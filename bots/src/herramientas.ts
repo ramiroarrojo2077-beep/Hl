@@ -239,7 +239,7 @@ const porBot = new Map<string, Map<string, BetaRunnableTool>>();
 // Permisos por compañero: el usuario puede apagarle grupos de herramientas. Se hace cumplir acá (no se
 // le mandan al modelo y no se ejecutan), no con una instrucción. Entregar una tarea queda siempre.
 export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas: string[] }> = {
-  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep", "probar_aislado"] },
+  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep", "probar_aislado", "datos"] },
   web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
   mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
   conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
@@ -284,6 +284,7 @@ async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunn
       herramientaEquipoNuevo(botId),
       herramientaAislado(),
       herramientaEnsenar(botId),
+      herramientaDatos(),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
       // Mirar videos y audios lo hace Gemini: está si hay su clave, sea cual sea el proveedor de los bots.
@@ -497,6 +498,52 @@ function herramientaEnsenar(botId: string): BetaRunnableTool {
       const { enviarMensaje } = await import("./agente.ts");
       enviarMensaje(a.id, `[Devolución de tu mentor ${yo?.nombre ?? ""}]\n${e.devolucion.slice(0, 6000)}\n\nGuardá lo útil en /memories/lecciones.md («antes de X, verificar Y») y aplicalo la próxima vez. No hace falta que respondas.`);
       return `Devolución enviada a ${a.nombre}.`;
+    },
+  });
+}
+
+const EntradaDatos = z.strictObject({
+  accion: z.enum(["columnas", "consultar", "anomalias", "comparar", "pronosticar", "limpiar"]),
+  archivo: z.string().describe("Ruta en la computadora de un .csv, .tsv, .json o .xlsx"),
+  consulta: z.strictObject({
+    filtros: z.array(z.strictObject({ columna: z.string(), op: z.enum(["=", "!=", ">", ">=", "<", "<=", "contiene"]), valor: z.string() })),
+    agrupar: z.string().nullable(),
+    periodo: z.enum(["dia", "semana", "mes", "trimestre", "año"]).nullable(),
+    metrica: z.enum(["contar", "suma", "promedio", "minimo", "maximo", "mediana"]),
+    columna: z.string().nullable(),
+    orden: z.enum(["valor_desc", "valor_asc", "grupo"]),
+    limite: z.number().nullable(),
+  }).nullable().describe("Solo consultar"),
+  columna: z.string().nullable().describe("anomalias: columna numérica. comparar/pronosticar: columna de valor (null = contar filas)"),
+  fecha: z.string().nullable().describe("comparar/pronosticar: columna de fecha"),
+  periodo: z.enum(["dia", "semana", "mes", "trimestre", "año"]).nullable().describe("comparar/pronosticar"),
+});
+
+// Data Lab para los compañeros: las cuentas las hace Gravity con el archivo real (no el modelo).
+function herramientaDatos(): BetaRunnableTool {
+  return betaZodTool({
+    name: "datos",
+    description: "Analiza tablas (CSV, TSV, JSON, Excel .xlsx) de la computadora con cálculos exactos: columnas (perfil y tipos), consultar (filtrar, agrupar —también por período— y sumar/promediar/contar…), anomalias (valores inusuales), comparar (cambio entre períodos), pronosticar (tendencia con intervalo del 95 %) y limpiar (quita vacíos, duplicados y espacios; guarda un CSV nuevo en datos/). Usala en vez de calcular a mano.",
+    inputSchema: EntradaDatos,
+    run: async (e) => {
+      const D = await import("./datos.ts");
+      try {
+        const t = D.leerTabla(e.archivo);
+        if (e.accion === "columnas") return JSON.stringify({ filas: t.filas.length, columnas: D.perfil(t), muestra: t.filas.slice(0, 5) });
+        if (e.accion === "consultar") {
+          if (!e.consulta) return "Falta la consulta.";
+          const q = { ...e.consulta, filtros: e.consulta.filtros.map((f) => ({ ...f, valor: Number.isFinite(Number(f.valor)) && f.valor.trim() !== "" ? Number(f.valor) : f.valor })) };
+          return JSON.stringify(D.consultar(t, q));
+        }
+        if (e.accion === "anomalias") return e.columna ? JSON.stringify(D.anomalias(t, e.columna)) : "Falta la columna.";
+        if (e.accion === "comparar") return e.fecha && e.periodo ? JSON.stringify(D.compararPeriodos(t, e.fecha, e.columna, e.periodo)) : "Faltan fecha y período.";
+        if (e.accion === "pronosticar") return e.fecha && e.periodo ? JSON.stringify(D.pronosticar(t, e.fecha, e.columna, e.periodo)) : "Faltan fecha y período.";
+        const limpia = D.transformar(t, { quitarVacias: true, quitarDuplicados: true, recortarEspacios: true, normalizarColumnas: false, columnas: null, filtros: [], unirCon: null });
+        const ruta = D.guardarEnComputadora(`${path.basename(e.archivo).replace(/\.\w+$/, "")}-limpio.csv`, D.aCsv(limpia));
+        return `Tabla limpia guardada en ${ruta}: ${limpia.filas.length} filas (antes ${t.filas.length}).`;
+      } catch (err) {
+        return `No se pudo: ${(err as Error).message}`;
+      }
     },
   });
 }

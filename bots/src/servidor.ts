@@ -64,6 +64,8 @@ import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
 import { guardarVersion, leerVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
 import * as Code from "./codigo.ts";
+import * as Datos from "./datos.ts";
+import { preguntar as preguntarDatos } from "./datos-ia.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
 import { instalarDelMercado, vistaMercado } from "./mercado.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
@@ -286,7 +288,9 @@ function verificarOrigen(req: http.IncomingMessage): void {
   const tipo = String(req.headers["content-type"] ?? "");
   // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
   const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
-  if (!tipo.startsWith("application/json") && !esRespaldo) {
+  // Data Lab sube tablas como binario (CSV, Excel): tampoco es un tipo "simple".
+  const esTabla = (req.url ?? "").startsWith("/api/datos/subir") && tipo.startsWith("application/octet-stream");
+  if (!tipo.startsWith("application/json") && !esRespaldo && !esTabla) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
 }
@@ -1366,6 +1370,94 @@ ruta("GET", "/api/computadora/versiones", async ({ url }) => listarVersiones(url
 ruta("GET", "/api/computadora/version", async ({ url }) => {
   const b = malPedido(() => leerVersion(url.searchParams.get("ruta") ?? "", url.searchParams.get("id") ?? "")) as Buffer;
   return { contenido: b.subarray(0, 8000).includes(0) ? null : b.toString("utf8") };
+});
+
+// ---- Gravity Data Lab (ver datos.ts) ----
+
+const EXT_DATOS = /\.(csv|tsv|txt|json|xlsx)$/i;
+const tablaDe = (ruta: string) => malPedido(() => Datos.leerTabla(ruta)) as Datos.Tabla;
+const Periodo = z.enum(["dia", "semana", "mes", "trimestre", "año"]);
+ruta("GET", "/api/datos/archivos", async () => (await listarArchivos(COMPUTADORA)).filter((a) => !a.carpeta && EXT_DATOS.test(a.ruta) && !a.ruta.startsWith("codigo/") && a.ruta !== "datos/tableros.json"));
+ruta("POST", "/api/datos/subir", async ({ req, url }) => {
+  const nombre = (url.searchParams.get("nombre") ?? "").trim();
+  if (!EXT_DATOS.test(nombre)) throw new ErrorHttp(400, "Subí un .csv, .tsv, .txt, .json o .xlsx.");
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const p of req) {
+    total += (p as Buffer).length;
+    if (total > 30 * 1024 * 1024) throw new ErrorHttp(413, "El archivo pasa los 30 MB.");
+    partes.push(p as Buffer);
+  }
+  const dir = path.join(COMPUTADORA, "datos");
+  await mkdir(dir, { recursive: true });
+  const base = path.basename(nombre).replace(/[^\w.-]+/g, "_");
+  let rel = `datos/${base}`;
+  for (let n = 2; await stat(path.join(COMPUTADORA, rel)).then(() => true, () => false); n++) rel = `datos/${base.replace(/(\.\w+)$/, `-${n}$1`)}`;
+  await writeFile(path.join(COMPUTADORA, rel), Buffer.concat(partes));
+  emitir("computadora");
+  return { ruta: rel };
+});
+ruta("POST", "/api/datos/analizar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500) }), await cuerpo());
+  const t = tablaDe(d.ruta);
+  return { columnas: t.columnas, filas: t.filas.length, perfil: Datos.perfil(t), muestra: t.filas.slice(0, 50) };
+});
+ruta("POST", "/api/datos/consultar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), consulta: Datos.Consulta }), await cuerpo());
+  return malPedido(() => Datos.consultar(tablaDe(d.ruta), d.consulta));
+});
+ruta("POST", "/api/datos/comparar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), fecha: z.string(), valor: z.string().nullable(), periodo: Periodo, metrica: z.enum(["contar", "suma", "promedio", "minimo", "maximo", "mediana"]).default("suma") }), await cuerpo());
+  return malPedido(() => Datos.compararPeriodos(tablaDe(d.ruta), d.fecha, d.valor, d.periodo, d.metrica));
+});
+ruta("POST", "/api/datos/anomalias", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), columna: z.string() }), await cuerpo());
+  return malPedido(() => Datos.anomalias(tablaDe(d.ruta), d.columna));
+});
+ruta("POST", "/api/datos/pronostico", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), fecha: z.string(), valor: z.string().nullable(), periodo: Periodo, pasos: z.number().int().min(1).max(12).default(3) }), await cuerpo());
+  return malPedido(() => Datos.pronosticar(tablaDe(d.ruta), d.fecha, d.valor, d.periodo, d.pasos));
+});
+ruta("POST", "/api/datos/transformar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), op: Datos.Transformacion, nombre: z.string().trim().max(80).nullish() }), await cuerpo());
+  const t = malPedido(() => Datos.transformar(tablaDe(d.ruta), d.op)) as Datos.Tabla;
+  const destino = Datos.guardarEnComputadora(`${(d.nombre || path.basename(d.ruta).replace(/\.\w+$/, "") + "-limpio").replace(/\.csv$/i, "")}.csv`, Datos.aCsv(t));
+  emitir("computadora");
+  return { ruta: destino, filas: t.filas.length, columnas: t.columnas };
+});
+ruta("POST", "/api/datos/preguntar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), pregunta: z.string().trim().min(3).max(1000) }), await cuerpo());
+  try {
+    return await preguntarDatos(tablaDe(d.ruta), d.pregunta, AbortSignal.timeout(90_000));
+  } catch (err) {
+    throw err instanceof ErrorHttp ? err : new ErrorHttp(400, (err as Error).message);
+  }
+});
+ruta("POST", "/api/datos/informe", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), consulta: Datos.Consulta.nullish(), anomalias: z.string().nullish(), pronostico: z.object({ fecha: z.string(), valor: z.string().nullable(), periodo: Periodo }).nullish() }), await cuerpo());
+  const t = tablaDe(d.ruta);
+  const md = malPedido(() => Datos.informe(d.ruta, t, {
+    consulta: d.consulta ? Datos.consultar(t, d.consulta) : undefined,
+    anomalias: d.anomalias ? { ...Datos.anomalias(t, d.anomalias), columna: d.anomalias } : undefined,
+    pronostico: d.pronostico ? Datos.pronosticar(t, d.pronostico.fecha, d.pronostico.valor, d.pronostico.periodo) : undefined,
+  })) as string;
+  const destino = Datos.guardarEnComputadora(`informe-${path.basename(d.ruta).replace(/\.\w+$/, "")}.md`, md);
+  emitir("computadora");
+  return { ruta: destino };
+});
+// Tableros: gráficos guardados que se recalculan con los datos actuales cada vez que se abren.
+const TABLEROS = () => path.join(COMPUTADORA, "datos", "tableros.json");
+const Grafico = z.object({ id: z.string().max(40), titulo: z.string().max(120), tipo: z.enum(["barras", "lineas", "torta"]), ruta: z.string().max(500), consulta: Datos.Consulta });
+const Tablero = z.object({ id: z.string().max(40), nombre: z.string().trim().min(1).max(80), graficos: z.array(Grafico).max(24) });
+ruta("GET", "/api/datos/tableros", async () => {
+  const xs = JSON.parse(await readFile(TABLEROS(), "utf8").catch(() => "[]")) as z.infer<typeof Tablero>[];
+  return xs.map((t) => ({ ...t, graficos: t.graficos.map((g) => { try { return { ...g, resultado: Datos.consultar(Datos.leerTabla(g.ruta), g.consulta) }; } catch (err) { return { ...g, error: (err as Error).message }; } }) }));
+});
+ruta("PUT", "/api/datos/tableros", async ({ cuerpo }) => {
+  const xs = validar(z.array(Tablero).max(30), await cuerpo());
+  await mkdir(path.dirname(TABLEROS()), { recursive: true });
+  await writeFile(TABLEROS(), JSON.stringify(xs, null, 2));
+  return { ok: true };
 });
 
 // ---- Gravity Code (ver codigo.ts): el proyecto va en ?p= o en el cuerpo, porque puede tener espacios ----

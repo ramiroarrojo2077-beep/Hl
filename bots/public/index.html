@@ -885,6 +885,12 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
+.dl-sel{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:14px}.dl-sel .btn{min-height:44px}.dl-pest{margin-top:12px}.dl-pest .chip{background:var(--s1);color:var(--tx);border:1px solid var(--line)}.dl-pest .chip[aria-pressed=true]{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.dl-res{margin:12px 0 6px;font-size:14px}.dl-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}.dl-col{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--s1);border:1px solid var(--line)}.dl-col b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dl-col .tag{align-self:flex-start}.dl-col small{color:var(--tx2);font-size:12px}
+.dl-preg{display:flex;gap:8px;align-items:flex-end;margin-top:14px;flex-wrap:wrap}.dl-armar{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px;align-items:end}.dl-armar .fld{margin:0}.dl-acc{display:flex;align-items:flex-end}.dl-acc .btn{width:100%;min-height:44px}
+.dl-card{margin-top:12px}.dl-card h2{font-size:16px;margin:0 0 4px}.dl-g{width:100%;max-width:760px;height:auto;margin-top:8px;display:block}.dl-g .g-l{stroke:var(--line);stroke-width:1}.dl-g .g-t{fill:var(--tx3);font-size:11px}.dl-g .g-tl{fill:var(--tx2);font-size:12.5px}.dl-g .g-b{fill:var(--ion)}.dl-g .g-linea{fill:none;stroke:var(--ion);stroke-width:2.5}.dl-g .g-p{fill:var(--ion)}.dl-g .g-banda{fill:#9B7BFF;opacity:.18}.dl-g .g-pron{fill:none;stroke:#9B7BFF;stroke-width:2;stroke-dasharray:5 4}
+.dl-tw{overflow:auto;max-height:340px}.dl-t{border-collapse:collapse;font-size:12.5px;width:100%}.dl-t th,.dl-t td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;white-space:nowrap}.dl-t th{position:sticky;top:0;background:var(--s1)}
+.dl-nota{font-size:13px;color:var(--tx2)}.dl-chks{display:flex;flex-wrap:wrap;gap:6px 14px}.dl-tab{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
 .univ-cfg{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}.univ-cfg .fld{margin:0;min-width:140px}.univ-cfg select.inp{min-height:38px}.univ-sw{display:flex;gap:6px}.sw-c{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:var(--c);cursor:pointer}.sw-c[aria-pressed=true]{outline:2px solid var(--tx);outline-offset:2px}
 .univ-w{position:relative}.univ-obs{position:absolute;left:10px;bottom:10px;max-width:min(320px,calc(100% - 20px));padding:10px 12px;border-radius:14px;background:rgba(8,12,22,.86);border:1px solid #26304a;color:#e3e8f2;backdrop-filter:blur(8px)}.univ-obs-h{display:flex;gap:8px;align-items:center}.univ-obs-h div{flex:1;display:flex;flex-direction:column}.univ-obs-h small{color:#8d98b0;font-size:12px}.univ-obs p{margin:6px 0 0;font-size:13px}.univ-obs-t{list-style:none;margin:6px 0 0;padding:0;font-size:12px;display:flex;flex-direction:column;gap:3px}.univ-obs .tag{margin-right:6px}.univ-obs .btn.ghost{color:#cfd7e6}
 .univ{height:min(62vh,520px);border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#05070d;margin-top:14px}.univ canvas{display:block;width:100%;height:100%;cursor:grab}
@@ -1798,7 +1804,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2108,6 +2114,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "datos") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="datalab"></div></div>`; montarDatos().catch((e) => toast(e.message, "err")); return; }
   if (v === "code") { vista.classList.add("v-code"); $("#vista").innerHTML = `<div class="code-pag" id="code"></div>`; montarCode().catch((e) => toast(e.message, "err")); return; }
   if (v === "universo") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="univ"></div></div>`; montarUniverso(); return; }
   if (v === "mapa") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="mapa"></div></div>`; pintarMapa(); if (!S.proyectos) cargarProyectos().then(pintarMapa); return; }
@@ -3709,6 +3716,117 @@ function mesaRobots(fac, ps, habla) {
     ${robots}</svg>`);
 }
 
+// ================================================================ Gravity Data Lab
+// Tablas reales de la computadora (CSV, TSV, JSON, Excel): perfil de columnas, preguntas en lenguaje
+// natural, constructor de gráficos con filtros, comparar períodos, anomalías, pronóstico con intervalo,
+// limpiar y unir tablas, informes y tableros que se recalculan con los datos actuales.
+const DL = { archivos: null, ruta: null, info: null, res: null, q: null, tipo: "barras", extra: null, tableros: null, tablero: null, cargando: false, pestana: "explorar" };
+const DL_MET = { contar: "Contar filas", suma: "Suma", promedio: "Promedio", minimo: "Mínimo", maximo: "Máximo", mediana: "Mediana" };
+const DL_PER = { dia: "Día", semana: "Semana", mes: "Mes", trimestre: "Trimestre", "año": "Año" };
+const dlNum = (n) => (typeof n === "number" ? n.toLocaleString("es-AR", { maximumFractionDigits: 2 }) : n ?? "");
+async function montarDatos() {
+  const el = $("#datalab");
+  if (!el) return;
+  DL.archivos = await api("GET", "/api/datos/archivos");
+  if (DL.ruta && !DL.archivos.some((a) => a.ruta === DL.ruta)) { DL.ruta = null; DL.info = null; }
+  pintarDatos();
+}
+async function dlAbrir(ruta) {
+  DL.ruta = ruta; DL.info = null; DL.res = null; DL.extra = null; DL.cargando = true; pintarDatos();
+  try { DL.info = await api("POST", "/api/datos/analizar", { ruta }); } finally { DL.cargando = false; pintarDatos(); }
+}
+// Gráficos SVG (barras, líneas con banda de incertidumbre opcional, torta), accesibles y con la tabla al lado.
+function dlGrafico(grupos, tipo = "barras", op = {}) {
+  const xs = grupos.slice(0, 60);
+  if (!xs.length) return html`<p class="muted">Sin datos para graficar.</p>`;
+  const W = 640, H = 260, m = { l: 56, r: 12, t: 12, b: 46 };
+  const banda = op.banda || [];
+  const vals = [...xs.map((g) => g.valor), ...banda.flatMap((b) => [b.bajo, b.alto])];
+  const max = Math.max(0, ...vals), min = Math.min(0, ...vals), rango = max - min || 1;
+  const y = (v) => m.t + (H - m.t - m.b) * (1 - (v - min) / rango);
+  const n = xs.length + banda.length, paso = (W - m.l - m.r) / Math.max(1, n);
+  const txt = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const ejes = [0, 0.25, 0.5, 0.75, 1].map((k) => { const v = min + rango * k; return `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" class="g-l"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" class="g-t">${txt(dlNum(Math.round(v * 100) / 100))}</text>`; }).join("");
+  const etiquetas = xs.map((g, i) => (n <= 14 || i % Math.ceil(n / 14) === 0 ? `<text x="${m.l + paso * (i + 0.5)}" y="${H - m.b + 16}" text-anchor="middle" class="g-t">${txt(String(g.grupo).slice(0, 12))}</text>` : "")).join("");
+  let cuerpo = "";
+  if (tipo === "torta") {
+    const total = xs.reduce((a, g) => a + Math.max(0, g.valor), 0) || 1;
+    let a0 = -Math.PI / 2;
+    const cs = ["#6CD3F0", "#9B7BFF", "#63D3B1", "#FFB07A", "#E8ECF5", "#5B6478"];
+    cuerpo = xs.slice(0, 8).map((g, i) => { const a1 = a0 + (Math.max(0, g.valor) / total) * Math.PI * 2, cx = 160, cy = 130, r = 105; const d = `M${cx},${cy} L${cx + r * Math.cos(a0)},${cy + r * Math.sin(a0)} A${r},${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${cx + r * Math.cos(a1)},${cy + r * Math.sin(a1)} Z`; a0 = a1; return `<path d="${d}" fill="${cs[i % cs.length]}"><title>${txt(g.grupo)}: ${txt(dlNum(g.valor))}</title></path><rect x="320" y="${24 + i * 26}" width="14" height="14" rx="3" fill="${cs[i % cs.length]}"/><text x="342" y="${36 + i * 26}" class="g-t g-tl">${txt(String(g.grupo).slice(0, 28))} · ${txt(dlNum(g.valor))} (${Math.round((Math.max(0, g.valor) / total) * 100)}%)</text>`; }).join("");
+    return crudo(`<svg viewBox="0 0 ${W} ${H}" class="dl-g" role="img" aria-label="${txt(op.titulo || "Gráfico de torta")}">${cuerpo}</svg>`);
+  }
+  if (tipo === "lineas") {
+    const pts = xs.map((g, i) => `${m.l + paso * (i + 0.5)},${y(g.valor)}`).join(" ");
+    const bandaPts = banda.length ? [...banda.map((b, k) => `${m.l + paso * (xs.length + k + 0.5)},${y(b.alto)}`), ...banda.slice().reverse().map((b, k) => `${m.l + paso * (xs.length + banda.length - k - 0.5)},${y(b.bajo)}`)].join(" ") : "";
+    const pron = banda.length ? `<polygon points="${bandaPts}" class="g-banda"/><polyline points="${m.l + paso * (xs.length - 0.5)},${y(xs.at(-1).valor)} ${banda.map((b, k) => `${m.l + paso * (xs.length + k + 0.5)},${y(b.valor)}`).join(" ")}" class="g-pron"/>` : "";
+    cuerpo = `${pron}<polyline points="${pts}" class="g-linea"/>${xs.map((g, i) => `<circle cx="${m.l + paso * (i + 0.5)}" cy="${y(g.valor)}" r="3.5" class="g-p"><title>${txt(g.grupo)}: ${txt(dlNum(g.valor))}</title></circle>`).join("")}`;
+  } else {
+    cuerpo = xs.map((g, i) => `<rect x="${m.l + paso * i + paso * 0.15}" y="${Math.min(y(g.valor), y(0))}" width="${paso * 0.7}" height="${Math.abs(y(0) - y(g.valor))}" rx="3" class="g-b"><title>${txt(g.grupo)}: ${txt(dlNum(g.valor))}</title></rect>`).join("");
+  }
+  return crudo(`<svg viewBox="0 0 ${W} ${H}" class="dl-g" role="img" aria-label="${txt(op.titulo || "Gráfico")}">${ejes}${cuerpo}${etiquetas}</svg>`);
+}
+const dlTablaRes = (r) => html`<details class="mas"><summary>${ico("right", "s")}Tabla (${r.grupos.length})</summary><div class="dl-tw"><table class="dl-t"><thead><tr><th>Grupo</th><th>Valor</th><th>Filas</th></tr></thead><tbody>${r.grupos.map((g) => html`<tr><td>${g.grupo}</td><td>${dlNum(g.valor)}</td><td>${g.n}</td></tr>`)}</tbody></table></div></details>`;
+function pintarDatos() {
+  const el = $("#datalab");
+  if (!el) return;
+  const i = DL.info;
+  const cols = i?.perfil || [];
+  const opt = (xs, sel, vacio) => html`${vacio ? html`<option value="">${vacio}</option>` : ""}${xs.map((c) => html`<option value="${c.nombre}" ${si(sel === c.nombre, "selected")}>${c.nombre}</option>`)}`;
+  const nums = cols.filter((c) => c.tipo === "número"), fechas = cols.filter((c) => c.tipo === "fecha");
+  const q = DL.q || { agrupar: cols.find((c) => c.tipo === "texto")?.nombre || fechas[0]?.nombre || "", periodo: "", metrica: nums.length ? "suma" : "contar", columna: nums[0]?.nombre || "" };
+  const pest = [["explorar", "Explorar"], ["tiempo", "Tiempo y pronóstico"], ["limpiar", "Limpiar y unir"], ["tableros", "Tableros"]];
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Gravity Data Lab</h1><p>Analizá tablas reales (CSV, Excel, JSON) con cálculos exactos: gráficos, comparaciones, anomalías y pronósticos. Los resultados se guardan en la carpeta datos/ de la computadora.</p></div></header>
+    <div class="dl-sel"><label class="fld" style="flex:1;min-width:200px"><span>Archivo</span><select class="inp" data-c="dl-archivo"><option value="">Elegí una tabla…</option>${(DL.archivos || []).map((a) => html`<option value="${a.ruta}" ${si(a.ruta === DL.ruta, "selected")}>${a.ruta} · ${tamano(a.tamano)}</option>`)}</select></label>
+      <label class="btn out">${ico("plus", "s")}Subir archivo<input type="file" accept=".csv,.tsv,.txt,.json,.xlsx" data-c="dl-subir" hidden></label>
+      <button class="btn ghost" data-a="dl-analista">${ico("user", "s")}Analista de datos</button></div>
+    ${DL.cargando ? html`<p class="muted" role="status">Leyendo…</p>` : ""}
+    <nav class="cd-modos dl-pest" aria-label="Secciones">${pest.map(([k, t]) => html`<button class="chip" aria-pressed="${String(DL.pestana === k)}" data-a="dl-pest" data-v="${k}">${t}</button>`)}</nav>
+    ${DL.pestana === "tableros" ? dlTableros() : !i ? html`<p class="muted" style="margin-top:14px">Elegí o subí una tabla para empezar.</p>` : html`
+    <p class="dl-res"><b>${dlNum(i.filas)}</b> filas · <b>${i.columnas.length}</b> columnas</p>
+    ${DL.pestana === "explorar" ? html`
+      <div class="dl-cols">${cols.map((c) => html`<div class="dl-col"><b title="${c.nombre}">${c.nombre}</b><span class="tag">${c.tipo}</span><small>${c.tipo === "número" ? `${dlNum(c.min)} a ${dlNum(c.max)} · media ${dlNum(c.media)} · mediana ${dlNum(c.mediana)}` : c.tipo === "fecha" ? `${c.min} a ${c.max}` : `${c.distintos} distintos${c.frecuentes?.[0] ? ` · más común: ${c.frecuentes[0].valor} (${c.frecuentes[0].n})` : ""}`}${c.vacios ? ` · ${c.vacios} vacíos` : ""}</small></div>`)}</div>
+      <form class="dl-preg" data-f="dl-preguntar"><label class="fld" style="flex:1"><span>Preguntá en lenguaje natural</span><input class="inp" name="pregunta" placeholder="Ej.: ¿cuánto se vendió por región en marzo?" data-k="dl-preg" required minlength="3"></label><button class="btn pri">Preguntar</button></form>
+      <form class="dl-armar" data-f="dl-consultar">
+        <label class="fld"><span>Agrupar por</span><select class="inp" name="agrupar">${opt(cols, q.agrupar, "Sin agrupar")}</select></label>
+        <label class="fld"><span>Período (si es fecha)</span><select class="inp" name="periodo"><option value="">—</option>${Object.entries(DL_PER).map(([k, t]) => html`<option value="${k}" ${si(q.periodo === k, "selected")}>${t}</option>`)}</select></label>
+        <label class="fld"><span>Cálculo</span><select class="inp" name="metrica">${Object.entries(DL_MET).map(([k, t]) => html`<option value="${k}" ${si(q.metrica === k, "selected")}>${t}</option>`)}</select></label>
+        <label class="fld"><span>De la columna</span><select class="inp" name="columna">${opt(nums, q.columna, "—")}</select></label>
+        <label class="fld"><span>Filtro</span><select class="inp" name="fcol">${opt(cols, q.fcol, "Sin filtro")}</select></label>
+        <label class="fld"><span>Condición</span><select class="inp" name="fop">${["=", "!=", ">", ">=", "<", "<=", "contiene"].map((o) => html`<option ${si(q.fop === o, "selected")}>${o}</option>`)}</select></label>
+        <label class="fld"><span>Valor</span><input class="inp" name="fval" value="${q.fval || ""}"></label>
+        <label class="fld"><span>Gráfico</span><select class="inp" name="tipo">${[["barras", "Barras"], ["lineas", "Líneas"], ["torta", "Torta"]].map(([k, t]) => html`<option value="${k}" ${si(DL.tipo === k, "selected")}>${t}</option>`)}</select></label>
+        <div class="dl-acc"><button class="btn pri">Calcular</button></div></form>
+      ${DL.res ? html`<section class="card dl-card"><h2>${DL.res.titulo || DL.res.descripcion}</h2>${DL.res.explicacion ? html`<p class="sub">${DL.res.explicacion}</p>` : ""}<p class="muted" style="font-size:12.5px">${DL.res.descripcion} · ${dlNum(DL.res.filas)} filas</p>${dlGrafico(DL.res.grupos, DL.tipo, { titulo: DL.res.descripcion })}${dlTablaRes(DL.res)}
+        <div class="fila" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn out sm" data-a="dl-al-tablero">Agregar a un tablero</button><button class="btn ghost sm" data-a="dl-informe">Generar informe</button><button class="btn ghost sm" data-a="dl-exportar">Exportar resultado (CSV)</button></div></section>` : ""}
+      <form class="dl-armar" data-f="dl-anomalias" style="margin-top:12px"><label class="fld"><span>Buscar valores inusuales en</span><select class="inp" name="columna">${opt(nums, nums[0]?.nombre)}</select></label><div class="dl-acc"><button class="btn out">Buscar anomalías</button></div></form>
+      ${DL.extra?.tipo === "anomalias" ? html`<section class="card dl-card"><h2>Anomalías en ${DL.extra.columna}</h2><p class="sub">${DL.extra.r.nota}</p>${DL.extra.r.filas.length ? html`<ul class="hist">${DL.extra.r.filas.slice(0, 30).map((a) => html`<li>Fila ${a.fila}: <b>${dlNum(a.valor)}</b> <small class="muted">(z = ${a.z})</small></li>`)}</ul>` : ""}</section>` : ""}
+      <details class="mas" style="margin-top:12px"><summary>${ico("right", "s")}Primeras filas</summary><div class="dl-tw"><table class="dl-t"><thead><tr>${i.columnas.map((c) => html`<th>${c}</th>`)}</tr></thead><tbody>${i.muestra.slice(0, 20).map((f) => html`<tr>${f.map((v) => html`<td>${dlNum(v)}</td>`)}</tr>`)}</tbody></table></div></details>` : ""}
+    ${DL.pestana === "tiempo" ? (fechas.length ? html`
+      <form class="dl-armar" data-f="dl-tiempo"><label class="fld"><span>Fecha</span><select class="inp" name="fecha">${opt(fechas, fechas[0]?.nombre)}</select></label><label class="fld"><span>Valor</span><select class="inp" name="valor">${opt(nums, nums[0]?.nombre, "Contar filas")}</select></label><label class="fld"><span>Período</span><select class="inp" name="periodo">${Object.entries(DL_PER).map(([k, t]) => html`<option value="${k}" ${si(k === "mes", "selected")}>${t}</option>`)}</select></label><label class="fld"><span>Pronosticar</span><select class="inp" name="pasos">${[1, 2, 3, 6, 12].map((n) => html`<option value="${n}" ${si(n === 3, "selected")}>${n} período(s)</option>`)}</select></label><div class="dl-acc"><button class="btn pri">Comparar y pronosticar</button></div></form>
+      ${DL.extra?.tipo === "tiempo" ? html`<section class="card dl-card"><h2>Evolución por ${DL_PER[DL.extra.periodo].toLowerCase()}</h2><p class="sub">${DL.extra.cmp.resumen}</p>${dlGrafico(DL.extra.cmp.serie, "lineas", { banda: DL.extra.pr.proximos, titulo: "Serie con pronóstico" })}
+        <p class="dl-nota"><span class="tag">Estimación</span> ${DL.extra.pr.nota}</p>
+        ${DL.extra.pr.proximos.length ? html`<ul class="hist">${DL.extra.pr.proximos.map((x) => html`<li>+${x.paso}: <b>${dlNum(x.valor)}</b> <small class="muted">(entre ${dlNum(x.bajo)} y ${dlNum(x.alto)})</small></li>`)}</ul>` : ""}
+        <details class="mas"><summary>${ico("right", "s")}Cambios período a período</summary><ul class="hist">${DL.extra.cmp.serie.map((g) => html`<li>${g.grupo}: <b>${dlNum(g.valor)}</b>${g.cambio != null ? html` <small class="${g.cambio >= 0 ? "u-work" : "u-wait"}">${g.cambio > 0 ? "+" : ""}${g.cambio}%</small>` : ""}</li>`)}</ul></details>
+        <div class="fila" style="gap:6px;margin-top:8px"><button class="btn ghost sm" data-a="dl-informe">Generar informe</button></div></section>` : ""}` : html`<p class="muted" style="margin-top:12px">Esta tabla no tiene una columna de fechas.</p>`) : ""}
+    ${DL.pestana === "limpiar" ? html`<form class="card dl-card" data-f="dl-transformar"><h2>Limpiar, filtrar y unir</h2><p class="sub">Crea un archivo nuevo en datos/: el original no se toca.</p>
+      <label class="chk"><input type="checkbox" class="sw" name="quitarVacias" checked><span>Quitar filas vacías</span></label>
+      <label class="chk"><input type="checkbox" class="sw" name="quitarDuplicados" checked><span>Quitar filas duplicadas</span></label>
+      <label class="chk"><input type="checkbox" class="sw" name="recortarEspacios" checked><span>Recortar espacios</span></label>
+      <label class="chk"><input type="checkbox" class="sw" name="normalizarColumnas"><span>Normalizar nombres de columnas<small>minúsculas, sin acentos, con guion bajo</small></span></label>
+      <fieldset class="fld"><legend>Columnas a conservar (vacío = todas)</legend><div class="dl-chks">${cols.map((c) => html`<label class="chk-s"><input type="checkbox" name="col" value="${c.nombre}"> ${c.nombre}</label>`)}</div></fieldset>
+      <div class="dl-armar"><label class="fld"><span>Unir con</span><select class="inp" name="otra"><option value="">No unir</option>${(DL.archivos || []).filter((a) => a.ruta !== DL.ruta).map((a) => html`<option value="${a.ruta}">${a.ruta}</option>`)}</select></label><label class="fld"><span>Por la columna</span><select class="inp" name="clave">${opt(cols, cols[0]?.nombre)}</select></label><label class="fld"><span>Nombre del archivo nuevo</span><input class="inp" name="nombre" placeholder="${DL.ruta?.split("/").pop().replace(/\.\w+$/, "")}-limpio"></label></div>
+      <div><button class="btn pri">Crear tabla limpia</button></div></form>` : ""}`}`);
+}
+function dlTableros() {
+  const xs = DL.tableros;
+  if (!xs) { api("GET", "/api/datos/tableros").then((r) => { DL.tableros = r; pintarDatos(); }); return html`<p class="muted">Cargando tableros…</p>`; }
+  const t = xs.find((x) => x.id === DL.tablero) || xs[0];
+  return html`<div class="fila" style="gap:8px;flex-wrap:wrap;margin-top:12px">${xs.map((x) => html`<button class="chip" aria-pressed="${String(t && x.id === t.id)}" data-a="dl-tablero" data-v="${x.id}">${x.nombre}</button>`)}<button class="btn ghost sm" data-a="dl-tablero-nuevo">${ico("plus", "s")}Tablero nuevo</button></div>
+    ${t ? html`<p class="muted" style="font-size:12.5px">Se recalcula con los datos actuales cada vez que lo abrís.</p><div class="dl-tab">${t.graficos.map((g) => html`<section class="card dl-card"><div class="fila" style="justify-content:space-between;gap:6px"><h2 style="font-size:15px">${g.titulo}</h2><button class="btn ghost sm" data-a="dl-quitar-g" data-t="${t.id}" data-g="${g.id}" aria-label="Quitar ${g.titulo}">×</button></div><small class="muted">${g.ruta}</small>${g.error ? html`<p class="err">${g.error}</p>` : dlGrafico(g.resultado.grupos, g.tipo, { titulo: g.titulo })}</section>`)}</div>${t.graficos.length ? "" : html`<p class="muted">Agregá gráficos desde Explorar → «Agregar a un tablero».</p>`}` : html`<p class="muted">Todavía no hay tableros.</p>`}`;
+}
+async function dlGuardarTableros() { await api("PUT", "/api/datos/tableros", DL.tableros.map((t) => ({ id: t.id, nombre: t.nombre, graficos: t.graficos.map(({ resultado, error, ...g }) => g) }))); }
+
 // ================================================================ Gravity Code
 // Entorno de programación: proyectos en codigo/ de la computadora, explorador, pestañas, editor con
 // resaltado y autocompletado (CodeMirror), buscar y reemplazar en todo el proyecto, diferencias contra
@@ -4820,7 +4938,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -6215,6 +6333,38 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "dl-pest": (t) => { DL.pestana = t.dataset.v; pintarDatos(); },
+  "dl-analista": async () => {
+    if (!(await confirmar("¿Crear un analista de datos?", "Un compañero especializado que usa Data Lab (la herramienta datos) para analizar tus tablas con cálculos exactos, hacer gráficos e informes.", "Crear"))) return;
+    const b = await api("POST", "/api/bots", { nombre: nombresLibres(1)[0] || "Dana", titulo: "Analista de datos", descripcion: "Analiza tablas (CSV, Excel, JSON) de la computadora con la herramienta datos: perfil de columnas, consultas, comparación de períodos, anomalías y pronósticos con su incertidumbre. Nunca calcula a mano ni inventa números: muestra de dónde sale cada cifra y guarda informes en datos/." });
+    await cargarEstado(); toast(`${b.nombre} ya es tu analista de datos.`);
+    if (DL.ruta) await api("POST", `/api/bots/${b.id}/mensajes`, { texto: `Hola. Analizá ${DL.ruta} con la herramienta datos: qué contiene, lo más importante que muestra y qué preguntas valdría la pena hacerle. Guardá un informe breve en datos/.` });
+    ir(`#/chats/${b.id}`);
+  },
+  "dl-al-tablero": async () => {
+    if (!DL.res?.consulta) return;
+    DL.tableros ??= await api("GET", "/api/datos/tableros");
+    let t = DL.tableros[0];
+    if (!t) { t = { id: `tb${Date.now().toString(36)}`, nombre: "Mi tablero", graficos: [] }; DL.tableros.push(t); }
+    t.graficos.push({ id: `g${Date.now().toString(36)}`, titulo: DL.res.titulo || DL.res.descripcion, tipo: DL.tipo, ruta: DL.ruta, consulta: DL.res.consulta });
+    await dlGuardarTableros(); DL.tableros = null; toast(`Agregado a «${t.nombre}».`);
+  },
+  "dl-tablero": (t) => { DL.tablero = t.dataset.v; pintarDatos(); },
+  "dl-tablero-nuevo": () => abrirDialogo(html`<form class="dlg-f" data-f="dl-tablero-nuevo"><h2 id="dlg-t">Tablero nuevo</h2><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" placeholder="Ventas"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true),
+  "dl-quitar-g": async (b) => { const t = DL.tableros.find((x) => x.id === b.dataset.t); if (!t) return; t.graficos = t.graficos.filter((g) => g.id !== b.dataset.g); await dlGuardarTableros(); pintarDatos(); },
+  "dl-informe": (t) => conCarga(t, async () => {
+    const c = { ruta: DL.ruta };
+    if (DL.res?.consulta) c.consulta = DL.res.consulta;
+    if (DL.extra?.tipo === "anomalias") c.anomalias = DL.extra.columna;
+    if (DL.extra?.tipo === "tiempo") c.pronostico = { fecha: DL.extra.fecha, valor: DL.extra.valor, periodo: DL.extra.periodo };
+    const r = await api("POST", "/api/datos/informe", c);
+    toast(`Informe guardado en ${r.ruta}.`);
+  }),
+  "dl-exportar": () => {
+    if (!DL.res) return;
+    const csv = ["grupo,valor,filas", ...DL.res.grupos.map((g) => `"${String(g.grupo).replace(/"/g, '""')}",${g.valor},${g.n}`)].join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "resultado.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  },
   "univ-acento": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, acento: t.dataset.v }); montarUniverso(); },
   "univ-libre": () => $("#univ-3d")?.univ?.seguir(null),
   "cd-movil": (t) => { CD.movil = t.dataset.v; pintarCode(); },
@@ -6527,6 +6677,48 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "dl-preguntar"(f) {
+    await conCarga(f.querySelector("button"), async () => {
+      const r = await api("POST", "/api/datos/preguntar", { ruta: DL.ruta, pregunta: f.pregunta.value.trim() });
+      DL.res = { ...r.resultado, consulta: r.consulta, explicacion: r.explicacion, titulo: f.pregunta.value.trim() };
+      DL.q = { agrupar: r.consulta.agrupar || "", periodo: r.consulta.periodo || "", metrica: r.consulta.metrica, columna: r.consulta.columna || "" };
+      DL.tipo = r.consulta.periodo ? "lineas" : "barras";
+      pintarDatos();
+    });
+  },
+  async "dl-consultar"(f) {
+    const d = new FormData(f);
+    const filtros = d.get("fcol") ? [{ columna: d.get("fcol"), op: d.get("fop"), valor: String(d.get("fval") || "").trim() !== "" && Number.isFinite(Number(d.get("fval"))) ? Number(d.get("fval")) : String(d.get("fval") || "") }] : [];
+    const consulta = { filtros, agrupar: d.get("agrupar") || null, periodo: d.get("periodo") || null, metrica: d.get("metrica"), columna: d.get("metrica") === "contar" ? null : d.get("columna") || null, orden: d.get("periodo") ? "grupo" : "valor_desc", limite: 100 };
+    if (consulta.metrica !== "contar" && !consulta.columna) throw new Error("Elegí la columna para el cálculo (o «Contar filas»).");
+    DL.q = { agrupar: consulta.agrupar || "", periodo: consulta.periodo || "", metrica: consulta.metrica, columna: consulta.columna || "", fcol: d.get("fcol"), fop: d.get("fop"), fval: d.get("fval") };
+    DL.tipo = d.get("tipo");
+    await conCarga(f.querySelector("button"), async () => { DL.res = { ...(await api("POST", "/api/datos/consultar", { ruta: DL.ruta, consulta })), consulta }; pintarDatos(); });
+  },
+  async "dl-anomalias"(f) {
+    await conCarga(f.querySelector("button"), async () => { DL.extra = { tipo: "anomalias", columna: f.columna.value, r: await api("POST", "/api/datos/anomalias", { ruta: DL.ruta, columna: f.columna.value }) }; pintarDatos(); });
+  },
+  async "dl-tiempo"(f) {
+    const d = { ruta: DL.ruta, fecha: f.fecha.value, valor: f.valor.value || null, periodo: f.periodo.value };
+    await conCarga(f.querySelector("button"), async () => {
+      const [cmp, pr] = await Promise.all([api("POST", "/api/datos/comparar", d), api("POST", "/api/datos/pronostico", { ...d, pasos: Number(f.pasos.value) })]);
+      DL.extra = { tipo: "tiempo", ...d, cmp, pr }; pintarDatos();
+    });
+  },
+  async "dl-tablero-nuevo"(f) {
+    DL.tableros.push({ id: `tb${Date.now().toString(36)}`, nombre: f.nombre.value.trim().slice(0, 80), graficos: [] });
+    DL.tablero = DL.tableros.at(-1).id; await dlGuardarTableros(); cerrarDialogo(); pintarDatos();
+  },
+  async "dl-transformar"(f) {
+    const d = new FormData(f);
+    const op = { quitarVacias: f.quitarVacias.checked, quitarDuplicados: f.quitarDuplicados.checked, recortarEspacios: f.recortarEspacios.checked, normalizarColumnas: f.normalizarColumnas.checked, columnas: d.getAll("col").length ? d.getAll("col") : null, filtros: [], unirCon: d.get("otra") ? { ruta: d.get("otra"), clave: d.get("clave"), claveOtra: null } : null };
+    if (op.unirCon && op.columnas && !op.columnas.includes(op.unirCon.clave)) op.columnas = null;
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      const r = await api("POST", "/api/datos/transformar", { ruta: DL.ruta, op, nombre: String(d.get("nombre") || "").trim() || null });
+      toast(`Tabla nueva: ${r.ruta} (${r.filas} filas).`);
+      DL.archivos = await api("GET", "/api/datos/archivos"); DL.pestana = "explorar"; await dlAbrir(r.ruta);
+    });
+  },
   async "cd-crear"(f) {
     await conCarga(f.querySelector("button:not([type=button])"), async () => {
       const d = new FormData(f);
@@ -6908,6 +7100,16 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "dl-archivo": (t) => (t.value ? dlAbrir(t.value) : null),
+  "dl-subir": async (t) => {
+    const f = t.files?.[0];
+    if (!f) return;
+    if (f.size > 30 * 1024 * 1024) { toast("El archivo pasa los 30 MB.", "err"); return; }
+    const r = await fetch(`/api/datos/subir?nombre=${encodeURIComponent(f.name)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(j.error || `Error ${r.status}`, "err"); return; }
+    DL.archivos = await api("GET", "/api/datos/archivos"); toast(`Subido a ${j.ruta}.`); await dlAbrir(j.ruta);
+  },
   "univ-esc": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, escenario: t.value }); montarUniverso(); },
   "univ-luz": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, luz: Number(t.value) }); $("#univ-3d")?.univ?.luz(Number(t.value)); },
   "univ-seguir": (t) => $("#univ-3d")?.univ?.seguir(t.value || null),

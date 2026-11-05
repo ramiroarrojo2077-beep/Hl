@@ -30,8 +30,17 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 ## 19. Creative Studio (201–210) · 20. Investigación (211–220) · 21. Asistente personal (221–230)
 Ver detalle en la próxima actualización. Ya existen: búsqueda y lectura web (211 🟡), correo con aprobación (224 ✅), recordatorios (225 ✅), calendario por Microsoft 365 (221 🟡).
 
-## 22. Data Lab (231–240)
-⛔ (en curso).
+## 22. Gravity Data Lab (231–240) · `#/datos`, `bots/src/datos.ts`
+231. ✅ Lee CSV/TSV (separador y coma decimal detectados), JSON y Excel .xlsx (lector propio, sin internet); perfil de cada columna (tipo, vacíos, distintos, mín/máx, media, mediana, desvío, valores frecuentes) y primeras filas.
+232. ✅ Gráficos de barras, líneas y torta con filtros (columna, condición y valor), con la tabla del resultado.
+233. ✅ Comparar períodos (día, semana, mes, trimestre, año) con el cambio porcentual de cada uno.
+234. ✅ Anomalías: valores fuera de 1,5 veces el rango intercuartílico, con su z-score y número de fila.
+235. ✅ Tableros: guardás gráficos y se recalculan con los datos actuales cada vez que los abrís (`datos/tableros.json`).
+236. ✅ Preguntas en lenguaje natural: el modelo solo traduce la pregunta a una consulta (columnas reales); la cuenta la hace Gravity con el archivo, así que el número es exacto. Se muestra qué se calculó.
+237. ✅ Limpiar (vacíos, duplicados, espacios, nombres de columnas), elegir columnas y unir con otra tabla por una clave: crea un CSV nuevo, el original no se toca.
+238. ✅ Pronóstico lineal por período con intervalo de predicción al 95 % y R², marcado como estimación.
+239. ✅ Informe en Markdown (perfil, consulta, anomalías y pronóstico) y exportar el resultado a CSV.
+240. ✅ Agente analista: «Analista de datos» crea un compañero que usa la herramienta `datos` (cálculos exactos sobre los archivos reales); cualquier compañero con la computadora también la tiene.
 
 ## 23. Developer Pro (241–250)
 241. ✅ Terminal de desarrollo con entorno aislado (Gravity Code y `probar_aislado`). 248. 🟡 Comparador de versiones de archivos (sin commits de Git). El resto, ver Gravity Code.
