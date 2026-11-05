@@ -64,6 +64,7 @@ import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
 import { guardarVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
+import { instalarDelMercado, vistaMercado } from "./mercado.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
 import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
@@ -979,6 +980,15 @@ ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.sear
 // ---- Buscador global ----
 
 ruta("GET", "/api/buscar", async ({ url }) => buscarTodo((url.searchParams.get("q") ?? "").slice(0, 200)));
+
+// ---- Mercado de habilidades (catálogo local revisado) ----
+
+ruta("GET", "/api/mercado", async () => vistaMercado());
+ruta("POST", "/api/mercado/:id/instalar", async ({ params }) => {
+  const h = malPedido(() => instalarDelMercado(params[0]!));
+  emitir("habilidades");
+  return h;
+});
 
 // ---- Gravity Studio: apps web de un archivo, generadas e iteradas por el modelo ----
 

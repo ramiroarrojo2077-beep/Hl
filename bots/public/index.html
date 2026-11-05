@@ -3467,7 +3467,7 @@ function pintarAjustes() {
         ${S.reglas.length ? html`<ul class="reglas">${S.reglas.map((r) => html`<li><span>${descRegla(r)}<small>${alcance(r)} · ${diaHora(r.creada)}</small></span><button class="btn ghost sm" data-a="regla-quitar" data-id="${r.id}" aria-label="Quitar: ${descRegla(r)}, ${alcance(r)}">Quitar</button></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Ninguna: todo pide aprobación.</p>`}</section>
       <section class="card" aria-labelledby="aj-h"><h2 id="aj-h">Habilidades</h2><p class="sub">Procedimientos guardados que cualquier compañero puede seguir y que una rutina puede usar.</p>
         <div class="habs">${S.habilidades.map((h) => S.editHab === h.id ? formHabilidad(h) : html`<div class="rut"><div class="rut-h"><div class="tt"><b>${h.nombre}</b><p>${h.descripcion || ""}</p></div><div class="rut-a"><button class="btn ghost sm" data-a="hab-editar" data-id="${h.id}">${ico("edit", "s")}Editar</button><button class="ib" data-a="hab-borrar" data-id="${h.id}" aria-label="Borrar la habilidad ${h.nombre}">${ico("trash", "s")}</button></div></div></div>`)}
-        ${S.editHab === "nueva" ? formHabilidad(null) : html`<button class="btn out sm" style="align-self:flex-start" data-a="hab-nueva">${ico("plus", "s")}Nueva habilidad</button>`}</div></section>
+        ${S.editHab === "nueva" ? formHabilidad(null) : html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn out sm" data-a="hab-nueva">${ico("plus", "s")}Nueva habilidad</button><button class="btn out sm" data-a="mercado">${ico("download", "s")}Mercado de habilidades</button></div>`}</div></section>
       <section class="card" aria-labelledby="aj-m"><h2 id="aj-m">Usar desde el celular</h2>
         ${S.local ? (a.claveEnv ? html`<p class="sub">La clave está fijada por <code>BOTS_CLAVE</code> en el servidor.</p>` : html`<p class="sub">Para entrar desde otro dispositivo hace falta una clave${a.tieneClave ? " (ya hay una: cambiarla cierra las otras sesiones)" : ""}.</p><form class="fila" data-f="clave"><label class="fld"><span>${a.tieneClave ? "Nueva clave" : "Clave"}</span><input class="inp" type="password" name="clave" minlength="8" autocomplete="new-password" required placeholder="Al menos 8 caracteres"></label><button class="btn out">${a.tieneClave ? "Cambiar" : "Guardar"}</button></form>`)
           : html`<p class="sub">Estás entrando desde otro dispositivo.</p><button class="btn out sm" data-a="salir">${ico("logout", "s")}Salir</button>`}
@@ -5461,6 +5461,13 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  mercado: async () => {
+    const xs = await api("GET", "/api/mercado");
+    abrirDialogo(html`<div class="dlg-f"><h2 id="dlg-t">Mercado de habilidades</h2><p class="sub">Procedimientos revisados que vienen con Gravity. Al instalarlos, cualquier compañero los puede seguir (y los podés editar).</p>
+      <ul class="reglas">${xs.map((h) => html`<li><span><b>${h.nombre}</b> <span class="tag">${h.categoria}</span><small>${h.descripcion}</small></span>${h.instalada ? html`<span class="tag">Instalada</span>` : html`<button class="btn out sm" data-a="mercado-instalar" data-id="${h.id}" aria-label="Instalar ${h.nombre}">Instalar</button>`}</li>`)}</ul>
+      <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cerrar</button></div></div>`);
+  },
+  "mercado-instalar": (t) => conCarga(t, async () => { const h = await api("POST", `/api/mercado/${t.dataset.id}/instalar`, {}); toast(`Instalada: ${h.nombre}.`); t.replaceWith(Object.assign(document.createElement("span"), { className: "tag", textContent: "Instalada" })); }),
   "stu-arreglar": () => generarDesdeStudio(S.ruta.id, "", [...STU.errores]),
   // Dictado en el chat: una frase con el reconocimiento del celular (o del navegador); el texto queda en
   // el cuadro para revisarlo antes de mandar.
