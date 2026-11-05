@@ -836,6 +836,9 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 @media (prefers-reduced-motion: reduce){:root[data-estilo="cristal"] .pag-in>*{animation:none}}
 @media (prefers-reduced-transparency: reduce){:root[data-estilo="cristal"] :is(.card,.side,.rail,.mnav,.form-card,#dlg){-webkit-backdrop-filter:none;backdrop-filter:none}:root[data-estilo="cristal"]{--s1:#101628;--s2:#161E36;--rail:#060914}}
 #cmp-dictar.on{background:var(--ion-bg);color:var(--ion-tx)}
+.mesa-sala .rob.habla .cuerpo{animation:rob-habla .9s ease-in-out infinite}
+@keyframes rob-habla{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@media (prefers-reduced-motion: reduce){.mesa-sala .rob.habla .cuerpo{animation:none}}
 .modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
@@ -2775,8 +2778,8 @@ function pintarSala(primera = false) {
   pintar($("#sala-top"), html`<div class="tt"><span class="micro">Reunión · ${tipoReu(r.tipo)}</span><h1>${r.titulo}</h1>
     <div class="mt-meta">${viva || r.estado === "cierre" ? html`<span class="livep"><i></i>${estadoTxt}</span>` : html`<span class="tag">${estadoTxt}</span>`}<span>Empezó ${hora(r.creada)}${viva ? html` · <span class="mono" data-reloj="${r.creada}">${reloj(r.creada)}</span>` : r.fin ? ` · terminó ${hora(r.fin)}` : ""}</span><span>${plural(ps.length, "compañero", "compañeros")} + vos</span><span>Facilita <b style="color:var(--tx);font-weight:500">${fac.nombre}</b></span><span>Ronda ${r.ronda || 1}</span><span class="mono">${usd(r.gastoUsd)}</span></div></div>
     <div class="acts">${viva ? html`${r.pausada ? html`<button class="btn pri sm" data-a="reanudar-reunion" data-k="reu-pau">${ico("play", "s")}Reanudar</button>` : html`<button class="btn out sm" data-a="pausar-reunion" data-k="reu-pau">${ico("pause", "s")}Pausar</button>`}<button class="btn out sm" data-a="terminar-reunion" data-k="reu-term">${ico("file", "s")}Terminar y escribir acta</button><button class="btn ghost sm" data-a="cancelar-reunion" data-k="reu-canc">${ico("x", "s")}Cancelar</button>` : html`<a class="btn ghost sm" href="#/reuniones">${ico("left", "s")}Reuniones</a>`}</div>`);
-  pintar($("#sala-ppl"), html`<span class="micro">Participantes</span>
-    ${orbita(html`${av(fac, 50, { s: "idle", cls: habla.includes(fac.id) ? "talk" : "" })}<em class="ctag">Facilita</em>`, [...ps, { vos: true, id: "vos" }], 236, { sz: 30, habla, etiquetas: true, links: true, label: `Facilita ${fac.nombre}; participan ${ps.map((p) => p.nombre).join(", ")} y vos`, badge: (m) => (m.vos ? "" : habla.includes(m.id) ? html`<b class="ob talk">…</b>` : cuenta(m.id) ? html`<b class="ob done">${cuenta(m.id)}</b>` : "") })}
+  pintar($("#sala-ppl"), html`<span class="micro" style="display:flex;justify-content:space-between;align-items:center">Participantes<button class="btn ghost sm" data-a="sala-mesa" aria-pressed="${String(!!S.salaMesa)}">${S.salaMesa ? "Ver órbita" : "Ver como sala"}</button></span>
+    ${S.salaMesa ? mesaRobots(fac, ps, habla) : orbita(html`${av(fac, 50, { s: "idle", cls: habla.includes(fac.id) ? "talk" : "" })}<em class="ctag">Facilita</em>`, [...ps, { vos: true, id: "vos" }], 236, { sz: 30, habla, etiquetas: true, links: true, label: `Facilita ${fac.nombre}; participan ${ps.map((p) => p.nombre).join(", ")} y vos`, badge: (m) => (m.vos ? "" : habla.includes(m.id) ? html`<b class="ob talk">…</b>` : cuenta(m.id) ? html`<b class="ob done">${cuenta(m.id)}</b>` : "") })}
     <span class="micro">Turnos</span>
     <ol class="ord">${[fac, ...ps].map((p) => html`<li class="${habla.includes(p.id) ? "now" : ""}">${av(p, 24, { s: "idle" })}<span style="min-width:0"><b>${p.nombre}</b><small>${habla.includes(p.id) ? "Hablando ahora" : p.id === fac.id ? "Facilita" : cuenta(p.id) ? `Habló ${plural(cuenta(p.id), "vez", "veces")}` : "Todavía no habló"}</small></span><span class="tm">${cuenta(p.id) || ""}</span></li>`)}<li>${avVos(24)}<span><b>Vos</b><small>${r.turnos.filter((t) => t.autor === "usuario").length ? "Interviniste" : "Podés intervenir"}</small></span><span class="tm"></span></li></ol>
     ${r.agenda ? html`<div class="agenda"><span class="micro">Agenda</span><p style="margin-top:8px">${r.agenda}</p></div>` : ""}`);
@@ -3545,6 +3548,34 @@ function pintarStudio() {
   pintar(el, html`<header class="pag-h"><div class="tt"><h1>Gravity Studio</h1><p>Describí una página o app web y se arma en un solo archivo: la ves en vivo, le pedís cambios y, si tira errores, se los mandás a arreglar.</p></div></header>
     <form class="fila" data-f="studio-nueva" style="margin-top:14px;gap:8px;flex-wrap:wrap"><label class="fld" style="flex:1;min-width:200px"><span>Nombre de la app</span><input class="inp" name="nombre" required maxlength="60" placeholder="Ej.: control de gastos"></label><button class="btn pri">Empezar</button></form>
     ${STU.apps?.length ? html`<div class="proys" style="margin-top:16px">${STU.apps.map((a) => html`<a class="proy" href="#/studio/${encodeURIComponent(a.nombre)}"><b>${a.nombre}</b><span class="tk-m">${a.ruta} · ${diaHora(a.modificado)}</span></a>`)}</div>` : html`<p class="muted" style="margin-top:14px;font-size:13px">Todavía no hay apps.</p>`}`);
+}
+
+// ================================================================ sala con robots
+// Los participantes de una reunión como robots alrededor de una mesa holográfica: cada uno con su color;
+// el que habla se ilumina y se mueve (sin animación si se pidió reducir el movimiento).
+function mesaRobots(fac, ps, habla) {
+  const todos = [fac, ...ps].filter(Boolean).slice(0, 12);
+  const W = 260, H = 210, cx = W / 2, cy = 118, rx = 100, ry = 62;
+  const color = (b) => avatarDe(b).color || "#6CD3F0";
+  const txt = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const robots = todos.map((b, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / todos.length;
+    const x = cx + rx * Math.cos(a), y = cy + ry * Math.sin(a) - 10;
+    const c = color(b), on = habla.includes(b.id);
+    return `<g class="rob ${on ? "habla" : ""}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><g class="cuerpo">
+      <ellipse cx="0" cy="22" rx="13" ry="8" fill="#E3E7EE" stroke="#AEB7C5" stroke-width=".6"/>
+      <rect x="-14" y="-12" width="28" height="24" rx="11" fill="#F3F5F9" stroke="#AEB7C5" stroke-width=".6"/>
+      <rect x="-10" y="-7" width="20" height="13" rx="6" fill="#05070D"/>
+      <rect x="-6.5" y="-3.5" width="4" height="5" rx="2" fill="${c}"/><rect x="2.5" y="-3.5" width="4" height="5" rx="2" fill="${c}"/>
+      <circle cx="-15" cy="0" r="3" fill="${on ? c : "#C9D0DB"}"/><circle cx="15" cy="0" r="3" fill="${on ? c : "#C9D0DB"}"/>
+      ${on ? `<circle cx="0" cy="0" r="22" fill="none" stroke="${c}" stroke-opacity=".55" stroke-width="2"/>` : ""}
+    </g><text x="0" y="40" text-anchor="middle" font-size="9.5" fill="var(--tx2)">${txt(b.nombre)}</text></g>`;
+  }).join("");
+  return crudo(`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Sala: ${todos.length} participantes${habla.length ? `; habla ${txt(todos.filter((b) => habla.includes(b.id)).map((b) => b.nombre).join(", "))}` : ""}" class="mesa-sala">
+    <defs><radialGradient id="mesa-luz"><stop offset="0" stop-color="#6CD3F0" stop-opacity=".35"/><stop offset="1" stop-color="#9B7BFF" stop-opacity=".06"/></radialGradient></defs>
+    <ellipse cx="${cx}" cy="${cy + 6}" rx="${rx - 30}" ry="${ry - 26}" fill="url(#mesa-luz)" stroke="#6CD3F0" stroke-opacity=".45"/>
+    <ellipse cx="${cx}" cy="${cy + 6}" rx="${rx - 48}" ry="${ry - 40}" fill="none" stroke="#9B7BFF" stroke-opacity=".35" stroke-dasharray="3 4"/>
+    ${robots}</svg>`);
 }
 
 // ================================================================ mapa de conocimiento
@@ -5470,6 +5501,7 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "sala-mesa": () => { S.salaMesa = !S.salaMesa; pintarSala(); },
   mercado: async () => {
     const xs = await api("GET", "/api/mercado");
     abrirDialogo(html`<div class="dlg-f"><h2 id="dlg-t">Mercado de habilidades</h2><p class="sub">Procedimientos revisados que vienen con Gravity. Al instalarlos, cualquier compañero los puede seguir (y los podés editar).</p>

@@ -19,7 +19,7 @@
 12. ✅ Animaciones sincronizadas con la envolvente real del audio.
 13. ✅ Emociones sin boca: estados escuchando, pensando, hablando, entusiasmado, esperando.
 14. ✅ Personalizable: color, accesorio, expresividad, calidad, voz y velocidad.
-15. ⛔ Sala holográfica con varios robots.
+15. ✅ Sala de reunión «Ver como sala»: los participantes como robots (con su color) alrededor de una mesa holográfica; el que habla se ilumina y se mueve. (Liviana, en 2D vectorial, para que ande en cualquier celular.)
 16. ✅ Voz en tiempo real con interrupción (tocar al robot).
 17. ✅ Fotos durante la llamada (botón Foto): se achica, se guarda en llamadas/ y el compañero la mira con Gemini y la comenta en voz.
 18. ✅ Cámara: el botón Foto abre la cámara o la galería solo cuando lo tocás (permiso explícito). Falta video en vivo.
@@ -54,7 +54,7 @@
 76–82. ✅ (cuerpo, iluminación, movimientos independientes, estados, gestos con pausas e intensidad, ojos). 78. 🟡 símbolo en el pecho: verificar. 83. ✅ Asiente al terminar cada respuesta. 84. ✅ Saluda con la mano al empezar la llamada. 85. ✅ Girar al robot arrastrando el dedo. 86. ✅ Personalización: color y accesorio (antena con luz, cresta violeta, visera). 87. 🟡 Estilo por expresividad. 88–90. ✅.
 
 ## 9. Reuniones
-91. ✅ 92. ✅ 93. ✅ 94. ✅ (Debate) 95. ✅ (votación) 96. ✅ 97. ✅ 98. ✅ 99. ✅ (pausar/reanudar/terminar) 100. ⛔ Robots en la sala.
+91. ✅ 92. ✅ 93. ✅ 94. ✅ (Debate) 95. ✅ (votación) 96. ✅ 97. ✅ 98. ✅ 99. ✅ (pausar/reanudar/terminar) 100. ✅ Robots en la sala (vista «Ver como sala»).
 
 ## 10. Memoria
 101. ✅ 102. 🟡 (carpeta de equipo) 103. ✅ Memoria por proyecto (su carpeta; `recordar` la ve solo quien coordina o tiene tareas ahí) 104. ✅ Búsqueda semántica con embeddings de Gemini (si hay clave) combinada con BM25; vectores en caché 105–106. ✅ Habilidad incluida «Ordenar la memoria» (junta lo repetido, borra lo viejo, deja índice; se puede programar semanal) 107. ✅ (compactación del servidor) 108. ✅ (pestaña Memoria) 109. ✅ (copia) 110. 🟡.
