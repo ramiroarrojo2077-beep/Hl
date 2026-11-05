@@ -422,6 +422,35 @@ async function enviarArchivo(res: http.ServerResponse, archivo: string, descarga
   res.end(contenido);
 }
 
+// Vista previa de lo que hacen los compañeros (páginas, prototipos): /vista/<token>/<ruta en la computadora>.
+// El token es aleatorio por arranque y solo lo recibe la interfaz (/api/estado), así las rutas relativas
+// (style.css, app.js) funcionan dentro del marco. Se sirve con CSP «sandbox»: origen opaco, sin acceso
+// a Gravity ni a sus cookies, sin formularios hacia afuera ni conexiones a otros sitios.
+const TOKEN_VISTA = randomBytes(18).toString("base64url");
+const TIPOS_VISTA: Record<string, string> = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8" };
+async function servirVista(res: http.ServerResponse, ruta: string): Promise<void> {
+  const partes = ruta.split("/").slice(2);
+  const token = partes.shift() ?? "";
+  if (token.length !== TOKEN_VISTA.length || !timingSafeEqual(Buffer.from(token), Buffer.from(TOKEN_VISTA))) throw new ErrorHttp(404, "No encontrado.");
+  let archivo: string;
+  try {
+    archivo = await resolvePath({ workdir: COMPUTADORA }, decodeURIComponent(partes.join("/")) || "index.html");
+  } catch {
+    throw new ErrorHttp(404, "No encontrado.");
+  }
+  const info = await stat(archivo).catch(() => null);
+  if (info?.isDirectory()) archivo = path.join(archivo, "index.html");
+  const datos = await readFile(archivo).catch(() => null);
+  if (!datos) throw new ErrorHttp(404, "No encontrado.");
+  res.writeHead(200, {
+    "Content-Type": TIPOS_VISTA[path.extname(archivo).toLowerCase()] ?? "application/octet-stream",
+    "Content-Security-Policy": "sandbox allow-scripts; default-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src 'self'; form-action 'none'; frame-ancestors 'self'",
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "no-store",
+  });
+  res.end(datos);
+}
+
 // Archivos públicos de la interfaz (sin sesión: íconos, manifest, service worker, fuentes y las
 // bibliotecas de terceros en vendor/, como three.js para el robot de las llamadas).
 const TIPOS: Record<string, string> = {
@@ -532,6 +561,7 @@ ruta("GET", "/api/estado", async ({ local }) => {
     plantillasEquipo: PLANTILLAS_EQUIPO,
     categorias: CATEGORIAS,
     iconos: ICONOS,
+    vista: TOKEN_VISTA,
     gruposHerramientas: Object.entries(GRUPOS_HERRAMIENTAS).map(([id, g]) => ({ id, nombre: g.nombre })),
     limites: { maxBots: MAX_BOTS, maxEquipo: MAX_MIEMBROS_EQUIPO + 1 },
     nombres: NOMBRES,
@@ -1449,6 +1479,7 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
   verificarOrigen(req);
 
   if (req.method === "GET" && (await servirPublico(res, url.pathname))) return;
+  if (req.method === "GET" && url.pathname.startsWith("/vista/")) return servirVista(res, url.pathname);
   // La app de Android comprueba que en el puerto está este motor (y no otra app) antes de mandar el token.
   if (req.method === "GET" && url.pathname === "/api/hola" && TOKEN_APP) {
     const reto = url.searchParams.get("reto") ?? "";

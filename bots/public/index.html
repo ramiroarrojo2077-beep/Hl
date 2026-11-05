@@ -2871,7 +2871,7 @@ function pintarCompu() {
       <label class="field" style="margin-top:6px">${ico("search", "s")}<input type="search" placeholder="Filtrar archivos" aria-label="Filtrar archivos" data-i="compu-filtro" data-k="compu-filtro" value="${S.compuFiltro}"></label>
       <div class="arbol-w">${arbol.length ? html`<ul class="arbol">${arbol}</ul>` : html`<p class="muted" style="font-size:13px;padding:8px 4px">${archivos.length ? "Nada coincide." : "La computadora está vacía. Lo que escriban los compañeros aparece acá."}</p>`}</div></section>
     <div class="pc-col">
-      <section class="card visor" aria-label="Visor de archivos">${sel ? html`<div class="visor-h">${ico("file", "s")}<b>${sel.ruta}</b><span class="muted" style="font-size:12px">${tamano(sel.tamano)} · ${diaHora(sel.modificado)}</span><span class="sp"></span><a class="btn out sm" href="/api/computadora/archivo?ruta=${encodeURIComponent(sel.ruta)}&descargar=1" download>${ico("download", "s")}Descargar</a></div><pre class="pre" id="visor-pre"></pre>` : html`<p class="muted" style="font-size:13px">Elegí un archivo para verlo acá.</p>`}</section>
+      <section class="card visor" aria-label="Visor de archivos">${sel ? html`<div class="visor-h">${ico("file", "s")}<b>${sel.ruta}</b><span class="muted" style="font-size:12px">${tamano(sel.tamano)} · ${diaHora(sel.modificado)}</span><span class="sp"></span>${/\.html?$/i.test(sel.ruta) && S.vista ? html`<button class="btn out sm" data-a="vista-previa" data-ruta="${sel.ruta}">${ico("play", "s")}Vista previa</button>` : ""}<a class="btn out sm" href="/api/computadora/archivo?ruta=${encodeURIComponent(sel.ruta)}&descargar=1" download>${ico("download", "s")}Descargar</a></div><pre class="pre" id="visor-pre"></pre>` : html`<p class="muted" style="font-size:13px">Elegí un archivo para verlo acá.</p>`}</section>
       <section class="card" aria-label="Terminal"><div class="box-h"><span class="micro">Terminal${b ? ` de ${b.nombre}` : ""} · últimos ${comandos.length}</span></div>
         ${comandos.length ? html`<ul class="term" style="margin-top:8px">${comandos.map((x, i) => { const k = `cmd-${x.fecha}-${i}`; return html`<li><details data-k="${k}" ${si(S.abiertos.has(k), "open")}><summary>${ico("term", "s")}<code>$ ${x.comando}</code>${x.error ? html`<span class="tag-err">${ico("x")}error</span>` : ""}<small>${b ? "" : `${x.bot} · `}${hora(x.fecha)}</small></summary><pre class="pre">${x.salida || "(sin salida)"}</pre></details></li>`; })}</ul>` : html`<p class="muted" style="font-size:13px;margin-top:6px">Todavía no hubo comandos${b ? ` de ${b.nombre}` : ""}.</p>`}</section>
     </div></div>`);
@@ -5346,6 +5346,13 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  // Vista previa de una página de la computadora en un marco aislado (sin acceso a Gravity).
+  "vista-previa": (t) => {
+    const src = `/vista/${S.vista}/${t.dataset.ruta.split("/").map(encodeURIComponent).join("/")}`;
+    abrirDialogo(html`<div class="dlg-f" style="display:flex;flex-direction:column;gap:8px;height:min(80vh,820px)"><div style="display:flex;align-items:center;gap:8px"><h2 id="dlg-t" style="flex:1;margin:0;font-size:15px">Vista previa · <code>${t.dataset.ruta}</code></h2><button type="button" class="btn ghost sm" data-a="cerrar-dlg">Cerrar</button></div>
+      <iframe src="${src}" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Vista previa de ${t.dataset.ruta}" style="flex:1;width:100%;border:1px solid var(--line);border-radius:12px;background:#fff"></iframe>
+      <small class="muted">Se ve aislada: no puede usar Gravity ni tus sesiones.</small></div>`);
+  },
   "proy-etq": (t) => { S.proyEtiqueta = t.dataset.v || null; pintarProyectos(); },
   "autom-activa": (t) => conCarga(t, async () => { await api("PUT", `/api/automatizaciones/${t.dataset.id}`, { activa: t.dataset.v === "1" }); await cargarAutomatizaciones(); }),
   "autom-borrar": async (t) => { if (await confirmar("¿Borrar la automatización?", "Deja de dispararse.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/automatizaciones/${t.dataset.id}`, {}); await cargarAutomatizaciones(); }); },
@@ -5927,7 +5934,7 @@ function anotarAp(id, a) { cambiosAps.set(id, { ver: ++verAps, a }); }
 async function cargarEstado() {
   const v0 = verAps;
   const d = await api("GET", "/api/estado");
-  for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local", "gruposHerramientas", "archivados"]) S[k] = d[k];
+  for (const k of ["bots", "habilidades", "reglas", "aprobaciones", "plantillas", "plantillasEquipo", "nombres", "config", "ajustes", "gasto", "cupo", "tareas", "reuniones", "local", "gruposHerramientas", "archivados", "vista"]) S[k] = d[k];
   // Catálogo (servidores viejos no lo traen: se arma con lo que haya).
   S.categorias = d.categorias || [...new Set(S.plantillas.map((p) => p.categoria).filter(Boolean))];
   S.iconos = d.iconos || [];
