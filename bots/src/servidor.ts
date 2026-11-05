@@ -1264,6 +1264,20 @@ ruta("GET", "/api/computadora/archivo", async ({ url, res }) => {
   return undefined;
 });
 
+// Editor del usuario: guarda un archivo de texto de la computadora. Si alguien (un compañero) lo cambió
+// después de abrirlo, no lo pisa: avisa con 409.
+ruta("PUT", "/api/computadora/archivo", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), contenido: z.string().max(600_000), modificado: z.string().max(40).nullish() }), await cuerpo());
+  const archivo = await rutaSegura(COMPUTADORA, d.ruta);
+  const info = await stat(archivo).catch(() => null);
+  if (info && !info.isFile()) throw new ErrorHttp(400, "Esa ruta es una carpeta.");
+  if (info && d.modificado && Math.abs(info.mtimeMs - Date.parse(d.modificado)) > 2) throw new ErrorHttp(409, "El archivo cambió mientras lo editabas (quizás lo tocó un compañero). Copiá tus cambios, recargalo y volvé a intentar.");
+  await mkdir(path.dirname(archivo), { recursive: true });
+  await writeFile(archivo, d.contenido);
+  emitir("computadora");
+  return { ok: true, modificado: (await stat(archivo)).mtime.toISOString() };
+});
+
 // ---- Copia de seguridad (ver respaldo.ts) ----
 
 ruta("GET", "/api/respaldo", async ({ res }) => {

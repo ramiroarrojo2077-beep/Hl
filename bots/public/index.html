@@ -2871,15 +2871,28 @@ function pintarCompu() {
       <label class="field" style="margin-top:6px">${ico("search", "s")}<input type="search" placeholder="Filtrar archivos" aria-label="Filtrar archivos" data-i="compu-filtro" data-k="compu-filtro" value="${S.compuFiltro}"></label>
       <div class="arbol-w">${arbol.length ? html`<ul class="arbol">${arbol}</ul>` : html`<p class="muted" style="font-size:13px;padding:8px 4px">${archivos.length ? "Nada coincide." : "La computadora está vacía. Lo que escriban los compañeros aparece acá."}</p>`}</div></section>
     <div class="pc-col">
-      <section class="card visor" aria-label="Visor de archivos">${sel ? html`<div class="visor-h">${ico("file", "s")}<b>${sel.ruta}</b><span class="muted" style="font-size:12px">${tamano(sel.tamano)} · ${diaHora(sel.modificado)}</span><span class="sp"></span>${/\.html?$/i.test(sel.ruta) && S.vista ? html`<button class="btn out sm" data-a="vista-previa" data-ruta="${sel.ruta}">${ico("play", "s")}Vista previa</button>` : ""}<a class="btn out sm" href="/api/computadora/archivo?ruta=${encodeURIComponent(sel.ruta)}&descargar=1" download>${ico("download", "s")}Descargar</a></div><pre class="pre" id="visor-pre"></pre>` : html`<p class="muted" style="font-size:13px">Elegí un archivo para verlo acá.</p>`}</section>
+      <section class="card visor" aria-label="Visor de archivos">${sel ? html`<div class="visor-h">${ico("file", "s")}<b>${sel.ruta}</b><span class="muted" style="font-size:12px">${tamano(sel.tamano)} · ${diaHora(sel.modificado)}</span><span class="sp"></span>${S.compuTexto?.ruta === sel.ruta && S.compuTexto.editable && !S.compuEdit ? html`<button class="btn out sm" data-a="compu-editar">${ico("edit", "s")}Editar</button>` : ""}${/\.html?$/i.test(sel.ruta) && S.vista ? html`<button class="btn out sm" data-a="vista-previa" data-ruta="${sel.ruta}">${ico("play", "s")}Vista previa</button>` : ""}<a class="btn out sm" href="/api/computadora/archivo?ruta=${encodeURIComponent(sel.ruta)}&descargar=1" download>${ico("download", "s")}Descargar</a></div><pre class="pre" id="visor-pre"></pre>` : html`<p class="muted" style="font-size:13px">Elegí un archivo para verlo acá.</p>`}</section>
       <section class="card" aria-label="Terminal"><div class="box-h"><span class="micro">Terminal${b ? ` de ${b.nombre}` : ""} · últimos ${comandos.length}</span></div>
         ${comandos.length ? html`<ul class="term" style="margin-top:8px">${comandos.map((x, i) => { const k = `cmd-${x.fecha}-${i}`; return html`<li><details data-k="${k}" ${si(S.abiertos.has(k), "open")}><summary>${ico("term", "s")}<code>$ ${x.comando}</code>${x.error ? html`<span class="tag-err">${ico("x")}error</span>` : ""}<small>${b ? "" : `${x.bot} · `}${hora(x.fecha)}</small></summary><pre class="pre">${x.salida || "(sin salida)"}</pre></details></li>`; })}</ul>` : html`<p class="muted" style="font-size:13px;margin-top:6px">Todavía no hubo comandos${b ? ` de ${b.nombre}` : ""}.</p>`}</section>
     </div></div>`);
   if (sel) mostrarTextoArchivo(sel);
 }
+// Editor simple (desde el celular también): el texto en un área editable; al guardar, si un compañero
+// cambió el archivo mientras tanto, el motor avisa en vez de pisarlo.
+function abrirEditorArchivo() {
+  const pre = $("#visor-pre");
+  const t = S.compuTexto;
+  if (!pre || !t) return;
+  const f = document.createElement("form");
+  f.dataset.f = "compu-guardar";
+  f.className = "form-card";
+  f.innerHTML = html`<label class="fld"><span class="sr">Contenido de ${t.ruta}</span><textarea class="inp" name="contenido" rows="18" spellcheck="false" style="font:13px/1.5 var(--mono);white-space:pre;overflow:auto">${t.texto}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="compu-cancelar">Cancelar</button><button class="btn pri">Guardar</button></div>`.s;
+  pre.replaceWith(f);
+}
 async function mostrarTextoArchivo(sel) {
   const pre = $("#visor-pre");
   if (!pre) return;
+  if (S.compuEdit === sel.ruta && S.compuTexto?.ruta === sel.ruta) { abrirEditorArchivo(); return; }
   if (S.compuTexto?.ruta === sel.ruta && S.compuTexto.modificado === sel.modificado) { pre.textContent = S.compuTexto.texto; return; }
   pre.textContent = "Cargando…";
   try {
@@ -2887,7 +2900,8 @@ async function mostrarTextoArchivo(sel) {
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Error ${r.status}`);
     const tipo = r.headers.get("content-type") || "";
     const texto = tipo.startsWith("text/") ? await r.text() : "Es un archivo binario o muy grande: descargalo para abrirlo.";
-    S.compuTexto = { ruta: sel.ruta, modificado: sel.modificado, texto };
+    S.compuTexto = { ruta: sel.ruta, modificado: sel.modificado, texto, editable: tipo.startsWith("text/") };
+    if (S.compuTexto.editable && S.compuSel === sel.ruta && !$('[data-a="compu-editar"]')) pintarCompu();
     if ($("#visor-pre") && S.compuSel === sel.ruta) $("#visor-pre").textContent = texto || "(vacío)";
   } catch (err) { if ($("#visor-pre")) $("#visor-pre").textContent = `No se pudo leer: ${err.message}`; }
 }
@@ -5346,6 +5360,8 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "compu-editar": () => { S.compuEdit = S.compuSel; pintarCompu(); },
+  "compu-cancelar": () => { S.compuEdit = null; pintarCompu(); },
   // Vista previa de una página de la computadora en un marco aislado (sin acceso a Gravity).
   "vista-previa": (t) => {
     const src = `/vista/${S.vista}/${t.dataset.ruta.split("/").map(encodeURIComponent).join("/")}`;
@@ -5560,6 +5576,16 @@ const F = {
   async "analizar-auditoria"(f) {
     const b = bot(f.botId.value);
     await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/auditoria/analizar", { botId: f.botId.value }); toast(`Le pasé el informe a ${b?.nombre || "tu compañero"}.`, "", { href: `#/chats/${f.botId.value}`, texto: "Ver" }); });
+  },
+  async "compu-guardar"(f) {
+    const t = S.compuTexto;
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      try {
+        const r = await api("PUT", "/api/computadora/archivo", { ruta: t.ruta, contenido: f.contenido.value, modificado: t.modificado });
+        S.compuTexto = { ...t, texto: f.contenido.value, modificado: r.modificado };
+        S.compuEdit = null; toast("Archivo guardado."); await cargarCompu();
+      } catch (err) { f.querySelector(".err").textContent = err.message; }
+    });
   },
   async "proy-etiquetas"(f) {
     await conCarga(f.querySelector("button"), async () => { guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { etiquetas: f.etiquetas.value.split(",").map((x) => x.trim()).filter(Boolean) })); toast("Etiquetas guardadas."); });
