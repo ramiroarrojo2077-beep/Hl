@@ -3589,17 +3589,20 @@ function pintarProyectos() {
   const el = $("#proys");
   if (!el || !S.proyectos) return;
   if (S.ruta.id) return pintarProyecto(el, S.proyectos.find((x) => x.id === S.ruta.id));
-  const xs = S.proyectos.filter((p) => p.estado !== "archivado");
-  const archivados = S.proyectos.length - xs.length;
+  const todas = [...new Set(S.proyectos.flatMap((p) => p.etiquetas || []))].sort();
+  if (S.proyEtiqueta && !todas.includes(S.proyEtiqueta)) S.proyEtiqueta = null;
+  const xs = S.proyectos.filter((p) => p.estado !== "archivado" && (!S.proyEtiqueta || (p.etiquetas || []).includes(S.proyEtiqueta)));
+  const archivados = S.proyectos.filter((p) => p.estado === "archivado").length;
   pintar(el, html`<header class="pag-h"><div class="tt"><h1>Proyectos</h1><p>Un objetivo con sus tareas, responsables y dependencias. Cuando una tarea queda lista para arrancar, Gravity se la pasa a quien la tiene.</p></div>
     <div class="acts"><button class="btn pri" data-a="nuevo-proyecto">${ico("plus", "s")}Nuevo proyecto</button></div></header>
+    ${todas.length ? html`<div class="chips" role="group" aria-label="Filtrar por etiqueta" style="margin-top:14px"><button class="chip" data-a="proy-etq" data-v="" aria-pressed="${String(!S.proyEtiqueta)}">Todos</button>${todas.map((e) => html`<button class="chip" data-a="proy-etq" data-v="${e}" aria-pressed="${String(S.proyEtiqueta === e)}">${e}</button>`)}</div>` : ""}
     ${xs.length ? html`<div class="proys" style="margin-top:18px">${xs.map(tarjetaProyecto)}</div>` : html`<div class="vacio-p" style="margin-top:18px"><b>Todavía no hay proyectos</b><span>Creá uno con su objetivo y agregale tareas, o pedíselo a un compañero: ellos también pueden armarlos y avanzar sus tareas.</span></div>`}
     ${archivados ? html`<p class="muted" style="font-size:13px;margin-top:12px">${plural(archivados, "proyecto archivado", "proyectos archivados")}: cambiá su estado para verlo acá.</p>${S.proyectos.filter((p) => p.estado === "archivado").map((p) => html`<a class="btn ghost sm" href="#/proyectos/${p.id}">${p.nombre}</a>`)}` : ""}`);
 }
 function tarjetaProyecto(p) {
   const g = p.progreso;
   return html`<a class="proy" href="#/proyectos/${p.id}"><b>${p.nombre}</b><span class="barra" role="img" aria-label="${g.porcentaje}% completado"><i style="width:${g.porcentaje}%"></i></span>
-    <span class="tk-m"><span>${g.hechas} de ${plural(g.total, "tarea", "tareas")}</span>${g.bloqueadas ? html`<span class="tag sig">${plural(g.bloqueadas, "bloqueada", "bloqueadas")}</span>` : ""}${g.vencidas ? html`<span class="tag sig">${plural(g.vencidas, "vencida", "vencidas")}</span>` : ""}${p.estado !== "activo" ? html`<span class="tag">${EST_PROY[p.estado]}</span>` : ""}${p.coordinadorId && bot(p.coordinadorId) ? html`<span>Coordina ${bot(p.coordinadorId).nombre}</span>` : ""}</span></a>`;
+    <span class="tk-m"><span>${g.hechas} de ${plural(g.total, "tarea", "tareas")}</span>${g.bloqueadas ? html`<span class="tag sig">${plural(g.bloqueadas, "bloqueada", "bloqueadas")}</span>` : ""}${g.vencidas ? html`<span class="tag sig">${plural(g.vencidas, "vencida", "vencidas")}</span>` : ""}${p.estado !== "activo" ? html`<span class="tag">${EST_PROY[p.estado]}</span>` : ""}${p.coordinadorId && bot(p.coordinadorId) ? html`<span>Coordina ${bot(p.coordinadorId).nombre}</span>` : ""}${(p.etiquetas || []).map((e) => html`<span class="tag">${e}</span>`)}</span></a>`;
 }
 function pintarProyecto(el, p) {
   if (!p) { pintar(el, html`<div class="vacio-p"><b>No existe ese proyecto</b><span>Puede que lo hayan borrado.</span><a class="btn out sm" href="#/proyectos">Volver a Proyectos</a></div>`); return; }
@@ -3626,7 +3629,8 @@ function pintarProyecto(el, p) {
     <div class="acts"><select class="inp" data-c="proy-estado" aria-label="Estado del proyecto" style="width:auto">${Object.entries(EST_PROY).map(([k, n]) => html`<option value="${k}" ${si(p.estado === k, "selected")}>${n}</option>`)}</select><button class="btn ghost sm" data-a="borrar-proyecto">${ico("trash", "s")}Borrar</button></div></header>
     <section class="card" style="margin-top:14px;display:flex;flex-direction:column;gap:10px" aria-label="Progreso">
       <div class="tk-m"><span class="barra" style="flex:1" role="img" aria-label="${g.porcentaje}% completado"><i style="width:${g.porcentaje}%"></i></span><b>${g.hechas} de ${g.total}</b></div>
-      <div class="tk-a"><label class="tk-m">Coordina <select class="inp" data-c="proy-coord">${crudo(opcBots(p.coordinadorId).s.replace("Sin responsable", "Nadie"))}</select></label><span class="tk-m">Carpeta en la computadora: <code>${p.carpeta}</code></span></div></section>
+      <div class="tk-a"><label class="tk-m">Coordina <select class="inp" data-c="proy-coord">${crudo(opcBots(p.coordinadorId).s.replace("Sin responsable", "Nadie"))}</select></label><span class="tk-m">Carpeta en la computadora: <code>${p.carpeta}</code></span></div>
+      <form class="fila" data-f="proy-etiquetas" style="gap:8px"><label class="fld" style="flex:1"><span>Etiquetas (separadas por coma)</span><input class="inp" name="etiquetas" maxlength="300" value="${(p.etiquetas || []).join(", ")}" placeholder="Ej.: cliente Pérez, marketing"></label><button class="btn out sm">Guardar</button></form></section>
     <div class="sec-h"><h2>Abiertas <span>${abiertas.length}</span></h2></div>
     ${abiertas.length ? html`<div class="tks">${abiertas.map(tarea)}</div>` : html`<p class="muted" style="font-size:13px">No hay tareas abiertas.</p>`}
     <details class="mas" style="margin-top:14px" ${si(!p.tareas.length, "open")}><summary>${ico("plus", "s")}Agregar una tarea</summary>
@@ -5295,6 +5299,7 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "proy-etq": (t) => { S.proyEtiqueta = t.dataset.v || null; pintarProyectos(); },
   "autom-activa": (t) => conCarga(t, async () => { await api("PUT", `/api/automatizaciones/${t.dataset.id}`, { activa: t.dataset.v === "1" }); await cargarAutomatizaciones(); }),
   "autom-borrar": async (t) => { if (await confirmar("¿Borrar la automatización?", "Deja de dispararse.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/automatizaciones/${t.dataset.id}`, {}); await cargarAutomatizaciones(); }); },
   "webhook-borrar": async (t) => { if (await confirmar("¿Borrar el webhook?", "La dirección deja de funcionar.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/webhooks/${t.dataset.id}`, {}); S.webhookNuevo = null; await cargarWebhooks(); }); },
@@ -5493,6 +5498,9 @@ const F = {
   async "analizar-auditoria"(f) {
     const b = bot(f.botId.value);
     await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/auditoria/analizar", { botId: f.botId.value }); toast(`Le pasé el informe a ${b?.nombre || "tu compañero"}.`, "", { href: `#/chats/${f.botId.value}`, texto: "Ver" }); });
+  },
+  async "proy-etiquetas"(f) {
+    await conCarga(f.querySelector("button"), async () => { guardarProyecto(await api("PUT", `/api/proyectos/${S.ruta.id}`, { etiquetas: f.etiquetas.value.split(",").map((x) => x.trim()).filter(Boolean) })); toast("Etiquetas guardadas."); });
   },
   async "proyecto-nuevo"(f) {
     const p = await api("POST", "/api/proyectos", { nombre: f.nombre.value.trim(), objetivo: f.objetivo.value, coordinadorId: f.coordinadorId.value || null }).catch((err) => { errDlg(err.message); return null; });

@@ -34,6 +34,8 @@ export interface Proyecto {
   objetivo: string;
   estado: "activo" | "pausado" | "terminado" | "archivado";
   coordinadorId: string | null;
+  // Etiquetas libres para agrupar y filtrar (ej.: «cliente X», «marketing»).
+  etiquetas?: string[];
   carpeta: string;
   tareas: TareaProyecto[];
   // quien: "usuario", "gravity" o el id de un compañero.
@@ -131,7 +133,7 @@ export function crearProyecto(d: DatosProyecto, quien = "usuario"): Proyecto {
   return p;
 }
 
-export function cambiarProyecto(id: string, d: Partial<Pick<Proyecto, "nombre" | "objetivo" | "estado" | "coordinadorId">>, quien = "usuario"): Proyecto {
+export function cambiarProyecto(id: string, d: Partial<Pick<Proyecto, "nombre" | "objetivo" | "estado" | "coordinadorId" | "etiquetas">>, quien = "usuario"): Proyecto {
   const p = buscarProyecto(id);
   if (!p) throw new Error("No existe ese proyecto.");
   if (d.coordinadorId && !buscarBot(d.coordinadorId)) throw new Error("No existe ese compañero.");
@@ -147,6 +149,13 @@ export function cambiarProyecto(id: string, d: Partial<Pick<Proyecto, "nombre" |
   if (d.estado && d.estado !== p.estado) {
     p.estado = d.estado;
     cambios.push(`estado: ${d.estado}`);
+  }
+  if (d.etiquetas) {
+    const nuevas = [...new Set(d.etiquetas.map((e) => e.trim().toLowerCase().slice(0, 30)).filter(Boolean))].slice(0, 10);
+    if (nuevas.join(",") !== (p.etiquetas ?? []).join(",")) {
+      p.etiquetas = nuevas;
+      cambios.push(`etiquetas: ${nuevas.join(", ") || "ninguna"}`);
+    }
   }
   if (d.coordinadorId !== undefined && d.coordinadorId !== p.coordinadorId) {
     p.coordinadorId = d.coordinadorId;

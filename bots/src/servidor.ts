@@ -1005,6 +1005,7 @@ const DatosCambioProyecto = z.object({
   objetivo: z.string().max(4000).optional(),
   estado: z.enum(["activo", "pausado", "terminado", "archivado"]).optional(),
   coordinadorId: idBot,
+  etiquetas: z.array(z.string().max(30)).max(10).optional(),
 });
 const camposTarea = {
   detalle: z.string().max(6000).optional(),

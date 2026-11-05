@@ -42,7 +42,7 @@
 31. ⛔ Gravity Studio. 32. 🟡 Equipos de programación (Architect puede armarlos; la computadora tiene terminal). 33. 🟡 Editor: la Computadora muestra archivos; falta editar desde la interfaz. 34. ⛔ Vista previa web. 35. ⛔ Detección automática de errores de código. 36. ⛔ Generar interfaces. 37. 🟡 GitHub: por conexión MCP. 38. 🟡 Versiones: copia de seguridad completa; falta por archivo. 39. ⛔ Pruebas aisladas. 40. 🟡 Exportar: copia .zip completa.
 
 ## 5. Android
-41. ⛔ Widget. 42. ✅ Notificaciones de aprobaciones y de tareas bloqueadas o fallidas (desde el servicio nativo, con la app cerrada). 43. ✅ Accesos rápidos del ícono. 44. 🟡 Offline: todo corre en el celular; solo el modelo necesita internet. 45. ✅ Compartir a Gravity. 46. ⛔ Comandos de voz fuera de llamadas. 47. ✅ Panel de rendimiento (CPU, memoria, batería). 48. ⛔ Sincronización entre dispositivos (se puede exportar/importar). 49. ✅ Copias de seguridad. 50. ⛔ Modo privado con huella.
+41. ⛔ Widget. 42. ✅ Notificaciones de aprobaciones y de tareas bloqueadas o fallidas (desde el servicio nativo, con la app cerrada). 43. ✅ Accesos rápidos del ícono. 44. 🟡 Offline: todo corre en el celular; solo el modelo necesita internet. 45. ✅ Compartir a Gravity. 46. ⛔ Comandos de voz fuera de llamadas. 47. ✅ Panel de rendimiento (CPU, memoria, batería). 48. ⛔ Sincronización entre dispositivos (se puede exportar/importar). 49. ✅ Copias de seguridad. 50. ✅ Modo privado (menú ⋮): huella, rostro o PIN al abrir o volver después de 1 minuto (Android 9+).
 
 ## 6. Experimentales
 51. ⛔ Gravity Universe. 52. ⛔ Laboratorio. 53. ⛔ Mercado de habilidades (hay habilidades locales). 54. ⛔ Simulador. 55. ⛔ Mapa de conocimiento. 56. ✅ Agentes temporales. 57. ✅ Modo enseñanza. 58. ✅ Auditor. 59. ✅ Centro de operaciones. 60. ✅ Gravity Architect.
@@ -69,7 +69,7 @@
 131. ✅ 132. ✅ 133. ✅ 134. ✅ 135. ✅ (contenido de afuera envuelto, suplantación neutralizada; ver PENDIENTE: pruebas de inyección a revisar) 136. ✅ 137. ✅ (Android vuelve a prender el motor) 138. 🟡 139. 🟡 140. ⛔ 141. ✅ 142. 🟡 143. ✅ (migraciones en almacen.ts) 144. ✅ (11 pruebas + e2e) 145. 🟡 (restaurar copia).
 
 ## 14. Experiencia
-146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ⛔ Etiquetas. 151. ✅ Prioridades en tareas. 152. ✅ Recordatorios de una sola vez (rutina «Una sola vez»; los compañeros también los programan con la herramienta rutinas). 153. ✅ Productividad de 7 días por compañero (Operaciones) 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ✅ Notificaciones configurables (aprobaciones y tareas trabadas) 159. ✅ Panel de novedades en Ajustes 160. 🟡 (auditoría).
+146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ✅ Etiquetas en proyectos (con filtro). 151. ✅ Prioridades en tareas. 152. ✅ Recordatorios de una sola vez (rutina «Una sola vez»; los compañeros también los programan con la herramienta rutinas). 153. ✅ Productividad de 7 días por compañero (Operaciones) 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ✅ Notificaciones configurables (aprobaciones y tareas trabadas) 159. ✅ Panel de novedades en Ajustes 160. 🟡 (auditoría).
 
 ## 15. Conservación
 161–170. ✅ Se mantiene todo lo anterior, con migraciones, copias y versiones en git. 168: los botones nuevos tienen función y prueba. 169: nada simulado (el robot 2D avisa si no hay 3D; la voz avisa si no hay).
