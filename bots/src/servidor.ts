@@ -63,6 +63,7 @@ import { auditar, informeComoTexto } from "./auditoria.ts";
 import { buscarTodo } from "./buscador.ts";
 import { leerActividad } from "./actividad.ts";
 import { guardarVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
+import { generarStudio, listarStudio } from "./studio.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
 import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
@@ -442,8 +443,16 @@ async function servirVista(res: http.ServerResponse, ruta: string): Promise<void
   }
   const info = await stat(archivo).catch(() => null);
   if (info?.isDirectory()) archivo = path.join(archivo, "index.html");
-  const datos = await readFile(archivo).catch(() => null);
+  let datos = await readFile(archivo).catch(() => null);
   if (!datos) throw new ErrorHttp(404, "No encontrado.");
+  // En las páginas se inyecta un avisador: los errores de JavaScript se le pasan a Gravity (postMessage)
+  // para mostrarlos y ofrecer arreglarlos. No le da a la página ningún acceso nuevo.
+  if (/\.html?$/i.test(archivo)) {
+    const avisador = `<script>(function(){function m(t){try{parent.postMessage({gravityVista:1,error:String(t).slice(0,400)},"*")}catch(e){}}window.addEventListener("error",function(e){m((e.message||"Error")+(e.lineno?" (línea "+e.lineno+")":""))});window.addEventListener("unhandledrejection",function(e){m("Promesa rechazada: "+(e.reason&&e.reason.message||e.reason))});var ce=console.error;console.error=function(){m(Array.prototype.join.call(arguments," "));return ce.apply(console,arguments)}})();</script>`;
+    const texto = datos.toString("utf8");
+    const i = texto.search(/<head[^>]*>/i);
+    datos = Buffer.from(i >= 0 ? texto.replace(/<head[^>]*>/i, (h) => h + avisador) : avisador + texto);
+  }
   res.writeHead(200, {
     "Content-Type": TIPOS_VISTA[path.extname(archivo).toLowerCase()] ?? "application/octet-stream",
     "Content-Security-Policy": "sandbox allow-scripts; default-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src 'self'; form-action 'none'; frame-ancestors 'self'",
@@ -970,6 +979,26 @@ ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.sear
 // ---- Buscador global ----
 
 ruta("GET", "/api/buscar", async ({ url }) => buscarTodo((url.searchParams.get("q") ?? "").slice(0, 200)));
+
+// ---- Gravity Studio: apps web de un archivo, generadas e iteradas por el modelo ----
+
+ruta("GET", "/api/studio", async () => listarStudio());
+ruta("POST", "/api/studio", async ({ cuerpo, req }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(1).max(60), pedido: z.string().max(4000).default(""), errores: z.array(z.string().max(500)).max(20).nullish() }), await cuerpo());
+  if (!d.pedido.trim() && !d.errores?.length) throw new ErrorHttp(400, "Contá qué querés crear o cambiar.");
+  const control = new AbortController();
+  const corte = setTimeout(() => control.abort(), 240_000);
+  try {
+    const r = await generarStudio(d, control.signal);
+    emitir("computadora");
+    return r;
+  } catch (err) {
+    if (control.signal.aborted) throw new ErrorHttp(504, "Tardó demasiado: probá con un pedido más chico.");
+    throw new ErrorHttp(502, (err as Error).message);
+  } finally {
+    clearTimeout(corte);
+  }
+});
 
 // ---- Laboratorio: la misma consulta con cada modelo (y opcionalmente con un compañero), lado a lado ----
 

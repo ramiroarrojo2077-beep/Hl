@@ -1740,7 +1740,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2048,6 +2048,7 @@ function montar(antes) {
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
   if (v === "operaciones") return montarOps();
+  if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
   if (v === "mapa") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="mapa"></div></div>`; pintarMapa(); if (!S.proyectos) cargarProyectos().then(pintarMapa); return; }
   if (v === "laboratorio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="lab"></div></div>`; pintarLab(); return; }
   if (v === "buscar") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="busq"></div></div>`; pintarBusq(); $("#busq input")?.focus(); return; }
@@ -3500,6 +3501,52 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ Gravity Studio
+// Apps web de un solo archivo: se describen, el modelo las escribe en computadora/studio/<nombre>/ y se ven
+// en la vista previa aislada. Los errores de la página llegan por postMessage y se pueden mandar a arreglar.
+const STU = { apps: null, cargando: false, errores: [], v: 0 };
+async function generarDesdeStudio(nombre, pedido, errores) {
+  STU.cargando = true; pintarStudio();
+  try {
+    await api("POST", "/api/studio", { nombre, pedido, errores });
+    STU.errores = []; STU.v++;
+    await cargarStudio();
+    toast(errores ? "Listo: corregí los errores." : "Listo: mirá cómo quedó.");
+  } catch (err) { const e = $("#studio .err"); if (e) e.textContent = err.message; else fallo(err); }
+  finally { STU.cargando = false; pintarStudio(); }
+}
+async function cargarStudio() { try { STU.apps = await api("GET", "/api/studio"); pintarStudio(); } catch {} }
+window.addEventListener("message", (e) => {
+  const f = $("#stu-vista");
+  if (!f || e.source !== f.contentWindow || !e.data?.gravityVista || !e.data.error) return;
+  if (STU.errores.length < 20 && !STU.errores.includes(e.data.error)) { STU.errores.push(String(e.data.error)); pintarErroresStudio(); }
+});
+function pintarErroresStudio() {
+  const el = $("#stu-err");
+  if (!el) return;
+  el.hidden = !STU.errores.length;
+  pintar(el, html`<div class="callout sig" role="status"><span><b>La página tiró ${plural(STU.errores.length, "error", "errores")}</b><br><small>${STU.errores.slice(0, 3).join(" · ")}</small></span><button class="btn sig sm" data-a="stu-arreglar">Arreglar</button></div>`);
+}
+function pintarStudio() {
+  const el = $("#studio");
+  if (!el) return;
+  const nombre = S.ruta.id;
+  const app = nombre && (STU.apps || []).find((a) => a.nombre === nombre);
+  if (nombre) {
+    pintar(el, html`<header class="pag-h"><div class="tt"><a class="btn ghost sm" href="#/studio">${ico("left", "s")}Studio</a><h1>${nombre}</h1><p>${app ? html`Archivo: <code>${app.ruta}</code> · se puede editar en la Computadora y tiene versiones.` : "Todavía no existe: describila abajo."}</p></div></header>
+      ${app && S.vista ? html`<iframe id="stu-vista" src="/vista/${S.vista}/${app.ruta.split("/").map(encodeURIComponent).join("/")}?v=${STU.v}" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Vista de ${nombre}" style="width:100%;height:min(62vh,640px);border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:14px"></iframe>` : ""}
+      <div id="stu-err" style="margin-top:10px" hidden></div>
+      <form class="form-card" data-f="studio" data-nombre="${nombre}" style="margin-top:12px"><label class="fld"><span>${app ? "Qué querés cambiar" : "Qué querés crear"}</span><textarea class="inp" name="pedido" rows="3" maxlength="4000" placeholder="${app ? "Ej.: agregá un modo oscuro y un botón para exportar a CSV" : "Ej.: una app para anotar gastos con categorías y un gráfico por mes"}"></textarea></label>
+        <p class="err" role="alert"></p><div class="acts"><button class="btn pri" ${si(STU.cargando, "disabled")}>${ico("bolt", "s")}${app ? "Aplicar cambios" : "Crear"}</button></div>
+        ${STU.cargando ? html`<p class="muted" role="status">Escribiendo la app… puede tardar un minuto.</p>` : ""}</form>`);
+    pintarErroresStudio();
+    return;
+  }
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Gravity Studio</h1><p>Describí una página o app web y se arma en un solo archivo: la ves en vivo, le pedís cambios y, si tira errores, se los mandás a arreglar.</p></div></header>
+    <form class="fila" data-f="studio-nueva" style="margin-top:14px;gap:8px;flex-wrap:wrap"><label class="fld" style="flex:1;min-width:200px"><span>Nombre de la app</span><input class="inp" name="nombre" required maxlength="60" placeholder="Ej.: control de gastos"></label><button class="btn pri">Empezar</button></form>
+    ${STU.apps?.length ? html`<div class="proys" style="margin-top:16px">${STU.apps.map((a) => html`<a class="proy" href="#/studio/${encodeURIComponent(a.nombre)}"><b>${a.nombre}</b><span class="tk-m">${a.ruta} · ${diaHora(a.modificado)}</span></a>`)}</div>` : html`<p class="muted" style="margin-top:14px;font-size:13px">Todavía no hay apps.</p>`}`);
+}
+
 // ================================================================ mapa de conocimiento
 // Compañeros a la izquierda (agrupados por equipo, con su manager), proyectos a la derecha y una línea
 // por cada participación (coordina o tiene tareas). Todo sale de los datos reales.
@@ -4017,7 +4064,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5414,6 +5461,7 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "stu-arreglar": () => generarDesdeStudio(S.ruta.id, "", [...STU.errores]),
   // Dictado en el chat: una frase con el reconocimiento del celular (o del navegador); el texto queda en
   // el cuadro para revisarlo antes de mandar.
   dictar: (t) => {
@@ -5638,6 +5686,12 @@ const F = {
       try { const r = await api("POST", "/api/webhooks", { nombre: f.nombre.value, botId: f.botId.value, instrucciones: f.instrucciones.value }); S.webhookNuevo = r.token; await cargarWebhooks(); }
       catch (err) { f.querySelector(".err").textContent = err.message; }
     });
+  },
+  "studio-nueva"(f) { const n = f.nombre.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40); if (n) ir(`#/studio/${encodeURIComponent(n)}`); },
+  async studio(f) {
+    const pedido = f.pedido.value.trim();
+    if (!pedido) { f.querySelector(".err").textContent = "Contá qué querés."; return; }
+    await generarDesdeStudio(f.dataset.nombre, pedido, null);
   },
   async laboratorio(f) {
     LAB.pregunta = f.pregunta.value.trim(); LAB.botId = f.botId.value;
