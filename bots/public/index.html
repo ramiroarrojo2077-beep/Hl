@@ -1740,7 +1740,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2048,6 +2048,7 @@ function montar(antes) {
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
   if (v === "operaciones") return montarOps();
+  if (v === "mapa") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="mapa"></div></div>`; pintarMapa(); if (!S.proyectos) cargarProyectos().then(pintarMapa); return; }
   if (v === "laboratorio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="lab"></div></div>`; pintarLab(); return; }
   if (v === "buscar") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="busq"></div></div>`; pintarBusq(); $("#busq input")?.focus(); return; }
   if (v === "arquitecto") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="arq"></div></div>`; pintarArq(); return; }
@@ -3499,6 +3500,34 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ mapa de conocimiento
+// Compañeros a la izquierda (agrupados por equipo, con su manager), proyectos a la derecha y una línea
+// por cada participación (coordina o tiene tareas). Todo sale de los datos reales.
+function pintarMapa() {
+  const el = $("#mapa");
+  if (!el) return;
+  const bots = [];
+  const agregar = (b, nivel) => { bots.push({ b, nivel }); for (const h of S.bots.filter((x) => x.reportaA === b.id).sort(porNombre)) agregar(h, nivel + 1); };
+  for (const b of S.bots.filter((x) => !x.reportaA || !bot(x.reportaA)).sort(porNombre)) agregar(b, 0);
+  const proys = (S.proyectos || []).filter((p) => p.estado !== "archivado");
+  const FILA = 44, W = 720, xB = 16, xP = 470, alto = Math.max(bots.length, proys.length) * FILA + 30;
+  const yB = new Map(bots.map((x, i) => [x.b.id, 24 + i * FILA]));
+  const yP = new Map(proys.map((p, i) => [p.id, 24 + i * FILA]));
+  const lineas = [];
+  for (const p of proys) {
+    const ids = new Set([p.coordinadorId, ...p.tareas.map((t) => t.asignadoA)].filter(Boolean));
+    for (const id of ids) if (yB.has(id)) lineas.push({ y1: yB.get(id), y2: yP.get(p.id), coord: id === p.coordinadorId });
+  }
+  const txt = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const svg = `<svg viewBox="0 0 ${W} ${alto}" width="100%" role="img" aria-label="Mapa: ${bots.length} compañeros y ${proys.length} proyectos" style="max-width:${W}px;display:block">
+    ${lineas.map((l) => `<path d="M${xB + 230} ${l.y1} C ${xB + 330} ${l.y1}, ${xP - 100} ${l.y2}, ${xP} ${l.y2}" fill="none" stroke="var(${l.coord ? "--sig" : "--ion"})" stroke-opacity="${l.coord ? 0.75 : 0.45}" stroke-width="${l.coord ? 2 : 1.5}"/>`).join("")}
+    ${bots.map(({ b, nivel }) => { const y = yB.get(b.id), x = xB + nivel * 18; return `${nivel ? `<path d="M${x - 10} ${y - FILA + 12} V ${y} H ${x}" fill="none" stroke="var(--line2)"/>` : ""}<a href="#/chats/${b.id}"><rect x="${x}" y="${y - 15}" width="${230 - nivel * 18}" height="30" rx="15" fill="var(--s2)" stroke="var(--line2)"/><circle cx="${x + 15}" cy="${y}" r="5" fill="var(${est(b) === "work" ? "--ion" : est(b) === "wait" ? "--sig" : "--tx3"})"/><text x="${x + 28}" y="${y + 4}" font-size="12.5" fill="var(--tx)">${txt(b.nombre)}<tspan fill="var(--tx3)"> · ${txt(b.titulo).slice(0, 22)}</tspan></text></a>`; }).join("")}
+    ${proys.map((p) => { const y = yP.get(p.id); return `<a href="#/proyectos/${p.id}"><rect x="${xP}" y="${y - 15}" width="234" height="30" rx="8" fill="var(--s1)" stroke="var(--line2)"/><text x="${xP + 12}" y="${y + 4}" font-size="12.5" fill="var(--tx)">${txt(p.nombre).slice(0, 26)}<tspan fill="var(--tx3)"> · ${p.progreso.porcentaje}%</tspan></text></a>`; }).join("")}
+  </svg>`;
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Mapa</h1><p>Quién trabaja con quién (por equipo) y en qué proyectos. Naranja: coordina; cian: tiene tareas. Tocá un nombre para abrirlo.</p></div></header>
+    ${bots.length || proys.length ? html`<div class="card" style="margin-top:14px;overflow-x:auto">${crudo(svg)}</div>` : html`<div class="vacio-p" style="margin-top:14px"><b>Todavía no hay nada que mapear</b><span>Armá un equipo o un proyecto.</span></div>`}`);
+}
+
 // ================================================================ laboratorio
 // La misma consulta con el modelo automático, el rápido y el potente (con la personalidad de un
 // compañero si se elige), lado a lado y con el tiempo de cada uno. Es una consulta suelta: no queda en chats.
@@ -3988,7 +4017,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5977,6 +6006,7 @@ function repintar() {
   if (v === "reuniones" && p.has("reuniones")) S.ruta.id ? pintarSala() : pintarReuniones();
   if (v === "ajustes" && p.has("ajustes")) pintarAjustes();
   if (v === "proyectos" && p.has("proyectos")) pintarProyectos();
+  if (v === "mapa" && ["proyectos", "rail", "equipo"].some((k) => p.has(k))) pintarMapa();
   if (v === "operaciones" && ["rail", "equipo", "ctx", "avisos", "side", "reuniones", "proyectos", "ops", "bandeja"].some((k) => p.has(k))) pintarOps();
   if (v === "mensajes" && p.has("msj")) { pintarMsjLista(); montarMsjChat(); }
   else if (v === "mensajes" && p.has("msj-chat")) { pintarMsjLista(); pintarMsjChat(); }
