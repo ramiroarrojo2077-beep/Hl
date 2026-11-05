@@ -174,7 +174,8 @@ export function conflictosDeArchivos(bots: Bot[], ventanaMin = 30): string[] {
   const nombre = (id: string) => bots.find((b) => b.id === id)?.nombre ?? "alguien";
   const porRuta = new Map<string, { botId: string; t: number }[]>();
   const desde = Date.now() - 24 * HORA;
-  for (const r of leerActividad({ limite: 500 })) {
+  // leerActividad devuelve de lo más nuevo a lo más viejo: se da vuelta para que, con la misma hora, quede el orden real.
+  for (const r of leerActividad({ limite: 500 }).reverse()) {
     if (r.tipo !== "herramienta" || !r.ok) continue;
     const m = /^(?:Escribiendo|Editando) (.+)$/.exec(r.que);
     const t = Date.parse(r.fecha);
