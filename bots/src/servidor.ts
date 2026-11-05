@@ -67,6 +67,7 @@ import * as Code from "./codigo.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
 import { instalarDelMercado, vistaMercado } from "./mercado.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
+import { confianzaDe, cargaDe, iniciarTalento } from "./talento.ts";
 import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
@@ -170,6 +171,7 @@ const DatosBot = z.object({
   topeDiarioUsd: z.number().min(0).max(10_000).nullish(),
   estilo: z.string().trim().max(1500).nullish(),
   idioma: z.enum(["es", "en", "pt", "fr", "it", "de"]).nullish(),
+  mentorId: z.string().max(40).nullish(),
   favorito: z.boolean().optional(),
   // Misión de un especialista temporal; "" o null lo vuelve permanente.
   mision: z.string().trim().max(2000).nullish(),
@@ -359,6 +361,8 @@ function vistaBot(b: Bot) {
     tareasAbiertas: listarTareas().filter((t) => t.paraId === b.id && abierta(t)).length,
     equipo: b.cargo === "manager" ? directos(b.id).length : 0,
     gastoHoy: resumenGasto().porBot[b.id] ?? 0,
+    confianza: confianzaDe(b.id),
+    carga: cargaDe(b.id),
   };
 }
 
@@ -680,6 +684,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     topeDiarioUsd: d.topeDiarioUsd === undefined ? (bot.topeDiarioUsd ?? null) : d.topeDiarioUsd || null,
     estilo: d.estilo === undefined ? (bot.estilo ?? null) : d.estilo || null,
     idioma: d.idioma === undefined ? (bot.idioma ?? null) : d.idioma === "es" ? null : d.idioma,
+    mentorId: d.mentorId === undefined ? (bot.mentorId ?? null) : d.mentorId && d.mentorId !== bot.id && buscarBot(d.mentorId) ? d.mentorId : null,
     favorito: d.favorito ?? bot.favorito ?? false,
     temporal: d.mision === undefined ? (bot.temporal ?? null) : d.mision ? { mision: d.mision } : null,
   });
@@ -1253,7 +1258,7 @@ ruta("DELETE", "/api/reglas/:id", async ({ params }) => {
 
 ruta("PUT", "/api/ajustes", async ({ cuerpo }) => {
   const d = validar(
-    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean(), avisoAprobaciones: z.boolean(), avisoTareas: z.boolean() }).partial(),
+    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean(), avisoAprobaciones: z.boolean(), avisoTareas: z.boolean(), respaldoAutomatico: z.boolean() }).partial(),
     await cuerpo(),
   );
   const a = cambiarAjustes(d);
@@ -1746,6 +1751,7 @@ iniciarEquipo();
 iniciarProgramador(ejecutarRutina);
 iniciarTelegram();
 iniciarAutomatizaciones();
+iniciarTalento();
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {

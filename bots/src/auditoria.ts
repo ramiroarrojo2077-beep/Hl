@@ -7,12 +7,13 @@ import { listarAprobaciones } from "./agente.ts";
 import { normalizarBloqueadas } from "./herramientas.ts";
 import { gastoBotHoy, gastoPorBotDesde } from "./gasto.ts";
 import { listarAutomatizaciones } from "./automatizaciones.ts";
+import { leerActividad } from "./actividad.ts";
 import { listarProyectos, progreso } from "./proyectos.ts";
 
 export type Nivel = "alto" | "medio" | "info";
 export interface Hallazgo {
   nivel: Nivel;
-  area: "permisos" | "errores" | "tareas" | "proyectos" | "rutinas" | "aprobaciones";
+  area: "permisos" | "errores" | "tareas" | "proyectos" | "rutinas" | "aprobaciones" | "conflictos";
   texto: string;
   botId?: string;
 }
@@ -110,6 +111,10 @@ export function auditar(): Informe {
     if (r.activa && ult?.estado === "error") h.push({ nivel: "medio", area: "rutinas", botId: r.botId, texto: `Rutina «${r.nombre}» de ${nombre(r.botId)} falló la última vez: ${ult.resumen.slice(0, 160)}` });
   }
 
+  // Conflictos: dos compañeros cambiaron el mismo archivo con poco tiempo de diferencia (uno puede haber
+  // pisado lo del otro). Sale del historial real de acciones.
+  for (const c of conflictosDeArchivos(bots)) h.push({ nivel: "medio", area: "conflictos", texto: c });
+
   // Aprobaciones
   for (const a of listarAprobaciones()) {
     if (ahoraMs - Date.parse(a.creada) > HORA) h.push({ nivel: "medio", area: "aprobaciones", botId: a.botId, texto: `${nombre(a.botId)} espera tu aprobación hace más de una hora: ${a.titulo}.` });
@@ -163,6 +168,32 @@ function sugerir(bots: Bot[], tareas: ReturnType<typeof listarTareas>, proyectos
     out.push({ texto: "El equipo trabaja seguido pero no tiene rutinas: todo arranca cuando vos pedís.", accion: `Programarle a ${lider.nombre} un resumen diario o una revisión semanal`, enlace: `#/chats/${lider.id}/rutinas` });
   }
   return out.slice(0, 8);
+}
+
+export function conflictosDeArchivos(bots: Bot[], ventanaMin = 30): string[] {
+  const nombre = (id: string) => bots.find((b) => b.id === id)?.nombre ?? "alguien";
+  const porRuta = new Map<string, { botId: string; t: number }[]>();
+  const desde = Date.now() - 24 * HORA;
+  for (const r of leerActividad({ limite: 500 })) {
+    if (r.tipo !== "herramienta" || !r.ok) continue;
+    const m = /^(?:Escribiendo|Editando) (.+)$/.exec(r.que);
+    const t = Date.parse(r.fecha);
+    if (!m || t < desde) continue;
+    const ruta = m[1]!.trim();
+    porRuta.set(ruta, [...(porRuta.get(ruta) ?? []), { botId: r.botId, t }]);
+  }
+  const salida: string[] = [];
+  for (const [ruta, xs] of porRuta) {
+    xs.sort((a, b) => a.t - b.t);
+    for (let i = 1; i < xs.length; i++) {
+      const a = xs[i - 1]!, b = xs[i]!;
+      if (a.botId !== b.botId && b.t - a.t < ventanaMin * 60_000) {
+        salida.push(`Posible conflicto en ${ruta}: ${nombre(a.botId)} y ${nombre(b.botId)} lo cambiaron con ${Math.max(1, Math.round((b.t - a.t) / 60_000))} min de diferencia. Revisá sus versiones (Computadora o Gravity Code > Cambios).`);
+        break;
+      }
+    }
+  }
+  return salida.slice(0, 10);
 }
 
 /** El informe como texto, para pasárselo a un compañero que lo analice. */

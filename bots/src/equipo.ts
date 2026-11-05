@@ -26,6 +26,7 @@ import {
   type Tarea,
 } from "./almacen.ts";
 import { emitir } from "./eventos.ts";
+import { elegirMiembro } from "./talento.ts";
 import { MAX_MIEMBROS_EQUIPO, NOMBRES, PLANTILLAS_EQUIPO } from "./plantillas.ts";
 
 const MAX_ABIERTAS_POR_BOT = 3;
@@ -278,6 +279,8 @@ export interface Encargo {
   titulo: string;
   instrucciones: string;
   entregable: string;
+  // Por qué lo eligió Gravity cuando el manager pidió «auto».
+  eleccion?: string;
 }
 
 function resolverMiembro(manager: Bot, para: string, permitidos: Bot[]): Bot | string {
@@ -300,6 +303,17 @@ export function crearTareas(
   const abiertas = listarTareas().filter(abierta);
   if (abiertas.length + encargos.length > MAX_ABIERTAS_TOTAL) {
     throw new Error(`Hay demasiadas tareas abiertas en todo Gravity (máximo ${MAX_ABIERTAS_TOTAL}). Esperá a que terminen algunas.`);
+  }
+  // «auto»: Gravity elige según afinidad con el encargo, carga actual y confianza (ver talento.ts).
+  const elegidos = new Set<string>();
+  for (const e of encargos) {
+    if (e.para.trim().toLowerCase() !== "auto") continue;
+    const sinCupo = new Set(permitidos.filter((b) => abiertas.filter((t) => t.paraId === b.id).length + [...elegidos].filter((x) => x === b.id).length >= MAX_ABIERTAS_POR_BOT).map((b) => b.id));
+    const el = elegirMiembro(permitidos, `${e.titulo} ${e.instrucciones}`, sinCupo);
+    if (!el) throw new Error("No hay nadie libre en tu equipo para el encargo «auto».");
+    e.para = el.bot.id;
+    e.eleccion = el.razon;
+    elegidos.add(el.bot.id);
   }
   const destinos = encargos.map((e) => resolverMiembro(manager, e.para, permitidos));
   const errores = destinos.filter((d): d is string => typeof d === "string");
@@ -481,7 +495,7 @@ export const EntradaDelegar = z.strictObject({
   encargos: z
     .array(
       z.strictObject({
-        para: z.string().describe("Nombre o id de alguien de tu equipo directo"),
+        para: z.string().describe("Nombre o id de alguien de tu equipo directo, o \"auto\" para que Gravity elija según lo que sabe hacer cada uno, su carga y su confianza"),
         titulo: z.string().describe("Título corto del encargo"),
         instrucciones: z.string().describe("Qué hacer, con qué fuentes y cuándo está terminado. Completo: no ve tu conversación"),
         entregable: z.string().describe("Qué tiene que devolver; los archivos van en la carpeta de la tarea"),
@@ -516,7 +530,7 @@ export function herramientasEquipo(botId: string): BetaRunnableTool[] {
       if (bot.cargo !== "manager") throw new Error("Tu cargo no permite delegar. Si te falta algo, decíselo al usuario o, si estás en una tarea, entregala como bloqueada con tu pregunta.");
       const padreId = tareaDelTurno(botId);
       const creadas = crearTareas(bot, e.trabajo, e.encargos, { plazoMin: e.plazo_min, presupuestoUsd: e.presupuesto_usd, padreId });
-      const lista = creadas.map((t) => `- ${t.id} → ${t.paraNombre}: «${t.titulo}» (carpeta ${t.carpeta})`).join("\n");
+      const lista = creadas.map((t, i) => `- ${t.id} → ${t.paraNombre}: «${t.titulo}» (carpeta ${t.carpeta})${(e.encargos[i] as Encargo | undefined)?.eleccion ? ` · elegido por Gravity: ${(e.encargos[i] as Encargo).eleccion}` : ""}`).join("\n");
       return `Trabajo «${e.trabajo}» repartido en ${creadas.length} encargo(s), cada uno con US$${creadas[0]!.presupuestoUsd.toFixed(2)} y plazo hasta ${new Date(creadas[0]!.venceEn).toLocaleTimeString("es")}:\n${lista}\nCuando terminen te llegan los resultados solos. Terminá tu turno ahora.`;
     },
   });

@@ -3107,6 +3107,7 @@ function pintarPerfil() {
     <label class="chk"><input type="checkbox" class="sw" name="puedeEnviarAfuera" ${si(b.puedeEnviarAfuera, "checked")}><span>Puede enviar mensajes afuera<small>Mandar emails o mensajes con tus apps conectadas. Igual te pide aprobación cada vez.</small></span></label>
     <fieldset class="fld"><legend>Modelo</legend><div class="segc"><label><input type="radio" name="modelo" value="" ${si(!b.modelo, "checked")}>Automático</label><label><input type="radio" name="modelo" value="rapido" ${si(b.modelo === "rapido", "checked")}>Rápido</label><label><input type="radio" name="modelo" value="potente" ${si(b.modelo === "potente", "checked")}>Potente</label></div><small>Rápido contesta antes y gasta menos (ideal para atención y mensajes); Potente piensa mejor los trabajos difíciles (con los gratis tiene menos cupo y, si se agota, usa el automático).</small></fieldset>
     <label class="fld"><span>Personalidad y estilo</span><textarea class="inp" name="estilo" rows="2" maxlength="1500" placeholder="Ej.: cálido y con humor, frases cortas, tutea, nada de tecnicismos">${b.estilo || ""}</textarea><small>Cómo habla: tono, largo de las respuestas, formalidad. Vacío = el estilo de siempre.</small></label>
+    <label class="fld"><span>Mentor</span><select class="inp" name="mentorId" style="max-width:280px"><option value="">Sin mentor</option>${S.bots.filter((x) => x.id !== b.id).map((x) => html`<option value="${x.id}" ${si(b.mentorId === x.id, "selected")}>${x.nombre} · ${x.titulo}</option>`)}</select><small>Un compañero con más experiencia revisa cada tarea que ${b.nombre} termina y le manda una devolución que guarda como lección.${b.confianza ? ` Confianza actual: ${b.confianza.nivel === "sin datos" ? "sin datos todavía" : `${b.confianza.puntaje}% (${b.confianza.completas} bien, ${b.confianza.fallidas} mal de ${b.confianza.total})`}.` : ""}</small></label>
     <label class="fld"><span>Idioma</span><select class="inp" name="idioma" style="max-width:240px">${Object.entries(IDIOMAS_BOT).map(([k, [n]]) => html`<option value="${k}" ${si((b.idioma || "es") === k, "selected")}>${n}</option>`)}</select><small>En qué idioma responde, escribe y habla en las llamadas (la voz usa una del celular en ese idioma si hay).</small></label>
     <label class="chk"><input type="checkbox" class="sw" name="favorito" ${si(b.favorito, "checked")}><span>Favorito<small>Aparece primero en las listas.</small></span></label>
     <label class="fld"><span>Tope de gasto diario (US$)</span><input class="inp" type="number" name="topeDiarioUsd" min="0" max="10000" step="0.5" value="${b.topeDiarioUsd ?? ""}" placeholder="Sin tope propio" style="max-width:200px"><small>Al llegar, no arranca tareas, rutinas ni mensajes solo (lo que le pidas vos sigue). Solo cuenta con Claude: los modelos gratis no gastan. Hoy lleva ${usd(b.gastoHoy || 0)}.</small></label>
@@ -3580,6 +3581,8 @@ function pintarAjustes() {
         <p class="ayuda" style="margin-top:10px">Los pasos para abrir Gravity en el celular (misma red o túnel) están en <code>bots/MOVIL.md</code> del repositorio.</p></section>
       ${(S.archivados || []).length ? html`<section class="card" aria-labelledby="aj-ar"><h2 id="aj-ar">Compañeros archivados</h2><p class="sub">No trabajan ni aparecen en el equipo. Al restaurarlos vuelven con su memoria y su conversación.</p>
         <ul class="reglas">${S.archivados.map((b) => html`<li><span>${b.nombre} · ${b.titulo}<small>${b.temporal?.mision ? `Misión: ${b.temporal.mision.slice(0, 120)} · ` : ""}archivado ${diaHora(b.archivado)}</small></span><button class="btn out sm" data-a="restaurar-bot" data-id="${b.id}" aria-label="Restaurar a ${b.nombre}">Restaurar</button></li>`)}</ul></section>` : ""}
+      <section class="card" aria-labelledby="aj-rs"><h2 id="aj-rs">Agentes de respaldo</h2><p class="sub">Si una tarea del equipo falla o se vence, otro miembro del mismo equipo la retoma una vez (Gravity elige según lo que sabe hacer, su carga y su confianza) y se avisa al manager. Usa el mismo presupuesto de la tarea original.</p>
+        <label class="chk"><input type="checkbox" class="sw" data-c="respaldo-auto" ${si(a.respaldoAutomatico, "checked")}><span>Respaldo automático<small>Apagado de fábrica.</small></span></label></section>
       <section class="card" aria-labelledby="aj-no"><h2 id="aj-no">Notificaciones del celular</h2><p class="sub">Con Gravity cerrada. Con la app abierta todo se ve en pantalla.</p>
         <form data-f="avisos" style="display:flex;flex-direction:column;gap:10px"><label class="fila"><input type="checkbox" name="avisoAprobaciones" ${a.avisoAprobaciones !== false ? "checked" : ""}><span><b>Aprobaciones</b> — cuando un compañero necesita tu permiso</span></label><label class="fila"><input type="checkbox" name="avisoTareas" ${a.avisoTareas !== false ? "checked" : ""}><span><b>Tareas trabadas</b> — cuando una tarea queda bloqueada o falla</span></label><div><button class="btn out sm">Guardar</button></div></form></section>
       <section class="card" aria-labelledby="aj-nv"><h2 id="aj-nv">Novedades</h2>
@@ -4290,7 +4293,7 @@ function pintarOps() {
       return html`<div class="sec-h"><h2>Productividad · 7 días</h2></div>
         <ul class="hist" aria-label="Tareas por compañero en 7 días">${xs.map((e) => html`<li style="display:grid;grid-template-columns:minmax(80px,140px) 1fr auto;gap:10px;align-items:center"><b>${e.b.nombre}</b>
           <span class="barra prod" role="img" aria-label="${e.tareasCompletas} tareas completas y ${e.tareasTrabadas} trabadas"><i style="width:${(e.tareasCompletas / max) * 100}%"></i><i class="mal" style="width:${(e.tareasTrabadas / max) * 100}%"></i></span>
-          <small class="muted">${e.tareasCompletas} ✓ · ${e.acciones} acciones${e.errores ? ` (${e.errores} con error)` : ""}${e.gastoUsd ? ` · ${usd(e.gastoUsd)}` : ""}</small></li>`)}</ul>`;
+          <small class="muted">${e.tareasCompletas} ✓ · ${e.acciones} acciones${e.errores ? ` (${e.errores} con error)` : ""}${e.gastoUsd ? ` · ${usd(e.gastoUsd)}` : ""}${e.b.confianza && e.b.confianza.nivel !== "sin datos" ? ` · confianza ${e.b.confianza.puntaje}%` : ""}${e.b.carga ? ` · ${e.b.carga} abierta(s)` : ""}</small></li>`)}</ul>`;
     })() : ""}
     <div class="sec-h"><h2>Actividad reciente</h2><button class="btn out sm" data-a="actividad">${ico("refresh", "s")}Actualizar</button></div>
     ${(S.actividad || []).length ? html`<ul class="hist">${S.actividad.map((x) => html`<li><span class="tag ${x.ok ? "" : "sig"}">${x.tipo === "aprobacion" ? (x.ok ? "Aprobado" : "Negado") : x.ok ? "OK" : "Error"}</span> <b>${bot(x.botId)?.nombre || "Un compañero"}</b> · ${x.que} <small class="muted">· ${diaHora(x.fecha)}${!x.ok && x.detalle ? ` — ${x.detalle.slice(0, 140)}` : ""}</small></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Todavía no hay acciones registradas.</p>`}
@@ -6579,6 +6582,7 @@ const F = {
     if (f.querySelector("[name=favorito]")) cuerpo.favorito = d.get("favorito") === "on";
     if (f.estilo) cuerpo.estilo = String(d.get("estilo") || "").trim() || null;
     if (f.idioma) cuerpo.idioma = d.get("idioma") || "es";
+    if (f.mentorId) cuerpo.mentorId = d.get("mentorId") || null;
     if (f.querySelector("[name=modelo]")) cuerpo.modelo = d.get("modelo") || null;
     if (f.topeDiarioUsd) cuerpo.topeDiarioUsd = f.topeDiarioUsd.value === "" ? null : Number(f.topeDiarioUsd.value);
     if (f.mision) cuerpo.mision = String(d.get("mision") || "").trim() || null;
@@ -6750,6 +6754,7 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "respaldo-auto": async (t) => { await api("PUT", "/api/ajustes", { respaldoAutomatico: t.checked }); toast(t.checked ? "Respaldo automático prendido." : "Respaldo automático apagado."); },
   "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; await cargarCodeArchivos(); pintarCode(); },
   "cd-aislado": (t) => { CD.aislado = t.checked; },
   "cd-bot": async (t) => { CD.botId = t.value; await cdCargarConv(); pintarCodePanel(); },

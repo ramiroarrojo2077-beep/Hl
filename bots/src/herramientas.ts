@@ -243,7 +243,7 @@ export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas:
   web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
   mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
   conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
-  equipo: { nombre: "Delegar a su equipo y proponer compañeros nuevos", herramientas: ["delegar", "tareas", "equipo_nuevo"] },
+  equipo: { nombre: "Delegar a su equipo y proponer compañeros nuevos", herramientas: ["delegar", "tareas", "equipo_nuevo", "ensenar"] },
   reuniones: { nombre: "Reuniones", herramientas: ["reunion"] },
   rutinas: { nombre: "Rutinas y habilidades", herramientas: ["rutinas", "habilidades"] },
   proyectos: { nombre: "Proyectos", herramientas: ["proyectos"] },
@@ -283,6 +283,7 @@ async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunn
       herramientaProyectos(botId),
       herramientaEquipoNuevo(botId),
       herramientaAislado(),
+      herramientaEnsenar(botId),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
       // Mirar videos y audios lo hace Gemini: está si hay su clave, sea cual sea el proveedor de los bots.
@@ -475,6 +476,30 @@ const EntradaAislado = z.strictObject({
   comando: z.string().describe("Comando a correr dentro de la copia. Ej.: npm test, node pruebas.mjs, python -m pytest"),
   segundos: z.number().nullable().describe("Tiempo límite en segundos (por defecto 120, máximo 600)"),
 });
+
+const EntradaEnsenar = z.strictObject({
+  aprendiz: z.string().describe("Nombre o id de tu aprendiz"),
+  devolucion: z.string().describe("Qué estuvo bien, qué mejorar y el procedimiento recomendado paso a paso"),
+});
+
+// Mentores (Perfil > Mentor del aprendiz): mandan una devolución que el aprendiz guarda como lección.
+function herramientaEnsenar(botId: string): BetaRunnableTool {
+  return betaZodTool({
+    name: "ensenar",
+    description: "Solo si sos mentor de alguien: mandale a tu aprendiz una devolución sobre su trabajo (qué estuvo bien, qué mejorar y el procedimiento recomendado). La guarda en sus lecciones.",
+    inputSchema: EntradaEnsenar,
+    run: async (e) => {
+      const { aprendicesDe } = await import("./talento.ts");
+      const q = e.aprendiz.trim().toLowerCase();
+      const a = aprendicesDe(botId).find((b) => b.id === e.aprendiz || b.nombre.toLowerCase() === q);
+      if (!a) return "Esa persona no es tu aprendiz (el usuario elige el mentor en el Perfil de cada compañero).";
+      const yo = buscarBot(botId);
+      const { enviarMensaje } = await import("./agente.ts");
+      enviarMensaje(a.id, `[Devolución de tu mentor ${yo?.nombre ?? ""}]\n${e.devolucion.slice(0, 6000)}\n\nGuardá lo útil en /memories/lecciones.md («antes de X, verificar Y») y aplicalo la próxima vez. No hace falta que respondas.`);
+      return `Devolución enviada a ${a.nombre}.`;
+    },
+  });
+}
 
 function herramientaAislado(): BetaRunnableTool {
   return betaZodTool({
