@@ -4230,7 +4230,7 @@ function extraerOraciones(t, final) {
 // ================================================================ llamada de voz con un compañero
 // La llamada es el mismo chat: lo que decís se manda como mensaje (POST /api/bots/:id/mensajes, con el id del
 // turno en `llamada`) y la respuesta se escucha del SSE (cambio con ese id → delta → cambio → estado libre).
-const AVATAR_DEF = { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto", voz: null, velocidad: 1 };
+const AVATAR_DEF = { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto", voz: null, velocidad: 1, accesorio: "ninguno" };
 const avatarDe = (b) => ({ ...AVATAR_DEF, ...(b?.avatar || {}) });
 const LL = { activa: false, voces: new Map() };
 const DICT = { fin: null, quitar: null };
@@ -4692,6 +4692,7 @@ function htmlLlamadasPerfil(b) {
       <div class="fld"><span id="pf-col-l">Color de acento</span><div class="av-col"><input type="color" name="avColor" value="${a.color.toLowerCase()}" data-i="av-color" aria-labelledby="pf-col-l"><span class="sw-c" role="group" aria-label="Colores sugeridos">${COLORES_ACENTO.map(([c, n]) => html`<button type="button" data-a="av-color-pre" data-v="${c.toLowerCase()}" style="background:${c}" aria-label="${n}" title="${n}"></button>`)}</span><code id="av-col-v">${a.color.toUpperCase()}</code></div><small>Ojos, auriculares y el satélite del logo.</small></div>
       <label class="fld"><span>Expresividad · <output id="av-expr-v">${a.expresividad}%</output></span><input type="range" class="rng" name="avExpr" min="0" max="100" step="5" value="${a.expresividad}" data-i="av-expr"><small>Cuánto gesticula mientras habla.</small></label>
     </div>
+    <label class="fld"><span>Accesorio</span><select class="inp" name="avAccesorio" style="max-width:220px">${[["ninguno", "Ninguno"], ["antena", "Antena con luz"], ["cresta", "Cresta violeta"], ["visera", "Visera"]].map(([v, t]) => html`<option value="${v}" ${si((a.accesorio || "ninguno") === v, "selected")}>${t}</option>`)}</select></label>
     <fieldset class="fld"><legend>Calidad del robot</legend><div class="segc">${[["auto", "Automática"], ["alta", "Alta"], ["baja", "Baja"]].map(([v, t]) => html`<label><input type="radio" name="avCalidad" value="${v}" ${si(a.calidad === v, "checked")}>${t}</label>`)}</div><small>Automática baja la calidad sola si el dispositivo no da abasto.</small></fieldset>
     <div class="g2">
       <label class="fld"><span>Voz</span><select class="inp" name="avVoz" data-k="pf-voz">${opcionesVoz(a)}</select>${tts ? "" : html`<small>Este dispositivo no tiene voces.</small>`}</label>
@@ -4708,7 +4709,7 @@ function refrescarVocesPerfil() {
 }
 function datosAvatar(f) {
   const d = new FormData(f);
-  return { activo: d.get("avActivo") === "on", color: String(d.get("avColor") || AVATAR_DEF.color).toUpperCase(), expresividad: Math.round(Number(d.get("avExpr")) || 0), calidad: d.get("avCalidad") || "auto", voz: d.get("avVoz") || null, velocidad: Number(d.get("avVel")) || 1 };
+  return { accesorio: d.get("avAccesorio") || "ninguno", activo: d.get("avActivo") === "on", color: String(d.get("avColor") || AVATAR_DEF.color).toUpperCase(), expresividad: Math.round(Number(d.get("avExpr")) || 0), calidad: d.get("avCalidad") || "auto", voz: d.get("avVoz") || null, velocidad: Number(d.get("avVel")) || 1 };
 }
 function probarVoz(f) {
   const b = bot(S.botId);
@@ -4830,7 +4831,7 @@ function arrancarMotor() {
   else cargarThree().then((T) => {
     if (m.fin) return;
     let r = null;
-    try { r = crearRobot3D(T, esc, cerebro, { color: LL.av.color, calidad: LL.av.calidad, alFallar: usar2D }); } catch (err) { console.warn(err); r = null; }
+    try { r = crearRobot3D(T, esc, cerebro, { color: LL.av.color, calidad: LL.av.calidad, accesorio: LL.av.accesorio, alFallar: usar2D }); } catch (err) { console.warn(err); r = null; }
     listo(r || crearRobot2D(esc, cerebro));
   }).catch((err) => { console.warn(err); listo(crearRobot2D(esc, cerebro)); });
   seguir();
@@ -5127,6 +5128,19 @@ function crearRobot3D(T, cont, cerebro, op) {
     const vincha = g(new T.TorusGeometry(0.43, 0.022, sg(10), sg(56), Math.PI));
     vincha.scale(1, 1, 1.7);
     malla(vincha, M.perla, cabeza, [0, 0.29, -0.03], [-0.12, 0, 0]);
+    // accesorio elegido en el Perfil (Llamadas)
+    if (op.accesorio === "antena") {
+      malla(g(new T.CylinderGeometry(0.008, 0.01, 0.1, sg(10))), M.gris, cabeza, [0.2, 0.64, 0.04], [0, 0, -0.35]);
+      malla(g(new T.SphereGeometry(0.034, sg(18), sg(12))), M.led, cabeza, [0.222, 0.695, 0.04], null, false);
+    } else if (op.accesorio === "cresta") {
+      // cresta de luz violeta de adelante hacia atrás, por delante de la vincha
+      const cresta = g(new T.CapsuleGeometry(0.03, 0.2, sg(6), sg(14)));
+      malla(cresta, M.violeta, cabeza, [0, 0.62, 0.12], [Math.PI / 2 - 0.5, 0, 0], false);
+    } else if (op.accesorio === "visera") {
+      // ala de gorra adelante, inclinada para que se vea desde la cámara
+      const visera = g(new T.CylinderGeometry(0.3, 0.3, 0.022, sg(40), 1, false, -Math.PI / 2.3, Math.PI / 1.15));
+      malla(visera, M.oscuro, cabeza, [0, 0.55, 0.2], [0.42, 0, 0]);
+    }
     // brazos: hombro, brazo, codo, antebrazo, muñeca, mano con pulgar y tres dedos de dos falanges
     const G_ = {
       hombro: g(new T.SphereGeometry(0.098, sg(28), sg(20))), brazo: g(new T.CapsuleGeometry(0.056, 0.13, sg(6), sg(20))),

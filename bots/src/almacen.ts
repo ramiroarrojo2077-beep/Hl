@@ -36,6 +36,8 @@ export interface Avatar {
   voz: string | null;
   // Velocidad del habla (1 = normal).
   velocidad: number;
+  // Accesorio del robot.
+  accesorio?: "ninguno" | "antena" | "cresta" | "visera";
 }
 
 export interface Bot {

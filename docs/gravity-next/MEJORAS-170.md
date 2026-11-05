@@ -18,7 +18,7 @@
 11. ✅ Robot 3D (cabeza, brazos, manos con dedos, torso, articulaciones) con three.js.
 12. ✅ Animaciones sincronizadas con la envolvente real del audio.
 13. ✅ Emociones sin boca: estados escuchando, pensando, hablando, entusiasmado, esperando.
-14. 🟡 Personalizable: color, expresividad, calidad, voz y velocidad. Faltan accesorios y estilos.
+14. ✅ Personalizable: color, accesorio, expresividad, calidad, voz y velocidad.
 15. ⛔ Sala holográfica con varios robots.
 16. ✅ Voz en tiempo real con interrupción (tocar al robot).
 17. ✅ Fotos durante la llamada (botón Foto): se achica, se guarda en llamadas/ y el compañero la mira con Gemini y la comenta en voz.
@@ -51,7 +51,7 @@
 61–64. ✅ Estilo «Cristal» opcional (Ajustes > Estilo): azul profundo, paneles translúcidos con desenfoque, brillos cian/violeta moderados (respeta «reducir transparencia»). Tema clásico oscuro/claro sigue igual. 65. 🟡 Transición suave al cambiar de pantalla en el estilo Cristal (respeta «reducir movimiento»). 66. ⛔ Logo 3D animado. 67. 🟡 Centro de operaciones hace de panel. 68. ✅ Tarjetas con estado. 69. ✅ Navegación inferior en el celular. 70. ✅ Íconos propios. 71. ✅ Indicadores de actividad. 72. ✅ Gráfico de productividad animado (respeta «reducir movimiento»). 73. ✅ Tema claro/oscuro y estilo Clásico/Cristal. 74. ✅ Adaptable (360 px a escritorio). 75. 🟡 Calidad del robot adaptable.
 
 ## 8. Robot 3D
-76–82. ✅ (cuerpo, iluminación, movimientos independientes, estados, gestos con pausas e intensidad, ojos). 78. 🟡 símbolo en el pecho: verificar. 83. ✅ Asiente al terminar cada respuesta. 84. ✅ Saluda con la mano al empezar la llamada. 85. ✅ Girar al robot arrastrando el dedo. 86. 🟡 Personalización (color). 87. 🟡 Estilo por expresividad. 88–90. ✅.
+76–82. ✅ (cuerpo, iluminación, movimientos independientes, estados, gestos con pausas e intensidad, ojos). 78. 🟡 símbolo en el pecho: verificar. 83. ✅ Asiente al terminar cada respuesta. 84. ✅ Saluda con la mano al empezar la llamada. 85. ✅ Girar al robot arrastrando el dedo. 86. ✅ Personalización: color y accesorio (antena con luz, cresta violeta, visera). 87. 🟡 Estilo por expresividad. 88–90. ✅.
 
 ## 9. Reuniones
 91. ✅ 92. ✅ 93. ✅ 94. ✅ (Debate) 95. ✅ (votación) 96. ✅ 97. ✅ 98. ✅ 99. ✅ (pausar/reanudar/terminar) 100. ⛔ Robots en la sala.

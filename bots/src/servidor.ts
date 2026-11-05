@@ -127,6 +127,7 @@ class ErrorHttp extends Error {
 // Robot y voz de las llamadas (ver Avatar en almacen.ts). Lo que falte toma el valor por defecto.
 const DatosAvatar = z.object({
   activo: z.boolean().default(true),
+  accesorio: z.enum(["ninguno", "antena", "cresta", "visera"]).default("ninguno"),
   color: z
     .string()
     .trim()
