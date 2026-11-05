@@ -67,6 +67,8 @@ import * as Code from "./codigo.ts";
 import * as Datos from "./datos.ts";
 import * as Canales from "./canales.ts";
 import { resumir } from "./resumen.ts";
+import * as Inv from "./investigacion.ts";
+import { leerPagina } from "./herramientas.ts";
 import { aplicarPropuesta, descartarPropuesta, propuestas as propuestasEvolucion } from "./evolucion.ts";
 import { preguntar as preguntarDatos } from "./datos-ia.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
@@ -616,6 +618,12 @@ bus.on("evento", (tipo: string, d: { id?: string; estado?: string; titulo?: stri
   yaAvisadas.add(clave);
   const quien = d.paraId ? (buscarBot(d.paraId)?.nombre ?? "Un compañero") : "Un compañero";
   avisosMotor.push(`${quien}: «${String(d.titulo ?? "una tarea").slice(0, 80)}» ${d.estado === "bloqueada" ? "quedó bloqueada y necesita algo de vos" : "falló"}.`);
+  if (avisosMotor.length > 10) avisosMotor.shift();
+});
+// Otros avisos para el celular (por ejemplo, una página seguida que cambió o dejó de responder).
+bus.on("evento", (tipo: string, d: { texto?: string }) => {
+  if (tipo !== "aviso-motor" || !d?.texto) return;
+  avisosMotor.push(String(d.texto).slice(0, 240));
   if (avisosMotor.length > 10) avisosMotor.shift();
 });
 
@@ -1378,6 +1386,33 @@ ruta("GET", "/api/computadora/version", async ({ url }) => {
   return { contenido: b.subarray(0, 8000).includes(0) ? null : b.toString("utf8") };
 });
 
+// ---- Investigación: fuentes, monitor de cambios y documentos (ver investigacion.ts y documentos.ts) ----
+ruta("GET", "/api/fuentes", async ({ url }) => Inv.listarFuentes(url.searchParams.get("q") ?? ""));
+ruta("POST", "/api/fuentes", async ({ cuerpo }) => {
+  const d = validar(z.object({ url: z.string().url().max(2000), titulo: z.string().max(200).optional(), nota: z.string().max(1000).optional(), etiquetas: z.array(z.string().max(40)).max(10).optional() }), await cuerpo());
+  return malPedido(() => Inv.agregarFuente(d));
+});
+ruta("DELETE", "/api/fuentes", async ({ url }) => { Inv.quitarFuente(url.searchParams.get("url") ?? ""); return { ok: true }; });
+const vistaMonitor = (m: Inv.Monitor) => ({ ...m, estadoTexto: Inv.estadoMonitor(m) });
+ruta("GET", "/api/monitores", async () => Inv.listarMonitores().map(vistaMonitor));
+ruta("POST", "/api/monitores", async ({ cuerpo }) => {
+  const d = validar(z.object({ url: z.string().url().max(2000), nombre: z.string().max(80).optional(), cadaHoras: z.number().min(1).max(168).optional(), botId: z.string().max(40).nullish() }), await cuerpo());
+  const m = malPedido(() => Inv.crearMonitor(d)) as Inv.Monitor;
+  return vistaMonitor(await Inv.revisar(m.id, leerPagina));
+});
+ruta("POST", "/api/monitores/:id/revisar", async ({ params }) => { try { return vistaMonitor(await Inv.revisar(params[0]!, leerPagina)); } catch (err) { throw new ErrorHttp(404, (err as Error).message); } });
+ruta("DELETE", "/api/monitores/:id", async ({ params }) => { Inv.borrarMonitor(params[0]!); return { ok: true }; });
+ruta("POST", "/api/documentos/buscar", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), consulta: z.string().max(300).default("") }), await cuerpo());
+  const D = await import("./documentos.ts");
+  const texto = malPedido(() => D.textoDeDocumento(d.ruta)) as string;
+  return { caracteres: texto.length, partes: D.cantidadPartes(texto), comienzo: texto.slice(0, 1200), resultados: d.consulta ? D.buscarEnDocumento(texto, d.consulta, 20) : [] };
+});
+ruta("GET", "/api/documentos", async () => {
+  const D = await import("./documentos.ts");
+  return (await listarArchivos(COMPUTADORA)).filter((a) => !a.carpeta && /\.(pdf|docx|odt|pptx)$/i.test(a.ruta) && D.EXT_DOCUMENTOS.test(a.ruta));
+});
+
 // ---- Gravity Evolution (experimental, ver evolucion.ts): propone; aplica solo cuando el usuario toca Aplicar ----
 ruta("GET", "/api/evolucion", async () => propuestasEvolucion());
 ruta("POST", "/api/evolucion/aplicar", async ({ cuerpo }) => {
@@ -1912,6 +1947,7 @@ iniciarTelegram();
 iniciarAutomatizaciones();
 iniciarTalento();
 Canales.iniciarCanales();
+Inv.iniciarMonitores(leerPagina);
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {

@@ -5,6 +5,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { COMPUTADORA, conversacion, listarBots, listarReuniones, raizMemoria } from "./almacen.ts";
 import { listarProyectos } from "./proyectos.ts";
+import { textoDeDocumento } from "./documentos.ts";
 
 export interface Resultado {
   tipo: "compañero" | "conversación" | "proyecto" | "tarea" | "reunión" | "memoria" | "archivo";
@@ -89,6 +90,8 @@ export function buscarTodo(consulta: string, limite = 60): Resultado[] {
     const rel = path.relative(COMPUTADORA, a);
     let texto = "";
     if (ES_TEXTO.test(a) && statSync(a).size <= 500_000) texto = readFileSync(a, "utf8");
+    // PDF, Word, OpenDocument y PowerPoint: se busca dentro de su texto.
+    else if (/\.(pdf|docx|odt|pptx)$/i.test(a)) { try { texto = textoDeDocumento(rel); } catch { texto = ""; } }
     if (coincide(`${rel} ${texto}`)) r.push({ tipo: "archivo", titulo: rel, extracto: texto ? extracto(texto, terminos) : "", enlace: `#/computadora` });
     if (r.length >= limite * 2) break;
   }

@@ -887,6 +887,8 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
+.inv-l{list-style:none;margin:12px 0;padding:0;display:flex;flex-direction:column;gap:8px}.inv-l li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--s1);border:1px solid var(--line)}.inv-l a{display:flex;flex-direction:column;min-width:0;flex:1;color:inherit;text-decoration:none}.inv-l a small{color:var(--tx3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-mas{color:var(--ion);font-size:12.5px}.inv-menos{color:var(--sig);font-size:12.5px;text-decoration:line-through}.inv-pre{white-space:pre-wrap;font-size:12.5px;max-height:300px;overflow:auto;background:var(--s2);padding:10px;border-radius:10px}
 .cn{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0;min-height:calc(100dvh - 120px);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--s1)}
 .cn-lat{border-right:1px solid var(--line);padding:8px 0;overflow:auto}.cn-lat-h{display:flex;justify-content:space-between;align-items:center;padding:4px 10px 8px 14px}.cn-lat ul{list-style:none;margin:0;padding:0}
 .cn-it{display:flex;align-items:center;gap:8px;padding:8px 14px;color:var(--tx2);text-decoration:none;font-size:14px;min-height:40px}.cn-it span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cn-it small{font-size:11px;color:var(--tx3)}.cn-it.on{background:var(--s2);color:var(--tx);font-weight:600;box-shadow:inset 3px 0 0 var(--ion)}
@@ -1814,7 +1816,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales", "investigacion"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2127,6 +2129,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "investigacion") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="invest"></div></div>`; montarInvestigacion().catch((e) => toast(e.message, "err")); return; }
   if (v === "canales") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in ancha" id="canales"></div></div>`; montarCanales().catch((e) => toast(e.message, "err")); return; }
   if (v === "datos") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="datalab"></div></div>`; montarDatos().catch((e) => toast(e.message, "err")); return; }
   if (v === "code") { vista.classList.add("v-code"); $("#vista").innerHTML = `<div class="code-pag" id="code"></div>`; montarCode().catch((e) => toast(e.message, "err")); return; }
@@ -3733,6 +3736,41 @@ function mesaRobots(fac, ps, habla) {
     ${robots}</svg>`);
 }
 
+// ================================================================ Investigación
+// Biblioteca de fuentes (lo que leyeron y buscaron los compañeros + las tuyas), monitor de cambios de
+// páginas y búsqueda dentro de documentos (PDF, Word, PowerPoint), también largos.
+const INV = { pest: "fuentes", q: "", fuentes: null, monitores: null, docs: null, doc: null, res: null };
+async function montarInvestigacion() {
+  const [f, m, d] = await Promise.all([api("GET", `/api/fuentes?q=${encodeURIComponent(INV.q)}`), api("GET", "/api/monitores"), api("GET", "/api/documentos")]);
+  Object.assign(INV, { fuentes: f, monitores: m, docs: d });
+  pintarInvestigacion();
+}
+function pintarInvestigacion() {
+  const el = $("#invest");
+  if (!el) return;
+  const pest = [["fuentes", "Fuentes"], ["monitores", "Monitor de cambios"], ["documentos", "Documentos"]];
+  const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Investigación</h1><p>Las fuentes que consultan tus compañeros, páginas que Gravity revisa por vos y búsqueda dentro de tus documentos.</p></div></header>
+    <nav class="cd-modos dl-pest" aria-label="Secciones">${pest.map(([k, t]) => html`<button class="chip" aria-pressed="${String(INV.pest === k)}" data-a="inv-pest" data-v="${k}">${t}</button>`)}</nav>
+    ${INV.pest === "fuentes" ? html`
+      <form class="dl-preg" data-f="inv-buscar" role="search"><label class="fld" style="flex:1"><span>Buscar en la biblioteca</span><input class="inp" type="search" name="q" value="${INV.q}" data-k="inv-q" placeholder="dominio, título, etiqueta…"></label><button class="btn out">Buscar</button></form>
+      <ul class="inv-l">${(INV.fuentes || []).map((f) => html`<li><a href="${f.url}" target="_blank" rel="noopener noreferrer"><b>${f.titulo || host(f.url)}</b><small>${f.url}</small></a><span class="muted" style="font-size:12px">${f.manual ? "agregada por vos" : bot(f.botId)?.nombre ? `consultada por ${bot(f.botId).nombre}` : ""}${f.veces > 1 ? ` · ${f.veces} veces` : ""}${(f.etiquetas || []).length ? ` · ${f.etiquetas.join(", ")}` : ""}${f.nota ? ` · ${f.nota}` : ""}</span>${f.manual ? html`<button class="btn ghost sm" data-a="inv-quitar" data-url="${f.url}" aria-label="Quitar ${f.url}">×</button>` : html`<button class="btn ghost sm" data-a="inv-seguir" data-url="${f.url}">Seguir cambios</button>`}</li>`)}</ul>
+      ${(INV.fuentes || []).length ? "" : html`<p class="muted">Todavía no hay fuentes: aparecen cuando un compañero busca o lee en la web, o cuando agregás una.</p>`}
+      <details class="mas"><summary>${ico("plus", "s")}Agregar una fuente</summary><form class="dl-armar" data-f="inv-fuente"><label class="fld" style="grid-column:1/-1"><span>Enlace</span><input class="inp" type="url" name="url" required placeholder="https://…"></label><label class="fld"><span>Título</span><input class="inp" name="titulo" maxlength="200"></label><label class="fld"><span>Etiquetas (coma)</span><input class="inp" name="etiquetas"></label><label class="fld"><span>Nota</span><input class="inp" name="nota" maxlength="1000"></label><div class="dl-acc"><button class="btn pri">Agregar</button></div></form></details>` : ""}
+    ${INV.pest === "monitores" ? html`
+      <form class="dl-armar" data-f="inv-monitor"><label class="fld" style="grid-column:1/-1"><span>Página a seguir</span><input class="inp" type="url" name="url" required placeholder="https://…" value="${INV.urlNueva || ""}"></label><label class="fld"><span>Nombre</span><input class="inp" name="nombre" maxlength="80"></label><label class="fld"><span>Revisar cada</span><select class="inp" name="cada">${[[1, "1 hora"], [6, "6 horas"], [24, "1 día"], [168, "1 semana"]].map(([h, t]) => html`<option value="${h}" ${si(h === 6, "selected")}>${t}</option>`)}</select></label><label class="fld"><span>Que lo analice</span><select class="inp" name="botId"><option value="">Nadie (solo avisar)</option>${S.bots.map((b) => html`<option value="${b.id}">${b.nombre}</option>`)}</select></label><div class="dl-acc"><button class="btn pri">Seguir</button></div></form>
+      <p class="muted" style="font-size:12.5px">Cuando cambia, avisa en #anuncios y en el celular (con la app cerrada), con las líneas nuevas y las que ya no están. Si deja de responder o no cambia hace meses, lo marca.</p>
+      ${(INV.monitores || []).map((m) => html`<section class="card dl-card"><div class="fila" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h2 style="font-size:15px">${m.nombre}</h2><a href="${m.url}" target="_blank" rel="noopener noreferrer" class="muted" style="font-size:12px">${m.url}</a></div><div class="fila" style="gap:6px"><button class="btn out sm" data-a="inv-revisar" data-id="${m.id}">Revisar ahora</button><button class="btn ghost sm" data-a="inv-borrar-m" data-id="${m.id}">Dejar de seguir</button></div></div>
+        <p class="${m.ultimo?.estado === "error" ? "u-wait" : "muted"}" style="font-size:13px;margin:6px 0">${m.estadoTexto} Cada ${m.cadaHoras} h${m.ultimo ? ` · revisada ${diaHora(m.ultimo.fecha)}` : ""}${m.botId && bot(m.botId) ? ` · lo analiza ${bot(m.botId).nombre}` : ""}</p>
+        ${m.cambios.length ? html`<details class="mas"><summary>${ico("right", "s")}Cambios (${m.cambios.length})</summary><ul class="hist">${m.cambios.slice().reverse().slice(0, 10).map((c) => html`<li><b>${diaHora(c.fecha)}</b>${c.agregadas.map((x) => html`<div class="inv-mas">+ ${x}</div>`)}${c.quitadas.map((x) => html`<div class="inv-menos">− ${x}</div>`)}</li>`)}</ul></details>` : ""}</section>`)}` : ""}
+    ${INV.pest === "documentos" ? html`
+      <form class="dl-armar" data-f="inv-doc"><label class="fld" style="grid-column:span 2"><span>Documento</span><select class="inp" name="ruta">${(INV.docs || []).map((d) => html`<option value="${d.ruta}" ${si(d.ruta === INV.doc, "selected")}>${d.ruta} · ${tamano(d.tamano)}</option>`)}</select></label><label class="fld"><span>Buscar adentro</span><input class="inp" name="consulta" placeholder="palabras"></label><div class="dl-acc"><button class="btn pri">Abrir</button></div></form>
+      ${(INV.docs || []).length ? "" : html`<p class="muted">No hay PDF, Word ni PowerPoint en la computadora. Podés subirlos desde Computadora o pasarlos con «Compartir a Gravity».</p>`}
+      ${INV.res ? html`<section class="card dl-card"><h2>${INV.doc}</h2><p class="muted" style="font-size:12.5px">${dlNum(INV.res.caracteres)} caracteres · ${INV.res.partes} parte(s)${INV.res.caracteres ? "" : " · sin texto legible (¿PDF escaneado?)"}</p>
+        ${INV.res.resultados.length ? html`<ul class="hist">${INV.res.resultados.map((r) => html`<li><b>Parte ${r.parte}</b> <small class="muted">(${r.coincidencias})</small><div>…${r.extracto}…</div></li>`)}</ul>` : html`<pre class="inv-pre">${INV.res.comienzo}</pre>`}
+        ${S.bots.length ? html`<form class="fila" data-f="inv-resumir" style="gap:8px;flex-wrap:wrap;margin-top:8px"><select class="inp" name="botId" style="width:auto">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre}</option>`)}</select><input class="inp" name="pedido" style="flex:1;min-width:200px" value="Resumilo: puntos clave, cifras, fechas y obligaciones, con la parte de donde sale cada cosa."><button class="btn out">Pedírselo</button></form>` : ""}</section>` : ""}` : ""}`);
+}
+
 // ================================================================ Canales
 // Conversaciones por equipo, por proyecto o libres, y #anuncios. @Nombre le avisa a un compañero, que
 // contesta en el canal. «Resumir» pide un resumen al modelo y lo publica en el canal.
@@ -4993,7 +5031,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["investigacion", "Investigación", "search", "Fuentes consultadas, páginas que cambian y búsqueda en PDF y Word"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -6388,6 +6426,11 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "inv-pest": (t) => { INV.pest = t.dataset.v; pintarInvestigacion(); },
+  "inv-quitar": async (t) => { await api("DELETE", `/api/fuentes?url=${encodeURIComponent(t.dataset.url)}`); await montarInvestigacion(); },
+  "inv-seguir": (t) => { INV.pest = "monitores"; INV.urlNueva = t.dataset.url; pintarInvestigacion(); },
+  "inv-revisar": (t) => conCarga(t, async () => { const m = await api("POST", `/api/monitores/${t.dataset.id}/revisar`, {}); toast(m.estadoTexto); await montarInvestigacion(); }),
+  "inv-borrar-m": async (t) => { if (!(await confirmar("¿Dejar de seguir esta página?", "Se borra su historial de cambios.", "Dejar de seguir", true))) return; await api("DELETE", `/api/monitores/${t.dataset.id}`); await montarInvestigacion(); },
   evolucion: (t) => conCarga(t, async () => { S.evolucion = await api("GET", "/api/evolucion"); pintarOps(); }),
   "evo-aplicar": (t) => conCarga(t, async () => { const r = await api("POST", "/api/evolucion/aplicar", { id: t.dataset.id }); toast(`Aplicado: ${r.titulo}.`); S.evolucion = await api("GET", "/api/evolucion"); await cargarEstado(); pintarOps(); }),
   "evo-descartar": (t) => conCarga(t, async () => { await api("POST", "/api/evolucion/descartar", { id: t.dataset.id }); S.evolucion = await api("GET", "/api/evolucion"); pintarOps(); }),
@@ -6748,6 +6791,20 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "inv-buscar"(f) { INV.q = f.q.value.trim(); INV.fuentes = await api("GET", `/api/fuentes?q=${encodeURIComponent(INV.q)}`); pintarInvestigacion(); },
+  async "inv-fuente"(f) {
+    await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/fuentes", { url: f.url.value.trim(), titulo: f.titulo.value.trim(), nota: f.nota.value.trim(), etiquetas: f.etiquetas.value.split(",").map((x) => x.trim()).filter(Boolean) }); f.reset(); await montarInvestigacion(); });
+  },
+  async "inv-monitor"(f) {
+    await conCarga(f.querySelector("button"), async () => { const m = await api("POST", "/api/monitores", { url: f.url.value.trim(), nombre: f.nombre.value.trim() || undefined, cadaHoras: Number(f.cada.value), botId: f.botId.value || null }); INV.urlNueva = ""; toast(`Siguiendo «${m.nombre}». ${m.estadoTexto}`); await montarInvestigacion(); });
+  },
+  async "inv-doc"(f) {
+    INV.doc = f.ruta.value;
+    await conCarga(f.querySelector("button"), async () => { INV.res = await api("POST", "/api/documentos/buscar", { ruta: INV.doc, consulta: f.consulta.value.trim() }); pintarInvestigacion(); });
+  },
+  async "inv-resumir"(f) {
+    await conCarga(f.querySelector("button"), async () => { await api("POST", `/api/bots/${f.botId.value}/mensajes`, { texto: `${f.pedido.value.trim()}\n\nDocumento: ${INV.doc} (${INV.res.partes} parte(s)). Usá la herramienta documento (indice, buscar y leer por partes); no inventes lo que no está.` }); ir(`#/chats/${f.botId.value}`); });
+  },
   async "cn-publicar"(f) {
     const texto = f.texto.value.trim();
     if (!texto) return;
@@ -7453,6 +7510,7 @@ function conectar() {
   });
   on("aprobacion-resuelta", (d) => quitarAprobacion(d.id));
   let tCanal = null;
+  on("monitores", () => { if ($("#invest") && INV.pest === "monitores") montarInvestigacion().catch(() => {}); });
   on("canal", (d) => { if ($("#canales")) { clearTimeout(tCanal); tCanal = setTimeout(() => montarCanales().catch(() => {}), 250); } });
   for (const t of ["bots", "habilidades", "reglas", "ajustes"]) on(t, recargarPronto);
   on("rutinas", (d) => {

@@ -27,9 +27,23 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 ## 18. Robots 3D
 191–200. 🟡 El robot de las llamadas ya tiene gestos (saludo, asentir), ojos LED con expresión, levitación y personalidad; falta el resto.
 
-## 19. Creative Studio (201–210) · 20. Investigación (211–220) · 21. Asistente personal (221–230)
+## 19. Creative Studio (201–210)
+⛔ (en curso).
+
+## 20. Investigación (211–220) · `#/investigacion`
+211. ✅ Navegación web de los compañeros (buscar y leer páginas; con modelos gratis, lector propio que no entra a redes privadas).
+212. 🟡 Comparar fuentes: lo hacen los compañeros (en modo verificación señalan contradicciones); falta una vista lado a lado.
+213. ✅ Fuentes posiblemente desactualizadas o caídas: el monitor marca las páginas que no responden o que no cambian hace más de 180 días.
+214. 🟡 Investigación colaborativa: un manager reparte aspectos con `delegar` (o «auto»); falta una plantilla específica.
+215. ✅ Biblioteca de fuentes: todo lo que los compañeros leyeron o encontraron en la web (con quién y cuántas veces) más las que agregás vos con título, nota y etiquetas; búsqueda.
+216. 🟡 Informes con referencias: modo verificación + Data Lab (informe .md); falta un generador de informes de investigación propio.
+217. ✅ Monitor de cambios: seguís una página (cada 1 h a 1 semana); cuando cambia, avisa en #anuncios y en el celular con las líneas nuevas y las que ya no están, y opcionalmente un compañero lo analiza (el contenido se le pasa como información, no instrucciones).
+218. ✅ Buscador de documentos: PDF (texto), Word .docx, OpenDocument .odt y PowerPoint .pptx; el buscador global también entra a su texto. Los PDF escaneados no tienen texto (se avisa).
+219. ✅ Documentos extensos: herramienta `documento` para los compañeros (índice, leer por partes de ~8000 caracteres y buscar en qué parte aparece algo) y «Pedírselo» a un compañero desde la pantalla.
 220. ✅ Modo verificación (Perfil): cada afirmación con su evidencia (fuente, archivo o comando), contradicciones señaladas e incertidumbre marcada.
-Ver detalle en la próxima actualización. Ya existen: búsqueda y lectura web (211 🟡), correo con aprobación (224 ✅), recordatorios (225 ✅), calendario por Microsoft 365 (221 🟡).
+
+## 21. Asistente personal (221–230)
+Ya existen: correo con aprobación (224 ✅), recordatorios (225 ✅), calendario por Microsoft 365 (221 🟡). El resto ⛔ (en curso).
 
 ## 22. Gravity Data Lab (231–240) · `#/datos`, `bots/src/datos.ts`
 231. ✅ Lee CSV/TSV (separador y coma decimal detectados), JSON y Excel .xlsx (lector propio, sin internet); perfil de cada columna (tipo, vacíos, distintos, mín/máx, media, mediana, desvío, valores frecuentes) y primeras filas.
