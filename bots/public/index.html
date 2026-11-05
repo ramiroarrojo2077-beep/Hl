@@ -4588,6 +4588,8 @@ function seguirDespuesDeHablar() {
   if (aprobacionesDe(LL.botId).length) return fijarFase("aprobacion");
   const t = LL.turno;
   if (t && !t.terminado && !t.cortado) return fijarFase(t.abierto || LL.fase !== "cola" ? "pensando" : "cola");
+  // Terminó de responder: asiente una vez antes de volver a escuchar.
+  if (t?.terminado && !t.cortado && !t.reaccion && !matchMedia("(prefers-reduced-motion: reduce)").matches) { t.reaccion = true; LL.motor?.cerebro.probarGesto("asentir"); }
   escucharLlamada(220);
 }
 function avisarAprobacionLlamada(a) {
@@ -4804,7 +4806,13 @@ function arrancarMotor() {
   cerebro.fijar(ROBOT_DE_FASE[LL.fase] || "idle");
   const quitarCarga = () => esc?.querySelector(".ll-cargando")?.remove();
   const usar2D = () => { if (m.fin) return; try { m.robot?.destruir(); } catch {} m.robot = crearRobot2D(esc, cerebro); quitarCarga(); };
-  const listo = (r) => { if (m.fin) { r?.destruir(); return; } quitarCarga(); m.robot = r; seguir(); };
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const listo = (r) => {
+    if (m.fin) { r?.destruir(); return; }
+    quitarCarga(); m.robot = r; seguir();
+    // Saludo con la mano al empezar la llamada (si no se pidió reducir el movimiento).
+    if (r?.webgl && !quieto) setTimeout(() => { if (!m.fin) cerebro.probarGesto("saludo"); }, 450);
+  };
   const cuadro = (now) => {
     m.raf = 0;
     if (m.fin || document.hidden) return;
