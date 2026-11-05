@@ -100,6 +100,8 @@ code,kbd{font-family:var(--mono);font-size:.88em}
 
 /* ---------- marco ---------- */
 .app{display:grid;grid-template-columns:76px minmax(0,1fr);height:100vh;height:100dvh}
+/* Modo concentración: solo el proyecto activo, sin navegación ni avisos alrededor. */
+html.foco .app{grid-template-columns:minmax(0,1fr)}html.foco .rail,html.foco .mnav,html.foco .avisos{display:none!important}html.foco .vista{padding-bottom:0}
 .zona{display:flex;flex-direction:column;min-width:0;min-height:0}
 .vista{flex:1;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr)}
 .rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:2px;min-height:0;overflow-y:auto;scrollbar-width:none}
@@ -2106,6 +2108,9 @@ function pintarAvisos() {
 function montar(antes) {
   const v = S.ruta.vista, vista = $("#vista");
   if (!S.cargado) return;
+  // El modo concentración vale solo dentro de su proyecto: al salir de él, se apaga.
+  if (S.foco && !(v === "proyectos" && S.ruta.id === S.foco)) S.foco = null;
+  document.documentElement.classList.toggle("foco", !!S.foco);
   vista.className = "vista";
   if (v === "chats") return montarChats(antes);
   if (v === "equipo") {
@@ -3131,6 +3136,7 @@ function pintarPerfil() {
     <label class="fld"><span>Idioma</span><select class="inp" name="idioma" style="max-width:240px">${Object.entries(IDIOMAS_BOT).map(([k, [n]]) => html`<option value="${k}" ${si((b.idioma || "es") === k, "selected")}>${n}</option>`)}</select><small>En qué idioma responde, escribe y habla en las llamadas (la voz usa una del celular en ese idioma si hay).</small></label>
     <label class="chk"><input type="checkbox" class="sw" name="favorito" ${si(b.favorito, "checked")}><span>Favorito<small>Aparece primero en las listas.</small></span></label>
     <label class="fld"><span>Tope de gasto diario (US$)</span><input class="inp" type="number" name="topeDiarioUsd" min="0" max="10000" step="0.5" value="${b.topeDiarioUsd ?? ""}" placeholder="Sin tope propio" style="max-width:200px"><small>Al llegar, no arranca tareas, rutinas ni mensajes solo (lo que le pidas vos sigue). Solo cuenta con Claude: los modelos gratis no gastan. Hoy lleva ${usd(b.gastoHoy || 0)}.</small></label>
+    <label class="chk"><input type="checkbox" class="sw" name="verificacion" ${si(b.verificacion, "checked")}><span>Modo verificación<small>Cada afirmación con su evidencia (fuente, archivo o comando), las contradicciones señaladas y lo incierto marcado como tal.</small></span></label>
     <label class="chk"><input type="checkbox" class="sw" name="ensenanza" ${si(b.ensenanza, "checked")}><span>Modo enseñanza<small>Explica cada paso (qué hace, por qué y con qué herramienta) y al final resume el procedimiento para que lo puedas repetir.</small></span></label>
     <label class="fld"><span>Misión (especialista temporal)</span><textarea class="inp" name="mision" rows="2" maxlength="2000" placeholder="Vacío = compañero permanente">${b.temporal?.mision || ""}</textarea><small>Si tiene una misión, se concentra en ella y te avisa al terminarla para que lo archives.</small></label>
     ${htmlPermisosPerfil(b)}
@@ -4611,6 +4617,10 @@ function pintarOps() {
     ${(S.actividad || []).length ? html`<ul class="hist">${S.actividad.map((x) => html`<li><span class="tag ${x.ok ? "" : "sig"}">${x.tipo === "aprobacion" ? (x.ok ? "Aprobado" : "Negado") : x.ok ? "OK" : "Error"}</span> <b>${bot(x.botId)?.nombre || "Un compañero"}</b> · ${x.que} <small class="muted">· ${diaHora(x.fecha)}${!x.ok && x.detalle ? ` — ${x.detalle.slice(0, 140)}` : ""}</small></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Todavía no hay acciones registradas.</p>`}
     <div class="sec-h"><h2>Rendimiento</h2><button class="btn out sm" data-a="rendimiento">${ico("refresh", "s")}${r ? "Actualizar" : "Medir"}</button></div>
     ${r ? html`<div class="ops-k" style="margin-top:0"><div><b>${r.cpu}%</b><span>CPU del motor (1 núcleo)</span></div><div><b>${mb(r.memoria.rss)}</b><span>memoria del motor</span></div><div><b>${mb(r.memoria.sistemaLibre)}</b><span>libre de ${mb(r.memoria.sistemaTotal)}</span></div><div><b>${dur(r.prendidoSeg)}</b><span>prendido</span></div>${r.bateria ? html`<div><b>${r.bateria.nivel}%</b><span>batería${r.bateria.cargando ? " · cargando" : ""}</span></div>` : ""}</div><p class="muted" style="font-size:12.5px">Node ${r.node} · ${r.plataforma} · ${r.nucleos} núcleos · gasto de hoy ${usd(S.gasto?.hoy || 0)}${S.gasto?.llamadas ? ` en ${S.gasto.llamadas} llamadas al modelo` : ""}.</p>` : html`<p class="muted" style="font-size:13px">CPU y memoria del motor, memoria libre del equipo, batería y cuánto lleva prendido.</p>`}
+    <div class="sec-h"><h2>Gravity Evolution <span class="tag">experimental</span></h2><button class="btn out sm" data-a="evolucion">${ico("refresh", "s")}${S.evolucion ? "Actualizar" : "Analizar"}</button></div>
+    ${S.evolucion ? html`${S.evolucion.propuestas.length ? html`<ul class="hall">${S.evolucion.propuestas.map((x) => html`<li style="align-items:flex-start"><span class="tag">${ico("bolt", "s")}Propuesta</span><span style="flex:1"><b>${x.titulo}</b><br><small class="muted">${x.porque}</small><br><small>${x.efecto}</small></span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn pri sm" data-a="evo-aplicar" data-id="${x.id}">Aplicar</button><button class="btn ghost sm" data-a="evo-descartar" data-id="${x.id}">Descartar</button></span></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">No hay cambios para proponer con los datos de ahora.</p>`}
+      ${S.evolucion.historial.length ? html`<details class="mas"><summary>${ico("right", "s")}Cambios aplicados (${S.evolucion.historial.length})</summary><ul class="hist">${S.evolucion.historial.map((h) => html`<li>${diaHora(h.fecha)} · ${h.titulo}</li>`)}</ul></details>` : ""}`
+      : html`<p class="muted" style="font-size:13px">Mira gasto, resultados, errores y herramientas usadas, y propone cambios concretos (modelo, mentores, permisos mínimos, respaldo, flujos, rutinas). Nada cambia hasta que tocás «Aplicar».</p>`}
     <div class="sec-h"><h2>Auditoría</h2><button class="btn out sm" data-a="auditar">${ico("shield", "s")}${a ? "Volver a auditar" : "Auditar ahora"}</button></div>
     ${a ? html`<p class="muted" style="font-size:13px">Revisé ${a.revisados.compañeros} compañeros, ${a.revisados.tareas} tareas, ${a.revisados.proyectos} proyectos activos y ${a.revisados.rutinas} rutinas · ${diaHora(a.fecha)}.</p>
       ${a.hallazgos.length ? html`<ul class="hall">${a.hallazgos.map((x) => html`<li><span class="tag ${nivel[x.nivel][1]}">${nivel[x.nivel][0]}</span><span>${x.texto}</span></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">Sin hallazgos: permisos, errores y tareas en orden.</p>`}
@@ -4684,7 +4694,7 @@ function pintarProyecto(el, p) {
   const abiertas = p.tareas.filter((t) => !CERRADA(t)).sort((a, b) => a.prioridad - b.prioridad);
   const cerradas = p.tareas.filter(CERRADA);
   pintar(el, html`<header class="pag-h"><div class="tt"><a class="btn ghost sm" href="#/proyectos">${ico("left", "s")}Proyectos</a><h1>${p.nombre}</h1><p>${p.objetivo || "Sin objetivo escrito."}</p></div>
-    <div class="acts"><select class="inp" data-c="proy-estado" aria-label="Estado del proyecto" style="width:auto">${Object.entries(EST_PROY).map(([k, n]) => html`<option value="${k}" ${si(p.estado === k, "selected")}>${n}</option>`)}</select><button class="btn ghost sm" data-a="borrar-proyecto">${ico("trash", "s")}Borrar</button></div></header>
+    <div class="acts"><select class="inp" data-c="proy-estado" aria-label="Estado del proyecto" style="width:auto">${Object.entries(EST_PROY).map(([k, n]) => html`<option value="${k}" ${si(p.estado === k, "selected")}>${n}</option>`)}</select><button class="btn ${S.foco === p.id ? "pri" : "out"} sm" data-a="foco" data-id="${p.id}" aria-pressed="${String(S.foco === p.id)}">${S.foco === p.id ? "Salir de concentración" : "Modo concentración"}</button><button class="btn ghost sm" data-a="borrar-proyecto">${ico("trash", "s")}Borrar</button></div></header>
     <section class="card" style="margin-top:14px;display:flex;flex-direction:column;gap:10px" aria-label="Progreso">
       <div class="tk-m"><span class="barra" style="flex:1" role="img" aria-label="${g.porcentaje}% completado"><i style="width:${g.porcentaje}%"></i></span><b>${g.hechas} de ${g.total}</b></div>
       <div class="tk-a"><label class="tk-m">Coordina <select class="inp" data-c="proy-coord">${crudo(opcBots(p.coordinadorId).s.replace("Sin responsable", "Nadie"))}</select></label><span class="tk-m">Carpeta en la computadora: <code>${p.carpeta}</code></span></div>
@@ -6378,6 +6388,10 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  evolucion: (t) => conCarga(t, async () => { S.evolucion = await api("GET", "/api/evolucion"); pintarOps(); }),
+  "evo-aplicar": (t) => conCarga(t, async () => { const r = await api("POST", "/api/evolucion/aplicar", { id: t.dataset.id }); toast(`Aplicado: ${r.titulo}.`); S.evolucion = await api("GET", "/api/evolucion"); await cargarEstado(); pintarOps(); }),
+  "evo-descartar": (t) => conCarga(t, async () => { await api("POST", "/api/evolucion/descartar", { id: t.dataset.id }); S.evolucion = await api("GET", "/api/evolucion"); pintarOps(); }),
+  foco: (t) => { S.foco = S.foco === t.dataset.id ? null : t.dataset.id; document.documentElement.classList.toggle("foco", !!S.foco); pintarProyectos(); },
   "cn-nuevo": () => abrirDialogo(html`<form class="dlg-f" data-f="cn-crear"><h2 id="dlg-t">Canal nuevo</h2><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required minlength="2" maxlength="40" placeholder="ideas"></label><label class="fld"><span>De qué se habla</span><input class="inp" name="descripcion" maxlength="300"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true),
   "cn-resumir": (t) => conCarga(t, async () => { await api("POST", `/api/canales/${CN.id}/resumir`, {}); await montarCanales(); }),
   "cn-borrar": async () => { if (!(await confirmar(`¿Borrar #${CN.canal?.nombre}?`, "Se borran sus mensajes.", "Borrar", true))) return; await api("DELETE", `/api/canales/${CN.id}`); CN.id = null; ir("#/canales"); },
@@ -7001,6 +7015,7 @@ const F = {
     const cuerpo = { nombre: d.get("nombre"), titulo: d.get("titulo"), descripcion: d.get("descripcion"), cargo: d.get("cargo"), reportaA: d.get("reportaA") || null, puedeEnviarAfuera: d.get("puedeEnviarAfuera") === "on", esfuerzo: d.get("esfuerzo") || null, icono: d.get("icono") || null };
     if (f.avColor) cuerpo.avatar = datosAvatar(f);
     cuerpo.ensenanza = d.get("ensenanza") === "on";
+    cuerpo.verificacion = d.get("verificacion") === "on";
     if (f.querySelector("[name=favorito]")) cuerpo.favorito = d.get("favorito") === "on";
     if (f.estilo) cuerpo.estilo = String(d.get("estilo") || "").trim() || null;
     if (f.idioma) cuerpo.idioma = d.get("idioma") || "es";

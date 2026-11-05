@@ -255,6 +255,9 @@ function modos(bot: Bot): string {
   if (bot.temporal?.mision) {
     partes.push(`## Especialista temporal\nExistís para esta misión: ${bot.temporal.mision}\nConcentrate en ella. Cuando esté cumplida, entregá el resultado (archivos con su ruta y un resumen) y decile al usuario que la misión terminó y que puede archivarte desde tu Perfil.`);
   }
+  if (bot.verificacion) {
+    partes.push("## Modo verificación\nEl usuario quiere poder comprobar todo. Cada afirmación importante va con su evidencia: el enlace de la fuente (leída, no de memoria), la ruta del archivo o el comando que corriste y su resultado. Si dos fuentes se contradicen, decilo. Separá lo verificado de lo que es estimación o suposición y marcá la incertidumbre (alta, media o baja). Si algo no lo pudiste verificar, decilo en vez de afirmarlo.");
+  }
   if (bot.ensenanza) {
     partes.push("## Modo enseñanza\nEl usuario quiere aprender cómo trabajás. Antes de cada paso explicá en una o dos oraciones qué vas a hacer, por qué y con qué herramienta; después de cada paso, qué resultó y qué aprendiste. Al terminar, resumí el procedimiento como una lista numerada que el usuario pueda repetir solo (y ofrecé guardarlo como habilidad). Usá palabras simples y explicá los términos técnicos.");
   }

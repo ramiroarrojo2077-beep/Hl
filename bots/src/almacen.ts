@@ -78,6 +78,8 @@ export interface Bot {
   topeDiarioUsd?: number | null;
   // Personalidad: cómo habla (tono, largo, formalidad, muletillas). Vacío = el estilo de siempre.
   estilo?: string | null;
+  // Modo verificación: respalda cada afirmación con evidencia (fuente, archivo o comando) y marca lo incierto.
+  verificacion?: boolean;
   // Mentor: un compañero con más experiencia que revisa sus tareas terminadas y le enseña (herramienta ensenar).
   mentorId?: string | null;
   // Idioma en que habla y escribe (código de IDIOMAS en agente.ts); ausente o null = castellano rioplatense.

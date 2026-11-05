@@ -67,6 +67,7 @@ import * as Code from "./codigo.ts";
 import * as Datos from "./datos.ts";
 import * as Canales from "./canales.ts";
 import { resumir } from "./resumen.ts";
+import { aplicarPropuesta, descartarPropuesta, propuestas as propuestasEvolucion } from "./evolucion.ts";
 import { preguntar as preguntarDatos } from "./datos-ia.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
 import { instalarDelMercado, vistaMercado } from "./mercado.ts";
@@ -172,6 +173,7 @@ const DatosBot = z.object({
   // Grupos de herramientas apagadas (ver GRUPOS_HERRAMIENTAS en herramientas.ts).
   bloqueadas: z.array(z.string().max(30)).max(20).optional(),
   ensenanza: z.boolean().optional(),
+  verificacion: z.boolean().optional(),
   modelo: z.enum(["rapido", "potente"]).nullish(),
   topeDiarioUsd: z.number().min(0).max(10_000).nullish(),
   estilo: z.string().trim().max(1500).nullish(),
@@ -687,6 +689,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar,
     bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
     ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
+    verificacion: d.verificacion ?? bot.verificacion ?? false,
     modelo: d.modelo === undefined ? (bot.modelo ?? null) : d.modelo,
     topeDiarioUsd: d.topeDiarioUsd === undefined ? (bot.topeDiarioUsd ?? null) : d.topeDiarioUsd || null,
     estilo: d.estilo === undefined ? (bot.estilo ?? null) : d.estilo || null,
@@ -1373,6 +1376,18 @@ ruta("GET", "/api/computadora/versiones", async ({ url }) => listarVersiones(url
 ruta("GET", "/api/computadora/version", async ({ url }) => {
   const b = malPedido(() => leerVersion(url.searchParams.get("ruta") ?? "", url.searchParams.get("id") ?? "")) as Buffer;
   return { contenido: b.subarray(0, 8000).includes(0) ? null : b.toString("utf8") };
+});
+
+// ---- Gravity Evolution (experimental, ver evolucion.ts): propone; aplica solo cuando el usuario toca Aplicar ----
+ruta("GET", "/api/evolucion", async () => propuestasEvolucion());
+ruta("POST", "/api/evolucion/aplicar", async ({ cuerpo }) => {
+  const d = validar(z.object({ id: z.string().min(1).max(200) }), await cuerpo());
+  return malPedido(() => aplicarPropuesta(d.id));
+});
+ruta("POST", "/api/evolucion/descartar", async ({ cuerpo }) => {
+  const d = validar(z.object({ id: z.string().min(1).max(200) }), await cuerpo());
+  descartarPropuesta(d.id);
+  return { ok: true };
 });
 
 // ---- Canales (ver canales.ts) ----

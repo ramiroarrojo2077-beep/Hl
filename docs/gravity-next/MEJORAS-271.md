@@ -28,6 +28,7 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 191–200. 🟡 El robot de las llamadas ya tiene gestos (saludo, asentir), ojos LED con expresión, levitación y personalidad; falta el resto.
 
 ## 19. Creative Studio (201–210) · 20. Investigación (211–220) · 21. Asistente personal (221–230)
+220. ✅ Modo verificación (Perfil): cada afirmación con su evidencia (fuente, archivo o comando), contradicciones señaladas e incertidumbre marcada.
 Ver detalle en la próxima actualización. Ya existen: búsqueda y lectura web (211 🟡), correo con aprobación (224 ✅), recordatorios (225 ✅), calendario por Microsoft 365 (221 🟡).
 
 ## 22. Gravity Data Lab (231–240) · `#/datos`, `bots/src/datos.ts`
@@ -57,7 +58,11 @@ Ver detalle en la próxima actualización. Ya existen: búsqueda y lectura web (
 260. ✅ Centro de anuncios: #anuncios con tareas terminadas o trabadas, reuniones cerradas y proyectos completos.
 
 ## 25. Experimentales
-261. ✅ Simulador de decisiones (Laboratorio). 262. 🟡 Mapa de proyectos y dependencias. 266. ✅ Recomendaciones (sugerencias de la auditoría). 268. ✅ Laboratorio. 269. 🟡 Centro de operaciones. 263, 264, 265, 267, 270. ⛔/🟡
+261. ✅ Simulador de decisiones (Laboratorio > Simular alternativas). 262. 🟡 Gemelo de proyectos: mapa con dependencias, progreso y responsables (falta una vista 3D propia). 263. 🟡 Escenarios en entornos controlados: `probar_aislado` y el simulador. 264. 🟡 Constructor de herramientas: habilidades reutilizables (procedimientos), no código nuevo. 265. 🟡 Multimodal: texto, fotos, audio y video (Gemini) en la misma tarea.
+266. ✅ Recomendaciones con datos reales (sugerencias de la auditoría).
+267. ✅ Modo concentración: en un proyecto, «Modo concentración» oculta la navegación y los avisos; se apaga solo al salir del proyecto.
+268. ✅ Laboratorio (modelos y personalidades lado a lado). 269. 🟡 Command Center: Operaciones reúne compañeros, esperas, reuniones, proyectos trabados, productividad, rendimiento, auditoría y Evolution.
+270. ✅ 🧪 Gravity Evolution (Operaciones): analiza gasto, resultados, errores y herramientas usadas y propone cambios concretos (modelo rápido, mentor, apagar permisos que no se usan, respaldo, flujo para tareas trabadas, resumen diario). Nada cambia hasta que tocás «Aplicar»; queda el historial y se puede descartar.
 
 ## 271. Gravity Code
 ✅ Hecho y probado (`#/code`, `bots/src/codigo.ts`):
