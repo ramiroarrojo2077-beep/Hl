@@ -840,6 +840,17 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 @keyframes rob-habla{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
 @media (prefers-reduced-motion: reduce){.mesa-sala .rob.habla .cuerpo{animation:none}}
 .logo3d{display:inline-grid;place-items:center;width:56px;height:56px;margin-right:6px;vertical-align:middle}.logo3d canvas{width:56px!important;height:56px!important}
+.flujos{display:flex;flex-direction:column;gap:10px}
+.flujo{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;padding:10px;border-radius:16px;background:var(--s1);border:1px solid var(--line)}
+.flujo.pausado{opacity:.6}
+.flujo-a{display:flex;gap:6px;align-items:center;width:100%;justify-content:flex-end}
+.nodo{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 150px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2);background:var(--s2);text-align:left;color:inherit;font:inherit}
+.nodo small{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3)}.nodo b{font-size:13.5px}.nodo span{font-size:12px;color:var(--tx2)}
+.nodo.ev{border-left:3px solid var(--sig)}.nodo.qui{border-left:3px solid var(--ion)}.nodo.acc{border-left:3px solid #9B7BFF}
+button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outline:2px solid var(--ion);background:var(--ion-bg)}
+.flecha{display:grid;place-items:center;color:var(--tx3)}
+.armar{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.armar .col{display:flex;flex-direction:column;gap:6px}.armar .col>small{font-weight:600;color:var(--tx2)}
+.armar .col>.nodo{flex:none}
 .modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
@@ -1744,7 +1755,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2052,6 +2063,7 @@ function montar(antes) {
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
   if (v === "operaciones") return montarOps();
+  if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
   if (v === "mapa") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="mapa"></div></div>`; pintarMapa(); if (!S.proyectos) cargarProyectos().then(pintarMapa); return; }
   if (v === "laboratorio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="lab"></div></div>`; pintarLab(); return; }
@@ -3528,7 +3540,7 @@ function pintarAjustes() {
         <form data-f="avisos" style="display:flex;flex-direction:column;gap:10px"><label class="fila"><input type="checkbox" name="avisoAprobaciones" ${a.avisoAprobaciones !== false ? "checked" : ""}><span><b>Aprobaciones</b> — cuando un compañero necesita tu permiso</span></label><label class="fila"><input type="checkbox" name="avisoTareas" ${a.avisoTareas !== false ? "checked" : ""}><span><b>Tareas trabadas</b> — cuando una tarea queda bloqueada o falla</span></label><div><button class="btn out sm">Guardar</button></div></form></section>
       <section class="card" aria-labelledby="aj-nv"><h2 id="aj-nv">Novedades</h2>
         <ul class="hist">${NOVEDADES.map(([t, d]) => html`<li><b>${t}</b> — ${d}</li>`)}</ul></section>
-      <section class="card" aria-labelledby="aj-au"><h2 id="aj-au">Automatizaciones</h2><p class="sub">«Si pasa esto, que tal compañero haga esto». Cada evento dispara una vez por regla (como mucho 20 por hora).</p>
+      <section class="card" aria-labelledby="aj-au"><h2 id="aj-au">Automatizaciones</h2><p class="sub">«Si pasa esto, que tal compañero haga esto». Cada evento dispara una vez por regla (como mucho 20 por hora). <a href="#/automatizaciones">Abrir el editor visual</a>.</p>
         ${(S.autom?.reglas || []).length ? html`<ul class="reglas">${S.autom.reglas.map((a) => html`<li><span><b>${a.nombre}</b> · si ${(S.autom.eventos[a.evento] || a.evento).toLowerCase()} → ${bot(a.botId)?.nombre || "(ya no está)"}<small>${a.instrucciones.slice(0, 140)} · ${a.disparos} disparos${a.ultimo ? ` · último ${diaHora(a.ultimo)}` : ""}</small></span><span style="display:flex;gap:6px"><button class="btn ghost sm" data-a="autom-activa" data-id="${a.id}" data-v="${a.activa ? "0" : "1"}" aria-pressed="${String(a.activa)}">${a.activa ? "Pausar" : "Activar"}</button><button class="btn ghost sm" data-a="autom-borrar" data-id="${a.id}" aria-label="Borrar ${a.nombre}">Borrar</button></span></li>`)}</ul>` : ""}
         ${S.bots.length && S.autom ? html`<details class="mas" style="margin-top:8px"><summary>${ico("plus", "s")}Nueva automatización</summary><form class="form-card" data-f="automatizacion" style="margin-top:10px"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" placeholder="Ej.: Destrabar tareas"></label><label class="fld"><span>Cuando</span><select class="inp" name="evento">${Object.entries(S.autom.eventos).map(([k, t]) => html`<option value="${k}">${t}</option>`)}</select></label><label class="fld"><span>Quién se encarga</span><select class="inp" name="botId">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre} · ${b.titulo}</option>`)}</select></label><label class="fld"><span>Qué tiene que hacer</span><textarea class="inp" name="instrucciones" rows="2" required maxlength="4000" placeholder="Ej.: averiguá qué la bloquea y proponé una solución concreta"></textarea></label><p class="err" role="alert"></p><div class="acts"><button class="btn pri">Crear</button></div></form></details>` : ""}</section>
       <section class="card" aria-labelledby="aj-w"><h2 id="aj-w">Webhooks</h2><p class="sub">Una dirección secreta para que otro servicio (un formulario, una tienda, Zapier) le mande datos a un compañero con una indicación fija. Lo que llega se trata como contenido de afuera. Desde el celular solo se puede llamar con un túnel (ver <code>bots/MOVIL.md</code>).</p>
@@ -3549,6 +3561,29 @@ function pintarAjustes() {
 }
 function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
+}
+
+// ================================================================ editor visual de automatizaciones
+// Cada regla es un flujo de tres nodos: Cuando (evento) → Quién (compañero) → Qué hace (indicación).
+// Para crear una, se toca un nodo de cada columna y se escribe la indicación.
+const AUT = { evento: null, botId: null };
+function pintarAutomatizaciones() {
+  const el = $("#autom");
+  if (!el) return;
+  const A_ = S.autom;
+  if (!A_) { el.innerHTML = `<div class="carga" role="status">Cargando…</div>`; return; }
+  const nodo = (tipo, titulo, sub, extra = "") => html`<div class="nodo ${tipo}" ${crudo(extra)}><small>${tipo === "ev" ? "Cuando" : tipo === "qui" ? "Quién" : "Qué hace"}</small><b>${titulo}</b>${sub ? html`<span>${sub}</span>` : ""}</div>`;
+  const flecha = html`<span class="flecha" aria-hidden="true">${ico("right", "s")}</span>`;
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Automatizaciones</h1><p>Flujos «si pasa esto, que tal compañero haga esto». Cada evento dispara una vez por regla (como mucho 20 por hora). Lo que mande afuera igual pide aprobación.</p></div></header>
+    <div class="sec-h"><h2>Flujos <span>${A_.reglas.length}</span></h2></div>
+    ${A_.reglas.length ? html`<div class="flujos">${A_.reglas.map((a) => html`<div class="flujo ${a.activa ? "" : "pausado"}">${nodo("ev", A_.eventos[a.evento] || a.evento, "")}${flecha}${nodo("qui", bot(a.botId)?.nombre || "(ya no está)", bot(a.botId)?.titulo || "")}${flecha}${nodo("acc", a.nombre, a.instrucciones.slice(0, 90))}
+      <div class="flujo-a"><span class="tag">${a.disparos} disparos</span><button class="btn ghost sm" data-a="autom-activa" data-id="${a.id}" data-v="${a.activa ? "0" : "1"}" aria-pressed="${String(a.activa)}">${a.activa ? "Pausar" : "Activar"}</button><button class="btn ghost sm" data-a="autom-borrar" data-id="${a.id}" aria-label="Borrar ${a.nombre}">Borrar</button></div></div>`)}</div>` : html`<p class="muted" style="font-size:13px">Todavía no hay flujos.</p>`}
+    <div class="sec-h"><h2>Armar un flujo</h2></div>
+    ${S.bots.length ? html`<div class="armar">
+      <div class="col"><small>1 · Cuando</small>${Object.entries(A_.eventos).map(([k, t]) => html`<button class="nodo ev sel-${AUT.evento === k}" data-a="aut-ev" data-v="${k}" aria-pressed="${String(AUT.evento === k)}"><b>${t}</b></button>`)}</div>
+      <div class="col"><small>2 · Quién</small>${S.bots.map((b) => html`<button class="nodo qui sel-${AUT.botId === b.id}" data-a="aut-bot" data-v="${b.id}" aria-pressed="${String(AUT.botId === b.id)}"><b>${b.nombre}</b><span>${b.titulo}</span></button>`)}</div>
+      <form class="col" data-f="aut-crear"><small>3 · Qué hace</small><label class="fld"><span class="sr">Nombre</span><input class="inp" name="nombre" required maxlength="80" placeholder="Nombre del flujo"></label><label class="fld"><span class="sr">Indicación</span><textarea class="inp" name="instrucciones" rows="4" required maxlength="4000" placeholder="Ej.: averiguá qué la bloquea y proponé una solución"></textarea></label><p class="err" role="alert"></p><button class="btn pri" ${si(!AUT.evento || !AUT.botId, "disabled")}>Conectar</button></form>
+    </div>` : html`<p class="muted">Primero sumá un compañero.</p>`}`);
 }
 
 // ================================================================ Gravity Studio
@@ -4151,7 +4186,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5552,6 +5587,8 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  "aut-ev": (t) => { AUT.evento = t.dataset.v; pintarAutomatizaciones(); },
+  "aut-bot": (t) => { AUT.botId = t.dataset.v; pintarAutomatizaciones(); },
   "sala-mesa": () => { S.salaMesa = !S.salaMesa; pintarSala(); },
   mercado: async () => {
     const xs = await api("GET", "/api/mercado");
@@ -5602,8 +5639,8 @@ const A = {
       <small class="muted">Se ve aislada: no puede usar Gravity ni tus sesiones.</small></div>`);
   },
   "proy-etq": (t) => { S.proyEtiqueta = t.dataset.v || null; pintarProyectos(); },
-  "autom-activa": (t) => conCarga(t, async () => { await api("PUT", `/api/automatizaciones/${t.dataset.id}`, { activa: t.dataset.v === "1" }); await cargarAutomatizaciones(); }),
-  "autom-borrar": async (t) => { if (await confirmar("¿Borrar la automatización?", "Deja de dispararse.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/automatizaciones/${t.dataset.id}`, {}); await cargarAutomatizaciones(); }); },
+  "autom-activa": (t) => conCarga(t, async () => { await api("PUT", `/api/automatizaciones/${t.dataset.id}`, { activa: t.dataset.v === "1" }); await cargarAutomatizaciones(); pintarAutomatizaciones(); }),
+  "autom-borrar": async (t) => { if (await confirmar("¿Borrar la automatización?", "Deja de dispararse.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/automatizaciones/${t.dataset.id}`, {}); await cargarAutomatizaciones(); pintarAutomatizaciones(); }); },
   "webhook-borrar": async (t) => { if (await confirmar("¿Borrar el webhook?", "La dirección deja de funcionar.", "Borrar", true)) await conCarga(null, async () => { await api("DELETE", `/api/webhooks/${t.dataset.id}`, {}); S.webhookNuevo = null; await cargarWebhooks(); }); },
   "arq-descartar": () => { ARQ.propuesta = null; ARQ.fuera = new Set(); pintarArq(); },
   "arq-crear": (t) => conCarga(t, async () => {
@@ -5774,6 +5811,13 @@ const F = {
   async tope(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { topeDiarioUsd: Number(f.tope.value) }); toast("Tope guardado."); }); },
   async auto(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { autoAprobar: f.autoAprobar.checked, autoResponder: f.autoResponder.checked }); toast("Guardado."); }); },
   async avisos(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/ajustes", { avisoAprobaciones: f.avisoAprobaciones.checked, avisoTareas: f.avisoTareas.checked }); toast("Notificaciones guardadas."); }); },
+  async "aut-crear"(f) {
+    if (!AUT.evento || !AUT.botId) return;
+    await conCarga(f.querySelector("button"), async () => {
+      try { await api("POST", "/api/automatizaciones", { nombre: f.nombre.value, evento: AUT.evento, botId: AUT.botId, instrucciones: f.instrucciones.value }); AUT.evento = null; AUT.botId = null; toast("Flujo conectado."); await cargarAutomatizaciones(); pintarAutomatizaciones(); }
+      catch (err) { f.querySelector(".err").textContent = err.message; }
+    });
+  },
   async automatizacion(f) {
     await conCarga(f.querySelector("button"), async () => {
       try { await api("POST", "/api/automatizaciones", { nombre: f.nombre.value, evento: f.evento.value, botId: f.botId.value, instrucciones: f.instrucciones.value }); toast("Automatización creada."); await cargarAutomatizaciones(); }

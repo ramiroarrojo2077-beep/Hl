@@ -29,7 +29,7 @@
 ## 3. Automatizaciones
 21. ✅ Misiones: proyectos con tareas y dependencias + Architect que divide el objetivo.
 22. ⛔ Infraestructura remota.
-23. ⛔ Editor visual de nodos.
+23. ✅ Editor visual de flujos (Más > Automatizaciones, `#/automatizaciones`): se elige el evento (Cuando), el compañero (Quién) y qué hace; los flujos existentes se ven como nodos conectados y se pausan o borran desde ahí.
 24. ✅ Automatizaciones condicionales (Ajustes > Automatizaciones): si una tarea queda bloqueada, falla o se completa, o termina una reunión → un compañero hace lo indicado (una vez por evento, tope 20/hora).
 25. ✅ Investigaciones programadas: rutina + habilidad Investigación profunda.
 26. ✅ Aprobaciones antes de acciones sensibles.
