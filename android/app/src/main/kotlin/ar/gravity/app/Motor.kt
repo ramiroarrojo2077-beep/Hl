@@ -308,6 +308,7 @@ class Motor : Service() {
         if (cerrando) return
         programarAlarma(if (estado.ocupado) null else proxima)
         actualizarNotificacion(estado)
+        Widget.actualizar(this, estado.trabajando, estado.aprobaciones, estado.ocupado)
         avisarAprobaciones(estado.aprobaciones)
         // Tareas bloqueadas o que fallaron: una notificación por aviso, si no estás mirando Gravity.
         if (!Gravity.pantallaVisible(this)) {

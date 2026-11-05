@@ -128,4 +128,9 @@
     <string name="privado_prendido">Modo privado prendido: Gravity pide tu huella o PIN al abrirla.</string>
     <string name="privado_apagado">Modo privado apagado.</string>
     <string name="privado_no_disponible">Para el modo privado hace falta Android 9 o más y un bloqueo de pantalla (huella, rostro o PIN).</string>
+    <string name="widget_descripcion">Quién está trabajando y qué espera tu aprobación</string>
+    <string name="widget_abrir">Tocá para abrir</string>
+    <string name="widget_uno">1 compañero trabajando</string>
+    <string name="widget_varios">%d compañeros trabajando</string>
+    <string name="widget_libres">Todos libres</string>
 </resources>
