@@ -480,6 +480,15 @@ interface Ganchos {
 let ganchos: Ganchos | null = null;
 export function conectarMensajeria(g: Ganchos): void {
   ganchos = g;
+  // Al arrancar: los chats atendidos solos que quedaron con mensajes sin contestar (de las últimas
+  // 2 horas) se retoman; lo más viejo no se contesta tarde.
+  const retomar = setTimeout(() => {
+    const limite = Date.now() - 2 * 3600_000;
+    for (const c of chats.values()) {
+      if (automatica(c) && hayNuevos(c) && c.mensajes.some((m) => m.n > c.atendidoN && !m.autor && m.hora >= limite)) programarTurno(c, 1500);
+    }
+  }, 3000);
+  retomar.unref?.();
 }
 
 const relojes = new Map<string, { timer: NodeJS.Timeout; desde: number }>();
