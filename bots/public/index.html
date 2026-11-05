@@ -3579,6 +3579,7 @@ function pintarMapa() {
 // La misma consulta con el modelo automático, el rápido y el potente (con la personalidad de un
 // compañero si se elige), lado a lado y con el tiempo de cada uno. Es una consulta suelta: no queda en chats.
 const LAB = { pregunta: "", botId: "", res: null, cargando: false };
+const SIM = { objetivo: "", alternativas: "", res: null, cargando: false };
 function pintarLab() {
   const el = $("#lab");
   if (!el) return;
@@ -3588,7 +3589,15 @@ function pintarLab() {
       <label class="fld"><span>Como</span><select class="inp" name="botId"><option value="">Sin compañero (modelo solo)</option>${S.bots.map((b) => html`<option value="${b.id}" ${si(LAB.botId === b.id, "selected")}>${b.nombre} · ${b.titulo}</option>`)}</select></label>
       <div class="acts"><button class="btn pri" ${si(LAB.cargando, "disabled")}>${ico("bolt", "s")}Comparar</button></div></form>
     ${LAB.cargando ? html`<p class="muted" role="status" style="margin-top:12px">Preguntando a los tres modelos…</p>` : ""}
-    ${LAB.res ? html`<div class="proys" style="margin-top:16px">${LAB.res.map((r) => html`<article class="tk"><div class="tk-h"><b>${nombre[r.variante] || r.variante}</b><span class="tag">${(r.ms / 1000).toFixed(1)} s</span></div><span class="tk-m">${r.modelo || "sin respuesta"}${r.tokens ? ` · ${r.tokens} tokens` : ""}</span>${r.error ? html`<p class="muted" style="margin:0;font-size:13px">${r.error}</p>` : html`<p style="margin:0;font-size:14px;white-space:pre-wrap">${r.texto}</p>`}</article>`)}</div>` : ""}`);
+    ${LAB.res ? html`<div class="proys" style="margin-top:16px">${LAB.res.map((r) => html`<article class="tk"><div class="tk-h"><b>${nombre[r.variante] || r.variante}</b><span class="tag">${(r.ms / 1000).toFixed(1)} s</span></div><span class="tk-m">${r.modelo || "sin respuesta"}${r.tokens ? ` · ${r.tokens} tokens` : ""}</span>${r.error ? html`<p class="muted" style="margin:0;font-size:13px">${r.error}</p>` : html`<p style="margin:0;font-size:14px;white-space:pre-wrap">${r.texto}</p>`}</article>`)}</div>` : ""}
+    <div class="sec-h"><h2>Simular alternativas</h2></div>
+    <form class="form-card" data-f="simular"><label class="fld"><span>Objetivo</span><textarea class="inp" name="objetivo" rows="2" required maxlength="3000" placeholder="Ej.: conseguir los primeros 100 clientes de la tienda">${SIM.objetivo}</textarea></label>
+      <label class="fld"><span>Alternativas (opcional, una por línea; si no, las propone)</span><textarea class="inp" name="alternativas" rows="3" maxlength="1500" placeholder="Publicidad paga&#10;Alianzas con influencers&#10;Marketplace">${SIM.alternativas}</textarea></label>
+      <div class="acts"><button class="btn pri" ${si(SIM.cargando, "disabled")}>${ico("flag", "s")}Simular</button></div></form>
+    ${SIM.cargando ? html`<p class="muted" role="status">Comparando…</p>` : ""}
+    ${SIM.res ? html`<p class="muted" style="font-size:12.5px;margin-top:10px">Estimaciones del modelo, no datos reales.</p><div class="proys">${SIM.res.alternativas.map((a) => html`<article class="tk"><div class="tk-h"><b>${a.nombre}</b></div><p style="margin:0;font-size:13.5px">${a.resumen}</p><span class="tk-m">⏱ ${a.tiempo} · 💲 ${a.costo}</span><span class="tk-m"><b>Pasos:</b> ${a.pasos.join(" → ")}</span><span class="tk-m"><b>A favor:</b> ${a.ventajas.join("; ")}</span><span class="tk-m"><b>Riesgos:</b> ${a.riesgos.join("; ")}</span></article>`)}</div>
+      <div class="callout" style="margin-top:10px"><span><b>Recomendación:</b> ${SIM.res.recomendacion}${SIM.res.supuestos.length ? html`<br><small>Supuestos: ${SIM.res.supuestos.join("; ")}</small>` : ""}</span></div>
+      <div class="acts" style="margin-top:8px"><a class="btn out sm" href="#/arquitecto">Armar el equipo con Architect</a></div>` : ""}`);
 }
 
 // ================================================================ buscador global
@@ -5699,6 +5708,12 @@ const F = {
     const pedido = f.pedido.value.trim();
     if (!pedido) { f.querySelector(".err").textContent = "Contá qué querés."; return; }
     await generarDesdeStudio(f.dataset.nombre, pedido, null);
+  },
+  async simular(f) {
+    SIM.objetivo = f.objetivo.value.trim(); SIM.alternativas = f.alternativas.value;
+    SIM.cargando = true; SIM.res = null; pintarLab();
+    try { SIM.res = await api("POST", "/api/simular", { objetivo: SIM.objetivo, alternativas: SIM.alternativas.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 3) }); }
+    catch (err) { fallo(err); } finally { SIM.cargando = false; pintarLab(); }
   },
   async laboratorio(f) {
     LAB.pregunta = f.pregunta.value.trim(); LAB.botId = f.botId.value;

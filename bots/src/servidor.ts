@@ -981,6 +981,38 @@ ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.sear
 
 ruta("GET", "/api/buscar", async ({ url }) => buscarTodo((url.searchParams.get("q") ?? "").slice(0, 200)));
 
+// ---- Simulador: comparar alternativas antes de ejecutar (estimaciones del modelo, no datos reales) ----
+
+const Simulacion = z.object({
+  alternativas: z.array(z.object({
+    nombre: z.string(),
+    resumen: z.string(),
+    pasos: z.array(z.string()),
+    tiempo: z.string().describe("Estimación de duración, ej. «2 a 3 semanas»"),
+    costo: z.string().describe("Estimación cualitativa o en rango, ej. «bajo (solo tiempo)»"),
+    ventajas: z.array(z.string()),
+    riesgos: z.array(z.string()),
+  })).describe("Entre 2 y 3 alternativas distintas"),
+  recomendacion: z.string().describe("Cuál conviene y por qué, en 2 o 3 oraciones"),
+  supuestos: z.array(z.string()).describe("Qué se supuso por falta de datos"),
+});
+ruta("POST", "/api/simular", async ({ cuerpo }) => {
+  const d = validar(z.object({ objetivo: z.string().trim().min(10).max(3000), alternativas: z.array(z.string().trim().max(500)).max(3).default([]) }), await cuerpo());
+  const { $schema: _, ...esquema } = z.toJSONSchema(Simulacion, { reused: "inline" });
+  const pedido = `Objetivo: ${d.objetivo}\n${d.alternativas.filter(Boolean).length ? `Alternativas a comparar:\n${d.alternativas.filter(Boolean).map((a, i) => `${i + 1}. ${a}`).join("\n")}` : "Proponé vos 2 o 3 alternativas realmente distintas."}`;
+  try {
+    const m = await client.beta.messages.create(
+      { model: MODELO, max_tokens: 8000, betas: [BETA_FALLBACK], fallbacks: "default", output_config: { effort: "medium", format: { type: "json_schema" as const, schema: esquema } }, system: "Comparás alternativas para cumplir un objetivo antes de ejecutarlo. Sos concreto y honesto: los tiempos y costos son estimaciones; marcá los supuestos. Respondé en el idioma del usuario.", messages: [{ role: "user", content: pedido }] },
+      { signal: AbortSignal.timeout(120_000) },
+    );
+    registrarUso("simulador", m);
+    const texto = m.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("");
+    return Simulacion.parse(JSON.parse(texto));
+  } catch (err) {
+    throw new ErrorHttp(502, `No se pudo simular: ${String((err as Error).message).slice(0, 200)}`);
+  }
+});
+
 // ---- Mercado de habilidades (catálogo local revisado) ----
 
 ruta("GET", "/api/mercado", async () => vistaMercado());
