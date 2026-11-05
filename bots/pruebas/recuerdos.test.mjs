@@ -27,3 +27,18 @@ test("recordar busca en lo propio y lo del equipo, no en la memoria de otros", (
   assert.match(R.buscar(ana.id, "algodón", "equipo")[0].texto, /orgánico/);
   assert.match(R.formatear([], "nada"), /No encontré/);
 });
+
+test("la memoria de un proyecto la ven solo quienes participan", async () => {
+  const A = await import("../src/almacen.ts");
+  const P = await import("../src/proyectos.ts");
+  const R = await import("../src/recuerdos.ts");
+  const { writeFileSync } = await import("node:fs");
+  const path = (await import("node:path")).default;
+  const dentro = A.crearBot({ nombre: "Dentro", titulo: "x", descripcion: "x" });
+  const fuera = A.crearBot({ nombre: "Fuera", titulo: "x", descripcion: "x" });
+  const p = P.crearProyecto({ nombre: "Secreto", objetivo: "x" });
+  P.agregarTarea(p.id, { titulo: "Algo", asignadoA: dentro.id });
+  writeFileSync(path.join(A.COMPUTADORA, p.carpeta, "notas.md"), "La contraseña del wifi de la oficina es zanahoria.");
+  assert.ok(R.buscar(dentro.id, "wifi oficina", "equipo").some((h) => /zanahoria/.test(h.texto)));
+  assert.equal(R.buscar(fuera.id, "wifi oficina", "equipo").length, 0);
+});

@@ -57,7 +57,7 @@
 91. ✅ 92. ✅ 93. ✅ 94. ✅ (Debate) 95. ✅ (votación) 96. ✅ 97. ✅ 98. ✅ 99. ✅ (pausar/reanudar/terminar) 100. ⛔ Robots en la sala.
 
 ## 10. Memoria
-101. ✅ 102. 🟡 (carpeta de equipo) 103. 🟡 (carpeta por proyecto) 104. ✅ Búsqueda semántica con embeddings de Gemini (si hay clave) combinada con BM25; vectores en caché 105–106. ✅ Habilidad incluida «Ordenar la memoria» (junta lo repetido, borra lo viejo, deja índice; se puede programar semanal) 107. ✅ (compactación del servidor) 108. ✅ (pestaña Memoria) 109. ✅ (copia) 110. 🟡.
+101. ✅ 102. 🟡 (carpeta de equipo) 103. ✅ Memoria por proyecto (su carpeta; `recordar` la ve solo quien coordina o tiene tareas ahí) 104. ✅ Búsqueda semántica con embeddings de Gemini (si hay clave) combinada con BM25; vectores en caché 105–106. ✅ Habilidad incluida «Ordenar la memoria» (junta lo repetido, borra lo viejo, deja índice; se puede programar semanal) 107. ✅ (compactación del servidor) 108. ✅ (pestaña Memoria) 109. ✅ (copia) 110. 🟡.
 
 ## 11. Integraciones
 111. 🟡 WhatsApp por notificaciones; la API oficial necesita URL pública. 112. ✅ Telegram (bot oficial). 113. ✅ Gmail (IMAP/SMTP). 114–116. 🟡 por MCP / Microsoft 365. 117. ✅ MCP. 118. ✅ Webhooks entrantes (Ajustes > Webhooks: URL secreta /api/gancho/<token>, 30 por hora, datos como contenido de afuera; desde el celular necesita túnel). 119. ✅ Claves cifradas (Keystore en el celular). 120. 🟡 Panel de Conexiones.

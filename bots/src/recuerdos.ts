@@ -7,6 +7,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { COMPUTADORA, DATOS, buscarBot, conversacion, programarEscritura, raizMemoria } from "./almacen.ts";
 import { CLAVE_GEMINI, GEMINI_BASE, hayGemini } from "./proveedores.ts";
+import { listarProyectos } from "./proyectos.ts";
 
 export type Alcance = "memoria" | "conversaciones" | "equipo" | "todo";
 
@@ -84,7 +85,17 @@ function carpetasDeEquipo(botId: string): string[] {
   if (bot.carpetaEquipo) carpetas.add(bot.carpetaEquipo);
   const jefe = bot.reportaA ? buscarBot(bot.reportaA) : undefined;
   if (jefe?.carpetaEquipo) carpetas.add(jefe.carpetaEquipo);
+  // Memoria de proyecto: la carpeta de cada proyecto donde coordina o tiene tareas (no la de otros).
+  for (const p of proyectosDe(botId)) carpetas.add(p.carpeta);
   return [...carpetas];
+}
+
+function proyectosDe(botId: string): { carpeta: string }[] {
+  try {
+    return listarProyectos().filter((p) => p.coordinadorId === botId || p.tareas.some((t) => t.asignadoA === botId));
+  } catch {
+    return [];
+  }
 }
 
 function fragmentosDe(botId: string, alcance: Alcance): Fragmento[] {
