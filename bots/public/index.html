@@ -3469,6 +3469,9 @@ function pintarAjustes() {
       <section class="card" aria-labelledby="aj-b"><h2 id="aj-b">Copia de seguridad</h2><p class="sub">Un .zip con compañeros, conversaciones, memoria, rutinas, tareas, proyectos, reuniones, mensajería y la computadora. Las claves de las conexiones no se incluyen: hay que volver a conectarlas.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn out sm" href="/api/respaldo" download>${ico("download", "s")}Exportar copia</a><label class="btn out sm" style="cursor:pointer">Importar copia<input type="file" accept=".zip,application/zip" data-c="respaldo" hidden></label></div>
         <p class="ayuda" style="margin-top:8px">Importar reemplaza todo lo actual (lo de antes queda guardado en una carpeta aparte) y reinicia el motor.</p></section>
+      <section class="card" aria-labelledby="aj-dx"><h2 id="aj-dx">Diagnóstico</h2><p class="sub">Si los compañeros no contestan, probá el modelo: hace una consulta mínima y te dice qué pasa.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn out sm" data-a="probar-modelo">${ico("bolt", "s")}Probar el modelo</button><a class="btn ghost sm" href="#/operaciones">Rendimiento y auditoría</a></div>
+        ${S.diagnostico ? html`<div class="callout ${S.diagnostico.ok ? "" : "sig"}" role="status" style="margin-top:10px"><span>${S.diagnostico.ok ? html`<b>Funciona.</b> Respondió ${S.diagnostico.modelo} en ${(S.diagnostico.ms / 1000).toFixed(1)} s.` : html`<b>${S.diagnostico.causa}</b><br><small>${S.diagnostico.detalle}</small>`}</span></div>` : ""}</section>
       <section class="card" aria-labelledby="aj-i"><h2 id="aj-i">Esta instalación</h2>
         <dl class="info"><dt>Modelo</dt><dd>${S.config.modelo}</dd><dt>Esfuerzo</dt><dd>${S.config.esfuerzo}</dd><dt>Computadora</dt><dd>${S.config.computadora}</dd><dt>Zona</dt><dd>${S.config.zona}</dd></dl>
         <label class="fld" style="margin-top:12px"><span>Estilo</span><select class="inp" data-c="estilo" style="max-width:220px"><option value="" ${si(!leerLocal("gravity-estilo", ""), "selected")}>Clásico</option><option value="cristal" ${si(leerLocal("gravity-estilo", "") === "cristal", "selected")}>Cristal (futurista, oscuro)</option></select><small>Cristal: paneles translúcidos con brillos cian y violeta. Usa un poco más de batería.</small></label>
@@ -5333,6 +5336,7 @@ const A = {
     ir(`#/proyectos/${r.proyecto.id}`);
   }),
   actividad: (t) => conCarga(t, cargarActividad),
+  "probar-modelo": (t) => conCarga(t, async () => { S.diagnostico = await api("POST", "/api/diagnostico/modelo", {}); pintarAjustes(); }),
   rendimiento: (t) => conCarga(t, async () => {
     const r = await api("GET", "/api/rendimiento");
     try { const b = await navigator.getBattery?.(); if (b) r.bateria = { nivel: Math.round(b.level * 100), cargando: b.charging }; } catch {}

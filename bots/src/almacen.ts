@@ -378,6 +378,17 @@ const HABILIDADES_BASE: { clave: string; nombre: string; descripcion: string; in
 5. Dictamen final: «aprobado», «aprobado con cambios menores» o «rehacer», con el motivo. No arregles el trabajo vos salvo que te lo pidan.`,
   },
   {
+    clave: "ordenar-memoria",
+    nombre: "Ordenar la memoria",
+    descripcion: "Revisar la memoria propia: juntar lo repetido, borrar lo viejo y dejar un índice.",
+    instrucciones: `1. Listá tus archivos de /memories y leelos.
+2. Buscá información repetida o contradictoria: quedate con la versión más reciente y confirmada, y anotá de dónde salió.
+3. Juntá en un solo archivo lo que habla del mismo tema (por ejemplo, todo lo del cliente X en /memories/clientes/x.md).
+4. Borrá lo que ya no sirve (tareas terminadas hace mucho, datos reemplazados). Si dudás, no lo borres: movelo a /memories/archivo/.
+5. Dejá /memories/indice.md con una línea por archivo: qué tiene y cuándo se actualizó.
+6. Contale al usuario qué juntaste, qué borraste y qué quedó con dudas. Se puede programar como rutina semanal.`,
+  },
+  {
     clave: "aprender-de-errores",
     nombre: "Aprender de errores",
     descripcion: "Después de un error o una corrección del usuario, dejar anotada la lección para no repetirla.",

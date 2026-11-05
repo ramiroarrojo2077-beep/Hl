@@ -100,6 +100,7 @@ import {
 } from "./mensajeria.ts";
 import { pedidoPorDefecto, pistaCompartido } from "./videos.ts";
 import { hayGemini } from "./proveedores.ts";
+import { BETA_FALLBACK, MODELO, client } from "./cliente.ts";
 import { bus, emitir } from "./eventos.ts";
 
 const PUERTO = Number(process.env.BOTS_PUERTO ?? 3001);
@@ -935,6 +936,30 @@ ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.sear
 // ---- Buscador global ----
 
 ruta("GET", "/api/buscar", async ({ url }) => buscarTodo((url.searchParams.get("q") ?? "").slice(0, 200)));
+
+// ---- Diagnóstico: una consulta mínima al modelo para ver si las claves andan ----
+
+ruta("POST", "/api/diagnostico/modelo", async () => {
+  const t0 = Date.now();
+  try {
+    const m = await client.beta.messages.create(
+      { model: MODELO, max_tokens: 16, betas: [BETA_FALLBACK], fallbacks: "default", messages: [{ role: "user", content: "Respondé solo: OK" }] },
+      { signal: AbortSignal.timeout(45_000) },
+    );
+    const texto = m.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").trim();
+    return { ok: true, proveedor: CONFIG.modelo, modelo: m.model, ms: Date.now() - t0, respuesta: texto.slice(0, 60) };
+  } catch (err) {
+    const e = err as { status?: number; message?: string };
+    const msj = String(e.message ?? err);
+    const causa =
+      e.status === 401 ? "La clave no es válida o se borró: cargala de nuevo."
+      : e.status === 402 || /credit|billing|saldo|payment/i.test(msj) ? "La cuenta no tiene saldo o pide un medio de pago."
+      : e.status === 429 ? "Se acabó el cupo por ahora: probá en un rato o cargá un respaldo gratis."
+      : /fetch failed|ENOTFOUND|ECONNREFUSED|timeout|connection error/i.test(msj) ? "No hay conexión con el proveedor (internet o servidor propio apagado)."
+      : "El proveedor devolvió un error.";
+    return { ok: false, proveedor: CONFIG.modelo, ms: Date.now() - t0, causa, detalle: msj.slice(0, 300) };
+  }
+});
 
 // ---- Rendimiento del motor (memoria, CPU desde la consulta anterior, tiempo prendido) ----
 

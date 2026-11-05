@@ -57,7 +57,7 @@
 91. ✅ 92. ✅ 93. ✅ 94. ✅ (Debate) 95. ✅ (votación) 96. ✅ 97. ✅ 98. ✅ 99. ✅ (pausar/reanudar/terminar) 100. ⛔ Robots en la sala.
 
 ## 10. Memoria
-101. ✅ 102. 🟡 (carpeta de equipo) 103. 🟡 (carpeta por proyecto) 104. 🟡 búsqueda de texto (BM25), no semántica 105. ⛔ 106. 🟡 (sin duplicados en resultados) 107. ✅ (compactación del servidor) 108. ✅ (pestaña Memoria) 109. ✅ (copia) 110. 🟡.
+101. ✅ 102. 🟡 (carpeta de equipo) 103. 🟡 (carpeta por proyecto) 104. 🟡 búsqueda de texto (BM25), no semántica 105–106. ✅ Habilidad incluida «Ordenar la memoria» (junta lo repetido, borra lo viejo, deja índice; se puede programar semanal) 107. ✅ (compactación del servidor) 108. ✅ (pestaña Memoria) 109. ✅ (copia) 110. 🟡.
 
 ## 11. Integraciones
 111. 🟡 WhatsApp por notificaciones; la API oficial necesita URL pública. 112. ✅ Telegram (bot oficial). 113. ✅ Gmail (IMAP/SMTP). 114–116. 🟡 por MCP / Microsoft 365. 117. ✅ MCP. 118. ✅ Webhooks entrantes (Ajustes > Webhooks: URL secreta /api/gancho/<token>, 30 por hora, datos como contenido de afuera; desde el celular necesita túnel). 119. ✅ Claves cifradas (Keystore en el celular). 120. 🟡 Panel de Conexiones.
@@ -69,7 +69,7 @@
 131. ✅ 132. ✅ 133. ✅ 134. ✅ 135. ✅ (contenido de afuera envuelto, suplantación neutralizada; ver PENDIENTE: pruebas de inyección a revisar) 136. ✅ 137. ✅ (Android vuelve a prender el motor) 138. 🟡 139. 🟡 140. ⛔ 141. ✅ 142. 🟡 143. ✅ (migraciones en almacen.ts) 144. ✅ (11 pruebas + e2e) 145. 🟡 (restaurar copia).
 
 ## 14. Experiencia
-146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ✅ Etiquetas en proyectos (con filtro). 151. ✅ Prioridades en tareas. 152. ✅ Recordatorios de una sola vez (rutina «Una sola vez»; los compañeros también los programan con la herramienta rutinas). 153. ✅ Productividad de 7 días por compañero (Operaciones) 154. ⛔ 155. 🟡 (Rendimiento y Auditoría) 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ✅ Notificaciones configurables (aprobaciones y tareas trabadas) 159. ✅ Panel de novedades en Ajustes 160. 🟡 (auditoría).
+146. ✅ Buscador global. 147. ✅ Actividad en vivo. 148. ✅ Historial. 149. ✅ Favoritos (compañeros; aparecen primero). 150. ✅ Etiquetas en proyectos (con filtro). 151. ✅ Prioridades en tareas. 152. ✅ Recordatorios de una sola vez (rutina «Una sola vez»; los compañeros también los programan con la herramienta rutinas). 153. ✅ Productividad de 7 días por compañero (Operaciones) 154. ⛔ 155. ✅ Diagnóstico en Ajustes («Probar el modelo» con la causa del error) + Rendimiento y Auditoría 156. 🟡 (accesibilidad básica: roles, contraste) 157. ⛔ 158. ✅ Notificaciones configurables (aprobaciones y tareas trabadas) 159. ✅ Panel de novedades en Ajustes 160. 🟡 (auditoría).
 
 ## 15. Conservación
 161–170. ✅ Se mantiene todo lo anterior, con migraciones, copias y versiones en git. 168: los botones nuevos tienen función y prueba. 169: nada simulado (el robot 2D avisa si no hay 3D; la voz avisa si no hay).
