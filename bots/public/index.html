@@ -835,6 +835,7 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 @keyframes gr-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){:root[data-estilo="cristal"] .pag-in>*{animation:none}}
 @media (prefers-reduced-transparency: reduce){:root[data-estilo="cristal"] :is(.card,.side,.rail,.mnav,.form-card,#dlg){-webkit-backdrop-filter:none;backdrop-filter:none}:root[data-estilo="cristal"]{--s1:#101628;--s2:#161E36;--rail:#060914}}
+#cmp-dictar.on{background:var(--ion-bg);color:var(--ion-tx)}
 .modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
@@ -2260,6 +2261,7 @@ function montarPestana(b) {
     c.innerHTML = html`<div class="thread" id="thread" tabindex="-1"><div class="tin" aria-live="off"><div id="hist"></div><div id="vivo"></div></div></div>
       <form class="cmp" id="cmp" data-f="enviar"><div class="cmp-box"><div class="cmp-bar">
         <textarea id="ta" data-k="ta" rows="1" aria-label="Mensaje para ${b.nombre}" data-i="ta"></textarea>
+        ${Voz.disponible().stt ? html`<button class="ib" type="button" id="cmp-dictar" data-a="dictar" aria-pressed="false" aria-label="Dictar el mensaje" title="Dictar">${ico("mic", "s")}</button>` : ""}
         <button class="btn ghost sm" type="button" id="cmp-det" data-a="detener" data-id="${b.id}" hidden>${ico("stop", "s")}Detener</button>
         <button class="btn pri sm env" type="submit" aria-label="Enviar">${ico("send", "s")}<span class="t">Enviar</span></button>
       </div><p class="hint" id="cmp-hint"></p></div></form>`.s;
@@ -4202,6 +4204,7 @@ function extraerOraciones(t, final) {
 const AVATAR_DEF = { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto", voz: null, velocidad: 1 };
 const avatarDe = (b) => ({ ...AVATAR_DEF, ...(b?.avatar || {}) });
 const LL = { activa: false, voces: new Map() };
+const DICT = { fin: null, quitar: null };
 const FASES_LL = {
   iniciando: ["Conectando…", ""],
   escuchando: ["Escuchando…", ""],
@@ -5360,6 +5363,26 @@ const A = {
   "ce-volver": () => abrirCrearEquipo(),
   "nueva-reunion": (t) => abrirNuevaReunion(t.dataset.id || null),
   "nuevo-proyecto": () => abrirNuevoProyecto(),
+  // Dictado en el chat: una frase con el reconocimiento del celular (o del navegador); el texto queda en
+  // el cuadro para revisarlo antes de mandar.
+  dictar: (t) => {
+    if (LL.activa) return;
+    if (DICT.fin) { DICT.fin(); try { Voz.dejarDeEscuchar(); } catch {} return; }
+    const ta = $("#ta"), hint = $("#cmp-hint");
+    const terminar = () => { DICT.fin = null; DICT.quitar?.(); t.setAttribute("aria-pressed", "false"); t.classList.remove("on"); if (hint) hint.textContent = ""; };
+    DICT.fin = terminar;
+    t.setAttribute("aria-pressed", "true"); t.classList.add("on");
+    if (hint) hint.textContent = "Escuchando… hablá cuando quieras.";
+    DICT.quitar = Voz.on((e) => {
+      if (e.tipo === "parcial" && hint) hint.textContent = `«${e.texto}»`;
+      else if (e.tipo === "final") {
+        if (ta && e.texto) { ta.value = `${ta.value ? `${ta.value.trimEnd()} ` : ""}${e.texto}`; autoAlto(ta); ta.focus(); S.borrador[S.botId] = ta.value; }
+        terminar();
+      } else if (e.tipo === "silencio") { terminar(); toast("No te escuché. Probá de nuevo."); }
+      else if (e.tipo === "error" && e.origen === "stt") { terminar(); toast(e.mensaje || "No se pudo usar el micrófono.", "err"); }
+    });
+    try { Voz.escuchar(); } catch (err) { terminar(); toast(String(err?.message || err), "err"); }
+  },
   "compu-versiones": async (t) => {
     const ruta = t.dataset.ruta;
     const xs = await api("GET", `/api/computadora/versiones?ruta=${encodeURIComponent(ruta)}`);
