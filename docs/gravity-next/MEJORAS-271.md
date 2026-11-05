@@ -17,7 +17,12 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 
 ## 17. Gravity Universe 3D
 181. ✅ Centro de operaciones 3D (`#/universo`). 184. ✅ Animaciones de trabajo (teclean, levantan la mano al esperar). 186. ✅ Cámara libre (arrastrar, pellizcar, rueda). 188. ✅ Hologramas con información real.
-182, 183, 185, 187, 189, 190. ⛔ (en curso).
+182. 🟡 Personalización por dispositivo: escenario, color de acento e intensidad de la luz (se guardan en el celular). Falta mover muebles a mano.
+183. ✅ Robots que caminan: cuando un manager reparte una tarea, su robot va hasta la estación de quien la recibe y vuelve; los que entran a una reunión caminan a la sala del centro y se quedan mirando la mesa hasta que termina.
+185. 🟡 Salas: sala de reuniones en el centro (mesa holográfica) y ambientaciones de laboratorio (tubos de ensayo) y biblioteca (estantes con libros). Falta separar oficinas por equipo.
+187. ✅ Eventos visuales: festejo con salto, brazos arriba y partículas cuando un compañero completa una tarea; columna de luz naranja mientras espera tu aprobación.
+189. ✅ Modo observador: tocá una estación (o elegí en «Observar») y la cámara lo sigue de cerca, con un panel de lo que hace, su carga, su confianza y sus últimas tareas, y accesos a su chat y a Aprobar.
+190. ✅ Escenarios: estación espacial (estrellas, planeta con anillo), laboratorio futurista y oficina con biblioteca.
 
 ## 18. Robots 3D
 191–200. 🟡 El robot de las llamadas ya tiene gestos (saludo, asentir), ojos LED con expresión, levitación y personalidad; falta el resto.

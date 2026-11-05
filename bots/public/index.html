@@ -885,6 +885,8 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
+.univ-cfg{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}.univ-cfg .fld{margin:0;min-width:140px}.univ-cfg select.inp{min-height:38px}.univ-sw{display:flex;gap:6px}.sw-c{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:var(--c);cursor:pointer}.sw-c[aria-pressed=true]{outline:2px solid var(--tx);outline-offset:2px}
+.univ-w{position:relative}.univ-obs{position:absolute;left:10px;bottom:10px;max-width:min(320px,calc(100% - 20px));padding:10px 12px;border-radius:14px;background:rgba(8,12,22,.86);border:1px solid #26304a;color:#e3e8f2;backdrop-filter:blur(8px)}.univ-obs-h{display:flex;gap:8px;align-items:center}.univ-obs-h div{flex:1;display:flex;flex-direction:column}.univ-obs-h small{color:#8d98b0;font-size:12px}.univ-obs p{margin:6px 0 0;font-size:13px}.univ-obs-t{list-style:none;margin:6px 0 0;padding:0;font-size:12px;display:flex;flex-direction:column;gap:3px}.univ-obs .tag{margin-right:6px}.univ-obs .btn.ghost{color:#cfd7e6}
 .univ{height:min(62vh,520px);border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#05070d;margin-top:14px}.univ canvas{display:block;width:100%;height:100%;cursor:grab}
 .univ-l{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}.univ-l a{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--s1);border:1px solid var(--line);color:inherit;text-decoration:none;min-height:44px}.univ-l span{display:flex;flex-direction:column;min-width:0}.univ-l small{font-size:12px}
 .u-e{font-weight:500}.u-work{color:var(--ion)}.u-wait{color:var(--sig)}.u-idle{color:var(--tx3)}
@@ -3883,21 +3885,51 @@ function cdContexto() {
 // robot. La pantalla y la luz muestran el estado real (trabajando, espera tu aprobación, libre) y se
 // actualizan solas. Tocar una estación abre su chat. Sin WebGL o con «reducir movimiento» queda la lista.
 const UNIV_EST = { work: ["Trabajando", 0x6cd3f0], wait: ["Espera tu aprobación", 0xffb07a], idle: ["Libre", 0x5b6478] };
+// Personalización del universo (por dispositivo): escenario, color de acento, luz y a quién seguir.
+const UNIV_ESC = {
+  espacio: { nombre: "Estación espacial", fondo: 0x04060c, piso: 0x070a12, linea: 0x1b2438, anillos: [0x6cd3f0, 0x9b7bff], estrellas: true },
+  laboratorio: { nombre: "Laboratorio futurista", fondo: 0x081217, piso: 0x0b1a1e, linea: 0x14323a, anillos: [0x63d3b1, 0x6cd3f0], estrellas: false },
+  oficina: { nombre: "Oficina y biblioteca", fondo: 0x14171f, piso: 0x232733, linea: 0x323848, anillos: [0xffb07a, 0x6cd3f0], estrellas: false },
+};
+const UNIV_ACENTOS = ["#6CD3F0", "#9B7BFF", "#63D3B1", "#FFB07A"];
+const univCfg = () => { let c = {}; try { c = JSON.parse(leerLocal("gravity-universo", "{}")) || {}; } catch {} return { escenario: UNIV_ESC[c.escenario] ? c.escenario : "espacio", acento: UNIV_ACENTOS.includes(c.acento) ? c.acento : "#6CD3F0", luz: Math.min(1.5, Math.max(0.5, Number(c.luz) || 1)) }; };
 function montarUniverso() {
   const el = $("#univ");
   if (!el) return;
-  el.innerHTML = html`<header class="pag-h"><div class="tt"><h1>Gravity Universe</h1><p>Cada compañero en su estación. Cian: trabajando · naranja: espera tu aprobación · gris: libre. Arrastrá para girar y tocá una estación para abrir su chat.</p></div></header>
-    <div class="univ" id="univ-3d" aria-hidden="true"></div><h2 class="sr">Estaciones</h2><ul class="univ-l" id="univ-l"></ul>`.s;
+  const c = univCfg();
+  el.innerHTML = html`<header class="pag-h"><div class="tt"><h1>Gravity Universe</h1><p>Cada compañero en su estación. Cian: trabajando · naranja: espera tu aprobación · gris: libre. Arrastrá para girar, pellizcá para acercar y tocá una estación para seguir a ese compañero.</p></div></header>
+    <div class="univ-cfg" role="group" aria-label="Personalizar el universo">
+      <label class="fld"><span>Escenario</span><select class="inp" data-c="univ-esc">${Object.entries(UNIV_ESC).map(([k, e]) => html`<option value="${k}" ${si(c.escenario === k, "selected")}>${e.nombre}</option>`)}</select></label>
+      <fieldset class="fld"><legend>Acento</legend><div class="univ-sw">${UNIV_ACENTOS.map((a) => html`<button type="button" class="sw-c" style="--c:${a}" data-a="univ-acento" data-v="${a}" aria-pressed="${String(c.acento === a)}" aria-label="Acento ${a}"></button>`)}</div></fieldset>
+      <label class="fld"><span>Luz</span><input type="range" min="0.5" max="1.5" step="0.1" value="${c.luz}" data-c="univ-luz" aria-label="Intensidad de la luz"></label>
+      <label class="fld"><span>Observar</span><select class="inp" data-c="univ-seguir" id="univ-seguir"><option value="">Vista general</option>${S.bots.map((b) => html`<option value="${b.id}">${b.nombre}</option>`)}</select></label>
+    </div>
+    <div class="univ-w"><div class="univ" id="univ-3d" aria-hidden="true"></div><div class="univ-obs" id="univ-obs" hidden></div></div><h2 class="sr">Estaciones</h2><ul class="univ-l" id="univ-l"></ul>`.s;
   pintarUnivLista();
   if (!S.bots.length || matchMedia("(prefers-reduced-motion: reduce)").matches) { $("#univ-3d").hidden = true; return; }
-  cargarThree().then((T) => escenaUniverso(T, $("#univ-3d"))).catch(() => { const c = $("#univ-3d"); if (c) c.hidden = true; });
+  cargarThree().then((T) => escenaUniverso(T, $("#univ-3d"), c)).catch(() => { const x = $("#univ-3d"); if (x) x.hidden = true; });
+}
+// Panel del modo observador: lo que hace el compañero seguido, con datos reales.
+function pintarUnivObs(id) {
+  const el = $("#univ-obs");
+  if (!el) return;
+  const b = bot(id);
+  el.hidden = !b;
+  if (!b) return;
+  const e = est(b), tareas = (S.tareas || []).filter((t) => t.paraId === b.id).slice(-3).reverse();
+  pintar(el, html`<div class="univ-obs-h">${av(b, 28)}<div><b>${b.nombre}</b><small>${b.titulo}</small></div><button class="btn ghost sm" data-a="univ-libre" aria-label="Dejar de seguir">×</button></div>
+    <p class="u-e u-${e}">${UNIV_EST[e][0]}${e === "work" && b.accion ? ` · ${b.accion}` : ""}</p>
+    <p class="muted" style="font-size:12px;margin:0">${b.carga ? `${b.carga} trabajo(s) abierto(s)` : "Sin trabajo abierto"}${b.confianza && b.confianza.nivel !== "sin datos" ? ` · confianza ${b.confianza.puntaje}%` : ""}</p>
+    ${tareas.length ? html`<ul class="univ-obs-t">${tareas.map((t) => html`<li><span class="tag">${t.estado}</span>${t.titulo}</li>`)}</ul>` : ""}
+    <div class="fila" style="gap:6px;margin-top:8px"><a class="btn pri sm" href="#/chats/${b.id}">Abrir chat</a>${e === "wait" ? html`<a class="btn out sm" href="#/aprobaciones">Aprobar</a>` : ""}</div>`);
 }
 function pintarUnivLista() {
   const el = $("#univ-l");
   if (!el) return;
   pintar(el, S.bots.length ? ordenar(S.bots, "estado").map((b) => { const e = est(b); return html`<li><a href="#/chats/${b.id}">${av(b, 30)}<span><b>${b.nombre}</b> <small class="muted">${b.titulo}</small><small class="u-e u-${e}">${UNIV_EST[e][0]}${e === "work" && b.accion ? ` · ${b.accion}` : ""}</small></span></a></li>`; }) : html`<li class="muted">Todavía no hay compañeros: creá uno desde Equipo.</li>`);
 }
-function escenaUniverso(T, cont) {
+function escenaUniverso(T, cont, cfg = univCfg()) {
+  const ESC = UNIV_ESC[cfg.escenario], ACENTO = new T.Color(cfg.acento);
   if (!cont?.isConnected) return;
   let renderer;
   try { renderer = new T.WebGLRenderer({ antialias: true, powerPreference: "default" }); } catch { cont.hidden = true; return; }
@@ -3906,8 +3938,8 @@ function escenaUniverso(T, cont) {
   renderer.setSize(ancho(), alto());
   renderer.toneMapping = T.NeutralToneMapping;
   const escena = new T.Scene();
-  escena.background = new T.Color(0x04060c);
-  escena.fog = new T.Fog(0x04060c, 20, 44);
+  escena.background = new T.Color(ESC.fondo);
+  escena.fog = new T.Fog(ESC.fondo, 20, 44);
   const camara = new T.PerspectiveCamera(46, ancho() / alto(), 0.1, 120);
   // Reflejos de estudio (los mismos del robot de las llamadas) y luces de borde cian y violeta.
   const pm = new T.PMREMGenerator(renderer);
@@ -3917,7 +3949,7 @@ function escenaUniverso(T, cont) {
   escena.environment = envRT.texture;
   escena.environmentIntensity = 0.85;
   escena.add(new T.HemisphereLight(0xdfe8ff, 0x0c1020, 0.55));
-  const sol = new T.DirectionalLight(0xfff5ec, 1.6); sol.position.set(5, 12, 8); escena.add(sol);
+  const sol = new T.DirectionalLight(0xfff5ec, 1.6 * cfg.luz); sol.position.set(5, 12, 8); escena.add(sol);
   const bordeA = new T.DirectionalLight(0x6cd3f0, 1.4); bordeA.position.set(-8, 4, -6);
   const bordeV = new T.DirectionalLight(new T.Color(VIOLETA), 1.6); bordeV.position.set(8, 3, -8);
   escena.add(bordeA, bordeV);
@@ -3928,17 +3960,17 @@ function escenaUniverso(T, cont) {
     const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.BufferAttribute(pos, 3));
     return new T.Points(geo, new T.PointsMaterial({ color, size: tam, sizeAttenuation: true, transparent: true, opacity: 0.85, depthWrite: false }));
   };
-  escena.add(estrellas(700, 0.14, 0xa9bbe0), estrellas(160, 0.3, 0xe8ecf5));
+  if (ESC.estrellas) escena.add(estrellas(700, 0.14, 0xa9bbe0), estrellas(160, 0.3, 0xe8ecf5));
   for (const [x, y, z, c, s] of [[-26, 12, -30, "#9B7BFF", 40], [28, 8, -22, "#6CD3F0", 34]]) { const n = new T.Mesh(new T.PlaneGeometry(s, s), matBrillo(T, c, 0.16, true)); n.position.set(x, y, z); n.lookAt(0, 4, 0); escena.add(n); }
   // Piso: disco oscuro metálico, grilla radial y anillos de luz
-  const piso = new T.Mesh(new T.CircleGeometry(17, 96), new T.MeshStandardMaterial({ color: 0x070a12, roughness: 0.85, metalness: 0.25, envMapIntensity: 0.25 }));
+  const piso = new T.Mesh(new T.CircleGeometry(17, 96), new T.MeshStandardMaterial({ color: ESC.piso, roughness: 0.85, metalness: 0.25, envMapIntensity: 0.25 }));
   piso.rotation.x = -Math.PI / 2; escena.add(piso);
   const lineas = [];
   for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; lineas.push(Math.cos(a) * 2.2, 0.012, Math.sin(a) * 2.2, Math.cos(a) * 16.5, 0.012, Math.sin(a) * 16.5); }
   const gl = new T.BufferGeometry(); gl.setAttribute("position", new T.Float32BufferAttribute(lineas, 3));
-  escena.add(new T.LineSegments(gl, new T.LineBasicMaterial({ color: 0x1b2438, transparent: true, opacity: 0.7 })));
+  escena.add(new T.LineSegments(gl, new T.LineBasicMaterial({ color: ESC.linea, transparent: true, opacity: 0.7 })));
   const anillos = [];
-  for (const [r, c, o] of [[2.2, 0x6cd3f0, 0.6], [6, 0x6cd3f0, 0.28], [10, 0x9b7bff, 0.28], [14, 0x6cd3f0, 0.22], [16.6, 0x9b7bff, 0.4]]) {
+  for (const [r, c, o] of [[2.2, ACENTO.getHex(), 0.6], [6, ESC.anillos[0], 0.28], [10, ESC.anillos[1], 0.28], [14, ESC.anillos[0], 0.22], [16.6, ESC.anillos[1], 0.4]]) {
     const an = new T.Mesh(new T.RingGeometry(r - 0.035, r + 0.035, 128), new T.MeshBasicMaterial({ color: c, transparent: true, opacity: o, toneMapped: false }));
     an.rotation.x = -Math.PI / 2; an.position.y = 0.015; escena.add(an); anillos.push(an);
   }
@@ -3959,6 +3991,41 @@ function escenaUniverso(T, cont) {
   const satBrillo = new T.Mesh(new T.PlaneGeometry(1.4, 1.4), matBrillo(T, "#6CD3F0", 0.7, true)); marca.add(satBrillo);
   const haz = new T.Mesh(new T.CylinderGeometry(0.9, 1.4, 1.8, 32, 1, true), new T.MeshBasicMaterial({ color: 0x6cd3f0, transparent: true, opacity: 0.035, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending, toneMapped: false }));
   haz.position.y = 1.3; escena.add(haz);
+  // Sala de reuniones en el centro: mesa holográfica alrededor del núcleo (ahí van los que están reunidos).
+  const mesaR = new T.Mesh(new T.TorusGeometry(2.75, 0.06, 8, 96), new T.MeshBasicMaterial({ color: ACENTO, transparent: true, opacity: 0.55, toneMapped: false }));
+  mesaR.rotation.x = -Math.PI / 2; mesaR.position.y = 0.75; escena.add(mesaR);
+  const mesaV = new T.Mesh(new T.CircleGeometry(2.75, 64), new T.MeshBasicMaterial({ color: ACENTO, transparent: true, opacity: 0.06, side: T.DoubleSide, depthWrite: false, toneMapped: false }));
+  mesaV.rotation.x = -Math.PI / 2; mesaV.position.y = 0.74; escena.add(mesaV);
+  // Ambientación de cada escenario
+  const ambiente = new T.Group(); escena.add(ambiente);
+  if (cfg.escenario === "espacio") {
+    const planeta = new T.Mesh(new T.SphereGeometry(6, 48, 32), new T.MeshStandardMaterial({ color: 0x3b2d6b, roughness: 0.8, emissive: 0x150d2a, emissiveIntensity: 0.6 }));
+    planeta.position.set(-34, 16, -40); ambiente.add(planeta);
+    const anilloP = new T.Mesh(new T.RingGeometry(8, 11, 96), new T.MeshBasicMaterial({ color: 0x9b7bff, transparent: true, opacity: 0.25, side: T.DoubleSide, toneMapped: false }));
+    anilloP.position.copy(planeta.position); anilloP.rotation.set(1.2, 0.3, 0); ambiente.add(anilloP);
+  } else if (cfg.escenario === "laboratorio") {
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2, x = Math.cos(a) * 17.6, z = Math.sin(a) * 17.6;
+      const tubo = new T.Mesh(new T.CylinderGeometry(0.45, 0.45, 5, 24, 1, true), new T.MeshPhysicalMaterial({ color: 0x9fe8d6, roughness: 0.05, transmission: 0.6, transparent: true, opacity: 0.35, side: T.DoubleSide }));
+      tubo.position.set(x, 2.5, z); ambiente.add(tubo);
+      const liquido = new T.Mesh(new T.CylinderGeometry(0.36, 0.36, 3.2 + (i % 3) * 0.5, 20), new T.MeshBasicMaterial({ color: i % 2 ? 0x63d3b1 : ACENTO.getHex(), transparent: true, opacity: 0.55, toneMapped: false }));
+      liquido.position.set(x, 1.7 + (i % 3) * 0.25, z); ambiente.add(liquido);
+      const base = new T.Mesh(new T.CylinderGeometry(0.7, 0.8, 0.3, 24), oscuro); base.position.set(x, 0.15, z); ambiente.add(base);
+    }
+  } else {
+    const verde = new T.MeshStandardMaterial({ color: 0x3f8f5a, roughness: 0.8 }), maceta = new T.MeshStandardMaterial({ color: 0xd9dee8, roughness: 0.5 }), madera = new T.MeshStandardMaterial({ color: 0x6b4f3a, roughness: 0.7 });
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2, x = Math.cos(a) * 17.4, z = Math.sin(a) * 17.4;
+      if (i % 3 === 0) {
+        const estante = new T.Group(); estante.position.set(x, 0, z); estante.lookAt(0, 0, 0); ambiente.add(estante);
+        const cuerpo = new T.Mesh(new T.BoxGeometry(3, 3.2, 0.5), madera); cuerpo.position.y = 1.6; estante.add(cuerpo);
+        for (let f = 0; f < 3; f++) for (let k = 0; k < 9; k++) { const libro = new T.Mesh(new T.BoxGeometry(0.22, 0.7, 0.4), new T.MeshStandardMaterial({ color: [0x6cd3f0, 0x9b7bff, 0xffb07a, 0xe8ecf5, 0x63d3b1][(k + f) % 5], roughness: 0.6 })); libro.position.set(-1.2 + k * 0.3, 0.6 + f * 1, 0.3); estante.add(libro); }
+      } else {
+        const m = new T.Mesh(new T.CylinderGeometry(0.4, 0.3, 0.6, 16), maceta); m.position.set(x, 0.3, z); ambiente.add(m);
+        const hoja = new T.Mesh(new T.IcosahedronGeometry(0.75, 1), verde); hoja.position.set(x, 1.2, z); hoja.scale.y = 1.3; ambiente.add(hoja);
+      }
+    }
+  }
 
   // ---- geometrías compartidas del robot (mismo diseño que el de las llamadas, con menos detalle)
   const torno = (pts) => { const geo = new T.LatheGeometry(new T.SplineCurve(pts.map(([r, y]) => new T.Vector2(r, y))).getPoints(18), 28); geo.scale(1, 1, 0.8); return geo; };
@@ -4063,9 +4130,13 @@ function escenaUniverso(T, cont) {
       const pantalla = m(G.marco, pantallaM, [0, 2.25, 0.8], [-0.28, 0, 0]);
       const rayoM = new T.MeshBasicMaterial({ color: UNIV_EST.idle[1], transparent: true, opacity: 0.12, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending, toneMapped: false });
       const rayo = m(new T.ConeGeometry(0.72, 0.85, 4, 1, true), rayoM, [0, 1.42, 0.76], [Math.PI, Math.PI / 4, 0]);
+      // Baliza de aprobación: columna de luz naranja mientras espera tu permiso.
+      const balizaM = new T.MeshBasicMaterial({ color: 0xffb07a, transparent: true, opacity: 0, depthWrite: false, blending: T.AdditiveBlending, toneMapped: false });
+      const baliza = m(new T.CylinderGeometry(0.18, 0.5, 6, 20, 1, true), balizaM, [0, 3.2, -0.4]);
       g.traverse((o) => { o.userData.botId = b.id; });
       escena.add(g);
-      estaciones.push({ id: b.id, g, r, p, pantalla, pantallaM, bordeM, haloM, rayoM, tecladoM, fase: Math.random() * 6, estado: null, firma: "" });
+      g.updateMatrixWorld(true);
+      estaciones.push({ id: b.id, g, r, p, pantalla, pantallaM, bordeM, haloM, rayoM, tecladoM, balizaM, baliza, casa: r.raiz.position.clone(), ruta: null, sentado: null, festejo: -1e9, fase: Math.random() * 6, estado: null, firma: "" });
     }
   }
   cont.replaceChildren(renderer.domElement);
@@ -4088,7 +4159,7 @@ function escenaUniverso(T, cont) {
     const r = el.getBoundingClientRect();
     const ray = new T.Raycaster(); ray.setFromCamera(new T.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camara);
     const hit = ray.intersectObjects(estaciones.map((x) => x.g), true).find((h) => h.object.userData.botId);
-    if (hit) ir(`#/chats/${hit.object.userData.botId}`);
+    if (hit) seguir(hit.object.userData.botId);
   };
   el.addEventListener("pointerup", soltar); el.addEventListener("pointercancel", soltar);
   el.addEventListener("wheel", (e) => { e.preventDefault(); dist = Math.max(9, Math.min(34, dist + e.deltaY * 0.012)); }, { passive: false });
@@ -4096,6 +4167,55 @@ function escenaUniverso(T, cont) {
   const ro = new ResizeObserver(medir); ro.observe(cont);
   const t0 = performance.now();
   let ultimoEstado = -1e9;
+  // ---- modo observador, caminatas, reuniones y festejos (los disparan los eventos reales del motor)
+  const objetivo = new T.Vector3(0, 1.4, 0), objetivoDeseado = new T.Vector3(0, 1.4, 0);
+  let seguido = null;
+  const porId = (id) => estaciones.find((x) => x.id === id);
+  const enMundo = (x, local) => x.g.localToWorld(local.clone());
+  const enLocal = (x, mundo) => x.g.worldToLocal(mundo.clone());
+  function seguir(id) {
+    seguido = porId(id) ? id : null;
+    const sel = $("#univ-seguir"); if (sel) sel.value = seguido || "";
+    pintarUnivObs(seguido);
+    if (seguido) { dist = 7; ultimoToque = performance.now(); }
+    else dist = bots.length > 16 ? 26 : bots.length > 6 ? 19 : 14;
+  }
+  function caminarA(x, destinoMundo, { quedarse = false, alLlegar = null } = {}) {
+    const desde = x.r.raiz.position.clone(), hasta = enLocal(x, destinoMundo);
+    hasta.y = x.casa.y;
+    const largo = desde.distanceTo(hasta);
+    x.ruta = { desde, hasta, t0: performance.now(), dur: Math.max(900, largo * 520), quedarse, alLlegar };
+  }
+  const volver = (x) => caminarA(x, enMundo(x, x.casa));
+  const parti = [];
+  function festejar(id) {
+    const x = porId(id); if (!x) return;
+    x.festejo = performance.now();
+    const n = 90, pos = new Float32Array(n * 3), vel = [], origen = enMundo(x, new T.Vector3(0, 1.6, -0.4));
+    for (let i = 0; i < n; i++) { pos.set([origen.x, origen.y, origen.z], i * 3); const a = Math.random() * Math.PI * 2, u = Math.random() * 0.9 + 0.2; vel.push(new T.Vector3(Math.cos(a) * u * 2.2, 2.5 + Math.random() * 3, Math.sin(a) * u * 2.2)); }
+    const geo = new T.BufferGeometry(); geo.setAttribute("position", new T.BufferAttribute(pos, 3));
+    const mat = new T.PointsMaterial({ color: [0x6cd3f0, 0x9b7bff, 0x63d3b1, 0xffb07a][Math.floor(Math.random() * 4)], size: 0.16, transparent: true, depthWrite: false, blending: T.AdditiveBlending });
+    const puntos = new T.Points(geo, mat); escena.add(puntos);
+    parti.push({ puntos, vel, t0: performance.now() });
+  }
+  function visitar(deId, aId) {
+    const de = porId(deId), a = porId(aId);
+    if (!de || !a || de === a || de.sentado) return;
+    const frente = enMundo(a, new T.Vector3(0, 0, 1.7));
+    caminarA(de, frente, { alLlegar: () => setTimeout(() => { if (!de.sentado) volver(de); }, 1800) });
+  }
+  function reunir(ids, activa) {
+    const xs = ids.map(porId).filter(Boolean);
+    xs.forEach((x, i) => {
+      if (activa) {
+        const a = (i / xs.length) * Math.PI * 2;
+        x.sentado = true;
+        caminarA(x, new T.Vector3(Math.cos(a) * 3.4, 0, Math.sin(a) * 3.4), { quedarse: true });
+      } else if (x.sentado) { x.sentado = null; volver(x); }
+    });
+  }
+  cont.univ = { seguir, festejar, visitar, reunir, luz: (v) => { sol.intensity = 1.6 * v; } };
+  for (const r of reunionesVivas()) reunir([r.facilitadorId, ...r.participantes], true);
   const cuadro = (now) => {
     if (!cont.isConnected) { ro.disconnect(); envRT.dispose(); renderer.dispose(); return; }
     const t = (now - t0) / 1000;
@@ -4103,7 +4223,12 @@ function escenaUniverso(T, cont) {
     // En pantallas verticales (celular) se aleja para que entre el anillo entero.
     const d = dist * (camara.aspect < 1 ? Math.pow(1 / camara.aspect, 0.6) : 1);
     camara.position.set(Math.cos(giro) * d * Math.cos(inclin), Math.sin(inclin) * d, Math.sin(giro) * d * Math.cos(inclin));
-    camara.lookAt(0, 1.4, 0);
+    // Modo observador: la cámara se acerca y gira alrededor del compañero seguido.
+    const xs = seguido && porId(seguido);
+    if (xs) objetivoDeseado.copy(xs.g.localToWorld(xs.r.raiz.position.clone()).setY(1.3)); else objetivoDeseado.set(0, 1.4, 0);
+    objetivo.lerp(objetivoDeseado, 0.06);
+    camara.position.add(objetivo).sub(new T.Vector3(0, 1.4, 0));
+    camara.lookAt(objetivo);
     marca.rotation.y = t * 0.35; marca.position.y = 2.4 + Math.sin(t * 0.8) * 0.12;
     satelite.position.set(Math.cos(t * 1.3 + 0.8) * 1.5, Math.sin(t * 1.3 + 0.8) * 1.5, Math.sin(t * 0.9) * 0.35);
     satBrillo.position.copy(satelite.position); satBrillo.quaternion.copy(camara.quaternion).premultiply(marca.quaternion.clone().invert());
@@ -4123,17 +4248,44 @@ function escenaUniverso(T, cont) {
     }
     for (const x of estaciones) {
       const trabaja = x.estado === "work", espera = x.estado === "wait";
-      x.r.raiz.position.y = 0.06 + Math.sin(t * 1.4 + x.fase) * 0.04;
+      // Caminata (flotando, con paso): avanza por la ruta mirando hacia donde va.
+      let caminando = false;
+      if (x.ruta) {
+        const k = Math.min(1, (now - x.ruta.t0) / x.ruta.dur), e2 = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        x.r.raiz.position.lerpVectors(x.ruta.desde, x.ruta.hasta, e2);
+        const dx = x.ruta.hasta.x - x.ruta.desde.x, dz = x.ruta.hasta.z - x.ruta.desde.z;
+        if (k < 1) { x.r.raiz.rotation.y = Math.atan2(dx, dz); caminando = true; }
+        else {
+          const fin = x.ruta; x.ruta = null;
+          // En la sala de reuniones mira al centro; de vuelta en su estación, al frente.
+          const cL = x.g.worldToLocal(new T.Vector3(0, 0, 0));
+          x.r.raiz.rotation.y = fin.quedarse ? Math.atan2(cL.x - x.r.raiz.position.x, cL.z - x.r.raiz.position.z) : 0;
+          fin.alLlegar?.();
+        }
+      }
+      const fest = (now - x.festejo) / 1000;
+      const festejando = fest >= 0 && fest < 2.6;
+      x.r.raiz.position.y = 0.06 + (caminando ? Math.abs(Math.sin(t * 9 + x.fase)) * 0.08 : Math.sin(t * 1.4 + x.fase) * 0.04) + (festejando ? Math.abs(Math.sin(fest * 7)) * 0.35 * (1 - fest / 2.6) : 0);
+      if (festejando && !x.ruta) x.r.raiz.rotation.y = fest * 5;
+      else if (!x.ruta && !x.sentado && fest >= 2.6 && fest < 2.8) x.r.raiz.rotation.y = 0;
+      x.balizaM.opacity = x.estado === "wait" ? 0.22 + Math.sin(t * 4 + x.fase) * 0.12 : 0;
       x.r.cabeza.rotation.y = espera ? Math.sin(t * 1.6 + x.fase) * 0.45 : trabaja ? Math.sin(t * 0.7 + x.fase) * 0.12 : Math.sin(t * 0.4 + x.fase) * 0.25;
       x.r.cabeza.rotation.x = trabaja ? 0.18 : espera ? -0.1 : 0;
       for (const a of x.r.brazos) {
         a.codo.rotation.x = trabaja ? -0.75 + Math.sin(t * 11 + x.fase + a.s * 1.7) * 0.12 : -0.75;
-        a.hombro.rotation.x = espera && a.s > 0 ? -2.3 + Math.sin(t * 4 + x.fase) * 0.25 : -0.95;
+        a.hombro.rotation.x = festejando ? -2.7 + Math.sin(fest * 12 + a.s) * 0.3 : caminando ? Math.sin(t * 9 + a.s * Math.PI) * 0.5 : espera && a.s > 0 ? -2.3 + Math.sin(t * 4 + x.fase) * 0.25 : -0.95;
       }
       x.pantallaM.opacity = trabaja ? 0.9 + Math.sin(t * 9 + x.fase) * 0.08 : espera ? 0.8 + Math.sin(t * 3) * 0.18 : 0.75;
       x.pantalla.position.y = 2.25 + Math.sin(t * 1.1 + x.fase) * 0.04;
       x.rayoM.opacity = trabaja ? 0.14 + Math.sin(t * 9 + x.fase) * 0.05 : espera ? 0.12 : 0.05;
       x.tecladoM.opacity = trabaja ? 0.5 + Math.sin(t * 14 + x.fase) * 0.3 : 0.25;
+    }
+    // Partículas de festejo
+    for (let i = parti.length - 1; i >= 0; i--) {
+      const q = parti[i], dt = (now - q.t0) / 1000, pa = q.puntos.geometry.attributes.position;
+      if (dt > 2.4) { escena.remove(q.puntos); q.puntos.geometry.dispose(); q.puntos.material.dispose(); parti.splice(i, 1); continue; }
+      for (let k = 0; k < q.vel.length; k++) { pa.setXYZ(k, pa.getX(k) + q.vel[k].x * 0.016, pa.getY(k) + q.vel[k].y * 0.016, pa.getZ(k) + q.vel[k].z * 0.016); q.vel[k].y -= 6 * 0.016; }
+      pa.needsUpdate = true; q.puntos.material.opacity = 1 - dt / 2.4;
     }
     renderer.render(escena, camara);
     if (!document.hidden) requestAnimationFrame(cuadro); else setTimeout(() => requestAnimationFrame(cuadro), 700);
@@ -6063,6 +6215,8 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "univ-acento": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, acento: t.dataset.v }); montarUniverso(); },
+  "univ-libre": () => $("#univ-3d")?.univ?.seguir(null),
   "cd-movil": (t) => { CD.movil = t.dataset.v; pintarCode(); },
   "cd-panel": (t) => { CD.panel = t.dataset.v; CD.movil = "panel"; if (CD.panel === "agentes") { CD.botId ??= (S.bots.find((b) => b.cargo === "manager") || S.bots[0])?.id || null; cdCargarConv().then(pintarCodePanel); } pintarCode(); },
   "cd-dir": (t) => { const r = t.dataset.r; CD.abiertas.has(r) ? CD.abiertas.delete(r) : CD.abiertas.add(r); pintarCodeArbol(); },
@@ -6754,6 +6908,9 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "univ-esc": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, escenario: t.value }); montarUniverso(); },
+  "univ-luz": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, luz: Number(t.value) }); $("#univ-3d")?.univ?.luz(Number(t.value)); },
+  "univ-seguir": (t) => $("#univ-3d")?.univ?.seguir(t.value || null),
   "respaldo-auto": async (t) => { await api("PUT", "/api/ajustes", { respaldoAutomatico: t.checked }); toast(t.checked ? "Respaldo automático prendido." : "Respaldo automático apagado."); },
   "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; await cargarCodeArchivos(); pintarCode(); },
   "cd-aislado": (t) => { CD.aislado = t.checked; },
@@ -7014,6 +7171,8 @@ function conectar() {
   on("computadora", () => { if ($("#pc")) { clearTimeout(tCompu); tCompu = setTimeout(cargarCompu, 400); } if ($("#code") && CD.p) { clearTimeout(CD.tArch); CD.tArch = setTimeout(async () => { await cargarCodeArchivos().catch(() => {}); pintarCodeArbol(); if (CD.panel === "terminal") pintarCodePanel(); }, 400); } });
   on("tarea", (t) => {
     const i = S.tareas.findIndex((x) => x.id === t.id);
+    const u = $("#univ-3d")?.univ;
+    if (u) { const antes = i >= 0 ? S.tareas[i].estado : null; if (t.estado === "completa" && antes !== "completa") u.festejar(t.paraId); else if (i < 0 && t.estado === "pendiente") u.visitar(t.deId, t.paraId); }
     if (i >= 0) S.tareas[i] = t; else S.tareas.push(t);
     for (const id of [t.paraId, t.deId]) { const b = bot(id); if (b) b.tareasAbiertas = S.tareas.filter((x) => x.paraId === b.id && tareaAbierta(x)).length; }
     programar("ctx", "equipo", "reuniones");
@@ -7021,6 +7180,7 @@ function conectar() {
   });
   on("reunion", (r) => {
     upsertReunion(r);
+    $("#univ-3d")?.univ?.reunir([r.facilitadorId, ...r.participantes], r.estado === "en_curso");
     if (S.reunion?.id === r.id) S.reunion = r;
     programar("rail", "reuniones", "ctx", "equipo");
   });
