@@ -36,7 +36,7 @@ import { ejecutarConexion, externo, htmlATexto, pedidoDeConexion } from "./conex
 import { emitir } from "./eventos.ts";
 import { PROVEEDOR } from "./cliente.ts";
 import { buscarConGoogle, hayGemini } from "./proveedores.ts";
-import { buscar as buscarRecuerdos, formatear as formatearRecuerdos } from "./recuerdos.ts";
+import { buscarSemantico as buscarRecuerdos, formatear as formatearRecuerdos } from "./recuerdos.ts";
 import { ESTADOS_TAREA, agregarTarea, buscarProyecto, cambiarTarea, crearProyecto, describirProyecto, listarProyectos, progreso as progresoProyecto } from "./proyectos.ts";
 import { DESCRIPCION_VIDEO, analizarVideo } from "./videos.ts";
 import { derivarDesdeBot, enviarDesdeBot, leerParaBot, listarParaBot, pedidoDeMensajes } from "./mensajeria.ts";
@@ -456,7 +456,7 @@ function herramientaRecordar(botId: string): BetaRunnableTool {
     description:
       "Buscá en lo que ya sabés: tus archivos de memoria, tus conversaciones pasadas con el usuario y los archivos de la carpeta de tu equipo. Usala antes de preguntar algo que quizás ya te dijeron. Devuelve fragmentos con su origen; pueden estar desactualizados.",
     inputSchema: EntradaRecordar,
-    run: (e) => formatearRecuerdos(buscarRecuerdos(botId, e.consulta, e.alcance ?? "todo"), e.consulta),
+    run: async (e) => formatearRecuerdos(await buscarRecuerdos(botId, e.consulta, e.alcance ?? "todo"), e.consulta),
   });
   return Object.assign(herramienta, { input_schema: esquemaJson(EntradaRecordar) });
 }

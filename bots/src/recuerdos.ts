@@ -2,9 +2,11 @@
 // equipo. Búsqueda de texto local (BM25 sobre fragmentos), sin servicios de afuera. Cada compañero solo
 // ve lo suyo y lo de su equipo: la memoria de otro compañero no aparece.
 
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { COMPUTADORA, buscarBot, conversacion, raizMemoria } from "./almacen.ts";
+import { COMPUTADORA, DATOS, buscarBot, conversacion, programarEscritura, raizMemoria } from "./almacen.ts";
+import { CLAVE_GEMINI, GEMINI_BASE, hayGemini } from "./proveedores.ts";
 
 export type Alcance = "memoria" | "conversaciones" | "equipo" | "todo";
 
@@ -147,6 +149,91 @@ export function buscar(botId: string, consulta: string, alcance: Alcance = "todo
       return true;
     })
     .slice(0, limite);
+}
+
+// ---- Búsqueda semántica (con la clave de Gemini): encuentra lo que dice lo mismo con otras palabras ----
+// Los vectores de cada fragmento se guardan por hash en DATOS/embeddings.json (256 dimensiones), así
+// solo se piden a Google los fragmentos nuevos. Si algo falla, queda la búsqueda por palabras.
+
+const MODELO_EMB = process.env.GRAVITY_EMBEDDINGS ?? "gemini-embedding-001";
+const DIM = 256;
+const ARCHIVO_EMB = path.join(DATOS, "embeddings.json");
+let cacheEmb: Record<string, number[]> | null = null;
+const hashDe = (t: string) => createHash("sha256").update(t).digest("hex").slice(0, 24);
+
+function cache(): Record<string, number[]> {
+  if (!cacheEmb) {
+    try {
+      cacheEmb = JSON.parse(readFileSync(ARCHIVO_EMB, "utf8")) as Record<string, number[]>;
+    } catch {
+      cacheEmb = {};
+    }
+  }
+  return cacheEmb;
+}
+
+async function embeber(textos: string[], tarea: "RETRIEVAL_QUERY" | "RETRIEVAL_DOCUMENT"): Promise<number[][]> {
+  const c = cache();
+  const faltan = [...new Set(textos.filter((t) => !c[`${tarea[10]}:${hashDe(t)}`]))];
+  for (let i = 0; i < faltan.length; i += 100) {
+    const lote = faltan.slice(i, i + 100);
+    const r = await fetch(`${GEMINI_BASE}/models/${MODELO_EMB}:batchEmbedContents`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": CLAVE_GEMINI },
+      body: JSON.stringify({ requests: lote.map((t) => ({ model: `models/${MODELO_EMB}`, content: { parts: [{ text: t.slice(0, 2000) }] }, taskType: tarea, outputDimensionality: DIM })) }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!r.ok) throw new Error(`embeddings ${r.status}`);
+    const d = (await r.json()) as { embeddings?: { values: number[] }[] };
+    lote.forEach((t, j) => {
+      const v = d.embeddings?.[j]?.values;
+      if (v?.length) c[`${tarea[10]}:${hashDe(t)}`] = v.map((x) => Math.round(x * 1e4) / 1e4);
+    });
+  }
+  // Tope de 20 000 vectores: si se pasa, se descartan los más viejos.
+  const claves = Object.keys(c);
+  if (claves.length > 20_000) for (const k of claves.slice(0, claves.length - 20_000)) delete c[k];
+  programarEscritura(ARCHIVO_EMB, () => c);
+  return textos.map((t) => c[`${tarea[10]}:${hashDe(t)}`] ?? []);
+}
+
+function coseno(a: number[], b: number[]): number {
+  if (!a.length || a.length !== b.length) return 0;
+  let p = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    p += a[i]! * b[i]!;
+    na += a[i]! * a[i]!;
+    nb += b[i]! * b[i]!;
+  }
+  return na && nb ? p / Math.sqrt(na * nb) : 0;
+}
+
+/** Búsqueda combinada: significado (embeddings) + palabras (BM25). Sin Gemini o si falla, solo palabras. */
+export async function buscarSemantico(botId: string, consulta: string, alcance: Alcance = "todo", limite = 8): Promise<Hallazgo[]> {
+  if (!hayGemini || !consulta.trim()) return buscar(botId, consulta, alcance, limite);
+  try {
+    const frags = fragmentosDe(botId, alcance).slice(-600);
+    if (!frags.length) return [];
+    const [q] = await embeber([consulta], "RETRIEVAL_QUERY");
+    const vs = await embeber(frags.map((f) => f.texto), "RETRIEVAL_DOCUMENT");
+    const porPalabras = new Map(buscar(botId, consulta, alcance, 60).map((h) => [h.texto, h.puntaje]));
+    const maxBm = Math.max(1, ...porPalabras.values());
+    const vistos = new Set<string>();
+    return frags
+      .map((f, i) => ({ ...f, puntaje: Math.round((0.7 * coseno(q!, vs[i]!) + 0.3 * ((porPalabras.get(f.texto) ?? 0) / maxBm)) * 100) / 100 }))
+      .filter((h) => h.puntaje >= 0.45)
+      .sort((x, y) => y.puntaje - x.puntaje)
+      .filter((h) => {
+        const k = h.texto.slice(0, 120);
+        if (vistos.has(k)) return false;
+        vistos.add(k);
+        return true;
+      })
+      .slice(0, limite);
+  } catch (err) {
+    console.warn("Búsqueda semántica:", (err as Error).message);
+    return buscar(botId, consulta, alcance, limite);
+  }
 }
 
 export function formatear(hallazgos: Hallazgo[], consulta: string): string {
