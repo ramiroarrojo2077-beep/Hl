@@ -195,6 +195,9 @@ export const listarComandos = (): Comando[] => registro;
 
 // ---- Prompt del sistema (se congela en el primer pedido de cada conversación) ----
 
+/** Para el laboratorio: la instrucción de sistema completa de un compañero. */
+export const sistemaDe = (bot: Bot): string => sistema(bot);
+
 function sistema(bot: Bot): string {
   return `Sos ${bot.nombre}, ${bot.titulo}. Sos un compañero de trabajo persistente del usuario dentro de Gravity: tenés un trabajo propio, memoria y una computadora, y seguís trabajando entre conversaciones.
 

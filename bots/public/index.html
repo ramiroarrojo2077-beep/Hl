@@ -1739,7 +1739,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2047,6 +2047,7 @@ function montar(antes) {
   if (v === "llamada") return montarLlamada(S.ruta.id);
   if (v === "proyectos") return montarProyectos();
   if (v === "operaciones") return montarOps();
+  if (v === "laboratorio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="lab"></div></div>`; pintarLab(); return; }
   if (v === "buscar") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="busq"></div></div>`; pintarBusq(); $("#busq input")?.focus(); return; }
   if (v === "arquitecto") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in angosta" id="arq"></div></div>`; pintarArq(); return; }
   if (v === "computadora") { vista.innerHTML = `<div class="pag"><div class="pag-in"><header class="pag-h"><div class="tt"><h1>La computadora del equipo</h1><p>Una carpeta compartida: acá los compañeros escriben sus archivos y corren sus comandos.</p></div></header><div id="pc" style="margin-top:16px"></div></div></div>`; montarCompu(null); return; }
@@ -3482,6 +3483,22 @@ function formHabilidad(h) {
   return html`<form class="form-card" data-f="habilidad" data-id="${h?.id || ""}"><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="80" value="${h?.nombre || ""}"></label><label class="fld"><span>Para qué sirve</span><input class="inp" name="descripcion" maxlength="300" value="${h?.descripcion || ""}"></label><label class="fld"><span>Pasos</span><textarea class="inp" name="instrucciones" required rows="5">${h?.instrucciones || ""}</textarea></label><p class="err" role="alert"></p><div class="acts"><button type="button" class="btn ghost" data-a="hab-cancelar">Cancelar</button><button class="btn pri">${h ? "Guardar" : "Crear"}</button></div></form>`;
 }
 
+// ================================================================ laboratorio
+// La misma consulta con el modelo automático, el rápido y el potente (con la personalidad de un
+// compañero si se elige), lado a lado y con el tiempo de cada uno. Es una consulta suelta: no queda en chats.
+const LAB = { pregunta: "", botId: "", res: null, cargando: false };
+function pintarLab() {
+  const el = $("#lab");
+  if (!el) return;
+  const nombre = { auto: "Automático", rapido: "Rápido", potente: "Potente" };
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Laboratorio</h1><p>Probá la misma consulta con cada modelo y, si querés, con la personalidad y las reglas de un compañero. No queda en ningún chat.</p></div></header>
+    <form class="form-card" data-f="laboratorio" style="margin-top:14px"><label class="fld"><span>Consulta</span><textarea class="inp" name="pregunta" rows="3" required maxlength="4000" placeholder="Ej.: escribí un mensaje para pedirle a un cliente que pague la factura vencida">${LAB.pregunta}</textarea></label>
+      <label class="fld"><span>Como</span><select class="inp" name="botId"><option value="">Sin compañero (modelo solo)</option>${S.bots.map((b) => html`<option value="${b.id}" ${si(LAB.botId === b.id, "selected")}>${b.nombre} · ${b.titulo}</option>`)}</select></label>
+      <div class="acts"><button class="btn pri" ${si(LAB.cargando, "disabled")}>${ico("bolt", "s")}Comparar</button></div></form>
+    ${LAB.cargando ? html`<p class="muted" role="status" style="margin-top:12px">Preguntando a los tres modelos…</p>` : ""}
+    ${LAB.res ? html`<div class="proys" style="margin-top:16px">${LAB.res.map((r) => html`<article class="tk"><div class="tk-h"><b>${nombre[r.variante] || r.variante}</b><span class="tag">${(r.ms / 1000).toFixed(1)} s</span></div><span class="tk-m">${r.modelo || "sin respuesta"}${r.tokens ? ` · ${r.tokens} tokens` : ""}</span>${r.error ? html`<p class="muted" style="margin:0;font-size:13px">${r.error}</p>` : html`<p style="margin:0;font-size:14px;white-space:pre-wrap">${r.texto}</p>`}</article>`)}</div>` : ""}`);
+}
+
 // ================================================================ buscador global
 const BQ = { q: "", res: null, cargando: false };
 const TIPOS_BQ = { "compañero": "user", "conversación": "chat", proyecto: "flag", tarea: "check", "reunión": "meet", memoria: "memory", archivo: "file" };
@@ -3955,7 +3972,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -5513,6 +5530,12 @@ const F = {
       try { const r = await api("POST", "/api/webhooks", { nombre: f.nombre.value, botId: f.botId.value, instrucciones: f.instrucciones.value }); S.webhookNuevo = r.token; await cargarWebhooks(); }
       catch (err) { f.querySelector(".err").textContent = err.message; }
     });
+  },
+  async laboratorio(f) {
+    LAB.pregunta = f.pregunta.value.trim(); LAB.botId = f.botId.value;
+    if (!LAB.pregunta) return;
+    LAB.cargando = true; LAB.res = null; pintarLab();
+    try { LAB.res = await api("POST", "/api/laboratorio", { pregunta: LAB.pregunta, botId: LAB.botId || null }); } finally { LAB.cargando = false; pintarLab(); }
   },
   async buscar(f) {
     BQ.q = f.q.value.trim();

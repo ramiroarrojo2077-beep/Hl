@@ -55,6 +55,7 @@ import {
   listarComandos,
   reintentarColas,
   resolverAprobacion,
+  sistemaDe,
 } from "./agente.ts";
 import { GRUPOS_HERRAMIENTAS, cerrarHerramientas, normalizarBloqueadas } from "./herramientas.ts";
 import { iniciarTelegram } from "./telegram.ts";
@@ -100,7 +101,8 @@ import {
 } from "./mensajeria.ts";
 import { pedidoPorDefecto, pistaCompartido } from "./videos.ts";
 import { hayGemini } from "./proveedores.ts";
-import { BETA_FALLBACK, MODELO, client } from "./cliente.ts";
+import { BETA_FALLBACK, MODELO, client, modeloPara, type PreferenciaModelo } from "./cliente.ts";
+import { registrarUso } from "./gasto.ts";
 import { bus, emitir } from "./eventos.ts";
 
 const PUERTO = Number(process.env.BOTS_PUERTO ?? 3001);
@@ -936,6 +938,31 @@ ruta("GET", "/api/actividad", async ({ url }) => leerActividad({ botId: url.sear
 // ---- Buscador global ----
 
 ruta("GET", "/api/buscar", async ({ url }) => buscarTodo((url.searchParams.get("q") ?? "").slice(0, 200)));
+
+// ---- Laboratorio: la misma consulta con cada modelo (y opcionalmente con un compañero), lado a lado ----
+
+ruta("POST", "/api/laboratorio", async ({ cuerpo }) => {
+  const { pregunta, botId } = validar(z.object({ pregunta: z.string().trim().min(1).max(4000), botId: z.string().max(64).nullish() }), await cuerpo());
+  const bot = botId ? botDe(botId) : null;
+  const sistema = bot ? sistemaDe(bot) : "Respondé en el idioma del usuario, claro y directo.";
+  const variantes: (PreferenciaModelo | null)[] = [null, "rapido", "potente"];
+  return Promise.all(
+    variantes.map(async (pref) => {
+      const t0 = Date.now();
+      try {
+        const m = await client.beta.messages.create(
+          { model: modeloPara(pref), max_tokens: 1500, betas: [BETA_FALLBACK], fallbacks: "default", output_config: { effort: "low" }, system: sistema, messages: [{ role: "user", content: pregunta }] },
+          { signal: AbortSignal.timeout(90_000) },
+        );
+        registrarUso(bot?.id ?? "laboratorio", m);
+        const texto = m.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").trim();
+        return { variante: pref ?? "auto", modelo: m.model, ms: Date.now() - t0, texto, tokens: m.usage.output_tokens };
+      } catch (err) {
+        return { variante: pref ?? "auto", modelo: null, ms: Date.now() - t0, error: String((err as Error).message ?? err).slice(0, 300) };
+      }
+    }),
+  );
+});
 
 // ---- Diagnóstico: una consulta mínima al modelo para ver si las claves andan ----
 
