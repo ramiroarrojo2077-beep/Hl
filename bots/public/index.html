@@ -839,6 +839,7 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .mesa-sala .rob.habla .cuerpo{animation:rob-habla .9s ease-in-out infinite}
 @keyframes rob-habla{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
 @media (prefers-reduced-motion: reduce){.mesa-sala .rob.habla .cuerpo{animation:none}}
+.logo3d{display:inline-grid;place-items:center;width:56px;height:56px;margin-right:6px;vertical-align:middle}.logo3d canvas{width:56px!important;height:56px!important}
 .modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
@@ -2087,6 +2088,7 @@ function montarMain(antes) {
   if (!b) {
     main.dataset.bot = "";
     pintar(main, S.bots.length ? html`<div class="hola"><div class="hola-in">${orbita(avVos(40), S.bots.slice(0, 12), 200, { label: "Tu equipo" })}<h1>Elegí un compañero</h1><p>Abrí un chat desde la lista. Los que esperan tu aprobación aparecen arriba, con anillo naranja.</p></div></div>` : bienvenida());
+    montarLogo3D();
     return;
   }
   const mismo = main.dataset.bot === b.id && main.dataset.tab === S.pestana;
@@ -2100,12 +2102,57 @@ function montarMain(antes) {
   pintarTabs();
 }
 
+// Logo de Gravity en 3D (bienvenida): órbita de tres cuartos, masa central y el satélite girando. Si no hay
+// WebGL o se pidió reducir el movimiento, queda el logo plano.
+function montarLogo3D() {
+  const el = $("#logo3d");
+  if (!el || el.dataset.listo || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  el.dataset.listo = "1";
+  cargarThree().then((T) => {
+    if (!el.isConnected) return;
+    let renderer;
+    try { renderer = new T.WebGLRenderer({ antialias: true, alpha: true }); } catch { return; }
+    const lado = 56;
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    renderer.setSize(lado, lado);
+    const escena = new T.Scene();
+    const camara = new T.PerspectiveCamera(35, 1, 0.1, 50);
+    camara.position.set(0, 0, 6.2);
+    escena.add(new T.AmbientLight(0xffffff, 0.7));
+    const luz = new T.DirectionalLight(0xffffff, 1.6); luz.position.set(2, 3, 4); escena.add(luz);
+    const blanco = new T.MeshStandardMaterial({ color: 0xe8ecf5, roughness: 0.35, metalness: 0.1 });
+    const cian = new T.MeshStandardMaterial({ color: 0x6cd3f0, emissive: 0x6cd3f0, emissiveIntensity: 0.6, roughness: 0.3 });
+    const grupo = new T.Group();
+    const orbita = new T.Mesh(new T.TorusGeometry(1.25, 0.24, 20, 72, Math.PI * 1.5), blanco);
+    orbita.rotation.z = Math.PI / 2;
+    grupo.add(orbita);
+    const barra = new T.Mesh(new T.CylinderGeometry(0.24, 0.24, 1.25, 16), blanco);
+    barra.rotation.z = Math.PI / 2; barra.position.set(0.62, 0, 0);
+    grupo.add(barra);
+    grupo.add(new T.Mesh(new T.SphereGeometry(0.5, 32, 20), blanco));
+    const sat = new T.Mesh(new T.SphereGeometry(0.34, 24, 16), cian);
+    grupo.add(sat);
+    escena.add(grupo);
+    el.replaceChildren(renderer.domElement);
+    const t0 = performance.now();
+    const cuadro = (now) => {
+      if (!el.isConnected) { renderer.dispose(); return; }
+      const t = (now - t0) / 1000;
+      grupo.rotation.y = Math.sin(t * 0.6) * 0.5;
+      grupo.rotation.x = Math.sin(t * 0.4) * 0.15;
+      sat.position.set(Math.cos(t * 1.4 + 0.8) * 1.6, Math.sin(t * 1.4 + 0.8) * 1.6, Math.sin(t * 0.9) * 0.4);
+      renderer.render(escena, camara);
+      if (!document.hidden) requestAnimationFrame(cuadro); else setTimeout(() => requestAnimationFrame(cuadro), 500);
+    };
+    requestAnimationFrame(cuadro);
+  }).catch(() => {});
+}
 function bienvenida() {
   const tono = (i) => HUES[i % HUES.length];
   const dest = S.plantillas.filter((p) => p.destacada);
   const xs = (dest.length ? dest : S.plantillas).slice(0, 6);
   return html`<div class="hola"><div class="hola-in">
-    <span class="hola-marca">${marcaSvg(24)}Gravity</span>
+    <span class="hola-marca"><span id="logo3d" class="logo3d" aria-hidden="true">${marcaSvg(24)}</span>Gravity</span>
     ${orbita(avVos(44), xs.slice(0, 5).map((p, i) => ({ id: `p${i}`, nombre: p.nombre, cargo: "miembro" })), 210, { fantasma: true, label: "Tu órbita, todavía vacía" })}
     <h1>Armá tu primera órbita</h1>
     <p>Un equipo es un manager que reparte el trabajo y compañeros que lo hacen. También podés sumar a alguien suelto.</p>
