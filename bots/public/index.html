@@ -3552,7 +3552,20 @@ function pintarOps() {
   const dur = (sg) => (sg >= 86400 ? `${Math.floor(sg / 86400)} d ${Math.floor((sg % 86400) / 3600)} h` : sg >= 3600 ? `${Math.floor(sg / 3600)} h ${Math.floor((sg % 3600) / 60)} min` : `${Math.floor(sg / 60)} min`);
   const nivel = { alto: ["Alto", "sig"], medio: ["Medio", ""], info: ["Info", ""] };
   const a = S.auditoria;
+  // Primeros pasos: se marcan solos con lo que ya existe; se pueden ocultar.
+  const pasos = [
+    ["Armá tu equipo", "con una plantilla o con Gravity Architect", S.bots.length > 0, "#/arquitecto"],
+    ["Hablale a un compañero", "pedile algo por el chat", S.bots.some((b) => b.ultimaActividad), "#/chats"],
+    ["Creá un proyecto", "con tareas, responsables y dependencias", (S.proyectos || []).length > 0, "#/proyectos"],
+    ["Programá una rutina o un recordatorio", "trabajo que corre solo", S.bots.some((b) => b.rutinas > 0), "#/chats"],
+    ["Hacé una reunión", "daily, discusión o debate con votación", S.reuniones.length > 0, "#/reuniones"],
+    ["Conectá tus mensajes", "WhatsApp, Telegram o redes", (S.chats || []).length > 0, "#/mensajes"],
+  ];
+  const hechos = pasos.filter((p) => p[2]).length;
+  const verPasos = hechos < pasos.length && leerLocal("gravity-sin-pasos", "") !== "1";
   pintar(el, html`<header class="pag-h"><div class="tt"><h1>Centro de operaciones</h1><p>Todo el equipo en vivo: quién trabaja y en qué, qué está esperando y qué conviene revisar.</p></div></header>
+    ${verPasos ? html`<section class="card" style="margin-top:14px" aria-labelledby="ops-pp"><div class="sec-h" style="margin:0 0 8px"><h2 id="ops-pp">Primeros pasos <span>${hechos} de ${pasos.length}</span></h2><button class="btn ghost sm" data-a="ocultar-pasos">Ocultar</button></div>
+      <ul class="hist">${pasos.map(([t, d, ok, h]) => html`<li style="display:flex;gap:10px;align-items:center"><span class="tag ${ok ? "" : "sig"}" aria-label="${ok ? "Hecho" : "Pendiente"}">${ok ? "✓" : "·"}</span><span style="flex:1">${ok ? html`<s>${t}</s>` : html`<b>${t}</b>`} <small class="muted">— ${d}</small></span>${ok ? "" : html`<a class="btn out sm" href="${h}">Ir</a>`}</li>`)}</ul></section>` : ""}
     <div class="ops-k" role="group" aria-label="Resumen">
       <div><b>${k.work}</b><span>trabajando</span></div><div><b>${k.wait}</b><span>esperan algo</span></div><div><b>${k.idle}</b><span>libres</span></div>
       <div><b>${S.aprobaciones.length}</b><span>aprobaciones pendientes</span></div><div><b>${c.enUso ?? 0}/${c.limite ?? "–"}</b><span>pensando a la vez${c.esperando ? ` · ${c.esperando} en espera` : ""}</span></div></div>
@@ -5336,6 +5349,7 @@ const A = {
     ir(`#/proyectos/${r.proyecto.id}`);
   }),
   actividad: (t) => conCarga(t, cargarActividad),
+  "ocultar-pasos": () => { guardarLocal("gravity-sin-pasos", "1"); pintarOps(); },
   "probar-modelo": (t) => conCarga(t, async () => { S.diagnostico = await api("POST", "/api/diagnostico/modelo", {}); pintarAjustes(); }),
   rendimiento: (t) => conCarga(t, async () => {
     const r = await api("GET", "/api/rendimiento");
