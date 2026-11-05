@@ -822,6 +822,19 @@ details.mas>div{margin-top:10px;display:flex;flex-direction:column;gap:12px}
 .reus{display:flex;flex-direction:column;gap:8px}
 .barra.prod{display:flex;height:10px}.barra.prod>i{transition:width .6s ease}.barra.prod>i.mal{background:var(--sig)}
 @media (prefers-reduced-motion: reduce){.barra.prod>i{transition:none}}
+/* Estilo «Cristal» (Ajustes > Estilo): oscuro, translúcido y con brillo moderado. El desenfoque va solo en
+   los paneles grandes para no castigar al celular; sin desenfoque si el sistema pide menos transparencia. */
+:root[data-estilo="cristal"]{--bg:#04060E;--rail:rgba(6,9,20,.62);--s1:rgba(16,22,40,.58);--s2:rgba(22,30,54,.62);--s3:rgba(40,52,86,.5);--line:rgba(108,211,240,.13);--line2:rgba(155,123,255,.3);--shadow:0 18px 48px rgba(0,0,0,.55),0 0 0 1px rgba(108,211,240,.06)}
+:root[data-estilo="cristal"] body{background:radial-gradient(1100px 650px at 88% -12%,rgba(108,211,240,.14),transparent 62%),radial-gradient(900px 620px at -12% 112%,rgba(155,123,255,.16),transparent 60%),#04060E;background-attachment:fixed}
+:root[data-estilo="cristal"] :is(.card,.side,.rail,.mnav,.form-card,#dlg){-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%)}
+:root[data-estilo="cristal"] :is(.card,.proy,.tk,.ops-b,.reu,.ops-k>div){transition:border-color .2s,box-shadow .2s}
+:root[data-estilo="cristal"] :is(.proy,.ops-b,.reu):hover{border-color:rgba(108,211,240,.38);box-shadow:0 0 0 1px rgba(108,211,240,.1),0 10px 32px rgba(108,211,240,.09)}
+:root[data-estilo="cristal"] .btn.pri{box-shadow:0 0 22px rgba(108,211,240,.22)}
+:root[data-estilo="cristal"] .barra>i{background:linear-gradient(90deg,#6CD3F0,#9B7BFF)}
+:root[data-estilo="cristal"] .pag-in>*{animation:gr-entra .22s ease-out}
+@keyframes gr-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){:root[data-estilo="cristal"] .pag-in>*{animation:none}}
+@media (prefers-reduced-transparency: reduce){:root[data-estilo="cristal"] :is(.card,.side,.rail,.mnav,.form-card,#dlg){-webkit-backdrop-filter:none;backdrop-filter:none}:root[data-estilo="cristal"]{--s1:#101628;--s2:#161E36;--rail:#060914}}
 .modelo-chat{width:auto;min-height:34px;padding:2px 8px;font-size:13px}
 .ops-k{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:16px}
 .ops-k>div{padding:12px 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
@@ -3458,7 +3471,8 @@ function pintarAjustes() {
         <p class="ayuda" style="margin-top:8px">Importar reemplaza todo lo actual (lo de antes queda guardado en una carpeta aparte) y reinicia el motor.</p></section>
       <section class="card" aria-labelledby="aj-i"><h2 id="aj-i">Esta instalación</h2>
         <dl class="info"><dt>Modelo</dt><dd>${S.config.modelo}</dd><dt>Esfuerzo</dt><dd>${S.config.esfuerzo}</dd><dt>Computadora</dt><dd>${S.config.computadora}</dd><dt>Zona</dt><dd>${S.config.zona}</dd></dl>
-        <label class="fld" style="margin-top:12px"><span>Tema</span><select class="inp" data-c="tema" style="max-width:220px"><option value="" ${si(!tema, "selected")}>Como el sistema</option><option value="dark" ${si(tema === "dark", "selected")}>Oscuro</option><option value="light" ${si(tema === "light", "selected")}>Claro</option></select></label></section>
+        <label class="fld" style="margin-top:12px"><span>Estilo</span><select class="inp" data-c="estilo" style="max-width:220px"><option value="" ${si(!leerLocal("gravity-estilo", ""), "selected")}>Clásico</option><option value="cristal" ${si(leerLocal("gravity-estilo", "") === "cristal", "selected")}>Cristal (futurista, oscuro)</option></select><small>Cristal: paneles translúcidos con brillos cian y violeta. Usa un poco más de batería.</small></label>
+        <label class="fld" style="margin-top:12px" ${si(leerLocal("gravity-estilo", "") === "cristal", "hidden")}><span>Tema</span><select class="inp" data-c="tema" style="max-width:220px"><option value="" ${si(!tema, "selected")}>Como el sistema</option><option value="dark" ${si(tema === "dark", "selected")}>Oscuro</option><option value="light" ${si(tema === "light", "selected")}>Claro</option></select></label></section>
     </div>`);
 }
 function formHabilidad(h) {
@@ -5765,6 +5779,7 @@ const C = {
   "rut-tipo": (t) => { const f = t.form, v = t.value; $(".h-dia", f).hidden = v !== "semanal"; $(".h-hora", f).hidden = v === "intervalo"; $(".h-min", f).hidden = v !== "intervalo"; if ($(".h-fecha", f)) $(".h-fecha", f).hidden = v !== "una"; },
   "rut-reu": (t) => { const f = t.form; $(".rut-reu", f).hidden = !t.checked; $(".rut-lbl", f).textContent = t.checked ? "Agenda" : "Instrucciones"; },
   tema: (t) => { guardarLocal("gravity-tema", t.value); aplicarTema(); },
+  estilo: (t) => { guardarLocal("gravity-estilo", t.value); aplicarTema(); pintarAjustes(); },
   "msj-activa": async (t) => { try { S.msjEstado = await api("PUT", "/api/mensajeria/estado", { activa: t.checked }); toast(t.checked ? "Gravity vuelve a escuchar los mensajes." : "Gravity dejó de escuchar los mensajes."); } catch (err) { t.checked = !t.checked; fallo(err); } pintarAppsAbiertas(); },
   "msj-app": async (t) => { try { S.msjEstado = await api("PUT", "/api/mensajeria/apps", { paquete: t.dataset.paquete, activa: t.checked }); } catch (err) { t.checked = !t.checked; fallo(err); } pintarAppsAbiertas(); },
   "msj-modo": (t) => {
@@ -6023,6 +6038,10 @@ setInterval(() => { for (const e of $$("[data-reloj]")) e.textContent = reloj(e.
 
 function aplicarTema() {
   const t = leerLocal("gravity-tema", "");
+  const estilo = leerLocal("gravity-estilo", "");
+  // «Cristal» es oscuro siempre: paneles translúcidos sobre azul profundo con brillos cian y violeta.
+  if (estilo === "cristal") { document.documentElement.dataset.estilo = "cristal"; document.documentElement.dataset.theme = "dark"; return; }
+  delete document.documentElement.dataset.estilo;
   if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
 }
 aplicarTema();
