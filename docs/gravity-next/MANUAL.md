@@ -41,6 +41,7 @@ Orden con modelos gratis: servidor propio (si hay) → Gemini → Groq → Mistr
 | Microsoft 365 | Correo, calendario y OneDrive | Iniciar sesión con el código que muestra Gravity |
 | Apps MCP | Las herramientas que publique el servidor (Notion, GitHub, Zapier…) | URL del servidor MCP y token si lo pide |
 | **Bot de Telegram** | Lo que le escriben llega a Mensajes y los compañeros contestan por el bot (privado y grupos) | Token de @BotFather (`/newbot`); para leer todo en grupos, `/setprivacy` → Disable |
+| **GitHub** | Repos, archivos, issues y pull requests; crear issues y comentar (con aprobación) | Token personal «fine-grained» (github.com → Settings → Developer settings) |
 | WhatsApp / Instagram / Messenger / TikTok | Por las notificaciones del celular (leer y «Responder») | Permiso de acceso a notificaciones. WhatsApp no permite oficialmente automatizar cuentas: usalo con moderación |
 | WhatsApp Business (API oficial) | Pendiente de conectar en la app | Cuenta de Meta Business, número verificado y una URL pública para el webhook |
 

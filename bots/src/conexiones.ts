@@ -644,7 +644,123 @@ export function botsTelegram(): { id: string; cuenta: string; token: string }[] 
     .filter((b) => b.token);
 }
 
-const TIPOS: TipoConexion[] = [tipoCorreo("gmail"), tipoMicrosoft, tipoCorreo("correo"), tipoMcp, tipoTelegram];
+// ---- GitHub con un token personal (API REST oficial) ----
+
+const API_GITHUB = (process.env.GITHUB_API_BASE ?? "https://api.github.com").replace(/\/$/, "");
+const REPO = z.string().regex(/^[\w.-]+\/[\w.-]+$/, "El repositorio va como dueño/nombre.");
+
+async function github(c: Conexion, ruta: string, metodo = "GET", cuerpo?: unknown): Promise<unknown> {
+  const r = await fetch(`${API_GITHUB}${ruta}`, {
+    method: metodo,
+    headers: {
+      authorization: `Bearer ${secretoDe(c).token ?? ""}`,
+      accept: "application/vnd.github+json",
+      "x-github-api-version": "2022-11-28",
+      "user-agent": "Gravity",
+      ...(cuerpo ? { "content-type": "application/json" } : {}),
+    },
+    body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (r.status === 401) throw new Error("GitHub rechazó el token: revisalo o creá uno nuevo.");
+  if (r.status === 404) throw new Error("No existe o el token no tiene acceso a eso.");
+  if (r.status === 403) throw new Error("GitHub no deja hacer eso con este token (permisos o límite de uso).");
+  if (!r.ok) throw new Error(`GitHub respondió ${r.status}.`);
+  return r.status === 204 ? null : r.json();
+}
+
+type Gh = Record<string, unknown>;
+const tipoGithub: TipoConexion = {
+  tipo: "github",
+  nombre: "GitHub",
+  descripcion: "Tus repositorios: leer archivos, ver issues y pull requests, y (con tu aprobación) crear issues y comentar.",
+  campos: [{ clave: "token", etiqueta: "Token personal", tipo: "clave", ayuda: "github.com → Settings → Developer settings → Personal access tokens (fine-grained), con acceso a los repos que quieras." }],
+  pasos: [
+    "En github.com entrá a Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.",
+    "Elegí los repositorios y dale permiso de lectura a «Contents» y «Pull requests», y de lectura y escritura a «Issues» si querés que creen issues o comenten.",
+    "Pegá el token acá. Crear issues y comentar siempre pide tu aprobación.",
+  ],
+  acciones: {
+    repos: {
+      descripcion: "Lista tus repositorios (los actualizados más recientemente primero).",
+      escritura: false,
+      firma: "repos({max?})",
+      parametros: z.object({ max: opcional(z.number()) }),
+      ejecutar: async (c, p) => {
+        const xs = (await github(c, `/user/repos?sort=updated&per_page=${Math.min(50, Number(p.max ?? 20))}`)) as Gh[];
+        return xs.length ? xs.map((r) => `- ${r.full_name}${r.private ? " (privado)" : ""} · ${String(r.description ?? "").slice(0, 80)} · actualizado ${String(r.updated_at).slice(0, 10)}`).join("\n") : "No hay repositorios.";
+      },
+    },
+    archivo: {
+      descripcion: "Lee un archivo (o lista una carpeta) de un repositorio.",
+      escritura: false,
+      firma: "archivo({repo, ruta, rama?})",
+      parametros: z.object({ repo: REPO, ruta: z.string().max(400), rama: opcional(z.string().max(100)) }),
+      ejecutar: async (c, p) => {
+        const ref = p.rama ? `?ref=${encodeURIComponent(String(p.rama))}` : "";
+        const d = (await github(c, `/repos/${p.repo}/contents/${String(p.ruta).split("/").map(encodeURIComponent).join("/")}${ref}`)) as Gh | Gh[];
+        if (Array.isArray(d)) return d.map((x) => `- ${x.type === "dir" ? "📁 " : ""}${x.path}`).join("\n") || "(carpeta vacía)";
+        if (d.encoding !== "base64" || typeof d.content !== "string") return "Es un archivo que no se puede mostrar como texto.";
+        const texto = Buffer.from(d.content, "base64").toString("utf8");
+        return texto.length > 20_000 ? `${texto.slice(0, 20_000)}\n… (recortado: ${texto.length} caracteres)` : texto;
+      },
+    },
+    issues: {
+      descripcion: "Lista issues de un repositorio (sin pull requests).",
+      escritura: false,
+      firma: "issues({repo, estado?: open|closed|all, max?})",
+      parametros: z.object({ repo: REPO, estado: opcional(z.enum(["open", "closed", "all"])), max: opcional(z.number()) }),
+      ejecutar: async (c, p) => {
+        const xs = ((await github(c, `/repos/${p.repo}/issues?state=${p.estado ?? "open"}&per_page=${Math.min(50, Number(p.max ?? 20))}`)) as Gh[]).filter((x) => !x.pull_request);
+        return xs.length ? xs.map((x) => `- #${x.number} [${x.state}] ${x.title} · ${(x.user as Gh)?.login} · ${String(x.updated_at).slice(0, 10)}`).join("\n") : "No hay issues.";
+      },
+    },
+    pulls: {
+      descripcion: "Lista pull requests de un repositorio.",
+      escritura: false,
+      firma: "pulls({repo, estado?: open|closed|all, max?})",
+      parametros: z.object({ repo: REPO, estado: opcional(z.enum(["open", "closed", "all"])), max: opcional(z.number()) }),
+      ejecutar: async (c, p) => {
+        const xs = (await github(c, `/repos/${p.repo}/pulls?state=${p.estado ?? "open"}&per_page=${Math.min(50, Number(p.max ?? 20))}`)) as Gh[];
+        return xs.length ? xs.map((x) => `- #${x.number} [${x.state}${x.draft ? ", borrador" : ""}] ${x.title} · ${(x.head as Gh)?.ref} → ${(x.base as Gh)?.ref}`).join("\n") : "No hay pull requests.";
+      },
+    },
+    crear_issue: {
+      descripcion: "Crea un issue en un repositorio.",
+      escritura: true,
+      firma: "crear_issue({repo, titulo, cuerpo?})",
+      parametros: z.object({ repo: REPO, titulo: z.string().min(1).max(250), cuerpo: opcional(z.string().max(20_000)) }),
+      ejecutar: async (c, p) => {
+        const r = (await github(c, `/repos/${p.repo}/issues`, "POST", { title: p.titulo, body: p.cuerpo ?? "" })) as Gh;
+        return `Issue #${r.number} creado: ${r.html_url}`;
+      },
+    },
+    comentar: {
+      descripcion: "Comenta en un issue o pull request.",
+      escritura: true,
+      firma: "comentar({repo, numero, texto})",
+      parametros: z.object({ repo: REPO, numero: z.number().int().positive(), texto: z.string().min(1).max(20_000) }),
+      ejecutar: async (c, p) => {
+        const r = (await github(c, `/repos/${p.repo}/issues/${p.numero}/comments`, "POST", { body: p.texto })) as Gh;
+        return `Comentario publicado: ${r.html_url}`;
+      },
+    },
+  },
+  conectar: async (c, datos) => {
+    const token = (datos.token ?? "").trim();
+    if (!/^(gh[pousr]_|github_pat_)[\w]{20,}$/.test(token)) throw new Error("Ese no parece un token de GitHub (empieza con github_pat_ o ghp_).");
+    guardarSecreto(c, { token });
+    const yo = (await github(c, "/user")) as Gh;
+    c.cuenta = String(yo.login ?? "github");
+    c.estado = "conectada";
+  },
+  probar: async (c) => {
+    const yo = (await github(c, "/user")) as Gh;
+    return `Conectado como ${yo.login}.`;
+  },
+};
+
+const TIPOS: TipoConexion[] = [tipoCorreo("gmail"), tipoMicrosoft, tipoCorreo("correo"), tipoMcp, tipoTelegram, tipoGithub];
 const tipoDe = (tipo: string) => TIPOS.find((t) => t.tipo === tipo);
 
 function accionesDe(c: Conexion): AccionInfo[] {
