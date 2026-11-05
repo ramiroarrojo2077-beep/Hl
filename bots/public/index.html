@@ -885,6 +885,14 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
+.cn{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0;min-height:calc(100dvh - 120px);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--s1)}
+.cn-lat{border-right:1px solid var(--line);padding:8px 0;overflow:auto}.cn-lat-h{display:flex;justify-content:space-between;align-items:center;padding:4px 10px 8px 14px}.cn-lat ul{list-style:none;margin:0;padding:0}
+.cn-it{display:flex;align-items:center;gap:8px;padding:8px 14px;color:var(--tx2);text-decoration:none;font-size:14px;min-height:40px}.cn-it span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cn-it small{font-size:11px;color:var(--tx3)}.cn-it.on{background:var(--s2);color:var(--tx);font-weight:600;box-shadow:inset 3px 0 0 var(--ion)}
+.cn-main{display:flex;flex-direction:column;min-width:0;min-height:0}.cn-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--line)}.cn-h h1{font-size:18px;margin:0}.cn-h p{margin:2px 0 0;font-size:13px;color:var(--tx2)}
+.cn-msgs{list-style:none;margin:0;padding:12px 16px;flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - 300px)}.cn-m{display:flex;gap:10px}.cn-m>div{min-width:0;flex:1}.cn-mh{display:flex;gap:8px;align-items:baseline}.cn-mh small{color:var(--tx3);font-size:11.5px}.cn-m.g .md{color:var(--tx2)}.cn-g{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--s2);flex:none}.cn-men{color:var(--ion)}.cn-vacio{font-size:13.5px}
+.cn-form{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:6px}.cn-form textarea{flex:1}.cn-chips{display:flex;gap:6px;flex-wrap:wrap}.cn-chips .chip{font-size:12px}
+.tk-com{margin-top:6px}.tk-com summary{cursor:pointer;font-size:12.5px;color:var(--tx2);display:inline-flex;gap:6px;align-items:center}.tk-cl{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.tk-com form .inp{flex:1}
+@media (max-width:760px){.cn{grid-template-columns:1fr}.cn-lat{border-right:0;border-bottom:1px solid var(--line);max-height:180px}.cn-msgs{max-height:none}}
 .dl-sel{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:14px}.dl-sel .btn{min-height:44px}.dl-pest{margin-top:12px}.dl-pest .chip{background:var(--s1);color:var(--tx);border:1px solid var(--line)}.dl-pest .chip[aria-pressed=true]{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 .dl-res{margin:12px 0 6px;font-size:14px}.dl-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}.dl-col{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--s1);border:1px solid var(--line)}.dl-col b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dl-col .tag{align-self:flex-start}.dl-col small{color:var(--tx2);font-size:12px}
 .dl-preg{display:flex;gap:8px;align-items:flex-end;margin-top:14px;flex-wrap:wrap}.dl-armar{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px;align-items:end}.dl-armar .fld{margin:0}.dl-acc{display:flex;align-items:flex-end}.dl-acc .btn{width:100%;min-height:44px}
@@ -1804,7 +1812,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2114,6 +2122,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "canales") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in ancha" id="canales"></div></div>`; montarCanales().catch((e) => toast(e.message, "err")); return; }
   if (v === "datos") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="datalab"></div></div>`; montarDatos().catch((e) => toast(e.message, "err")); return; }
   if (v === "code") { vista.classList.add("v-code"); $("#vista").innerHTML = `<div class="code-pag" id="code"></div>`; montarCode().catch((e) => toast(e.message, "err")); return; }
   if (v === "universo") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="univ"></div></div>`; montarUniverso(); return; }
@@ -2339,6 +2348,7 @@ function pintarCabecera() {
       <select class="inp modelo-chat" data-c="modelo-chat" data-id="${b.id}" data-k="bh-mod" aria-label="Modelo de ${b.nombre}" title="Modelo (se puede cambiar en cualquier momento)"><option value="" ${si(!b.modelo, "selected")}>Auto</option><option value="rapido" ${si(b.modelo === "rapido", "selected")}>Rápido</option><option value="potente" ${si(b.modelo === "potente", "selected")}>Potente</option></select>
       <a class="btn out sm" href="#/llamada/${b.id}" data-k="bh-llamar" aria-label="Llamar a ${b.nombre}" title="Llamada de voz">${ico("phone", "s")}<span class="t">Llamar</span></a>
       ${eq ? html`<button class="btn out sm" data-a="nueva-reunion" data-id="${b.id}" data-k="bh-reu" aria-label="Reunión con el equipo de ${b.nombre}">${ico("meet", "s")}<span class="t">Reunión</span></button>` : ""}
+      ${S.bots.length > 1 ? html`<button class="btn ghost sm" data-a="transferir" data-id="${b.id}" data-k="bh-tr" aria-label="Pasar la conversación con ${b.nombre} a otro compañero" title="Pasar a otro compañero">${ico("share", "s")}<span class="t">Pasar</span></button>` : ""}
       ${ocupado ? html`<button class="btn ghost sm" data-a="detener" data-id="${b.id}" data-k="bh-det" aria-label="Detener a ${b.nombre}">${ico("stop", "s")}<span class="t">Detener</span></button>` : ""}
       ${eq ? html`<button class="btn ghost sm" data-a="detener-equipo" data-id="${b.id}" data-k="bh-dete" aria-label="Detener a todo el equipo de ${b.nombre}">${ico("stop", "s")}<span class="t">Detener equipo</span></button>` : ""}
     </div>
@@ -2346,6 +2356,7 @@ function pintarCabecera() {
       ${ocupado ? html`<button class="btn out sm" data-a="detener" data-id="${b.id}" data-k="bhm-det" aria-label="Detener a ${b.nombre}">${ico("stop", "s")}Detener</button>` : ""}
       <select class="inp modelo-chat" data-c="modelo-chat" data-id="${b.id}" data-k="bhm-mod" aria-label="Modelo de ${b.nombre}" title="Modelo (se puede cambiar en cualquier momento)"><option value="" ${si(!b.modelo, "selected")}>Auto</option><option value="rapido" ${si(b.modelo === "rapido", "selected")}>Rápido</option><option value="potente" ${si(b.modelo === "potente", "selected")}>Potente</option></select>
       <a class="ib" href="#/llamada/${b.id}" data-k="bhm-llamar" aria-label="Llamar a ${b.nombre}" title="Llamada de voz">${ico("phone")}</a>
+      ${S.bots.length > 1 ? html`<button class="ib" data-a="transferir" data-id="${b.id}" data-k="bhm-tr" aria-label="Pasar la conversación con ${b.nombre} a otro compañero" title="Pasar a otro compañero">${ico("share")}</button>` : ""}
       ${eq ? html`<button class="ib" data-a="acciones-bot" data-id="${b.id}" data-k="bhm-mas" aria-haspopup="dialog" aria-label="Más acciones con ${b.nombre}" title="Más acciones">${ico("dots")}</button>` : ""}
     </div>`);
 }
@@ -3716,6 +3727,37 @@ function mesaRobots(fac, ps, habla) {
     ${robots}</svg>`);
 }
 
+// ================================================================ Canales
+// Conversaciones por equipo, por proyecto o libres, y #anuncios. @Nombre le avisa a un compañero, que
+// contesta en el canal. «Resumir» pide un resumen al modelo y lo publica en el canal.
+const CN = { lista: null, id: null, canal: null };
+async function montarCanales() {
+  const el = $("#canales");
+  if (!el) return;
+  CN.lista = await api("GET", "/api/canales");
+  CN.id = S.ruta.id || CN.id || CN.lista.find((c) => c.tipo === "anuncios")?.id || null;
+  if (CN.id) CN.canal = await api("GET", `/api/canales/${CN.id}`).catch(() => null);
+  pintarCanales();
+}
+function pintarCanales() {
+  const el = $("#canales");
+  if (!el) return;
+  const c = CN.canal;
+  const icono = { anuncios: "bolt", equipo: "team", proyecto: "flag", libre: "chat" };
+  const autorAv = (m) => (m.autor === "usuario" ? avVos(26) : m.autor === "gravity" ? html`<span class="cn-g" aria-hidden="true">${marcaSvg(16)}</span>` : bot(m.autor) ? av(bot(m.autor), 26) : html`<span class="cn-g">?</span>`);
+  const resaltar = (t) => crudo(val(md(t)).replace(/@([\p{L}\p{N}_.-]{2,40})/gu, '<b class="cn-men">@$1</b>'));
+  const miembros = c ? (c.miembros || []).map(bot).filter(Boolean) : [];
+  pintar(el, html`<div class="cn">
+    <aside class="cn-lat" aria-label="Canales"><div class="cn-lat-h"><b>Canales</b><button class="btn ghost sm" data-a="cn-nuevo" aria-label="Canal nuevo">${ico("plus", "s")}</button></div>
+      <ul>${(CN.lista || []).map((x) => html`<li><a class="cn-it ${x.id === CN.id ? "on" : ""}" href="#/canales/${x.id}">${ico(icono[x.tipo] || "chat", "s")}<span>#${x.nombre}</span>${x.cantidad ? html`<small>${x.cantidad}</small>` : ""}</a></li>`)}</ul></aside>
+    <section class="cn-main">${c ? html`<header class="cn-h"><div><h1>#${c.nombre}</h1><p>${c.descripcion || ""}${miembros.length && c.tipo !== "anuncios" ? ` · ${miembros.map((b) => b.nombre).join(", ")}` : ""}</p></div>
+        <div class="fila" style="gap:6px"><button class="btn out sm" data-a="cn-resumir" ${si(c.cantidad < 3, "disabled")}>Resumir</button>${c.tipo === "libre" ? html`<button class="btn ghost sm" data-a="cn-borrar">Borrar</button>` : ""}</div></header>
+      <ol class="cn-msgs" id="cn-msgs" aria-live="polite">${c.mensajes.length ? c.mensajes.map((m) => html`<li class="cn-m ${m.autor === "gravity" ? "g" : ""}">${autorAv(m)}<div><div class="cn-mh"><b>${m.nombre}</b><small>${diaHora(m.fecha)}</small></div><div class="md">${resaltar(m.texto)}</div></div></li>`) : html`<li class="muted cn-vacio">Todavía no hay mensajes. ${c.tipo === "anuncios" ? "Gravity anuncia acá las tareas terminadas o trabadas, las reuniones cerradas y los proyectos completos." : "Escribí y mencioná con @Nombre a quien quieras sumar."}</li>`}</ol>
+      <form class="cn-form" data-f="cn-publicar">${miembros.length && c.tipo !== "anuncios" ? html`<div class="cn-chips">${miembros.map((b) => html`<button type="button" class="chip" data-a="cn-mencionar" data-v="${b.nombre.split(" ")[0]}">@${b.nombre.split(" ")[0]}</button>`)}</div>` : ""}
+        <div class="fila" style="gap:8px;align-items:flex-end"><textarea class="inp" name="texto" rows="2" placeholder="Escribí en #${c.nombre}…" data-k="cn-texto" aria-label="Mensaje" required></textarea><button class="btn pri">${ico("send", "s")}<span class="sr">Enviar</span></button></div></form>` : html`<p class="muted" style="padding:20px">Elegí un canal.</p>`}</section></div>`);
+  const ms = $("#cn-msgs"); if (ms) ms.scrollTop = ms.scrollHeight;
+}
+
 // ================================================================ Gravity Data Lab
 // Tablas reales de la computadora (CSV, TSV, JSON, Excel): perfil de columnas, preguntas en lenguaje
 // natural, constructor de gráficos con filtros, comparar períodos, anomalías, pronóstico con intervalo,
@@ -4634,7 +4676,10 @@ function pintarProyecto(el, p) {
       <span class="tk-m">${t.prioridad === 1 ? "Prioridad alta" : t.prioridad === 3 ? "Prioridad baja" : "Prioridad media"}${t.vence ? ` · vence ${t.vence.slice(0, 10)}` : ""}</span>
       <div class="tk-a"><select class="inp" data-c="tk-asig" data-id="${t.id}" aria-label="Responsable de ${t.titulo}">${opcBots(t.asignadoA)}</select>
         <select class="inp" data-c="tk-estado" data-id="${t.id}" aria-label="Estado de ${t.titulo}">${Object.entries(EST_TAREA).map(([k, n]) => html`<option value="${k}" ${si(t.estado === k, "selected")}>${n}</option>`)}</select>
-        <button class="ib" data-a="tk-borrar" data-id="${t.id}" aria-label="Borrar la tarea ${t.titulo}">${ico("trash", "s")}</button></div></article>`;
+        <button class="ib" data-a="tk-borrar" data-id="${t.id}" aria-label="Borrar la tarea ${t.titulo}">${ico("trash", "s")}</button></div>
+      <details class="tk-com" data-k="tc-${t.id}" ${si(S.abiertos.has(`tc-${t.id}`), "open")}><summary>${ico("chat", "s")}Comentarios${t.comentarios?.length ? ` (${t.comentarios.length})` : ""}</summary>
+        ${(t.comentarios || []).length ? html`<ul class="tk-cl">${t.comentarios.map((c) => html`<li><b>${c.nombre}</b> <small class="muted">${diaHora(c.fecha)}</small><div style="white-space:pre-wrap">${c.texto}</div></li>`)}</ul>` : ""}
+        <form class="fila" data-f="tk-comentar" data-p="${p.id}" data-t="${t.id}" style="gap:6px;margin-top:6px"><input class="inp" name="texto" maxlength="4000" placeholder="Comentá (con @Nombre avisás a alguien)" aria-label="Comentario sobre ${t.titulo}"><button class="btn out sm">Comentar</button></form></details></article>`;
   };
   const abiertas = p.tareas.filter((t) => !CERRADA(t)).sort((a, b) => a.prioridad - b.prioridad);
   const cerradas = p.tareas.filter(CERRADA);
@@ -4938,7 +4983,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -6333,6 +6378,18 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "cn-nuevo": () => abrirDialogo(html`<form class="dlg-f" data-f="cn-crear"><h2 id="dlg-t">Canal nuevo</h2><label class="fld"><span>Nombre</span><input class="inp" name="nombre" required minlength="2" maxlength="40" placeholder="ideas"></label><label class="fld"><span>De qué se habla</span><input class="inp" name="descripcion" maxlength="300"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true),
+  "cn-resumir": (t) => conCarga(t, async () => { await api("POST", `/api/canales/${CN.id}/resumir`, {}); await montarCanales(); }),
+  "cn-borrar": async () => { if (!(await confirmar(`¿Borrar #${CN.canal?.nombre}?`, "Se borran sus mensajes.", "Borrar", true))) return; await api("DELETE", `/api/canales/${CN.id}`); CN.id = null; ir("#/canales"); },
+  "cn-mencionar": (t) => { const x = $("#canales textarea[name=texto]"); if (!x) return; x.value = `${x.value}${x.value && !x.value.endsWith(" ") ? " " : ""}@${t.dataset.v} `; x.focus(); },
+  "transferir": (t) => {
+    const b = bot(t.dataset.id);
+    if (!b) return;
+    abrirDialogo(html`<form class="dlg-f" data-f="transferir" data-id="${b.id}"><h2 id="dlg-t">Pasar la conversación</h2><p class="muted" style="font-size:13px">Otro compañero sigue desde acá: le llegan los últimos mensajes con ${b.nombre} (sin datos de herramientas ni de conexiones) y tu nota.</p>
+      <label class="fld"><span>A quién</span><select class="inp" name="a">${S.bots.filter((x) => x.id !== b.id).map((x) => html`<option value="${x.id}">${x.nombre} · ${x.titulo}</option>`)}</select></label>
+      <label class="fld"><span>Nota (opcional)</span><textarea class="inp" name="nota" rows="2" maxlength="2000" placeholder="Ej.: seguí con el presupuesto, ${b.nombre} ya juntó los precios"></textarea></label>
+      <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Pasar</button></div></form>`, true);
+  },
   "dl-pest": (t) => { DL.pestana = t.dataset.v; pintarDatos(); },
   "dl-analista": async () => {
     if (!(await confirmar("¿Crear un analista de datos?", "Un compañero especializado que usa Data Lab (la herramienta datos) para analizar tus tablas con cálculos exactos, hacer gráficos e informes.", "Crear"))) return;
@@ -6677,6 +6734,25 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "cn-publicar"(f) {
+    const texto = f.texto.value.trim();
+    if (!texto) return;
+    await conCarga(f.querySelector("button:not([type=button])"), async () => { await api("POST", `/api/canales/${CN.id}/mensajes`, { texto }); f.texto.value = ""; await montarCanales(); });
+  },
+  async "cn-crear"(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => { const c = await api("POST", "/api/canales", { nombre: f.nombre.value, descripcion: f.descripcion.value }); cerrarDialogo(); ir(`#/canales/${c.id}`); });
+  },
+  async transferir(f) {
+    await conCarga(f.querySelector("button:not([type=button])"), async () => {
+      const r = await api("POST", `/api/bots/${f.dataset.id}/transferir`, { a: f.a.value, nota: f.nota.value.trim() });
+      cerrarDialogo(); toast(`Conversación pasada a ${bot(r.a)?.nombre}.`); ir(`#/chats/${r.a}`);
+    });
+  },
+  async "tk-comentar"(f) {
+    const texto = f.texto.value.trim();
+    if (!texto) return;
+    await conCarga(f.querySelector("button"), async () => { await api("POST", `/api/proyectos/${f.dataset.p}/tareas/${f.dataset.t}/comentarios`, { texto }); f.texto.value = ""; await cargarProyectos(); pintarProyectos(); });
+  },
   async "dl-preguntar"(f) {
     await conCarga(f.querySelector("button"), async () => {
       const r = await api("POST", "/api/datos/preguntar", { ruta: DL.ruta, pregunta: f.pregunta.value.trim() });
@@ -7361,6 +7437,8 @@ function conectar() {
     despues(a.botId);
   });
   on("aprobacion-resuelta", (d) => quitarAprobacion(d.id));
+  let tCanal = null;
+  on("canal", (d) => { if ($("#canales")) { clearTimeout(tCanal); tCanal = setTimeout(() => montarCanales().catch(() => {}), 250); } });
   for (const t of ["bots", "habilidades", "reglas", "ajustes"]) on(t, recargarPronto);
   on("rutinas", (d) => {
     if (d.botId === S.botId && S.pestana === "rutinas" && !S.editRutina) cargarRutinas();

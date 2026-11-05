@@ -65,11 +65,14 @@ import { leerActividad } from "./actividad.ts";
 import { guardarVersion, leerVersion, listarVersiones, restaurarVersion } from "./versiones.ts";
 import * as Code from "./codigo.ts";
 import * as Datos from "./datos.ts";
+import * as Canales from "./canales.ts";
+import { resumir } from "./resumen.ts";
 import { preguntar as preguntarDatos } from "./datos-ia.ts";
 import { generarStudio, listarStudio } from "./studio.ts";
 import { instalarDelMercado, vistaMercado } from "./mercado.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
 import { confianzaDe, cargaDe, iniciarTalento } from "./talento.ts";
+import { agregarNota } from "./almacen.ts";
 import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
@@ -1372,6 +1375,55 @@ ruta("GET", "/api/computadora/version", async ({ url }) => {
   return { contenido: b.subarray(0, 8000).includes(0) ? null : b.toString("utf8") };
 });
 
+// ---- Canales (ver canales.ts) ----
+
+const canalDe = (id: string) => { const c = Canales.buscarCanal(id); if (!c) throw new ErrorHttp(404, "No existe ese canal."); return c; };
+const vistaCanal = (c: Canales.Canal) => ({ ...c, mensajes: undefined, cantidad: c.mensajes.length, ultimo: c.mensajes.at(-1) ?? null, miembros: Canales.miembros(c).map((b) => b.id) });
+ruta("GET", "/api/canales", async () => Canales.listarCanales().map(vistaCanal));
+ruta("GET", "/api/canales/:id", async ({ params }) => { const c = canalDe(params[0]!); return { ...vistaCanal(c), mensajes: c.mensajes.slice(-200) }; });
+ruta("POST", "/api/canales", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(2).max(40), descripcion: z.string().trim().max(300).default("") }), await cuerpo());
+  return vistaCanal(malPedido(() => Canales.crearCanal(d.nombre, d.descripcion)) as Canales.Canal);
+});
+ruta("DELETE", "/api/canales/:id", async ({ params }) => { malPedido(() => Canales.borrarCanal(params[0]!)); return { ok: true }; });
+ruta("POST", "/api/canales/:id/mensajes", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().trim().min(1).max(8000) }), await cuerpo());
+  try { return await Canales.publicar(canalDe(params[0]!).id, "usuario", d.texto); } catch (err) { throw err instanceof ErrorHttp ? err : new ErrorHttp(400, (err as Error).message); }
+});
+ruta("POST", "/api/canales/:id/resumir", async ({ params }) => {
+  const c = canalDe(params[0]!);
+  if (c.mensajes.length < 3) throw new ErrorHttp(400, "Hay muy poco para resumir.");
+  try {
+    const r = await resumir(Canales.textoParaResumen(c), `Resumí el canal #${c.nombre}.`, AbortSignal.timeout(90_000));
+    return await Canales.publicar(c.id, "gravity", `Resumen del canal (pedido por vos):\n${r}`);
+  } catch (err) {
+    throw new ErrorHttp(400, (err as Error).message);
+  }
+});
+
+// Comentarios en tareas de proyecto (con @menciones).
+ruta("POST", "/api/proyectos/:id/tareas/:tid/comentarios", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().trim().min(1).max(4000) }), await cuerpo());
+  const { comentarTarea } = await import("./proyectos.ts");
+  try { return await comentarTarea(params[0]!, params[1]!, "usuario", d.texto); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+});
+
+// Transferir una conversación a otro compañero sin perder el contexto: va con los últimos mensajes
+// (texto del usuario y respuestas, sin herramientas ni datos de conexiones) y una nota del usuario.
+ruta("POST", "/api/bots/:id/transferir", async ({ params, cuerpo }) => {
+  const de = botDe(params[0]!);
+  const d = validar(z.object({ a: z.string().min(1).max(40), nota: z.string().trim().max(2000).default(""), mensajes: z.number().int().min(2).max(40).default(12) }), await cuerpo());
+  const a = botDe(d.a);
+  if (a.id === de.id) throw new ErrorHttp(400, "Elegí a otro compañero.");
+  const items = vistaConversacion(conversacion(de.id)).filter((x) => x.tipo === "usuario" || x.tipo === "bot").slice(-d.mensajes) as { tipo: string; texto: string }[];
+  if (!items.length) throw new ErrorHttp(400, "La conversación está vacía.");
+  const contexto = items.map((x) => `${x.tipo === "usuario" ? "Usuario" : de.nombre}: ${x.texto.slice(0, 1500)}`).join("\n");
+  enviarMensaje(a.id, `[Transferencia de ${de.nombre} (${de.titulo})] El usuario te pasa esta conversación para que sigas vos.${d.nota ? `\nNota del usuario: ${d.nota}` : ""}\n\nÚltimos mensajes:\n${contexto}\n\nContinuá desde ahí: confirmá en una línea qué entendiste y seguí.`);
+  agregarNota(de.id, "aviso", `Conversación transferida a ${a.nombre}.`);
+  emitir("cambio", { botId: de.id });
+  return { ok: true, a: a.id };
+});
+
 // ---- Gravity Data Lab (ver datos.ts) ----
 
 const EXT_DATOS = /\.(csv|tsv|txt|json|xlsx)$/i;
@@ -1844,11 +1896,13 @@ iniciarProgramador(ejecutarRutina);
 iniciarTelegram();
 iniciarAutomatizaciones();
 iniciarTalento();
+Canales.iniciarCanales();
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {
   process.on(senal, () => {
     vaciarEscrituras();
+    Canales.vaciarCanales();
     process.exit(0);
   });
 }

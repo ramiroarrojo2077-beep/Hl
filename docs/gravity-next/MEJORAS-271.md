@@ -46,7 +46,15 @@ Ver detalle en la próxima actualización. Ya existen: búsqueda y lectura web (
 241. ✅ Terminal de desarrollo con entorno aislado (Gravity Code y `probar_aislado`). 248. 🟡 Comparador de versiones de archivos (sin commits de Git). El resto, ver Gravity Code.
 
 ## 24. Comunicación (251–260)
-252. ✅ Mensajes internos estructurados (delegar, tareas, resultados). 254. ✅ Archivos compartidos con versiones. 256. ✅ Bandeja de aprobaciones. 255, 259, 260. 🟡 (reuniones programadas, actas, novedades). 251, 253, 257, 258. ⛔
+251. ✅ Canales (`#/canales`, `bots/src/canales.ts`): uno por equipo y uno por proyecto activo (se crean solos), libres que creás vos, y #anuncios. Los compañeros leen y publican con la herramienta `canales` (solo en los suyos).
+252. ✅ Mensajes internos estructurados (delegar, tareas, resultados, canales, comentarios).
+253. ✅ Menciones: @Nombre (sin importar acentos ni mayúsculas) en un canal o en un comentario le avisa a ese compañero con los últimos mensajes como contexto; tope de 20 avisos por hora por canal para evitar cadenas entre compañeros.
+254. ✅ Archivos compartidos con versiones. 255. 🟡 Reuniones programadas (falta una vista de calendario).
+256. ✅ Bandeja de aprobaciones.
+257. ✅ Comentarios en tareas de proyecto (usuario y compañeros con `proyectos` → comentar); avisan al responsable y a los mencionados.
+258. ✅ Transferir conversaciones: en el chat, «Pasar» le manda a otro compañero los últimos mensajes (solo texto del usuario y respuestas, sin resultados de herramientas ni datos de conexiones) y tu nota.
+259. ✅ Resumen de canales con el modelo («Resumir»), publicado en el mismo canal.
+260. ✅ Centro de anuncios: #anuncios con tareas terminadas o trabadas, reuniones cerradas y proyectos completos.
 
 ## 25. Experimentales
 261. ✅ Simulador de decisiones (Laboratorio). 262. 🟡 Mapa de proyectos y dependencias. 266. ✅ Recomendaciones (sugerencias de la auditoría). 268. ✅ Laboratorio. 269. 🟡 Centro de operaciones. 263, 264, 265, 267, 270. ⛔/🟡

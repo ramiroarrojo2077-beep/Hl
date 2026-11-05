@@ -26,6 +26,8 @@ export interface TareaProyecto {
   avisada: boolean;
   creada: string;
   actualizada: string;
+  // Comentarios sobre la tarea (usuario o compañeros); con @Nombre se avisa a ese compañero.
+  comentarios?: { fecha: string; quien: string; nombre: string; texto: string }[];
 }
 
 export interface Proyecto {
@@ -249,6 +251,35 @@ export function agregarTarea(id: string, d: DatosTarea, quien = "usuario"): Tare
 export interface CambiosTarea extends Partial<DatosTarea> {
   estado?: EstadoTarea;
   resultado?: string | null;
+}
+
+/**
+ * Comenta una tarea. Avisa al responsable (si no es quien comenta) y a los mencionados con @Nombre,
+ * con el título, el estado y el comentario.
+ */
+export async function comentarTarea(id: string, tareaId: string, quien: string, texto: string): Promise<TareaProyecto> {
+  const p = buscarProyecto(id);
+  if (!p) throw new Error("No existe ese proyecto.");
+  const t = p.tareas.find((x) => x.id === tareaId);
+  if (!t) throw new Error("No existe esa tarea en el proyecto.");
+  const limpio = texto.trim().slice(0, 4000);
+  if (!limpio) throw new Error("El comentario está vacío.");
+  const nombre = quien === "usuario" ? "Vos" : buscarBot(quien)?.nombre ?? "Un compañero";
+  (t.comentarios ??= []).push({ fecha: ahora(), quien, nombre, texto: limpio });
+  if (t.comentarios.length > 100) t.comentarios.splice(0, t.comentarios.length - 100);
+  anotar(p, quien, `Comentó «${t.titulo}»: ${limpio.slice(0, 120)}`);
+  guardar();
+  emitir("proyectos", { id: p.id });
+  const { menciones } = await import("./canales.ts");
+  const avisar = new Set(menciones(limpio).map((b) => b.id));
+  if (t.asignadoA) avisar.add(t.asignadoA);
+  avisar.delete(quien);
+  const { enviarMensaje } = await import("./agente.ts");
+  for (const botId of avisar) {
+    if (buscarBot(botId)?.archivado) continue;
+    enviarMensaje(botId, `[Comentario en la tarea «${t.titulo}» (${t.id}) del proyecto «${p.nombre}»] ${nombre}: ${limpio}\n\nEstado de la tarea: ${t.estado}. Si te pide algo, hacelo; para contestar usá la herramienta proyectos con accion comentar (proyecto ${p.id}, tarea ${t.id}).`);
+  }
+  return t;
 }
 
 export function cambiarTarea(id: string, tareaId: string, d: CambiosTarea, quien = "usuario"): TareaProyecto {
