@@ -15,7 +15,7 @@ const REUNIONES = path.join(DATOS, "reuniones");
 const ESTADO = path.join(DATOS, "estado.json");
 const TAREAS = path.join(DATOS, "tareas.json");
 
-export const MAX_BOTS = 50;
+export const MAX_BOTS = 100;
 export const MAX_RUTINAS_POR_BOT = 50;
 export const MAX_EJECUCIONES = 20;
 export const MAX_PROFUNDIDAD = 3;

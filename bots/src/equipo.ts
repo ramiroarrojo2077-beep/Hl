@@ -30,7 +30,7 @@ import { elegirMiembro } from "./talento.ts";
 import { MAX_MIEMBROS_EQUIPO, NOMBRES, PLANTILLAS_EQUIPO } from "./plantillas.ts";
 
 const MAX_ABIERTAS_POR_BOT = 3;
-const MAX_ABIERTAS_TOTAL = 90;
+const MAX_ABIERTAS_TOTAL = 300;
 const MAX_POR_LLAMADA = 30;
 const PRESUPUESTO_DEFECTO = 1;
 const PRESUPUESTO_MAX = 5;

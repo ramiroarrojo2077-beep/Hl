@@ -838,4 +838,9 @@ export const NOMBRES = [
   "Julia", "Lara", "Lucas", "Martina", "Nicolás", "Olivia", "Pablo", "Quique", "Rocío", "Santiago",
   "Sofía", "Tomás", "Uma", "Valentín", "Wanda", "Ximena", "Yago", "Zoe", "Agustín", "Bianca",
   "Ciro", "Delfina", "Emilia", "Federico", "Guadalupe", "Iván", "Jazmín", "Lautaro", "Malena", "Nahuel",
+  "Abril", "Bautista", "Camila", "Dante", "Esteban", "Florencia", "Gael", "Helena", "Ignacio", "Josefina",
+  "Kiara", "León", "Mía", "Nora", "Octavio", "Paloma", "Ramiro", "Sabrina", "Thiago", "Valeria",
+  "Alma", "Benjamín", "Clara", "Damián", "Elisa", "Felipe", "Gemma", "Hernán", "Irene", "Jorge",
+  "Luna", "Mateo", "Nina", "Omar", "Pilar", "Renata", "Simón", "Tamara", "Victoria", "Emiliano",
+  "Alba", "Bernardo", "Celeste", "Dario", "Estela", "Franco", "Gisela", "Horacio", "Isabel", "Julián",
 ];

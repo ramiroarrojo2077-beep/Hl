@@ -1,5 +1,5 @@
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { lookup } from "node:dns/promises";
 import { z } from "zod";
@@ -876,6 +876,17 @@ function rutaEnComputadora(ruta: string): string | null {
 
 const recortar = (s: string, n = 4000) => (s.length > n ? `${s.slice(0, n)}\n… (${s.length - n} caracteres más)` : s);
 
+function equipoPruebaSolo(botId: string, carpeta: string): boolean {
+  const m = /^codigo\/([^/]+)/.exec(carpeta.replace(/^\/+/, ""));
+  if (!m || m[1]!.includes("..")) return false;
+  try {
+    const e = JSON.parse(readFileSync(path.join(COMPUTADORA, "codigo", m[1]!, ".gravity", "equipo.json"), "utf8")) as { probarSinPermiso?: boolean; coordinadorId: string; lideres: string[]; miembros: { id: string }[] };
+    return !!e.probarSinPermiso && (e.coordinadorId === botId || e.lideres.includes(botId) || e.miembros.some((x) => x.id === botId));
+  } catch {
+    return false;
+  }
+}
+
 export function necesitaAprobacion(nombre: string, entrada: Record<string, unknown>, bot: Bot): PedidoAprobacion | null {
   // Crear compañeros nuevos se aprueba siempre, aunque esté «Aprobar todo solo».
   if (nombre === "equipo_nuevo" && entrada.accion === "crear") {
@@ -910,6 +921,8 @@ export function necesitaAprobacion(nombre: string, entrada: Record<string, unkno
     const comando = String(entrada.comando ?? "");
     const programa = programaDe(comando);
     if (programa && permitido("bash", (p) => p === programa, bot)) return null;
+    // Equipos de Gravity Code con «probar sin pedir permiso»: es una copia descartable y sin claves.
+    if (equipoPruebaSolo(bot.id, String(entrada.carpeta ?? ""))) return null;
     return {
       herramienta: "bash",
       patron: programa ?? "",

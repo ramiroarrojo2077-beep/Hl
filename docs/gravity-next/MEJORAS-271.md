@@ -127,5 +127,6 @@ Dentro de Gravity Code (panel «Proyecto» y terminal).
 
 - «Completar» con IA en el cursor (lo pedís vos; se deshace con Ctrl+Z), con el modelo rápido.
 - Panel «Proyecto»: entorno, dependencias, revisión multiagente y despliegue (ver 241–250).
+- **Equipo de programación** (panel «Equipo», `bots/src/equipo-codigo.ts`): elegís de 3 a 60 agentes y se reparten roles (coordinador, arquitecto, programadores frontend y backend, testers, revisores, debugger, diseñador, documentador, devops; con más de 30, sub-equipos con líderes técnicos). El coordinador divide cada objetivo en tareas chicas con dependencias dentro de un proyecto de Gravity que usa la carpeta `codigo/<proyecto>/`; cada tarea le llega sola a su responsable cuando se destraba, así trabajan en paralelo sin tocar los mismos archivos; se coordinan en el canal del proyecto con @menciones; el coordinador revisa cada entrega. Opcional: escribir en la carpeta y probar en copias aisladas sin pedir permiso. Panel con cada agente, su rol, su estado y sus tareas, progreso, «Encargar al equipo», «Sumar» gente por rol, canal y detener.
 
 🟡 Falta: operaciones de Git dentro de la app (hoy por la terminal donde haya git); Gravity Code Cloud (servidor remoto para compilar Android, emuladores y proyectos grandes); el robot 3D como asistente dentro del editor.

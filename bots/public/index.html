@@ -883,7 +883,8 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-res{list-style:none;margin:0;padding:0}.cd-res button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:6px;border-radius:6px;cursor:pointer}.cd-res button:hover{background:#151d30}.cd-res b{font-size:12px;color:#6cd3f0;font-weight:500}.cd-res code{font-size:12px;color:#cfd7e6;white-space:pre-wrap;word-break:break-all}
 .cd-ag{display:flex;flex-direction:column;gap:8px}.cd-ag select.inp{width:auto;flex:1}.cd-est{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cfd7e6}
 .cd-conv{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.cd-conv li{padding:8px 10px;border-radius:10px;background:#121a2b;overflow-wrap:anywhere}.cd-conv li.u{background:#1a2742;align-self:flex-end;max-width:92%;white-space:pre-wrap}.cd-conv li.a{background:none;padding:2px 4px;color:#8d98b0;font-size:12px;display:flex;gap:6px}.cd-conv li.a.e{color:#ffb07a}.cd-conv pre{white-space:pre-wrap;font-size:12px}
-.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-h3{font-size:13px;margin:12px 0 4px;color:#e3e8f2}.cd-env{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;display:grid;grid-template-columns:1fr;gap:2px}.cd-env li{display:flex;justify-content:space-between;gap:8px}.cd .dl-t th{background:#0d1220}.cd .dl-t th,.cd .dl-t td{border-color:#1a2133}.cd-rev{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cd-rev select{background:#121a2b;color:#e3e8f2;border:1px solid #26304a;border-radius:6px}
+.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-eq-f{display:flex;flex-direction:column;gap:8px;margin-top:8px}.cd-eq-f input[type=range]{width:100%}
+.cd-eq{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.cd-eq li{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;background:#121a2b}.cd-eq li div{display:flex;flex-direction:column;min-width:0}.cd-eq li small{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cd-eq li>small{grid-column:2/4}.cd-h3{font-size:13px;margin:12px 0 4px;color:#e3e8f2}.cd-env{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;display:grid;grid-template-columns:1fr;gap:2px}.cd-env li{display:flex;justify-content:space-between;gap:8px}.cd .dl-t th{background:#0d1220}.cd .dl-t th,.cd .dl-t td{border-color:#1a2133}.cd-rev{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cd-rev select{background:#121a2b;color:#e3e8f2;border:1px solid #26304a;border-radius:6px}
 .cd-prob{list-style:none;margin:4px 0;padding:0}.cd-prob button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;background:rgba(255,176,122,.08);color:inherit;font:inherit;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer;margin-top:3px}.cd-prob b{font-size:12px;color:#ffb07a;font-weight:500}.cd-prob span{font-size:12px;color:#cfd7e6}.cd-msg button{align-self:flex-end}
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
@@ -4087,7 +4088,7 @@ function pintarCodeCabecera() {
       <button class="btn out sm" data-a="cd-nuevo">${ico("plus", "s")}Nuevo</button>
       <button class="btn out sm" data-a="cd-importar">${ico("download", "s")}GitHub</button>
       ${p ? html`<a class="btn ghost sm" href="/api/code/exportar?p=${encodeURIComponent(p.nombre)}" download>Exportar .zip</a>
-      <button class="btn ghost sm" data-a="cd-equipo">${ico("team", "s")}Equipo de desarrollo</button>
+      <button class="btn ghost sm" data-a="cd-panel" data-v="equipo">${ico("team", "s")}Equipo de programación</button>
       <button class="btn ghost sm" data-a="cd-borrar-proy">Borrar</button>` : ""}
     </div>`);
 }
@@ -4156,7 +4157,7 @@ async function cdAbrir(ruta, linea) {
 function pintarCodePanel() {
   const el = $("#cd-panel");
   if (!el) return;
-  const PANELES = [["terminal", "Terminal"], ["agentes", "Compañeros"], ["buscar", "Buscar"], ["proyecto", "Proyecto"]];
+  const PANELES = [["equipo", "Equipo"], ["terminal", "Terminal"], ["agentes", "Chat"], ["buscar", "Buscar"], ["proyecto", "Proyecto"]];
   const cab = html`<div class="cd-ptabs" role="tablist">${PANELES.map(([k, t]) => html`<button role="tab" aria-selected="${String(CD.panel === k)}" class="${CD.panel === k ? "on" : ""}" data-a="cd-panel" data-v="${k}">${t}</button>`)}</div>`;
   if (!CD.p) { pintar(el, cab); return; }
   let cuerpo = "";
@@ -4169,6 +4170,28 @@ function pintarCodePanel() {
         ${e.estado === "corriendo" ? html`<button class="btn ghost sm" data-a="cd-detener" data-id="${e.id}">Detener</button>` : e.estado !== "ok" ? html`<button class="btn ghost sm" data-a="cd-reparar" data-id="${e.id}">Reparar con un compañero</button>` : ""}</div>
         ${CD.problemas?.[e.id]?.length ? html`<ul class="cd-prob">${CD.problemas[e.id].map((x) => html`<li><button data-a="cd-ir" data-r="${x.ruta}" data-l="${x.linea}"><b>${cdRutaRel(x.ruta)}:${x.linea}</b><span>${x.mensaje}</span></button></li>`)}</ul>` : ""}
         <pre class="cd-sal">${e.salida.slice(-6000) || (e.estado === "corriendo" ? "…" : "(sin salida)")}</pre></li>`)}</ol>`;
+  } else if (CD.panel === "equipo") {
+    const eq = CD.equipo;
+    if (eq === undefined) { cdCargarEquipo(); cuerpo = html`<p class="muted">Cargando…</p>`; }
+    else if (!eq) {
+      const n = CD.nEquipo || 12, maxL = S.ajustes?.maxLlamadas || 10;
+      cuerpo = html`<h3 class="cd-h3">Equipo de programación</h3><p class="muted" style="font-size:12.5px;margin:0">Varios agentes programan juntos este proyecto: el coordinador divide el trabajo en tareas chicas con dependencias y las reparte; cada uno trabaja en paralelo en sus archivos, se coordinan en el canal del proyecto, los testers prueban y los revisores revisan.</p>
+        <form data-f="cd-armar-equipo" class="cd-eq-f"><label class="fld"><span>Cantidad de agentes: <b id="cd-n">${n}</b></span><input type="range" name="cantidad" min="3" max="60" value="${n}" data-i="cd-n" aria-label="Cantidad de agentes"></label>
+          <p class="muted" style="font-size:12px;margin:0" id="cd-roles">${cdRoles(n)}</p>
+          <label class="chk-s"><input type="checkbox" name="escribir" checked> Pueden escribir en codigo/${CD.p}/ sin pedirme permiso (cada cambio queda con su versión)</label>
+          <label class="chk-s"><input type="checkbox" name="probar" checked> Pueden correr pruebas en copias aisladas sin pedirme permiso</label>
+          ${maxL < Math.min(n, 60) ? html`<label class="chk-s"><input type="checkbox" name="subir" checked> Que trabajen hasta ${Math.min(n, 60)} a la vez (ahora: ${maxL})</label>` : ""}
+          <p class="muted" style="font-size:12px;margin:0">Con modelos pagos, más agentes a la vez gastan más rápido: el tope diario de Ajustes sigue valiendo.</p>
+          <button class="btn pri">Armar el equipo</button></form>`;
+    } else {
+      const g = eq.proyecto?.progreso;
+      const estados = { work: "trabajando", wait: "espera aprobación", idle: "libre" };
+      cuerpo = html`<div class="fila" style="justify-content:space-between;gap:6px;flex-wrap:wrap"><b>${eq.integrantes.length} agentes</b><span class="fila" style="gap:6px">${eq.proyecto ? html`<a class="btn ghost sm" href="#/proyectos/${eq.proyecto.id}">Tareas</a>` : ""}<button class="btn ghost sm" data-a="cd-canal">Canal</button><button class="btn ghost sm" data-a="detener-equipo" data-id="${eq.coordinadorId}">Detener</button></span></div>
+        ${g ? html`<span class="barra" role="img" aria-label="${g.porcentaje}% hecho"><i style="width:${g.porcentaje}%"></i></span><small class="muted">${g.hechas} de ${g.total} tareas${g.bloqueadas ? ` · ${g.bloqueadas} esperando dependencias` : ""}</small>` : ""}
+        <form data-f="cd-encargar" class="cd-msg"><textarea class="inp" name="objetivo" rows="3" required minlength="5" placeholder="Qué tiene que construir el equipo. Ej.: tienda online con catálogo, carrito, pagos con Mercado Pago (de prueba) y panel de administración"></textarea><button class="btn pri sm">Encargar al equipo</button></form>
+        <ul class="cd-eq">${eq.integrantes.map((x) => { const b = bot(x.id); const e = est(b); return html`<li>${b ? av(b, 26) : ""}<div><b>${x.nombre}</b><small class="muted">${x.rol}</small>${x.abiertas.length ? html`<small>${x.abiertas.map((t) => `${t.estado === "en_curso" ? "▶" : "⏳"} ${t.titulo}`).join(" · ")}</small>` : ""}</div><span class="tag ${e === "work" ? "ion" : e === "wait" ? "sig" : ""}">${estados[e]}</span>${x.hechas ? html`<small class="muted">${x.hechas} ✓</small>` : ""}</li>`; })}</ul>
+        <form class="fila" data-f="cd-sumar" style="gap:6px;flex-wrap:wrap"><span class="muted" style="font-size:12.5px">Sumar</span><input class="inp" type="number" name="n" min="1" max="30" value="2" style="width:70px"><select class="inp" name="rol" style="width:auto">${[["backend", "Backend"], ["frontend", "Frontend"], ["programador", "Programador"], ["tester", "Tester"], ["revisor", "Revisor"], ["debugger", "Debugger"], ["disenador", "Diseñador"], ["documentador", "Documentador"], ["devops", "DevOps"], ["arquitecto", "Arquitecto"]].map(([k, t]) => html`<option value="${k}">${t}</option>`)}</select><button class="btn out sm">Sumar</button></form>`;
+    }
   } else if (CD.panel === "proyecto") {
     const en = CD.entorno, dp = CD.deps;
     cuerpo = html`<h3 class="cd-h3">Entorno</h3>${en ? html`<p class="muted" style="font-size:12.5px;margin:0">${en.tipo.join(" · ") || "Tipo no detectado"}</p><ul class="cd-env">${en.herramientas.map((h) => html`<li><b>${h.nombre}</b><span class="${h.version ? "" : "muted"}">${h.version || "no instalado"}</span></li>`)}</ul>` : html`<button class="btn out sm" data-a="cd-entorno">Detectar herramientas</button>`}
@@ -4209,6 +4232,22 @@ function cdSondear() {
 async function cdProblemas() {
   CD.problemas ??= {};
   for (const e of CD.ejec.filter((x) => (x.estado === "error" || x.estado === "cortado") && !CD.problemas[x.id]).slice(0, 5)) CD.problemas[e.id] = await api("GET", `/api/code/problemas?p=${encodeURIComponent(CD.p)}&id=${e.id}`).catch(() => []);
+}
+// Reparto de roles igual al del motor (equipo-codigo.ts), para mostrarlo antes de armar el equipo.
+function cdRoles(total) {
+  const n = total - 1, r = {}; let resto = n;
+  const tomar = (k, c) => { const x = Math.min(c, resto); if (x > 0) r[k] = (r[k] || 0) + x; resto -= x; };
+  const lideres = n > 29 ? Math.ceil(n / 15) : 0; resto -= lideres;
+  const m = resto;
+  if (m >= 3) tomar("arquitecto", 1); tomar("tester", Math.max(1, Math.round(m * 0.15))); if (m >= 3) tomar("revisor", Math.max(1, Math.round(m * 0.12)));
+  if (m >= 6) tomar("debugger", 1); if (m >= 5) tomar("diseñador", 1); if (m >= 10) tomar("documentador", 1); if (m >= 12) tomar("devops", 1);
+  if (m >= 8) { const f = Math.floor(resto / 2); tomar("frontend", f); tomar("backend", resto); } else tomar("programador", resto);
+  return `1 coordinador${lideres ? ` · ${lideres} líderes` : ""} · ${Object.entries(r).map(([k, c]) => `${c} ${k}`).join(" · ")}`;
+}
+async function cdCargarEquipo() {
+  if (!CD.p) return;
+  CD.equipo = await api("GET", `/api/code/equipo?p=${encodeURIComponent(CD.p)}`).catch(() => null);
+  if (CD.panel === "equipo") pintarCodePanel();
 }
 function cdContexto() {
   const t = CD.tabs.find((x) => x.ruta === CD.activa);
@@ -4264,6 +4303,7 @@ function pintarUnivLista() {
   pintar(el, S.bots.length ? ordenar(S.bots, "estado").map((b) => { const e = est(b); return html`<li><a href="#/chats/${b.id}">${av(b, 30)}<span><b>${b.nombre}</b> <small class="muted">${b.titulo}</small><small class="u-e u-${e}">${UNIV_EST[e][0]}${e === "work" && b.accion ? ` · ${b.accion}` : ""}</small></span></a></li>`; }) : html`<li class="muted">Todavía no hay compañeros: creá uno desde Equipo.</li>`);
 }
 function escenaUniverso(T, cont, cfg = univCfg()) {
+  const bots0 = Math.min(100, S.bots.length);
   const ESC = UNIV_ESC[cfg.escenario], ACENTO = new T.Color(cfg.acento);
   if (!cont?.isConnected) return;
   let renderer;
@@ -4274,7 +4314,7 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
   renderer.toneMapping = T.NeutralToneMapping;
   const escena = new T.Scene();
   escena.background = new T.Color(ESC.fondo);
-  escena.fog = new T.Fog(ESC.fondo, 20, 44);
+  escena.fog = new T.Fog(ESC.fondo, bots0 > 30 ? 40 : 20, bots0 > 30 ? 90 : 44);
   const camara = new T.PerspectiveCamera(46, ancho() / alto(), 0.1, 120);
   // Reflejos de estudio (los mismos del robot de las llamadas) y luces de borde cian y violeta.
   const pm = new T.PMREMGenerator(renderer);
@@ -4298,7 +4338,7 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
   if (ESC.estrellas) escena.add(estrellas(700, 0.14, 0xa9bbe0), estrellas(160, 0.3, 0xe8ecf5));
   for (const [x, y, z, c, s] of [[-26, 12, -30, "#9B7BFF", 40], [28, 8, -22, "#6CD3F0", 34]]) { const n = new T.Mesh(new T.PlaneGeometry(s, s), matBrillo(T, c, 0.16, true)); n.position.set(x, y, z); n.lookAt(0, 4, 0); escena.add(n); }
   // Piso: disco oscuro metálico, grilla radial y anillos de luz
-  const piso = new T.Mesh(new T.CircleGeometry(17, 96), new T.MeshStandardMaterial({ color: ESC.piso, roughness: 0.85, metalness: 0.25, envMapIntensity: 0.25 }));
+  const piso = new T.Mesh(new T.CircleGeometry(bots0 > 30 ? 30 : 17, 96), new T.MeshStandardMaterial({ color: ESC.piso, roughness: 0.85, metalness: 0.25, envMapIntensity: 0.25 }));
   piso.rotation.x = -Math.PI / 2; escena.add(piso);
   const lineas = [];
   for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; lineas.push(Math.cos(a) * 2.2, 0.012, Math.sin(a) * 2.2, Math.cos(a) * 16.5, 0.012, Math.sin(a) * 16.5); }
@@ -4434,11 +4474,11 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
     p.t.needsUpdate = true;
   };
   // ---- estaciones en anillos alrededor del núcleo; los managers, en el de adentro
-  const bots = [...S.bots].sort((a, b) => (a.cargo === "manager" ? 0 : 1) - (b.cargo === "manager" ? 0 : 1) || porNombre(a, b)).slice(0, 30);
+  const bots = [...S.bots].sort((a, b) => (a.cargo === "manager" ? 0 : 1) - (b.cargo === "manager" ? 0 : 1) || porNombre(a, b)).slice(0, 100);
   const estaciones = [];
   const baseM = new T.MeshStandardMaterial({ color: 0x141b2c, roughness: 0.35, metalness: 0.7 });
   let k = 0;
-  for (const [radio, cap] of [[6, 6], [10, 10], [14, 14]]) {
+  for (const [radio, cap] of [[6, 6], [10, 10], [14, 14], [18, 18], [22, 22], [26, 30]]) {
     const n = Math.min(cap, bots.length - k);
     for (let i = 0; i < n; i++, k++) {
       const b = bots[k], ang = (i / n) * Math.PI * 2 + radio * 0.21;
@@ -4476,7 +4516,7 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
   }
   cont.replaceChildren(renderer.domElement);
   // Cámara en órbita: gira sola, se arrastra y la rueda (o pellizco) acerca y aleja.
-  let giro = 0.6, inclin = 0.5, dist = bots.length > 16 ? 26 : bots.length > 6 ? 19 : 14, arrastre = null, movido = false, ultimoToque = 0;
+  let giro = 0.6, inclin = 0.5, dist = bots.length > 60 ? 46 : bots.length > 30 ? 36 : bots.length > 16 ? 26 : bots.length > 6 ? 19 : 14, arrastre = null, movido = false, ultimoToque = 0;
   const punteros = new Map();
   let pellizco = null;
   const el = renderer.domElement;
@@ -4484,7 +4524,7 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
   el.addEventListener("pointerdown", (e) => { punteros.set(e.pointerId, e); if (punteros.size === 2) { const [a, b] = [...punteros.values()]; pellizco = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), dist }; arrastre = null; return; } arrastre = { x: e.clientX, y: e.clientY, g: giro, i: inclin }; movido = false; try { el.setPointerCapture(e.pointerId); } catch {} });
   el.addEventListener("pointermove", (e) => {
     if (punteros.has(e.pointerId)) punteros.set(e.pointerId, e);
-    if (pellizco && punteros.size === 2) { const [a, b] = [...punteros.values()]; dist = Math.max(9, Math.min(34, pellizco.dist * pellizco.d / Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)))); movido = true; ultimoToque = performance.now(); return; }
+    if (pellizco && punteros.size === 2) { const [a, b] = [...punteros.values()]; dist = Math.max(9, Math.min(60, pellizco.dist * pellizco.d / Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)))); movido = true; ultimoToque = performance.now(); return; }
     if (!arrastre) return; const dx = e.clientX - arrastre.x, dy = e.clientY - arrastre.y; if (Math.abs(dx) + Math.abs(dy) > 6) movido = true; giro = arrastre.g - dx * 0.008; inclin = Math.max(0.18, Math.min(1.2, arrastre.i + dy * 0.005)); ultimoToque = performance.now();
   });
   const soltar = (e) => {
@@ -4497,7 +4537,7 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
     if (hit) seguir(hit.object.userData.botId);
   };
   el.addEventListener("pointerup", soltar); el.addEventListener("pointercancel", soltar);
-  el.addEventListener("wheel", (e) => { e.preventDefault(); dist = Math.max(9, Math.min(34, dist + e.deltaY * 0.012)); }, { passive: false });
+  el.addEventListener("wheel", (e) => { e.preventDefault(); dist = Math.max(9, Math.min(60, dist + e.deltaY * 0.012)); }, { passive: false });
   const medir = () => { renderer.setSize(ancho(), alto()); camara.aspect = ancho() / alto(); camara.updateProjectionMatrix(); };
   const ro = new ResizeObserver(medir); ro.observe(cont);
   const t0 = performance.now();
@@ -4513,7 +4553,7 @@ function escenaUniverso(T, cont, cfg = univCfg()) {
     const sel = $("#univ-seguir"); if (sel) sel.value = seguido || "";
     pintarUnivObs(seguido);
     if (seguido) { dist = 7; ultimoToque = performance.now(); }
-    else dist = bots.length > 16 ? 26 : bots.length > 6 ? 19 : 14;
+    else dist = bots.length > 60 ? 46 : bots.length > 30 ? 36 : bots.length > 16 ? 26 : bots.length > 6 ? 19 : 14;
   }
   function caminarA(x, destinoMundo, { quedarse = false, alLlegar = null } = {}) {
     const desde = x.r.raiz.position.clone(), hasta = enLocal(x, destinoMundo);
@@ -6642,6 +6682,7 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "cd-canal": async () => { const cs = await api("GET", "/api/canales"); const c = cs.find((x) => x.tipo === "proyecto" && x.refId === CD.equipo?.proyecto?.id); ir(c ? `#/canales/${c.id}` : "#/canales"); },
   acomp: () => { const el = $("#acomp"); el.dataset.abierto = el.dataset.abierto === "1" ? "0" : "1"; pintarAcompanante(); },
   "acomp-cerrar": (t) => { $("#acomp").dataset.abierto = "0"; ir(t.getAttribute("href")); pintarAcompanante(); },
   "acomp-ocultar": () => { guardarLocal("gravity-acompanante", "0"); $("#acomp").dataset.abierto = "0"; pintarAcompanante(); toast("Robot acompañante oculto. Lo volvés a mostrar en Ajustes > Estilo."); },
@@ -7026,6 +7067,20 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "cd-armar-equipo"(f) {
+    const cantidad = Number(f.cantidad.value);
+    await conCarga(f.querySelector("button"), async () => {
+      if (f.subir?.checked) await api("PUT", "/api/ajustes", { maxLlamadas: Math.min(cantidad, 60) });
+      CD.equipo = await api("POST", `/api/code/equipo?p=${encodeURIComponent(CD.p)}`, { cantidad, escribirSinPermiso: f.escribir.checked, probarSinPermiso: f.probar.checked });
+      await cargarEstado(); toast(`Equipo de ${CD.equipo.integrantes.length} listo. Encargales un objetivo.`); pintarCode();
+    });
+  },
+  async "cd-encargar"(f) {
+    await conCarga(f.querySelector("button"), async () => { await api("POST", `/api/code/equipo/encargar?p=${encodeURIComponent(CD.p)}`, { objetivo: f.objetivo.value.trim() }); f.objetivo.value = ""; toast(`${bot(CD.equipo.coordinadorId)?.nombre} está dividiendo el trabajo para el equipo.`); });
+  },
+  async "cd-sumar"(f) {
+    await conCarga(f.querySelector("button"), async () => { CD.equipo = await api("POST", `/api/code/equipo/sumar?p=${encodeURIComponent(CD.p)}`, { cantidad: Number(f.n.value), rol: f.rol.value }); await cargarEstado(); pintarCodePanel(); });
+  },
   async competencia(f) {
     const ids = [...f.querySelectorAll("input[name=p]:checked")].map((x) => x.value);
     if (ids.length < 2) throw new Error("Elegí al menos dos participantes.");
@@ -7518,7 +7573,7 @@ const C = {
   "univ-luz": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, luz: Number(t.value) }); $("#univ-3d")?.univ?.luz(Number(t.value)); },
   "univ-seguir": (t) => $("#univ-3d")?.univ?.seguir(t.value || null),
   "respaldo-auto": async (t) => { await api("PUT", "/api/ajustes", { respaldoAutomatico: t.checked }); toast(t.checked ? "Respaldo automático prendido." : "Respaldo automático apagado."); },
-  "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; await cargarCodeArchivos(); pintarCode(); },
+  "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; CD.equipo = undefined; await cargarCodeArchivos(); pintarCode(); },
   "cd-aislado": (t) => { CD.aislado = t.checked; },
   "cd-bot": async (t) => { CD.botId = t.value; await cdCargarConv(); pintarCodePanel(); },
   // Importar una copia: el .zip va crudo (application/zip), el motor lo valida, lo aplica y se reinicia.
@@ -7582,6 +7637,7 @@ const C = {
   "cp-bot": (t) => { const s_ = $("#cp-ok span"); if (s_) s_.textContent = `Mandar a ${bot(t.value)?.nombre || "tu compañero"}`; },
 };
 const I = {
+  "cd-n": (t) => { const n = Number(t.value); CD.nEquipo = n; const a = $("#cd-n"); if (a) a.textContent = n; const r = $("#cd-roles"); if (r) r.textContent = cdRoles(n); },
   buscar: (t) => { S.busqueda = t.value; pintar($("#side-lista"), htmlLista()); },
   "eq-buscar": (t) => { S.eqBusqueda = t.value; pintarEquipo(); },
   ta: (t) => { S.borrador[S.botId] = t.value; autoAlto(t); },
@@ -7768,6 +7824,9 @@ function conectar() {
   on("aprobacion-resuelta", (d) => quitarAprobacion(d.id));
   let tCanal = null;
   on("monitores", () => { if ($("#invest") && INV.pest === "monitores") montarInvestigacion().catch(() => {}); });
+  let tEq = null;
+  const refrescarEquipo = () => { if ($("#code") && CD.panel === "equipo" && CD.equipo) { clearTimeout(tEq); tEq = setTimeout(cdCargarEquipo, 600); } };
+  on("proyectos", refrescarEquipo); on("estado", refrescarEquipo); on("tarea", refrescarEquipo);
   on("canal", (d) => { if ($("#canales")) { clearTimeout(tCanal); tCanal = setTimeout(() => montarCanales().catch(() => {}), 250); } });
   for (const t of ["bots", "habilidades", "reglas", "ajustes"]) on(t, recargarPronto);
   on("rutinas", (d) => {

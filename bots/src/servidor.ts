@@ -1277,7 +1277,7 @@ ruta("DELETE", "/api/reglas/:id", async ({ params }) => {
 
 ruta("PUT", "/api/ajustes", async ({ cuerpo }) => {
   const d = validar(
-    z.object({ maxLlamadas: z.number().int().min(1).max(30), maxComandos: z.number().int().min(1).max(30), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean(), avisoAprobaciones: z.boolean(), avisoTareas: z.boolean(), respaldoAutomatico: z.boolean() }).partial(),
+    z.object({ maxLlamadas: z.number().int().min(1).max(60), maxComandos: z.number().int().min(1).max(60), topeDiarioUsd: z.number().min(0).max(10000), autoAprobar: z.boolean(), autoResponder: z.boolean(), avisoAprobaciones: z.boolean(), avisoTareas: z.boolean(), respaldoAutomatico: z.boolean() }).partial(),
     await cuerpo(),
   );
   const a = cambiarAjustes(d);
@@ -1710,6 +1710,30 @@ ruta("POST", "/api/code/ejecutar", async ({ url, cuerpo }) => {
   return malPedido(() => Code.ejecutarEnProyecto(codeDe(url), d.comando, d.aislado, () => emitir("computadora")));
 });
 ruta("GET", "/api/code/ejecuciones", async ({ url }) => Code.listarEjecuciones(url.searchParams.get("p") ?? undefined));
+// Equipo de programación del proyecto (ver equipo-codigo.ts).
+ruta("GET", "/api/code/equipo", async ({ url }) => (await import("./equipo-codigo.ts")).estadoEquipo(codeDe(url)));
+ruta("POST", "/api/code/equipo", async ({ url, cuerpo }) => {
+  const E = await import("./equipo-codigo.ts");
+  const d = validar(z.object({ cantidad: z.number().int().min(3).max(E.MAX_EQUIPO_CODIGO), escribirSinPermiso: z.boolean().default(true), probarSinPermiso: z.boolean().default(true) }), await cuerpo());
+  const p = codeDe(url);
+  malPedido(() => E.armarEquipoCodigo(p, d));
+  emitir("bots"); emitir("reglas"); emitir("proyectos", {});
+  return E.estadoEquipo(p);
+});
+ruta("POST", "/api/code/equipo/encargar", async ({ url, cuerpo }) => {
+  const E = await import("./equipo-codigo.ts");
+  const d = validar(z.object({ objetivo: z.string().trim().min(5).max(6000) }), await cuerpo());
+  try { await E.encargar(codeDe(url), d.objetivo); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+  return { ok: true };
+});
+ruta("POST", "/api/code/equipo/sumar", async ({ url, cuerpo }) => {
+  const E = await import("./equipo-codigo.ts");
+  const d = validar(z.object({ cantidad: z.number().int().min(1).max(30), rol: z.string().max(30) }), await cuerpo());
+  const p = codeDe(url);
+  malPedido(() => E.sumarAlEquipo(p, d.cantidad, d.rol));
+  emitir("bots");
+  return E.estadoEquipo(p);
+});
 ruta("GET", "/api/code/entorno", async ({ url }) => Code.entorno(codeDe(url)));
 ruta("GET", "/api/code/dependencias", async ({ url }) => Code.dependencias(codeDe(url)));
 ruta("GET", "/api/code/problemas", async ({ url }) => {

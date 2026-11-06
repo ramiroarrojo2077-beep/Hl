@@ -106,6 +106,8 @@ export interface DatosProyecto {
   nombre: string;
   objetivo: string;
   coordinadorId?: string | null;
+  // Carpeta existente de la computadora (relativa, terminada en "/"); si no, se crea proyectos/<nombre>-xxxx/.
+  carpeta?: string;
 }
 
 export function crearProyecto(d: DatosProyecto, quien = "usuario"): Proyecto {
@@ -121,7 +123,7 @@ export function crearProyecto(d: DatosProyecto, quien = "usuario"): Proyecto {
     objetivo: d.objetivo.trim().slice(0, 4000),
     estado: "activo",
     coordinadorId: d.coordinadorId ?? null,
-    carpeta: `proyectos/${slug(nombre)}-${id.slice(0, 4)}/`,
+    carpeta: d.carpeta && /^[\w .\/-]+\/$/.test(d.carpeta) && !d.carpeta.includes("..") ? d.carpeta : `proyectos/${slug(nombre)}-${id.slice(0, 4)}/`,
     tareas: [],
     historial: [],
     creado: ahora(),
