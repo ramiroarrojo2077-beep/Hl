@@ -89,3 +89,18 @@ El motor trae las páginas (nunca de la red privada, hasta 5 redirecciones y 3 M
 321. ✅ Historial de investigación: visitas, envíos y extracciones con fecha y detalle, búsqueda, borrar y exportar como referencias Markdown a `investigacion/`.
 
 Este entorno de desarrollo no tiene salida a internet: las pruebas usan un sitio local que imita páginas, robots.txt, el buscador y los formatos reales de Crossref, OpenAlex y arXiv (`pruebas/navegador.test.mjs`, 7, y e2e en el navegador con resultado verificado del lado del sitio). La variable `GRAVITY_PRUEBAS_RED_LOCAL` solo existe para esas pruebas.
+
+## 35. Gravity Labs — experimental (`#/labs`, `labs.ts`) 🧪
+Todo el bloque está marcado como experimental en la pantalla. Trabaja sobre los datos reales (proyectos, tareas, compañeros, automatizaciones, rutinas, habilidades, cuadernos, conexiones). Lo que propone la IA vuelve como propuesta editable y se crea con las rutas de siempre.
+362. 🧪 Mission Control: misiones activas con progreso, salud, bloqueadas, vencidas, qué se está haciendo y quién; compañeros trabajando, aprobaciones y gasto; accesos al gemelo, al Doctor y al proyecto.
+363. 🧪 Agent Arena: 2 a 4 compañeros resuelven el mismo desafío (con su personalidad, sin herramientas); un juez ciego (no ve nombres) puntúa con tus criterios; tabla acumulada de ganadas y promedio. Si uno falla, siguen los demás.
+364. 🧪 Gemelo digital: el proyecto como grafo de tareas por dependencias, color por estado, bloqueadas y camino crítico (la cadena más larga sin terminar) en rojo. Sin IA.
+365. 🧪 Simulation Lab: Monte Carlo con distribución PERT (mínimo, probable, máximo), dependencias reales y cantidad de personas en paralelo; P50/P80/P95, histograma y criticidad de cada tarea. Detecta ciclos y datos inválidos. Sin IA.
+366. 🧪 Workflow Generator: describís en palabras → automatización (por evento) o rutina (por horario) con compañero, instrucciones y horario; avisa lo que no quedó claro; la revisás y se crea.
+367. 🧪 Skills Builder: diseña la habilidad (instrucciones en pasos, cuándo usarla, ejemplo), la probás con un compañero y la guardás para todo el equipo.
+368. 🧪 Quality Inspector: archivo de la computadora o texto; revisión automática sin IA (TODO, secciones vacías, enlaces rotos, palabras repetidas, oraciones larguísimas) + evaluación por criterios, problemas con sugerencias y veredicto.
+369. 🧪 Project Doctor: salud 0–100 con hallazgos reales (fallidas, vencidas, sin responsable, quietas, sin criterio, sin coordinador, sin movimiento) y plan de recuperación con IA; elegís qué pasos se agregan como tareas (con responsable reconocido).
+370. 🧪 Learning Center: 7 actividades prácticas que se marcan solas cuando las hacés de verdad (compañero, proyecto con tareas, rutina, habilidad, cuaderno con documento, proyecto de código, automatización).
+371. 🧪 Nexus: grafo de todo lo conectado (compañeros, a quién reportan, proyectos que coordinan o donde trabajan, rutinas y sus habilidades, automatizaciones, cuadernos compartidos, conexiones) con búsqueda y acceso a cada cosa.
+
+Pruebas: `pruebas/labs.test.mjs` (7) y e2e en el navegador con el modelo simulado (misión, gemelo, simulación, Doctor aplicando el plan, Arena, crear una automatización desde texto, probar y guardar una habilidad, inspección, aprendizaje, Nexus y celular).

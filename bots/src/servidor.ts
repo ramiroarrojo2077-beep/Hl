@@ -1520,6 +1520,33 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
+// ---- Gravity Labs: funciones experimentales (ver labs.ts) ----
+const conLab = async <T>(f: (K: typeof import("./labs.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./labs.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+const iaLab = () => AbortSignal.timeout(240_000);
+ruta("GET", "/api/labs/misiones", async () => conLab((K) => K.misiones()));
+ruta("GET", "/api/labs/gemelo/:id", async ({ params }) => conLab((K) => K.gemelo(params[0]!)));
+ruta("GET", "/api/labs/simular/:id", async ({ params }) => conLab((K) => K.tareasParaSimular(params[0]!)));
+ruta("POST", "/api/labs/simular", async ({ cuerpo }) => {
+  const d = validar(z.object({ tareas: z.array(z.object({ id: z.string().max(40), titulo: z.string().max(200), min: z.number().min(0).max(10000), probable: z.number().min(0).max(10000), max: z.number().min(0).max(10000), dependeDe: z.array(z.string().max(40)).max(50) })).min(1).max(300), corridas: z.number().int().min(200).max(20000).default(5000), personas: z.number().int().min(1).max(50).nullish() }), await cuerpo());
+  return conLab((K) => K.simular(d.tareas, { corridas: d.corridas, personas: d.personas ?? undefined }));
+});
+ruta("POST", "/api/labs/doctor/:id", async ({ params }) => conLab((K) => K.recetar(params[0]!, iaLab())));
+ruta("GET", "/api/labs/doctor/:id", async ({ params }) => conLab((K) => { const p = buscarProyecto(params[0]!); if (!p) throw new Error("No existe ese proyecto."); return K.salud(p); }));
+ruta("POST", "/api/labs/arena", async ({ cuerpo }) => {
+  const d = validar(z.object({ desafio: z.string().trim().min(5).max(6000), botIds: z.array(z.string().max(40)).min(2).max(4), criterios: z.string().max(500).default("") }), await cuerpo());
+  return conLab((K) => K.arena(d.desafio, d.botIds, d.criterios, iaLab()));
+});
+ruta("GET", "/api/labs/arena", async () => conLab((K) => K.tablaArena()));
+ruta("POST", "/api/labs/flujo", async ({ cuerpo }) => { const d = validar(z.object({ pedido: z.string().trim().min(5).max(3000) }), await cuerpo()); return conLab((K) => K.generarFlujo(d.pedido, iaLab())); });
+ruta("POST", "/api/labs/habilidad", async ({ cuerpo }) => { const d = validar(z.object({ idea: z.string().trim().min(5).max(3000) }), await cuerpo()); return conLab((K) => K.disenarHabilidad(d.idea, iaLab())); });
+ruta("POST", "/api/labs/habilidad/probar", async ({ cuerpo }) => { const d = validar(z.object({ instrucciones: z.string().min(1).max(20000), ejemplo: z.string().min(1).max(4000), botId: z.string().max(40).nullish() }), await cuerpo()); return conLab((K) => K.probarHabilidad(d, iaLab())); });
+ruta("POST", "/api/labs/calidad", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().max(500).nullish(), texto: z.string().max(200_000).nullish(), criterios: z.string().max(1000).default(""), pedido: z.string().max(2000).optional() }), await cuerpo());
+  return conLab((K) => K.inspeccionar(d, iaLab()));
+});
+ruta("GET", "/api/labs/aprender", async () => conLab((K) => K.progresoAprendizaje()));
+ruta("GET", "/api/labs/nexus", async () => conLab((K) => K.nexus()));
+
 // ---- Gravity Browser (ver navegador.ts) ----
 const conNav = async <T>(f: (K: typeof import("./navegador.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./navegador.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
 const iaNav = () => AbortSignal.timeout(180_000);
