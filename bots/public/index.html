@@ -883,7 +883,7 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-res{list-style:none;margin:0;padding:0}.cd-res button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:6px;border-radius:6px;cursor:pointer}.cd-res button:hover{background:#151d30}.cd-res b{font-size:12px;color:#6cd3f0;font-weight:500}.cd-res code{font-size:12px;color:#cfd7e6;white-space:pre-wrap;word-break:break-all}
 .cd-ag{display:flex;flex-direction:column;gap:8px}.cd-ag select.inp{width:auto;flex:1}.cd-est{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cfd7e6}
 .cd-conv{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.cd-conv li{padding:8px 10px;border-radius:10px;background:#121a2b;overflow-wrap:anywhere}.cd-conv li.u{background:#1a2742;align-self:flex-end;max-width:92%;white-space:pre-wrap}.cd-conv li.a{background:none;padding:2px 4px;color:#8d98b0;font-size:12px;display:flex;gap:6px}.cd-conv li.a.e{color:#ffb07a}.cd-conv pre{white-space:pre-wrap;font-size:12px}
-.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-eq-f{display:flex;flex-direction:column;gap:8px;margin-top:8px}.cd-eq-f input[type=range]{width:100%}
+.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-hist{list-style:none;margin:0;padding:0;font-size:12.5px;display:flex;flex-direction:column;gap:3px}.cd-hist code{color:#9b7bff}.cd-pc{display:flex;flex-direction:column}.cd-eq-f{display:flex;flex-direction:column;gap:8px;margin-top:8px}.cd-eq-f input[type=range]{width:100%}
 .cd-eq{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.cd-eq li{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;background:#121a2b}.cd-eq li div{display:flex;flex-direction:column;min-width:0}.cd-eq li small{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cd-eq li>small{grid-column:2/4}.cd-h3{font-size:13px;margin:12px 0 4px;color:#e3e8f2}.cd-env{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;display:grid;grid-template-columns:1fr;gap:2px}.cd-env li{display:flex;justify-content:space-between;gap:8px}.cd .dl-t th{background:#0d1220}.cd .dl-t th,.cd .dl-t td{border-color:#1a2133}.cd-rev{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cd-rev select{background:#121a2b;color:#e3e8f2;border:1px solid #26304a;border-radius:6px}
 .cd-prob{list-style:none;margin:4px 0;padding:0}.cd-prob button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;background:rgba(255,176,122,.08);color:inherit;font:inherit;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer;margin-top:3px}.cd-prob b{font-size:12px;color:#ffb07a;font-weight:500}.cd-prob span{font-size:12px;color:#cfd7e6}.cd-msg button{align-self:flex-end}
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
@@ -4044,6 +4044,8 @@ const CD_MODOS = {
   supervisado: ["Autónomo supervisado", "Ejecutá un plan de varias etapas. Antes de empezar contá el plan en pasos numerados; pedí aprobación para lo sensible (borrar, publicar, gastar) y al terminar resumí qué cambió y cómo lo verificaste."],
   reparacion: ["Reparación", "Encontrá la causa del error, corregila con el cambio mínimo y demostrá con un comando real (probar_aislado) que quedó arreglado."],
   pruebas: ["Generar pruebas", "Escribí pruebas automáticas a partir del comportamiento esperado (casos normales, bordes y errores) con el framework que ya use el proyecto, corrélas con probar_aislado y mostrá el resultado real."],
+  refactor: ["Refactor", "Reorganizá el código sin cambiar su comportamiento: corré las pruebas antes (y si faltan, escribilas), hacé los cambios en pasos chicos, volvé a correrlas después de cada paso y mostrá que siguen pasando."],
+  arquitectura: ["Arquitectura", "Diseñá la arquitectura del proyecto: módulos y responsabilidades, estructura de carpetas, contratos entre partes, datos y dependencias. Dejala en la memoria técnica y en ARQUITECTURA.md, y proponé las tareas para construirla."],
   documentar: ["Documentar", "Generá o actualizá la documentación técnica a partir del código real (README, cómo correr y probar, módulos, API y decisiones) y actualizá la memoria técnica. No inventes funciones que no están."],
 };
 const cdRutaRel = (r) => (CD.p ? r.slice(`codigo/${CD.p}/`.length) : r);
@@ -4157,7 +4159,7 @@ async function cdAbrir(ruta, linea) {
 function pintarCodePanel() {
   const el = $("#cd-panel");
   if (!el) return;
-  const PANELES = [["equipo", "Equipo"], ["terminal", "Terminal"], ["agentes", "Chat"], ["buscar", "Buscar"], ["proyecto", "Proyecto"]];
+  const PANELES = [["equipo", "Equipo"], ["terminal", "Terminal"], ["agentes", "Chat"], ["git", "Git"], ["vista", "Vista"], ["buscar", "Buscar"], ["proyecto", "Proyecto"]];
   const cab = html`<div class="cd-ptabs" role="tablist">${PANELES.map(([k, t]) => html`<button role="tab" aria-selected="${String(CD.panel === k)}" class="${CD.panel === k ? "on" : ""}" data-a="cd-panel" data-v="${k}">${t}</button>`)}</div>`;
   if (!CD.p) { pintar(el, cab); return; }
   let cuerpo = "";
@@ -4192,9 +4194,27 @@ function pintarCodePanel() {
         <ul class="cd-eq">${eq.integrantes.map((x) => { const b = bot(x.id); const e = est(b); return html`<li>${b ? av(b, 26) : ""}<div><b>${x.nombre}</b><small class="muted">${x.rol}</small>${x.abiertas.length ? html`<small>${x.abiertas.map((t) => `${t.estado === "en_curso" ? "▶" : "⏳"} ${t.titulo}`).join(" · ")}</small>` : ""}</div><span class="tag ${e === "work" ? "ion" : e === "wait" ? "sig" : ""}">${estados[e]}</span>${x.hechas ? html`<small class="muted">${x.hechas} ✓</small>` : ""}</li>`; })}</ul>
         <form class="fila" data-f="cd-sumar" style="gap:6px;flex-wrap:wrap"><span class="muted" style="font-size:12.5px">Sumar</span><input class="inp" type="number" name="n" min="1" max="30" value="2" style="width:70px"><select class="inp" name="rol" style="width:auto">${[["backend", "Backend"], ["frontend", "Frontend"], ["programador", "Programador"], ["tester", "Tester"], ["revisor", "Revisor"], ["debugger", "Debugger"], ["disenador", "Diseñador"], ["documentador", "Documentador"], ["devops", "DevOps"], ["arquitecto", "Arquitecto"]].map(([k, t]) => html`<option value="${k}">${t}</option>`)}</select><button class="btn out sm">Sumar</button></form>`;
     }
+  } else if (CD.panel === "git") {
+    const g = CD.git;
+    if (g === undefined) { cdCargarGit(); cuerpo = html`<p class="muted">Cargando…</p>`; }
+    else if (!g.repo) cuerpo = html`<h3 class="cd-h3">Git</h3><p class="muted" style="font-size:12.5px;margin:0">Control de versiones de verdad (anda en el celular sin tener git instalado): commits, ramas, historial y GitHub.</p><button class="btn pri sm" data-a="cd-git" data-v="iniciar">Iniciar repositorio</button>`;
+    else cuerpo = html`<div class="fila" style="gap:6px;flex-wrap:wrap;align-items:center"><span class="muted" style="font-size:12.5px">Rama</span><select class="inp" data-c="cd-git-rama" style="width:auto">${g.ramas.map((r) => html`<option ${si(r === g.rama, "selected")}>${r}</option>`)}</select><button class="btn ghost sm" data-a="cd-git-nueva">Nueva rama</button>${g.ramas.length > 1 ? html`<button class="btn ghost sm" data-a="cd-git-unir">Unir otra rama</button>` : ""}</div>
+      <h3 class="cd-h3">Cambios (${g.cambios.length})</h3>${g.cambios.length ? html`<ul class="cd-res">${g.cambios.map((c) => html`<li><button data-a="cd-git-diff" data-r="${c.ruta}"><b>${c.ruta}</b><code>${c.estado}</code></button></li>`)}</ul>
+        <form data-f="cd-commit" class="cd-msg"><input class="inp" name="mensaje" required placeholder="Qué cambió y por qué" maxlength="2000"><button class="btn pri sm">Commit</button></form>` : html`<p class="muted" style="font-size:12.5px;margin:0">Todo guardado.</p>`}
+      <h3 class="cd-h3">Historial</h3><ul class="cd-hist">${g.historial.slice(0, 15).map((c) => html`<li><code>${c.oid.slice(0, 7)}</code> ${c.mensaje.split("\n")[0]} <small class="muted">· ${c.autor} · ${diaHora(c.fecha)}</small></li>`)}</ul>
+      <h3 class="cd-h3">GitHub</h3><form data-f="cd-remoto" class="fila" style="gap:6px"><input class="inp" name="url" placeholder="https://github.com/dueño/repo" value="${g.remoto || ""}" style="flex:1"><button class="btn out sm">Guardar</button></form>
+      ${g.remoto ? html`<div class="fila" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn out sm" data-a="cd-git" data-v="traer">Traer</button><button class="btn out sm" data-a="cd-git-subir">Subir rama</button><button class="btn ghost sm" data-a="cd-git-pr">Abrir pull request</button></div><p class="muted" style="font-size:12px">Usa el token de la conexión de GitHub (Conexiones). Subir y abrir un PR publican en GitHub: lo confirmás cada vez.</p>` : ""}`;
+  } else if (CD.panel === "vista") {
+    const htmls = CD.archivos.filter((a) => !a.carpeta && /\.html?$/i.test(a.ruta));
+    CD.vistaRuta = htmls.some((a) => a.ruta === CD.vistaRuta) ? CD.vistaRuta : (htmls.find((a) => /index\.html?$/i.test(a.ruta)) || htmls[0])?.ruta;
+    cuerpo = htmls.length ? html`<div class="fila" style="gap:6px"><select class="inp" data-c="cd-vista" style="flex:1">${htmls.map((a) => html`<option value="${a.ruta}" ${si(a.ruta === CD.vistaRuta, "selected")}>${cdRutaRel(a.ruta)}</option>`)}</select><a class="btn ghost sm" href="${vistaDe(CD.vistaRuta)}" target="_blank" rel="noopener">Abrir</a></div>
+      <iframe id="cd-vivo" src="${vistaDe(CD.vistaRuta)}?v=${CD.vistaV || 0}" sandbox="allow-scripts" referrerpolicy="no-referrer" title="Vista en vivo" style="width:100%;flex:1;min-height:360px;border:1px solid #1a2133;border-radius:10px;background:#fff;margin-top:8px"></iframe>
+      <p class="muted" style="font-size:12px">Se recarga sola cada vez que se guarda un archivo del proyecto (vos o un compañero).</p>` : html`<p class="muted">El proyecto no tiene páginas HTML para ver.</p>`;
   } else if (CD.panel === "proyecto") {
     const en = CD.entorno, dp = CD.deps;
-    cuerpo = html`<h3 class="cd-h3">Entorno</h3>${en ? html`<p class="muted" style="font-size:12.5px;margin:0">${en.tipo.join(" · ") || "Tipo no detectado"}</p><ul class="cd-env">${en.herramientas.map((h) => html`<li><b>${h.nombre}</b><span class="${h.version ? "" : "muted"}">${h.version || "no instalado"}</span></li>`)}</ul>` : html`<button class="btn out sm" data-a="cd-entorno">Detectar herramientas</button>`}
+    const scripts = CD.scripts || [];
+    cuerpo = html`<h3 class="cd-h3">Compilar y correr</h3><div class="cd-rap">${scripts.length ? scripts.map((c) => html`<button class="chip" data-a="cd-correr" data-v="${c}">${c}</button>`) : html`<button class="btn out sm" data-a="cd-scripts">Ver comandos del proyecto</button>`}</div>
+      <h3 class="cd-h3">Entorno</h3>${en ? html`<p class="muted" style="font-size:12.5px;margin:0">${en.tipo.join(" · ") || "Tipo no detectado"}</p><ul class="cd-env">${en.herramientas.map((h) => html`<li><b>${h.nombre}</b><span class="${h.version ? "" : "muted"}">${h.version || "no instalado"}</span></li>`)}</ul>` : html`<button class="btn out sm" data-a="cd-entorno">Detectar herramientas</button>`}
       <h3 class="cd-h3">Dependencias</h3>${dp ? (dp.length ? html`<table class="dl-t"><thead><tr><th>Paquete</th><th>Usada</th><th>Última</th><th></th></tr></thead><tbody>${dp.map((d) => html`<tr><td>${d.nombre}</td><td>${d.usada}</td><td>${d.ultima || "?"}</td><td><span class="tag ${d.estado === "mayor" ? "sig" : d.estado === "al día" ? "ok" : ""}">${d.estado}</span></td></tr>`)}</tbody></table><p class="muted" style="font-size:12px">«mayor»: hay una versión nueva que puede romper cosas; revisá sus cambios antes de actualizar.</p>` : html`<p class="muted" style="font-size:13px">No hay package.json ni requirements.txt.</p>`) : html`<button class="btn out sm" data-a="cd-deps">Revisar dependencias</button>`}
       <h3 class="cd-h3">Revisión multiagente</h3><p class="muted" style="font-size:12.5px;margin:0">Cada revisor mira por separado los archivos cambiados, corre las pruebas y entrega una lista priorizada. No cambian nada.</p>
       <form data-f="cd-revision" class="cd-rev">${S.bots.slice(0, 12).map((b) => html`<label class="chk-s"><input type="checkbox" name="rev" value="${b.id}"> ${b.nombre}</label>`)}<label class="chk-s">Últimas <select name="horas">${[6, 24, 72, 168].map((h) => html`<option value="${h}" ${si(h === 24, "selected")}>${h} h</option>`)}</select></label><button class="btn out sm">Pedir revisión</button></form>
@@ -4212,6 +4232,7 @@ function pintarCodePanel() {
       <p class="muted" style="font-size:12.5px;margin:4px 0">${CD_MODOS[CD.modo][1]}${CD.modo === "equipo" && b && b.cargo !== "manager" ? " (elegí un manager: «Equipo de desarrollo» crea uno)." : ""}</p>
       ${b ? html`<span class="cd-est">${av(b, 22)}<span>${b.nombre}: ${est(b) === "work" ? `trabajando${b.accion ? ` · ${b.accion}` : ""}` : est(b) === "wait" ? "espera tu aprobación" : "libre"}</span>${est(b) === "wait" ? html`<a class="btn ghost sm" href="#/aprobaciones">Ver</a>` : ""}</span>` : ""}
       <ol class="cd-conv">${CD.conv.slice(-14).map((x) => x.tipo === "bot" ? html`<li class="b">${md(x.texto)}</li>` : x.tipo === "usuario" ? html`<li class="u">${x.texto.slice(0, 600)}</li>` : x.tipo === "accion" ? html`<li class="a ${x.error ? "e" : ""}">${ico("bolt", "s")}${x.texto}</li>` : "")}</ol>
+      <div class="fila" style="gap:6px"><button class="btn ghost sm" data-a="cd-captura">${ico("image", "s")}Desde una captura</button><input type="file" id="cd-captura" accept="image/*" data-c="cd-captura-f" hidden><small class="muted">Subí una captura de una app y te propone el código.</small></div>
       <form class="cd-msg" data-f="cd-pedir"><textarea class="inp" name="texto" rows="2" placeholder="Ej.: agregá un botón para borrar la lista y una prueba" data-k="cd-pedido" aria-label="Pedido"></textarea><label class="chk-s"><input type="checkbox" name="seleccion"> Incluir la selección del editor</label><button class="btn pri sm">Mandar</button></form>` : html`<p class="muted">Creá un compañero (o «Equipo de desarrollo») para que trabaje en el proyecto.</p>`}</div>`;
   }
   pintar(el, html`${cab}<div class="cd-pc">${cuerpo}</div>`);
@@ -4249,6 +4270,12 @@ async function cdCargarEquipo() {
   CD.equipo = await api("GET", `/api/code/equipo?p=${encodeURIComponent(CD.p)}`).catch(() => null);
   if (CD.panel === "equipo") pintarCodePanel();
 }
+async function cdCargarGit() {
+  if (!CD.p) return;
+  CD.git = await api("GET", `/api/code/git?p=${encodeURIComponent(CD.p)}`).catch(() => null);
+  if (CD.panel === "git") pintarCodePanel();
+}
+const cdGit = async (cuerpo) => { const r = await api("POST", `/api/code/git?p=${encodeURIComponent(CD.p)}`, cuerpo); CD.git = r.estado; toast(r.mensaje); pintarCodePanel(); await cargarCodeArchivos(); pintarCodeArbol(); return r; };
 function cdContexto() {
   const t = CD.tabs.find((x) => x.ruta === CD.activa);
   return [`[Gravity Code · proyecto «${CD.p}» en la carpeta codigo/${CD.p}/ de la computadora · modo ${CD_MODOS[CD.modo][0]}]`, CD_MODOS[CD.modo][1], `Leé primero la memoria técnica: codigo/${CD.p}/.gravity/memoria.md, y actualizala al terminar.`, t ? `Archivo abierto: ${t.ruta}${t.texto !== t.original ? " (tiene cambios sin guardar en el editor del usuario: no lo pises sin avisar)" : ""}` : ""].filter(Boolean).join("\n");
@@ -6682,6 +6709,29 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "cd-git": (t) => conCarga(t, () => cdGit({ accion: t.dataset.v })),
+  "cd-git-nueva": () => abrirDialogo(html`<form class="dlg-f" data-f="cd-git-rama"><h2 id="dlg-t">Rama nueva</h2><label class="fld"><span>Nombre</span><input class="inp" name="rama" required pattern="[\w./-]{1,80}" placeholder="carrito"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear y pasar</button></div></form>`, true),
+  "cd-git-unir": () => abrirDialogo(html`<form class="dlg-f" data-f="cd-git-unir"><h2 id="dlg-t">Unir a ${CD.git.rama}</h2><label class="fld"><span>Rama a unir</span><select class="inp" name="rama">${CD.git.ramas.filter((r) => r !== CD.git.rama).map((r) => html`<option>${r}</option>`)}</select></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Unir</button></div></form>`, true),
+  "cd-git-subir": async (t) => { if (await confirmar(`¿Subir la rama ${CD.git.rama} a GitHub?`, `Se publica en ${CD.git.remoto}.`, "Subir")) await conCarga(t, () => cdGit({ accion: "subir" })); },
+  "cd-git-pr": () => abrirDialogo(html`<form class="dlg-f" data-f="cd-git-pr"><h2 id="dlg-t">Pull request</h2><p class="muted" style="font-size:13px">De ${CD.git.rama} hacia otra rama del repositorio en GitHub. Primero subí la rama.</p><label class="fld"><span>Título</span><input class="inp" name="titulo" required maxlength="200"></label><label class="fld"><span>Descripción</span><textarea class="inp" name="mensaje" rows="4" maxlength="2000"></textarea></label><label class="fld"><span>Hacia</span><input class="inp" name="base" value="main"></label><div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Abrir en GitHub</button></div></form>`, true),
+  "cd-git-diff": async (t) => {
+    const ruta = t.dataset.r, abs = `codigo/${CD.p}/${ruta}`;
+    const [antes, ahora] = await Promise.all([api("GET", `/api/code/git/head?p=${encodeURIComponent(CD.p)}&ruta=${encodeURIComponent(ruta)}`).then((r) => r.contenido ?? ""), cdLeer(abs).catch(() => "")]);
+    abrirDialogo(html`<div class="dlg-f cd-dlg"><h2 id="dlg-t">${ruta}</h2><p class="muted" style="font-size:13px">Izquierda: último commit. Derecha: ahora.</p><div id="cd-diff" class="cd-diff"></div><div class="acts"><button type="button" class="btn pri" data-a="cerrar-dlg">Listo</button></div></div>`);
+    (await cargarCodeEditor()).crearDiff($("#cd-diff"), antes, ahora, { ruta, unificado: innerWidth < 760 });
+  },
+  "cd-scripts": async () => {
+    const pj = CD.archivos.find((a) => a.ruta === `codigo/${CD.p}/package.json`);
+    const xs = [];
+    if (pj) { try { const j = JSON.parse(await cdLeer(pj.ruta)); for (const k of Object.keys(j.scripts || {})) xs.push(k === "start" || k === "test" ? `npm ${k}` : `npm run ${k}`); } catch {} if (!xs.includes("npm install")) xs.unshift("npm install"); }
+    if (CD.archivos.some((a) => /\/(build\.gradle(\.kts)?|gradlew)$/.test(a.ruta))) xs.push("./gradlew assembleDebug", "gradle assembleDebug");
+    if (CD.archivos.some((a) => /\.py$/.test(a.ruta))) xs.push("python3 -m py_compile *.py", "python3 -m unittest");
+    if (CD.archivos.some((a) => /\/Makefile$/.test(a.ruta))) xs.push("make");
+    CD.scripts = xs.length ? xs : ["ls -la"];
+    pintarCodePanel();
+  },
+  "cd-correr": async (t) => { const e = await api("POST", `/api/code/ejecutar?p=${encodeURIComponent(CD.p)}`, { comando: t.dataset.v, aislado: false }); CD.ejec = [e, ...CD.ejec]; CD.panel = "terminal"; pintarCodePanel(); cdSondear(); },
+  "cd-captura": () => $("#cd-captura")?.click(),
   "cd-canal": async () => { const cs = await api("GET", "/api/canales"); const c = cs.find((x) => x.tipo === "proyecto" && x.refId === CD.equipo?.proyecto?.id); ir(c ? `#/canales/${c.id}` : "#/canales"); },
   acomp: () => { const el = $("#acomp"); el.dataset.abierto = el.dataset.abierto === "1" ? "0" : "1"; pintarAcompanante(); },
   "acomp-cerrar": (t) => { $("#acomp").dataset.abierto = "0"; ir(t.getAttribute("href")); pintarAcompanante(); },
@@ -7067,6 +7117,11 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "cd-commit"(f) { await conCarga(f.querySelector("button"), () => cdGit({ accion: "commit", mensaje: f.mensaje.value.trim() })); },
+  async "cd-remoto"(f) { await conCarga(f.querySelector("button"), () => cdGit({ accion: "remoto", url: f.url.value.trim() })); },
+  async "cd-git-rama"(f) { await conCarga(f.querySelector("button:not([type=button])"), async () => { await cdGit({ accion: "rama", rama: f.rama.value.trim() }); cerrarDialogo(); }); },
+  async "cd-git-unir"(f) { await conCarga(f.querySelector("button:not([type=button])"), async () => { await cdGit({ accion: "unir", rama: f.rama.value }); cerrarDialogo(); }); },
+  async "cd-git-pr"(f) { await conCarga(f.querySelector("button:not([type=button])"), async () => { const r = await cdGit({ accion: "pr", titulo: f.titulo.value.trim(), mensaje: f.mensaje.value.trim(), base: f.base.value.trim() || "main" }); cerrarDialogo(); if (/^https:/.test(r.mensaje)) open(r.mensaje, "_blank", "noopener"); }); },
   async "cd-armar-equipo"(f) {
     const cantidad = Number(f.cantidad.value);
     await conCarga(f.querySelector("button"), async () => {
@@ -7557,6 +7612,16 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "cd-git-rama": async (t) => { try { await cdGit({ accion: "cambiar", rama: t.value }); CD.tabs = []; CD.activa = null; pintarCode(); } catch (e) { toast(e.message, "err"); await cdCargarGit(); } },
+  "cd-vista": (t) => { CD.vistaRuta = t.value; pintarCodePanel(); },
+  "cd-captura-f": async (t) => {
+    const f = t.files?.[0];
+    if (!f || !CD.botId) return;
+    const r = await fetch(`/api/code/captura?p=${encodeURIComponent(CD.p)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f });
+    const j = await r.json(); if (!r.ok) { toast(j.error || "No se pudo subir.", "err"); return; }
+    await api("POST", `/api/bots/${CD.botId}/mensajes`, { texto: `${cdContexto()}\n\n[Captura de pantalla] Subí una captura en ${j.ruta}. Mirala (con read, o con analizar_video si tenés Gemini) y proponé el código para reproducir o mejorar ese diseño en este proyecto: estructura, componentes, estilos y accesibilidad. Usá los colores y medidas que se ven; lo que no se vea, decilo.` });
+    toast(`${bot(CD.botId)?.nombre} está mirando la captura.`); await cdCargarConv(); pintarCodePanel();
+  },
   acompanante: (t) => { guardarLocal("gravity-acompanante", t.checked ? "1" : "0"); pintarAcompanante(); },
   "md-hito": async (t) => { await api("PUT", `/api/midia/objetivos/${t.dataset.o}`, { hito: t.dataset.h, hecho: t.checked }); await montarMiDia(); },
   "dl-archivo": (t) => (t.value ? dlAbrir(t.value) : null),
@@ -7573,7 +7638,7 @@ const C = {
   "univ-luz": (t) => { const c = univCfg(); guardarLocal("gravity-universo", { ...c, luz: Number(t.value) }); $("#univ-3d")?.univ?.luz(Number(t.value)); },
   "univ-seguir": (t) => $("#univ-3d")?.univ?.seguir(t.value || null),
   "respaldo-auto": async (t) => { await api("PUT", "/api/ajustes", { respaldoAutomatico: t.checked }); toast(t.checked ? "Respaldo automático prendido." : "Respaldo automático apagado."); },
-  "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; CD.equipo = undefined; await cargarCodeArchivos(); pintarCode(); },
+  "cd-proyecto": async (t) => { CD.p = t.value; CD.tabs = []; CD.activa = null; CD.res = null; CD.equipo = undefined; CD.git = undefined; CD.scripts = null; await cargarCodeArchivos(); pintarCode(); },
   "cd-aislado": (t) => { CD.aislado = t.checked; },
   "cd-bot": async (t) => { CD.botId = t.value; await cdCargarConv(); pintarCodePanel(); },
   // Importar una copia: el .zip va crudo (application/zip), el motor lo valida, lo aplica y se reinicia.
@@ -7837,7 +7902,7 @@ function conectar() {
   });
   on("memoria", (d) => { if (d.botId === S.botId && S.pestana === "memoria") cargarMemoria(); });
   let tCompu = null;
-  on("computadora", () => { if ($("#pc")) { clearTimeout(tCompu); tCompu = setTimeout(cargarCompu, 400); } if ($("#code") && CD.p) { clearTimeout(CD.tArch); CD.tArch = setTimeout(async () => { await cargarCodeArchivos().catch(() => {}); pintarCodeArbol(); if (CD.panel === "terminal") pintarCodePanel(); }, 400); } });
+  on("computadora", () => { if ($("#pc")) { clearTimeout(tCompu); tCompu = setTimeout(cargarCompu, 400); } if ($("#code") && CD.p) { clearTimeout(CD.tArch); CD.tArch = setTimeout(async () => { await cargarCodeArchivos().catch(() => {}); pintarCodeArbol(); if (CD.panel === "terminal") pintarCodePanel(); if (CD.panel === "vista") { const f = $("#cd-vivo"); if (f) { CD.vistaV = Date.now(); f.src = `${vistaDe(CD.vistaRuta)}?v=${CD.vistaV}`; } } if (CD.panel === "git") cdCargarGit(); }, 400); } });
   on("tarea", (t) => {
     const i = S.tareas.findIndex((x) => x.id === t.id);
     const u = $("#univ-3d")?.univ;

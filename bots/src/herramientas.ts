@@ -239,7 +239,7 @@ const porBot = new Map<string, Map<string, BetaRunnableTool>>();
 // Permisos por compañero: el usuario puede apagarle grupos de herramientas. Se hace cumplir acá (no se
 // le mandan al modelo y no se ejecutan), no con una instrucción. Entregar una tarea queda siempre.
 export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas: string[] }> = {
-  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep", "probar_aislado", "datos", "documento"] },
+  computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep", "probar_aislado", "datos", "documento", "git"] },
   web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
   mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
   conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
@@ -287,6 +287,7 @@ async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunn
       herramientaDatos(),
       herramientaCanales(botId),
       herramientaDocumento(),
+      herramientaGit(botId),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
       // Mirar videos y audios lo hace Gemini: está si hay su clave, sea cual sea el proveedor de los bots.
@@ -500,6 +501,38 @@ function herramientaEnsenar(botId: string): BetaRunnableTool {
       const { enviarMensaje } = await import("./agente.ts");
       enviarMensaje(a.id, `[Devolución de tu mentor ${yo?.nombre ?? ""}]\n${e.devolucion.slice(0, 6000)}\n\nGuardá lo útil en /memories/lecciones.md («antes de X, verificar Y») y aplicalo la próxima vez. No hace falta que respondas.`);
       return `Devolución enviada a ${a.nombre}.`;
+    },
+  });
+}
+
+const EntradaGit = z.strictObject({
+  proyecto: z.string().describe("Nombre del proyecto de Gravity Code (carpeta codigo/<proyecto>)"),
+  accion: z.enum(["estado", "commit", "crear_rama", "cambiar_rama", "historial"]),
+  mensaje: z.string().nullable().describe("commit: mensaje claro de qué cambió y por qué"),
+  rama: z.string().nullable().describe("crear_rama / cambiar_rama: nombre"),
+});
+
+// Git local de los proyectos de Gravity Code (subir a GitHub lo hace el usuario).
+function herramientaGit(botId: string): BetaRunnableTool {
+  return betaZodTool({
+    name: "git",
+    description: "Git de los proyectos de Gravity Code: estado (qué cambió), commit (guarda todo lo cambiado con un mensaje), crear_rama, cambiar_rama e historial. Hacé commit al terminar una parte que funciona (con las pruebas pasando). Subir a GitHub o abrir pull requests lo hace el usuario.",
+    inputSchema: EntradaGit,
+    run: async (e) => {
+      const G = await import("./git.ts");
+      try {
+        const est = await G.estado(e.proyecto);
+        if (!est.repo) return "Ese proyecto no tiene repositorio: pedile al usuario que lo inicie en Gravity Code > Git.";
+        if (e.accion === "estado") return `Rama ${est.rama}. ${est.cambios.length ? `Cambios:\n${est.cambios.map((c) => `- ${c.ruta}: ${c.estado}`).join("\n")}` : "Sin cambios."}`;
+        if (e.accion === "historial") return est.historial.slice(0, 15).map((c) => `${c.oid.slice(0, 7)} ${c.fecha.slice(0, 16)} ${c.autor}: ${c.mensaje.split("\n")[0]}`).join("\n") || "Sin commits.";
+        const b = buscarBot(botId);
+        if (e.accion === "commit") return `Commit ${(await G.commit(e.proyecto, e.mensaje ?? "", { nombre: b?.nombre ?? "Gravity", email: `${botId}@gravity.local` })).slice(0, 7)} hecho.`;
+        if (e.accion === "crear_rama") { await G.crearRama(e.proyecto, e.rama ?? ""); return `Rama ${e.rama} creada y activa.`; }
+        await G.cambiarRama(e.proyecto, e.rama ?? "");
+        return `Ahora en la rama ${e.rama}.`;
+      } catch (err) {
+        return `No se pudo: ${(err as Error).message}`;
+      }
     },
   });
 }

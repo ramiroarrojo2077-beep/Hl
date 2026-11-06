@@ -297,7 +297,7 @@ function verificarOrigen(req: http.IncomingMessage): void {
   // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
   const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
   // Data Lab sube tablas como binario (CSV, Excel): tampoco es un tipo "simple".
-  const esTabla = (req.url ?? "").startsWith("/api/datos/subir") && tipo.startsWith("application/octet-stream");
+  const esTabla = /^\/api\/(datos\/subir|code\/captura)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
   if (!tipo.startsWith("application/json") && !esRespaldo && !esTabla) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
@@ -1710,6 +1710,31 @@ ruta("POST", "/api/code/ejecutar", async ({ url, cuerpo }) => {
   return malPedido(() => Code.ejecutarEnProyecto(codeDe(url), d.comando, d.aislado, () => emitir("computadora")));
 });
 ruta("GET", "/api/code/ejecuciones", async ({ url }) => Code.listarEjecuciones(url.searchParams.get("p") ?? undefined));
+// Git Manager (ver git.ts). Subir, traer y abrir pull requests los hace el usuario con su botón.
+ruta("GET", "/api/code/git", async ({ url }) => (await import("./git.ts")).estado(codeDe(url)));
+ruta("GET", "/api/code/git/head", async ({ url }) => ({ contenido: await (await import("./git.ts")).enHead(codeDe(url), url.searchParams.get("ruta") ?? "") }));
+ruta("POST", "/api/code/git", async ({ url, cuerpo }) => {
+  const G = await import("./git.ts");
+  const p = codeDe(url);
+  const d = validar(z.object({ accion: z.enum(["iniciar", "commit", "rama", "cambiar", "unir", "remoto", "subir", "traer", "pr"]), mensaje: z.string().max(2000).default(""), rama: z.string().max(80).default(""), url: z.string().max(300).default(""), titulo: z.string().max(200).default(""), base: z.string().max(80).default("main") }), await cuerpo());
+  const yo = { nombre: "Usuario de Gravity", email: "usuario@gravity.local" };
+  try {
+    let r = "";
+    if (d.accion === "iniciar") { await G.iniciar(p); r = "Repositorio creado."; }
+    else if (d.accion === "commit") r = `Commit ${(await G.commit(p, d.mensaje, yo)).slice(0, 7)}.`;
+    else if (d.accion === "rama") { await G.crearRama(p, d.rama); r = `Rama ${d.rama} creada.`; }
+    else if (d.accion === "cambiar") { await G.cambiarRama(p, d.rama); r = `Ahora en ${d.rama}.`; }
+    else if (d.accion === "unir") r = await G.unir(p, d.rama, yo);
+    else if (d.accion === "remoto") { await G.ponerRemoto(p, d.url); r = "Remoto guardado."; }
+    else if (d.accion === "subir") r = await G.subir(p, tokenGithub());
+    else if (d.accion === "traer") r = await G.traer(p, tokenGithub(), yo);
+    else r = await G.pullRequest(p, tokenGithub(), d.titulo || d.mensaje.split("\n")[0] || "Cambios desde Gravity", d.mensaje, d.base);
+    emitir("computadora");
+    return { mensaje: r, estado: await G.estado(p) };
+  } catch (err) {
+    throw new ErrorHttp(400, (err as Error).message);
+  }
+});
 // Equipo de programación del proyecto (ver equipo-codigo.ts).
 ruta("GET", "/api/code/equipo", async ({ url }) => (await import("./equipo-codigo.ts")).estadoEquipo(codeDe(url)));
 ruta("POST", "/api/code/equipo", async ({ url, cuerpo }) => {
@@ -1733,6 +1758,20 @@ ruta("POST", "/api/code/equipo/sumar", async ({ url, cuerpo }) => {
   malPedido(() => E.sumarAlEquipo(p, d.cantidad, d.rol));
   emitir("bots");
   return E.estadoEquipo(p);
+});
+// Captura de pantalla para «Desde una captura» (Gravity Code Vision): queda en .gravity/capturas/.
+ruta("POST", "/api/code/captura", async ({ req, url }) => {
+  const p = codeDe(url);
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const x of req) { total += (x as Buffer).length; if (total > 12 * 1024 * 1024) throw new ErrorHttp(413, "La imagen pasa los 12 MB."); partes.push(x as Buffer); }
+  const datos = Buffer.concat(partes);
+  const ext = datos.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])) ? "png" : datos[0] === 0xff && datos[1] === 0xd8 ? "jpg" : datos.subarray(8, 12).toString() === "WEBP" ? "webp" : null;
+  if (!ext) throw new ErrorHttp(400, "Subí una imagen PNG, JPG o WEBP.");
+  const rel = `codigo/${p}/.gravity/capturas/captura-${Date.now()}.${ext}`;
+  await mkdir(path.dirname(path.join(COMPUTADORA, rel)), { recursive: true });
+  await writeFile(path.join(COMPUTADORA, rel), datos);
+  return { ruta: rel };
 });
 ruta("GET", "/api/code/entorno", async ({ url }) => Code.entorno(codeDe(url)));
 ruta("GET", "/api/code/dependencias", async ({ url }) => Code.dependencias(codeDe(url)));
