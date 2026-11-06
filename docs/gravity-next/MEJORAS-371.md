@@ -74,3 +74,18 @@ Editar, limpiar y analizar se hace en el navegador con Web Audio (sin IA, sin co
 341. ✅ Biblioteca de sonidos: todos los audios de la computadora con etiquetas, categoría (voz, reunión, música, efecto, ambiente), favoritos, nota, búsqueda y reproducción.
 
 `/vista` responde pedidos por rango (para saltar dentro del audio). Pruebas: `pruebas/audio.test.mjs` (5: tipos, subtítulos, biblioteca, transcripción/hablantes/traducción con modelo simulado, consentimiento) y e2e con audios hechos con ffmpeg y micrófono simulado (editar y verificar con ffprobe, limpieza, análisis, requisito de Gemini, traducción de frase, grabación con consentimiento, voces, celular).
+
+## 30. Gravity Browser (`#/navegador`, `navegador.ts`)
+El motor trae las páginas (nunca de la red privada, hasta 5 redirecciones y 3 MB) y la app las arma solo con elementos permitidos: sin scripts, estilos, iframes ni formularios de la página; las imágenes pasan por `/api/navegador/imagen` y los enlaces navegan adentro. Lo que usa IA usa el modelo configurado; buscar, leer, extraer tablas y las fuentes académicas no usan IA.
+312. ✅ Navegador: barra de dirección o búsqueda, atrás/adelante, enlaces internos, «Abrir afuera». La búsqueda usa DuckDuckGo (HTML, sin clave).
+313. ✅ Asistente de lectura: resumen, tipo de página, minutos de lectura y puntos clave con el párrafo de donde sale cada uno (se descartan los que citan párrafos inexistentes).
+314. ✅ Comparador de páginas (2 a 4): coincidencias y diferencias con lo que dice cada fuente (números de fuente verificados) y conclusión.
+315. ✅ Extractor: tablas de la página a CSV sin IA, o campos a pedido con IA (por ejemplo «producto, precio») a `datos/*.csv` para Data Lab. Solo si robots.txt lo permite.
+316. ✅ Marcadores por proyecto (los proyectos de Gravity), con etiquetas; también quedan como fuentes en Investigación; exportar referencias.
+317. ✅ Fuentes académicas: Crossref, OpenAlex y arXiv a la vez (gratis, sin clave), sin repetidos (mismo DOI o título), ordenadas por citas, con PDF abierto cuando hay; si una falla, siguen las otras. Los compañeros tienen la herramienta `papers`.
+318. ✅ Modo lectura: solo el contenido principal (sin menús, publicidad ni pie), letra serif ajustable y tiempo de lectura.
+319. ✅ Traducción contextual: traduce bloque por bloque (títulos, párrafos, ítems, celdas) y, si un bloque tiene enlaces o formato, cada tramo de texto, así la página conserva su estructura y sus enlaces.
+320. 🧪 Automatización de formularios: lista los formularios de la página con sus campos; antes de enviar muestra método, destino y cada valor y pide confirmación; nunca completa contraseñas, claves ni tarjetas; respeta robots.txt; el envío queda en el historial. Experimental: los sitios que dependen de JavaScript no funcionan.
+321. ✅ Historial de investigación: visitas, envíos y extracciones con fecha y detalle, búsqueda, borrar y exportar como referencias Markdown a `investigacion/`.
+
+Este entorno de desarrollo no tiene salida a internet: las pruebas usan un sitio local que imita páginas, robots.txt, el buscador y los formatos reales de Crossref, OpenAlex y arXiv (`pruebas/navegador.test.mjs`, 7, y e2e en el navegador con resultado verificado del lado del sitio). La variable `GRAVITY_PRUEBAS_RED_LOCAL` solo existe para esas pruebas.

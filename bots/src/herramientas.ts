@@ -240,7 +240,7 @@ const porBot = new Map<string, Map<string, BetaRunnableTool>>();
 // le mandan al modelo y no se ejecutan), no con una instrucción. Entregar una tarea queda siempre.
 export const GRUPOS_HERRAMIENTAS: Record<string, { nombre: string; herramientas: string[] }> = {
   computadora: { nombre: "Computadora: terminal y archivos", herramientas: ["bash", "read", "write", "edit", "glob", "grep", "probar_aislado", "datos", "documento", "git", "conocimiento"] },
-  web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch"] },
+  web: { nombre: "Buscar y leer en internet", herramientas: ["web_search", "web_fetch", "papers"] },
   mensajes: { nombre: "Mensajes: WhatsApp, Telegram y redes", herramientas: ["mensajes"] },
   conexiones: { nombre: "Apps conectadas: correo, Microsoft 365, MCP", herramientas: ["conexion"] },
   equipo: { nombre: "Delegar a su equipo y proponer compañeros nuevos", herramientas: ["delegar", "tareas", "equipo_nuevo", "ensenar", "canales"] },
@@ -288,6 +288,7 @@ async function todasLasHerramientas(botId: string): Promise<Map<string, BetaRunn
       herramientaCanales(botId),
       herramientaDocumento(),
       herramientaConocimiento(botId),
+      herramientaPapers(),
       herramientaGit(botId),
       // Con modelos gratis no están las búsquedas del servidor de Anthropic: se hacen desde acá.
       ...(PROVEEDOR === "gratis" ? herramientasWeb() : []),
@@ -403,7 +404,7 @@ function herramientasWeb(): BetaRunnableTool[] {
 }
 
 /** Direcciones que no son de internet (la propia máquina, la red de casa): no se leen. */
-function esPrivada(ip: string): boolean {
+export function esPrivada(ip: string): boolean {
   if (ip.includes(":")) {
     const v = ip.toLowerCase();
     if (v.startsWith("::ffff:")) return esPrivada(v.slice(7));
@@ -566,6 +567,26 @@ function herramientaDocumento(): BetaRunnableTool {
         return `[Parte ${n} de ${total} de ${e.archivo}]\n${D.parte(texto, n)}`;
       } catch (err) {
         return `No se pudo leer: ${(err as Error).message}`;
+      }
+    },
+  });
+}
+
+const EntradaPapers = z.strictObject({ consulta: z.string().min(2).max(300).describe("Tema, título o autor (en inglés suele haber más resultados)") });
+// Fuentes académicas (Crossref, OpenAlex, arXiv; sin claves): ver navegador.ts.
+function herramientaPapers(): BetaRunnableTool {
+  return betaZodTool({
+    name: "papers",
+    description: "Busca publicaciones académicas (artículos, preprints) en Crossref, OpenAlex y arXiv: título, autores, año, revista, citas, DOI y PDF abierto si hay. Usalo para investigar con fuentes verificables y citá el DOI o el enlace.",
+    inputSchema: EntradaPapers,
+    run: async (e) => {
+      try {
+        const N = await import("./navegador.ts");
+        const r = await N.buscarAcademico(e.consulta, 8);
+        const lista = r.resultados.slice(0, 10).map((x, i) => `${i + 1}. ${x.titulo} — ${x.autores.slice(0, 3).join(", ")}${x.autores.length > 3 ? " y otros" : ""}${x.anio ? ` (${x.anio})` : ""}${x.revista ? `, ${x.revista}` : ""}${x.citas != null ? ` · ${x.citas} citas` : ""}\n   ${x.doi ? `DOI ${x.doi} · ` : ""}${x.url}${x.pdf ? ` · PDF: ${x.pdf}` : ""}${x.resumen ? `\n   ${x.resumen.slice(0, 300)}` : ""}`).join("\n");
+        return externo(`${lista || "Sin resultados."}${r.errores.length ? `\n(No respondió: ${r.errores.join("; ")})` : ""}`);
+      } catch (err) {
+        return `No se pudo buscar: ${(err as Error).message}`;
       }
     },
   });

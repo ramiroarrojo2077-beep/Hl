@@ -1520,6 +1520,85 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
+// ---- Gravity Browser (ver navegador.ts) ----
+const conNav = async <T>(f: (K: typeof import("./navegador.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./navegador.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+const iaNav = () => AbortSignal.timeout(180_000);
+ruta("POST", "/api/navegador/abrir", async ({ cuerpo }) => {
+  const d = validar(z.object({ url: z.string().trim().min(3).max(2000) }), await cuerpo());
+  return conNav((K) => K.abrir(d.url));
+});
+ruta("GET", "/api/navegador/imagen", async ({ url, res }) => {
+  const r = await conNav((K) => K.imagen(url.searchParams.get("url") ?? ""));
+  res.writeHead(200, { "Content-Type": r.tipo, "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600" });
+  res.end(r.datos);
+  return undefined;
+});
+ruta("GET", "/api/navegador/buscar", async ({ url }) => conNav((K) => K.buscarWeb(url.searchParams.get("q") ?? "")));
+ruta("GET", "/api/navegador/academico", async ({ url }) => conNav((K) => K.buscarAcademico(url.searchParams.get("q") ?? "")));
+ruta("GET", "/api/navegador/historial", async ({ url }) => conNav((K) => K.historial(url.searchParams.get("q") ?? "")));
+ruta("DELETE", "/api/navegador/historial", async () => conNav((K) => { K.borrarHistorial(); return { ok: true }; }));
+ruta("GET", "/api/navegador/marcadores", async () => conNav(async (K) => ({ marcadores: K.marcadores(), proyectos: (await import("./proyectos.ts")).listarProyectos().map((p) => ({ id: p.id, nombre: p.nombre })) })));
+ruta("POST", "/api/navegador/marcadores", async ({ cuerpo }) => {
+  const d = validar(z.object({ url: z.string().url().max(2000), titulo: z.string().max(200).optional(), proyecto: z.string().max(40).nullish(), etiquetas: z.array(z.string().max(30)).max(15).optional(), nota: z.string().max(1000).optional() }), await cuerpo());
+  return conNav(async (K) => {
+    const m = K.marcar(d);
+    // También queda como fuente en Investigación.
+    try { (await import("./investigacion.ts")).agregarFuente({ url: m.url, titulo: m.titulo, nota: m.nota, etiquetas: m.etiquetas }); } catch { /* ya estaba */ }
+    return m;
+  });
+});
+ruta("DELETE", "/api/navegador/marcadores/:id", async ({ params }) => conNav((K) => { K.desmarcar(params[0]!); return { ok: true }; }));
+ruta("POST", "/api/navegador/exportar", async ({ cuerpo }) => {
+  const d = validar(z.object({ de: z.enum(["historial", "marcadores"]), proyecto: z.string().max(40).nullish(), cuaderno: z.string().max(60).nullish() }), await cuerpo());
+  return conNav(async (K) => {
+    const items = d.de === "historial" ? K.historial().filter((v) => v.tipo === "visita") : K.marcadores(d.proyecto ?? undefined);
+    if (!items.length) throw new Error("No hay nada para exportar.");
+    const md = K.referenciasMd(items, d.de === "historial" ? "Historial de investigación" : "Marcadores");
+    if (d.cuaderno) { const C = await import("./conocimiento.ts"); C.agregarNota(d.cuaderno, md, "navegador"); return { cuaderno: d.cuaderno, cantidad: items.length }; }
+    await mkdir(path.join(COMPUTADORA, "investigacion"), { recursive: true });
+    const rel = `investigacion/${d.de}-${new Date().toISOString().slice(0, 10)}.md`;
+    await writeFile(path.join(COMPUTADORA, rel), md);
+    emitir("computadora");
+    return { ruta: rel, cantidad: items.length };
+  });
+});
+ruta("POST", "/api/navegador/resumir", async ({ cuerpo }) => { const d = validar(z.object({ url: z.string().max(2000) }), await cuerpo()); return conNav((K) => K.resumir(d.url, iaNav())); });
+ruta("POST", "/api/navegador/comparar", async ({ cuerpo }) => { const d = validar(z.object({ urls: z.array(z.string().max(2000)).min(2).max(4) }), await cuerpo()); return conNav((K) => K.comparar(d.urls, iaNav())); });
+ruta("POST", "/api/navegador/extraer", async ({ cuerpo }) => {
+  const d = validar(z.object({ url: z.string().max(2000), campos: z.array(z.string().max(60)).min(1).max(20), guardar: z.boolean().default(true) }), await cuerpo());
+  return conNav(async (K) => {
+    const r = await K.extraer(d.url, d.campos, iaNav());
+    if (!d.guardar || !r.filas.length) return r;
+    await mkdir(path.join(COMPUTADORA, "datos"), { recursive: true });
+    const rel = `datos/${(new URL(r.url).hostname.replace(/^www\./, "") + "-" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")).replace(/[^\w.-]+/g, "_")}.csv`;
+    await writeFile(path.join(COMPUTADORA, rel), K.aCsv(r.campos, r.filas));
+    emitir("computadora");
+    return { ...r, ruta: rel };
+  });
+});
+ruta("POST", "/api/navegador/tabla", async ({ cuerpo }) => {
+  const d = validar(z.object({ url: z.string().max(2000), filas: z.array(z.array(z.string().max(2000)).max(100)).min(1).max(5000) }), await cuerpo());
+  return conNav(async (K) => {
+    if (!(await K.robotsPermite(d.url))) throw new Error("El sitio no permite que programas extraigan esa página (robots.txt).");
+    const campos = d.filas[0]!.map((c, i) => c || `columna ${i + 1}`);
+    const filas = d.filas.slice(1).map((f) => Object.fromEntries(campos.map((c, i) => [c, f[i] ?? ""])));
+    await mkdir(path.join(COMPUTADORA, "datos"), { recursive: true });
+    const rel = `datos/tabla-${new URL(d.url).hostname.replace(/^www\./, "").replace(/[^\w.-]+/g, "_")}-${Date.now().toString(36)}.csv`;
+    await writeFile(path.join(COMPUTADORA, rel), K.aCsv(campos, filas));
+    K.anotar(d.url, new URL(d.url).hostname, "extracción", `tabla de ${filas.length} filas`);
+    emitir("computadora");
+    return { ruta: rel, filas: filas.length };
+  });
+});
+ruta("POST", "/api/navegador/traducir", async ({ cuerpo }) => {
+  const d = validar(z.object({ textos: z.array(z.string().max(5000)).min(1).max(600), idioma: z.string().trim().min(2).max(40) }), await cuerpo());
+  return conNav(async (K) => ({ textos: await K.traducir(d.textos, d.idioma, iaNav()) }));
+});
+ruta("POST", "/api/navegador/formulario", async ({ cuerpo }) => {
+  const d = validar(z.object({ pagina: z.string().url().max(2000), accion: z.string().max(2000), metodo: z.enum(["GET", "POST"]), campos: z.record(z.string().max(100), z.string().max(5000)) }), await cuerpo());
+  return conNav((K) => K.enviarFormulario(d));
+});
+
 // ---- Gravity Audio Studio (ver audio.ts) ----
 const conAu = async <T>(f: (K: typeof import("./audio.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./audio.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
 ruta("GET", "/api/audio", async ({ url }) => conAu(async (K) => {
