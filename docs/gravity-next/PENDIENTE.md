@@ -28,6 +28,8 @@ Estado al 6/11/2026, rama `ccr-c7fbf7b5-pvcwck`. El APK sale solo de cada push (
 
 - **Equipos grandes (6/11)**: hasta 100 compañeros (`MAX_BOTS`), 300 tareas abiertas en total y hasta 60 trabajando a la vez (Ajustes). Equipo de programación de Gravity Code en `bots/src/equipo-codigo.ts` (prueba `equipo-codigo.test.mjs`, con 12 y con 45 agentes). Universe muestra hasta 100 estaciones.
 
+- **Velocidad (6/11)**: con modelos gratis la respuesta de Gemini llega en vivo (`streamGenerateContent`, `enVivo()` en `proveedores.ts`); el historial se recorta (`recortarHistorial`, `GRAVITY_GRATIS_CONTEXTO`, 90 000 caracteres) porque sin Claude no hay resumen del servidor; «Rápido» va con esfuerzo bajo (Gemini sin razonamiento previo); el prompt ya no les hace abrir la memoria en cada mensaje corto. Prueba: `velocidad.test.mjs`.
+
 ## Revisar primero (prioridad alta)
 
 - **Prueba de mensajería** (harness `scratchpad/msj`): revisado. La protección contra inyecciones funciona: `bots/pruebas/inyeccion.test.mjs` prueba directo `prohibidoEnMensajeria` (en un turno de mensajería solo se puede contestar en esa conversación, ver la memoria y buscar en la web) y la neutralización de etiquetas y suplantación. Los «MAL» del harness de la sección 18 eran de la prueba: desde la sección 12 el envío fallido ya no se da por error (se reintenta con la próxima notificación), el modelo falso cae en su respuesta por defecto (un comando que pide aprobación) y el compañero queda esperando, así que los mensajes de la inyección nunca llegan. Para arreglar el harness: actualizar la sección 12 al reintento y aprobar o negar esa aprobación. Arreglado en el motor: al arrancar se retoman los chats con mensajes sin contestar de las últimas 2 horas (la fase de reinicio da 4 de 4).

@@ -92,6 +92,9 @@ interface Pedido {
   maxTokens: number;
   esfuerzo: string | null;
   preferencia: "rapido" | "potente" | null;
+  // Texto a medida que llega (respuesta en vivo). Si ya se mostró algo, un error no pasa a otro modelo.
+  alTexto?: (texto: string) => void;
+  emitio?: boolean;
 }
 
 interface Respuesta {
@@ -153,7 +156,7 @@ const ESQUEMA_MEMORIA: Json = {
 };
 
 const DESCRIPCION_MEMORIA =
-  "Tu memoria persistente: archivos en /memories que sobreviven entre conversaciones. Miralos (view /memories) antes de empezar algo y guardá lo que aprendas. Comandos: view, create, str_replace, insert, delete, rename.";
+  "Tu memoria persistente: archivos en /memories que sobreviven entre conversaciones. Miralos (view /memories) antes de una tarea de varios pasos (no hace falta para charlas cortas) y guardá lo que aprendas. Comandos: view, create, str_replace, insert, delete, rename.";
 
 /** Traduce el cuerpo de un pedido a /v1/messages a la forma neutra. */
 function traducirPedido(cuerpo: Json): Pedido {
@@ -264,13 +267,42 @@ function traducirPedido(cuerpo: Json): Pedido {
   const formato = (cuerpo.output_config as Json | undefined)?.format as Json | undefined;
   return {
     sistema,
-    turnos,
+    turnos: recortarHistorial(turnos),
     herramientas,
     esquemaSalida: formato?.type === "json_schema" ? ((formato.schema as Json) ?? null) : null,
     maxTokens: Number(cuerpo.max_tokens ?? 8192),
     esfuerzo: typeof (cuerpo.output_config as Json | undefined)?.effort === "string" ? String((cuerpo.output_config as Json).effort) : null,
     preferencia: cuerpo.model === "gravity-rapido" ? "rapido" : cuerpo.model === "gravity-potente" ? "potente" : null,
   };
+}
+
+// Con Claude el servidor resume la conversación vieja; con los modelos gratis no. Sin recorte, cada mensaje
+// manda la charla entera (con todo lo que devolvieron las herramientas): cada vez más lento y gastando el
+// cupo por minuto. Se achican los resultados viejos y, si igual no entra, se dejan afuera los turnos más
+// viejos (empezando siempre en un mensaje del usuario, para no cortar una llamada de su resultado).
+export const CONTEXTO_GRATIS = Number(process.env.GRAVITY_GRATIS_CONTEXTO ?? 90_000);
+const tamTurno = (t: Turno) =>
+  t.rol === "modelo" ? t.texto.length + JSON.stringify(t.llamadas).length : t.textos.join("").length + t.resultados.reduce((n, r) => n + r.texto.length, 0) + t.imagenes.length * 2000;
+export function recortarHistorial(turnos: Turno[], limite = CONTEXTO_GRATIS): Turno[] {
+  const xs = turnos.map((t) => (t.rol === "usuario" ? { ...t, textos: [...t.textos], resultados: t.resultados.map((r) => ({ ...r })) } : t)) as Turno[];
+  const total = () => xs.reduce((n, t) => n + tamTurno(t), 0);
+  if (total() <= limite) return xs;
+  // 1) Resultados de herramientas viejos (fuera de los últimos 8 turnos): se quedan con el comienzo.
+  xs.slice(0, Math.max(0, xs.length - 8)).forEach((t) => {
+    if (t.rol !== "usuario") return;
+    for (const r of t.resultados) if (r.texto.length > 600) { r.texto = `${r.texto.slice(0, 600)}\n… (resultado viejo recortado)`; r.imagenes = []; }
+    t.imagenes = [];
+  });
+  // 2) Si igual no entra, se sacan los turnos más viejos.
+  let quitados = 0;
+  while (total() > limite && xs.length > 2) { xs.shift(); quitados++; }
+  if (quitados) {
+    // Tiene que empezar en un mensaje del usuario, y sin resultados de llamadas que quedaron afuera.
+    while (xs.length > 1 && xs[0]!.rol !== "usuario") { xs.shift(); quitados++; }
+    if (xs[0]?.rol === "usuario") { xs[0].resultados = []; if (!xs[0].textos.length) xs[0].textos.push("(Seguí.)"); }
+  }
+  if (quitados && xs[0]?.rol === "usuario") (xs[0] as { textos: string[] }).textos.unshift(`[Se dejaron afuera ${quitados} mensajes viejos de esta conversación para responder más rápido. Lo importante tiene que estar en tu memoria (/memories): si te falta algo, buscalo ahí o preguntalo.]`);
+  return xs;
 }
 
 // Cuánto razona Gemini según el esfuerzo pedido. Sin tope, Flash razona mucho incluso para un "hola" y
@@ -372,7 +404,9 @@ async function pedirGemini(p: Pedido, modelo: string, signal?: AbortSignal | nul
     ];
   }
 
-  const datos = await postJson(`${GEMINI_BASE}/models/${encodeURIComponent(modelo)}:generateContent`, cuerpo, { "x-goog-api-key": CLAVE_GEMINI }, signal, errorGemini);
+  const datos = p.alTexto
+    ? await geminiEnVivo(modelo, cuerpo, signal, (t) => { p.emitio = true; p.alTexto!(t); })
+    : await postJson(`${GEMINI_BASE}/models/${encodeURIComponent(modelo)}:generateContent`, cuerpo, { "x-goog-api-key": CLAVE_GEMINI }, signal, errorGemini);
 
   const candidato = (datos.candidates as Json[] | undefined)?.[0];
   const uso = (datos.usageMetadata as Json) ?? {};
@@ -419,6 +453,62 @@ async function pedirGemini(p: Pedido, modelo: string, signal?: AbortSignal | nul
         ? "tool_use"
         : "end_turn";
   return { bloques, fin, entrada, salida, modelo: version };
+}
+
+/**
+ * Pide a Gemini la respuesta en partes (SSE) y va pasando el texto apenas llega. Devuelve lo mismo que
+ * generateContent (todas las partes juntas) para armar la respuesta completa al final.
+ */
+async function geminiEnVivo(modelo: string, cuerpo: Json, signal: AbortSignal | null | undefined, alTexto: (t: string) => void): Promise<Json> {
+  const limite = AbortSignal.timeout(ESPERA_RED_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(modelo)}:streamGenerateContent?alt=sse`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": CLAVE_GEMINI }, body: JSON.stringify(cuerpo), signal: signal ? AbortSignal.any([signal, limite]) : limite });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new ErrorProveedor(503, `Sin conexión con el proveedor: ${(err as Error).message}`);
+  }
+  if (!res.ok || !res.body) {
+    const texto = await res.text().catch(() => "");
+    let datos: Json = {};
+    try { datos = texto ? (JSON.parse(texto) as Json) : {}; } catch { datos = { error: { message: texto.slice(0, 300) } }; }
+    throw errorGemini(res.status, Array.isArray(datos) ? ((datos[0] as Json) ?? {}) : datos, res.headers);
+  }
+  const partes: Json[] = [];
+  let final: Json = {};
+  let uso: Json | undefined;
+  let version: unknown;
+  let bloqueo: Json | undefined;
+  const lector = res.body.getReader();
+  const dec = new TextDecoder();
+  let resto = "";
+  const procesar = (bloque: string) => {
+    const linea = bloque.split("\n").filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim()).join("");
+    if (!linea) return;
+    let d: Json;
+    try { d = JSON.parse(linea) as Json; } catch { return; }
+    const c = (d.candidates as Json[] | undefined)?.[0];
+    for (const parte of ((c?.content as Json | undefined)?.parts as Json[]) ?? []) {
+      partes.push(parte);
+      if (!parte.thought && typeof parte.text === "string" && parte.text) alTexto(parte.text);
+    }
+    if (c?.finishReason) final = { finishReason: c.finishReason };
+    if (d.usageMetadata) uso = d.usageMetadata as Json;
+    if (d.modelVersion) version = d.modelVersion;
+    if (d.promptFeedback) bloqueo = d.promptFeedback as Json;
+  };
+  for (;;) {
+    const { done, value } = await lector.read();
+    if (done) break;
+    resto += dec.decode(value, { stream: true });
+    let i: number;
+    while ((i = resto.search(/\r?\n\r?\n/)) >= 0) {
+      procesar(resto.slice(0, i));
+      resto = resto.slice(i).replace(/^\r?\n\r?\n/, "");
+    }
+  }
+  if (resto.trim()) procesar(resto);
+  return { candidates: partes.length || final.finishReason ? [{ content: { parts: partes }, ...final }] : [], usageMetadata: uso ?? {}, modelVersion: version, ...(bloqueo ? { promptFeedback: bloqueo } : {}) };
 }
 
 export function errorGemini(status: number, cuerpo: Json, cabeceras: Headers): ErrorProveedor {
@@ -667,6 +757,7 @@ async function responder(p: Pedido, signal?: AbortSignal | null): Promise<Respue
         return r;
       } catch (err) {
         if (signal?.aborted) throw err;
+        if (p.emitio) throw err;
         if (!(err instanceof ErrorProveedor)) throw err;
         ultimo = err;
         if (err.status === 401) throw err;
@@ -735,6 +826,57 @@ function comoEventos(m: Json): string {
   return salida;
 }
 
+/**
+ * Respuesta en vivo: apenas el modelo manda el primer pedazo de texto, se abre el stream y se va pasando;
+ * las herramientas van al final. Si falla antes de mostrar nada, sale el error de siempre (con su código,
+ * para que cupo.ts espere o reintente); si falla después, un evento de error en el stream.
+ */
+function enVivo(pedido: Pedido, signal: AbortSignal | null): Promise<Response> {
+  const evento = (tipo: string, datos: Json) => new TextEncoder().encode(`event: ${tipo}\ndata: ${JSON.stringify({ type: tipo, ...datos })}\n\n`);
+  return new Promise<Response>((resolver) => {
+    let ctl!: ReadableStreamDefaultController<Uint8Array>;
+    let abierto = false;
+    let resuelto = false;
+    const stream = new ReadableStream<Uint8Array>({ start: (c) => { ctl = c; } });
+    const id = nuevoId("msg_");
+    pedido.alTexto = (texto) => {
+      if (!abierto) {
+        abierto = true;
+        ctl.enqueue(evento("message_start", { message: { id, type: "message", role: "assistant", model: "gravity", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }));
+        ctl.enqueue(evento("content_block_start", { index: 0, content_block: { type: "text", text: "" } }));
+        resuelto = true;
+        resolver(new Response(stream, { status: 200, headers: { "content-type": "text/event-stream" } }));
+      }
+      ctl.enqueue(evento("content_block_delta", { index: 0, delta: { type: "text_delta", text: texto } }));
+    };
+    responder(pedido, signal).then((r) => {
+      const m = mensajeAnthropic(r);
+      if (!resuelto) { resuelto = true; resolver(new Response(comoEventos(m), { status: 200, headers: { "content-type": "text/event-stream" } })); return; }
+      ctl.enqueue(evento("content_block_stop", { index: 0 }));
+      let index = 1;
+      for (const b of m.content as Json[]) {
+        if (b.type !== "tool_use") continue;
+        ctl.enqueue(evento("content_block_start", { index, content_block: { type: "tool_use", id: b.id, name: b.name, input: {} } }));
+        ctl.enqueue(evento("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: JSON.stringify(b.input ?? {}) } }));
+        ctl.enqueue(evento("content_block_stop", { index }));
+        index++;
+      }
+      ctl.enqueue(evento("message_delta", { delta: { stop_reason: m.stop_reason, stop_sequence: null }, usage: { input_tokens: r.entrada, output_tokens: r.salida } }));
+      ctl.enqueue(evento("message_stop", {}));
+      ctl.close();
+    }).catch((err) => {
+      if (!resuelto) {
+        resuelto = true;
+        if (err instanceof ErrorProveedor) resolver(respuestaDeError(err));
+        else resolver(Promise.reject(err) as unknown as Response);
+        return;
+      }
+      ctl.enqueue(evento("error", { error: { type: "api_error", message: (err as Error).message || "Se cortó la respuesta." } }));
+      ctl.close();
+    });
+  });
+}
+
 /** fetch que atiende los pedidos del cliente de Anthropic con Gemini y el respaldo gratis. */
 export async function fetchGratis(entrada: string | URL | Request, init?: RequestInit): Promise<Response> {
   const url = new URL(entrada instanceof Request ? entrada.url : String(entrada));
@@ -748,9 +890,11 @@ export async function fetchGratis(entrada: string | URL | Request, init?: Reques
   } catch {
     return respuestaDeError(new ErrorProveedor(400, "Pedido ilegible."));
   }
+  const pedido = traducirPedido(cuerpo);
+  if (cuerpo.stream && !pedido.esquemaSalida) return enVivo(pedido, signal);
   let r: Respuesta;
   try {
-    r = await responder(traducirPedido(cuerpo), signal);
+    r = await responder(pedido, signal);
   } catch (err) {
     if (err instanceof ErrorProveedor) return respuestaDeError(err);
     throw err;
