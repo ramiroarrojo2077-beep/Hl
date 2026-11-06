@@ -297,7 +297,7 @@ function verificarOrigen(req: http.IncomingMessage): void {
   // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
   const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
   // Data Lab sube tablas como binario (CSV, Excel): tampoco es un tipo "simple".
-  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
+  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir|conocimiento\/[\w-]+\/subir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
   if (!tipo.startsWith("application/json") && !esRespaldo && !esTabla) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
@@ -1502,6 +1502,78 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   const d = validar(z.object({ disponibilidad: z.string().max(500).default("") }), await cuerpo());
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
+
+// ---- Gravity Knowledge (ver conocimiento.ts) ----
+const conKn = async <T>(f: (K: typeof import("./conocimiento.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./conocimiento.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+const conKnIa = <T>(f: (K: typeof import("./conocimiento.ts"), s: AbortSignal) => Promise<T>) => conKn((K) => f(K, AbortSignal.timeout(180_000)));
+ruta("GET", "/api/conocimiento", async () => conKn((K) => K.listar()));
+ruta("POST", "/api/conocimiento", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(1).max(60), tema: z.string().max(300).default("") }), await cuerpo());
+  const r = await conKn((K) => K.crear(d));
+  emitir("computadora");
+  return r;
+});
+ruta("GET", "/api/conocimiento/biblioteca", async ({ url }) => conKn(async (K) => {
+  const I = await import("./investigacion.ts");
+  const q = url.searchParams.get("q") ?? "";
+  return { documentos: K.biblioteca(q).slice(0, 500), fuentes: I.listarFuentes(q).slice(0, 200), cuadernos: K.listar().map((c) => ({ nombre: c.nombre, tema: c.tema, documentos: c.documentos, notas: c.notas.length, fichas: c.fichas.length })) };
+}));
+ruta("POST", "/api/conocimiento/comparar", async ({ cuerpo }) => {
+  const d = validar(z.object({ a: z.string().min(1).max(500), b: z.string().min(1).max(500) }), await cuerpo());
+  return conKn(async (K) => { const D = await import("./documentos.ts"); return K.comparar(D.textoDeDocumento(d.a), D.textoDeDocumento(d.b)); });
+});
+ruta("GET", "/api/conocimiento/:id", async ({ params }) => conKn((K) => ({ ...K.leer(params[0]!), documentos: K.documentos(params[0]!), paraHoy: K.fichasParaHoy(params[0]!).length })));
+ruta("DELETE", "/api/conocimiento/:id", async ({ params }) => { await conKn((K) => K.borrar(params[0]!)); emitir("computadora"); return { ok: true }; });
+ruta("POST", "/api/conocimiento/:id/documentos", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500) }), await cuerpo());
+  const r = await conKn((K) => K.agregarDocumento(params[0]!, d.ruta));
+  emitir("computadora");
+  return { nombre: r };
+});
+ruta("DELETE", "/api/conocimiento/:id/documentos", async ({ params, url }) => { await conKn((K) => K.quitarDocumento(params[0]!, url.searchParams.get("archivo") ?? "")); emitir("computadora"); return { ok: true }; });
+ruta("POST", "/api/conocimiento/:id/subir", async ({ params, req, url }) => {
+  const K = await import("./conocimiento.ts");
+  const { EXT_DOCUMENTOS } = await import("./documentos.ts");
+  const nombre = path.basename(url.searchParams.get("nombre") ?? "").replace(/[^\w.\- ]+/g, "_");
+  if (!EXT_DOCUMENTOS.test(nombre)) throw new ErrorHttp(400, "Subí un PDF, Word, ODT, PowerPoint, texto, Markdown, CSV, JSON o HTML.");
+  try { K.leer(params[0]!); } catch (err) { throw new ErrorHttp(404, (err as Error).message); }
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const p of req) { total += (p as Buffer).length; if (total > 60 * 1024 * 1024) throw new ErrorHttp(413, "El documento pasa los 60 MB."); partes.push(p as Buffer); }
+  let destino = path.join(K.RAIZ, params[0]!, nombre);
+  for (let n = 2; await stat(destino).then(() => true, () => false); n++) destino = path.join(K.RAIZ, params[0]!, nombre.replace(/(\.\w+)$/, `-${n}$1`));
+  await writeFile(destino, Buffer.concat(partes));
+  emitir("computadora");
+  return { nombre: path.basename(destino) };
+});
+ruta("POST", "/api/conocimiento/:id/notas", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().trim().min(1).max(8000) }), await cuerpo());
+  return conKn((K) => K.agregarNota(params[0]!, d.texto));
+});
+ruta("DELETE", "/api/conocimiento/:id/notas/:nota", async ({ params }) => conKn((K) => { K.quitarNota(params[0]!, params[1]!); return { ok: true }; }));
+ruta("PUT", "/api/conocimiento/:id/compartir", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ con: z.array(z.string().max(40)).max(100) }), await cuerpo());
+  return conKn((K) => K.compartir(params[0]!, d.con));
+});
+ruta("GET", "/api/conocimiento/:id/buscar", async ({ params, url }) => conKn((K) => K.buscar(params[0]!, url.searchParams.get("q") ?? "", 12)));
+ruta("POST", "/api/conocimiento/:id/preguntar", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ pregunta: z.string().trim().min(2).max(2000) }), await cuerpo());
+  return conKnIa((K, s) => K.preguntar(params[0]!, d.pregunta, s));
+});
+ruta("POST", "/api/conocimiento/:id/mapa", async ({ params }) => conKnIa((K, s) => K.generarMapa(params[0]!, s)));
+ruta("POST", "/api/conocimiento/:id/linea", async ({ params }) => conKnIa((K, s) => K.generarLinea(params[0]!, s)));
+ruta("POST", "/api/conocimiento/:id/contradicciones", async ({ params }) => conKnIa((K, s) => K.contradicciones(params[0]!, s)));
+ruta("POST", "/api/conocimiento/:id/fichas", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ cantidad: z.number().int().min(1).max(40).default(10), pregunta: z.string().trim().max(500).optional(), respuesta: z.string().trim().max(2000).optional() }), await cuerpo());
+  if (d.pregunta && d.respuesta) return conKn((K) => [K.agregarFicha(params[0]!, { pregunta: d.pregunta!, respuesta: d.respuesta! })]);
+  return conKnIa((K, s) => K.generarFichas(params[0]!, d.cantidad, s));
+});
+ruta("GET", "/api/conocimiento/:id/repaso", async ({ params }) => conKn((K) => K.fichasParaHoy(params[0]!)));
+ruta("POST", "/api/conocimiento/:id/fichas/:ficha/repaso", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ acerto: z.boolean() }), await cuerpo());
+  return conKn((K) => K.repasar(params[0]!, params[1]!, d.acerto));
+});
+ruta("DELETE", "/api/conocimiento/:id/fichas/:ficha", async ({ params }) => conKn((K) => { K.quitarFicha(params[0]!, params[1]!); return { ok: true }; }));
 
 // ---- Gravity Cloud (ver cloud.ts) ----
 const conCloud = async <T>(f: (K: typeof import("./cloud.ts")) => Promise<T>): Promise<T> => { const K = await import("./cloud.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };

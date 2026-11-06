@@ -29,3 +29,18 @@ Vincula otros Gravity (una PC, un servidor propio, una VM en la nube) por direcc
 361. ✅ Costos: tabla de gasto del día de este dispositivo y de cada servidor (uso de modelos pagos). El costo del hosting depende del proveedor y se aclara en pantalla.
 
 Pruebas: `pruebas/cloud.test.mjs` (cifrado, sesión con reintento, clave mala, límite de CPU, cola distribuida con un servidor caído) y e2e en el navegador con dos Gravity.
+
+## 33. Gravity Knowledge (`#/conocimiento`, `conocimiento.ts`)
+Cada cuaderno es una carpeta real `conocimiento/<nombre>/` con sus documentos y un `.cuaderno.json` (notas, fichas, mapa, línea de tiempo, con quién se comparte). Lo que usa IA usa el modelo configurado (gratis o pago, se suma al gasto) y lo dice en pantalla.
+342. ✅ Biblioteca universal: todos los documentos de la computadora (PDF, Word, ODT, PowerPoint, texto, CSV, JSON, HTML; sin código ni dependencias), en qué cuaderno están, y las fuentes web de Investigación; con búsqueda.
+343. ✅ Cuadernos por tema: crear, subir documentos o agregarlos desde la computadora (se copian, el original queda), notas, búsqueda sin IA dentro del cuaderno, borrar.
+344. ✅ Preguntas sobre documentos: busca los fragmentos más relevantes (puntaje tipo BM25, sin tildes) y la IA responde solo con eso.
+345. ✅ Mapa conceptual: la IA propone conceptos y relaciones; se descartan las relaciones a conceptos que no existen; se dibuja en SVG con un acomodo por fuerzas.
+346. ✅ Línea de tiempo: solo eventos con fecha explícita y con fragmento de origen; se ordenan con fechas en texto («9 de julio de 1816», «1810-05-25», «500 a.C.»).
+347. ✅ Comparador de documentos: diferencias línea por línea (LCS), sin IA, entre dos versiones de cualquier documento.
+348. ✅ Referencias: cada respuesta cita fragmentos numerados; las citas se verifican y una cita a un fragmento inexistente se muestra como «[sin fuente]». Si no cita nada, se avisa.
+349. ✅ Contradicciones: afirmaciones incompatibles entre fuentes distintas, cada una con su documento (las de la misma fuente se descartan).
+350. ✅ Fichas de estudio: generadas con su fuente o a mano; repaso espaciado con 5 cajas (Leitner: 1, 3, 7, 14 y 30 días).
+351. ✅ Biblioteca colaborativa: el usuario elige con qué compañeros comparte cada cuaderno; ellos tienen la herramienta `conocimiento` (listar, buscar con fuente, leer y sumar notas firmadas) y no ven los demás.
+
+Pruebas: `pruebas/conocimiento.test.mjs` (6) y e2e en el navegador (crear, subir, agregar, nota, buscar, preguntar, mapa, línea, contradicciones, fichas y repaso, compartir, comparar, biblioteca, celular 390 px).
