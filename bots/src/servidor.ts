@@ -144,6 +144,9 @@ const DatosAvatar = z.object({
   tono: z.number().min(0.5).max(2).transform((v) => Math.round(v * 100) / 100).default(1),
   estilo: z.string().trim().max(200).optional(),
   vozGemini: z.string().max(20).nullable().optional(),
+  cuerpo: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  acabado: z.enum(["brillante", "mate", "metal", "ceramica"]).optional(),
+  luz: z.object({ preset: z.string().max(20), intensidad: z.number().min(0).max(3), borde: z.number().min(0).max(3), exposicion: z.number().min(0.3).max(2.5), colorA: z.string().regex(/^#[0-9a-fA-F]{6}$/), colorB: z.string().regex(/^#[0-9a-fA-F]{6}$/) }).optional(),
   color: z
     .string()
     .trim()
@@ -712,7 +715,7 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     esfuerzo: d.esfuerzo === undefined ? bot.esfuerzo : d.esfuerzo,
     icono: d.icono === undefined ? bot.icono : d.icono,
     // El perfil no manda el estilo ni la voz de Gemini (se editan en Audio Studio): se conservan.
-    avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar && { ...d.avatar, estilo: d.avatar.estilo ?? bot.avatar?.estilo, vozGemini: d.avatar.vozGemini === undefined ? (bot.avatar?.vozGemini ?? null) : d.avatar.vozGemini },
+    avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar && { ...d.avatar, estilo: d.avatar.estilo ?? bot.avatar?.estilo, vozGemini: d.avatar.vozGemini === undefined ? (bot.avatar?.vozGemini ?? null) : d.avatar.vozGemini, cuerpo: d.avatar.cuerpo ?? bot.avatar?.cuerpo, acabado: d.avatar.acabado ?? bot.avatar?.acabado, luz: d.avatar.luz ?? bot.avatar?.luz },
     bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
     ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
     verificacion: d.verificacion ?? bot.verificacion ?? false,
@@ -1693,6 +1696,20 @@ ruta("PUT", "/api/bots/:id/voz", async ({ params, cuerpo }) => {
   guardarEstado();
   emitir("bots");
   return bot.avatar;
+});
+ruta("PUT", "/api/bots/:id/robot", async ({ params, cuerpo }) => {
+  const d = validar(DatosAvatar.pick({ color: true, accesorio: true, calidad: true, cuerpo: true, acabado: true, luz: true }).partial(), await cuerpo());
+  const bot = buscarBot(params[0]!);
+  if (!bot) throw new ErrorHttp(404, "No existe ese compañero.");
+  const base = bot.avatar ?? { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto" as const, voz: null, velocidad: 1, tono: 1, accesorio: "ninguno" as const };
+  bot.avatar = { ...base, ...Object.fromEntries(Object.entries(d).filter(([, v]) => v !== undefined)) };
+  guardarEstado();
+  emitir("bots");
+  return bot.avatar;
+});
+ruta("POST", "/api/robot/guion", async ({ cuerpo }) => {
+  const d = validar(z.object({ tema: z.string().trim().min(3).max(20_000), modo: z.enum(["presentar", "ensenar"]).default("presentar"), partes: z.number().int().min(2).max(12).optional(), publico: z.string().max(200).optional() }), await cuerpo());
+  try { return await (await import("./robotlab.ts")).guion(d, AbortSignal.timeout(180_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 ruta("POST", "/api/bots/:id/narrar", async ({ params, cuerpo }) => {
   const d = validar(z.object({ texto: z.string().trim().min(1).max(5000) }), await cuerpo());

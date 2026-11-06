@@ -104,3 +104,18 @@ Todo el bloque está marcado como experimental en la pantalla. Trabaja sobre los
 371. 🧪 Nexus: grafo de todo lo conectado (compañeros, a quién reportan, proyectos que coordinan o donde trabajan, rutinas y sus habilidades, automatizaciones, cuadernos compartidos, conexiones) con búsqueda y acceso a cada cosa.
 
 Pruebas: `pruebas/labs.test.mjs` (7) y e2e en el navegador con el modelo simulado (misión, gemelo, simulación, Doctor aplicando el plan, Arena, crear una automatización desde texto, probar y guardar una habilidad, inspección, aprendizaje, Nexus y celular).
+
+## 28. Gravity Robot Lab (`#/robot`, `robotlab.ts`)
+El mismo robot 3D de las llamadas (Three.js, materiales PBR, esqueleto con gestos animados, ojos LED, holograma y calidad adaptable) montado en un estudio. Nada es una imagen estática.
+292. ✅ Editor: color de acento, color del cuerpo, material (plástico brillante, mate, metal, cerámica) y accesorio; se ve en vivo y se guarda en el compañero (llamadas y Universe usan lo mismo; el perfil conserva estos datos).
+293. ✅ Biblioteca de movimientos por categoría: saludo, conversación, trabajo (estado nuevo «trabajando»: antebrazos al frente y dedos que teclean), descanso (estado nuevo «descansando» con respiración lenta y ojos tenues, y gesto nuevo «estirarse»), estados y expresiones.
+294. ✅ Gestos inteligentes: escribís una frase y el robot la dice eligiendo gesto, expresión y holograma por el sentido (preguntas, cifras, pasos, «yo/vos», festejos) y el ritmo de la voz. Se corrigió que los pasos con tilde («después», «por último») no se detectaban.
+295. ✅ Robot presentador: guion por partes (lo que dice, puntos para el holograma y gesto) a partir de un tema o de un texto; presenta con la voz del dispositivo, subtítulos, pausa y reanudar.
+296. ✅ Robot profesor: el mismo guion en modo enseñar + preguntas de repaso al final, con reacción (pulgar/feliz o apenado), explicación y resultado.
+297. ✅ Robot programador: «En vivo» refleja a un compañero real: teclea mientras trabaja (por ejemplo en Gravity Code), piensa al planificar o revisar, y el holograma muestra su acción.
+298. ✅ Robot investigador: el panel holográmico muestra imágenes de la computadora o resultados; con un cuaderno, investiga en Gravity Knowledge y cuenta la respuesta con sus fuentes en el panel.
+299. ✅ Robot multitarea: cada cambio de actividad tiene su animación (trabajar, pensar, esperar, festejar al terminar, descansar si está quieto, estirarse al volver) y queda un registro.
+300. ✅ Iluminación: ajustes Estudio, Día, Atardecer, Neón y Noche, más luz principal, bordes, colores de borde y exposición, en vivo; se guarda por compañero.
+301. ✅ Animación adaptable: 5 niveles (resolución, sombras y detalle del modelo) que bajan solos si no llega a ~50 cuadros por segundo; robot 2D si no hay WebGL2; «Medir 5 segundos» muestra fps, nivel y resolución.
+
+Pruebas: `pruebas/robotlab.test.mjs` y e2e con WebGL por software (editor guardado, estados y gestos nuevos, frase, presentación + quiz, panel e investigación, luces guardadas, en vivo, medición, celular).

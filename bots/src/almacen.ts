@@ -43,6 +43,10 @@ export interface Avatar {
   // Estilo para narrar con voz de Gemini («tranquilo y cálido», «como locutor de radio») y qué voz usar.
   estilo?: string;
   vozGemini?: string | null;
+  // Robot Lab: color del cuerpo, acabado del material e iluminación.
+  cuerpo?: string;
+  acabado?: "brillante" | "mate" | "metal" | "ceramica";
+  luz?: { preset: string; intensidad: number; borde: number; exposicion: number; colorA: string; colorB: string };
   // Accesorio del robot.
   accesorio?: "ninguno" | "antena" | "cresta" | "visera";
 }
