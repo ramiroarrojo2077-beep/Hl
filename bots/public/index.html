@@ -914,6 +914,7 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .tk-com{margin-top:6px}.tk-com summary{cursor:pointer;font-size:12.5px;color:var(--tx2);display:inline-flex;gap:6px;align-items:center}.tk-cl{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.tk-com form .inp{flex:1}
 @media (max-width:760px){.cn{grid-template-columns:1fr}.cn-lat{border-right:0;border-bottom:1px solid var(--line);max-height:180px}.cn-msgs{max-height:none}}
 .cl-sv{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-top:12px}.cl-c{display:grid;grid-template-columns:12px 1fr;gap:2px 8px;align-items:center;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--s1);color:inherit;font:inherit;cursor:pointer}.cl-c.on{border-color:var(--ion);box-shadow:inset 0 0 0 1px var(--ion)}.cl-c small{grid-column:2;color:var(--tx2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.au-onda{width:100%;height:150px;display:block;border-radius:10px;border:1px solid var(--line);background:var(--s2);touch-action:none;cursor:crosshair}.au-esp{width:100%;height:180px;display:block;border-radius:10px;border:1px solid var(--line);background:#0b1020}.au-seg{display:grid;grid-template-columns:auto auto 1fr;gap:4px 10px;align-items:baseline;font-size:13.5px}.au-seg button{font:inherit;font-size:12px;color:var(--ion);background:none;border:0;cursor:pointer;padding:0}.au-rec{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--sig)}.au-rec::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--sig);animation:au-p 1s infinite}@keyframes au-p{50%{opacity:.25}}
 .vi-fig{position:relative;display:inline-block;max-width:100%;margin:8px 0}.vi-fig img{display:block;max-width:100%;max-height:520px;border-radius:10px;border:1px solid var(--line)}.vi-box{position:absolute;border:2px solid var(--ion);border-radius:4px;pointer-events:none}.vi-box.mal{border-color:var(--sig)}.vi-box span{position:absolute;left:-2px;top:-18px;background:var(--ion);color:#fff;font-size:10.5px;padding:1px 5px;border-radius:4px;white-space:nowrap}.vi-box.mal span{background:var(--sig)}.vi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.vi-grid figure{margin:0;font-size:12px}.vi-grid img,.vi-grid canvas{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--s2)}.vi-grid figure.mal img,.vi-grid figure.mal canvas{border-color:var(--sig);box-shadow:0 0 0 2px var(--sig)}.vi-cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.vi-cmp canvas,.vi-cmp img{width:100%;border-radius:8px;border:1px solid var(--line)}
 .kn-c{display:grid;gap:2px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--s1);color:inherit;font:inherit;cursor:pointer}.kn-c.on{border-color:var(--ion);box-shadow:inset 0 0 0 1px var(--ion)}.kn-c small{color:var(--tx2);font-size:12px}.kn-ref{border-left:3px solid var(--ion);padding:6px 10px;margin:6px 0;background:var(--s2);border-radius:0 8px 8px 0;font-size:12.5px;white-space:pre-wrap;max-height:160px;overflow:auto}.kn-ref b{display:block;font-size:11.5px;color:var(--tx2);margin-bottom:2px}.kn-svg{width:100%;height:auto;max-height:560px;background:var(--s2);border-radius:12px;border:1px solid var(--line)}.kn-svg line{stroke:var(--tx2);stroke-opacity:.45}.kn-svg .rl{font-size:10px;fill:var(--tx2)}.kn-svg rect{fill:var(--s1);stroke:var(--ion)}.kn-svg .nd{font-size:12px;fill:var(--tx);font-weight:600}.kn-tl{list-style:none;margin:8px 0 0;padding:0 0 0 18px;border-left:2px solid var(--line)}.kn-tl li{position:relative;margin:0 0 12px}.kn-tl li::before{content:"";position:absolute;left:-24px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--ion)}.kn-tl time{font-weight:700;font-size:12.5px;color:var(--ion)}.kn-ficha{padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--s2);text-align:center;font-size:16px;min-height:90px;display:grid;place-items:center}.kn-dif{font:12.5px/1.5 ui-monospace,monospace;white-space:pre-wrap;max-height:480px;overflow:auto;background:var(--s2);border-radius:10px;padding:8px;border:1px solid var(--line)}.kn-dif .a{background:color-mix(in srgb,#63d3b1 22%,transparent)}.kn-dif .q{background:color-mix(in srgb,var(--sig) 18%,transparent);text-decoration:line-through}
 .cl-dot{width:10px;height:10px;border-radius:50%;background:var(--sig)}.cl-dot.ok{background:#63d3b1}.cl-hist{display:flex;gap:2px;margin-top:8px}.cl-hist i{width:6px;height:16px;border-radius:2px;background:#63d3b1}.cl-hist i.mal{background:var(--sig)}.cl-ejec{margin-top:8px}.cl-ejec .cd-sal{background:var(--s2);color:var(--tx);border-color:var(--line)}.cl-ejec code{color:var(--tx)}
@@ -1839,7 +1840,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales", "investigacion", "midia", "creativo", "cloud", "conocimiento", "vision"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales", "investigacion", "midia", "creativo", "cloud", "conocimiento", "vision", "audio"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2179,6 +2180,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "audio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="audiov"></div></div>`; montarAudio().catch((e) => toast(e.message, "err")); return; }
   if (v === "vision") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="visionv"></div></div>`; montarVision().catch((e) => toast(e.message, "err")); return; }
   if (v === "conocimiento") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="conoc"></div></div>`; montarKnowledge().catch((e) => toast(e.message, "err")); return; }
   if (v === "cloud") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="cloud"></div></div>`; montarCloud().catch((e) => toast(e.message, "err")); return; }
@@ -4087,6 +4089,180 @@ async function clSondear(idTrabajo) {
 
 
 
+
+// ================================================================ Audio Studio
+// Editor (Web Audio, en el navegador): cortar, borrar, silenciar, fundidos, normalizar, unir, limpiar la voz;
+// análisis (forma de onda, espectrograma, niveles); transcripción con hablantes, subtítulos y traducción
+// (Gemini escucha el archivo); grabador de reuniones con consentimiento; voces de los compañeros; biblioteca.
+const AU = { pest: "biblioteca", datos: null, filtro: { q: "", etiqueta: "", categoria: "", fav: false }, sel: null, buf: null, deshacer: [], a: 0, b: 0, info: null, trans: null, trad: null, grab: null, frase: null, reproduciendo: null, limpieza: null };
+const auCtx = () => (AU.ctx ??= new (window.AudioContext || window.webkitAudioContext)());
+async function montarAudio() { AU.datos = await api("GET", `/api/audio?q=${encodeURIComponent(AU.filtro.q)}&etiqueta=${encodeURIComponent(AU.filtro.etiqueta)}&categoria=${encodeURIComponent(AU.filtro.categoria)}&favoritos=${AU.filtro.fav ? 1 : 0}`); if (!AU.sel && AU.datos.audios[0]) AU.sel = AU.datos.audios[0].ruta; pintarAudio(); }
+async function auCargar(ruta) {
+  const r = await fetch(vistaDe(ruta));
+  if (!r.ok) throw new Error("No se pudo abrir el audio.");
+  const b = await auCtx().decodeAudioData(await r.arrayBuffer());
+  AU.sel = ruta; AU.buf = b; AU.deshacer = []; AU.a = 0; AU.b = 0; AU.info = null; AU.limpieza = null;
+  return b;
+}
+const auNuevo = (canales, largo, fr) => auCtx().createBuffer(canales, Math.max(1, largo), fr);
+function auTramo(buf, i0, i1) { const o = auNuevo(buf.numberOfChannels, i1 - i0, buf.sampleRate); for (let c = 0; c < buf.numberOfChannels; c++) o.copyToChannel(buf.getChannelData(c).subarray(i0, i1), c); return o; }
+const auIdx = (buf, t) => Math.max(0, Math.min(buf.length, Math.round(t * buf.sampleRate)));
+const AU_OPS = {
+  recortar: (b, a, z) => auTramo(b, auIdx(b, a), auIdx(b, z)),
+  borrar: (b, a, z) => { const i0 = auIdx(b, a), i1 = auIdx(b, z), o = auNuevo(b.numberOfChannels, b.length - (i1 - i0), b.sampleRate); for (let c = 0; c < b.numberOfChannels; c++) { const d = b.getChannelData(c), x = o.getChannelData(c); x.set(d.subarray(0, i0)); x.set(d.subarray(i1), i0); } return o; },
+  silenciar: (b, a, z) => { const o = auTramo(b, 0, b.length); for (let c = 0; c < o.numberOfChannels; c++) o.getChannelData(c).fill(0, auIdx(b, a), auIdx(b, z)); return o; },
+  entrada: (b, a, z) => { const o = auTramo(b, 0, b.length), i0 = auIdx(b, a), i1 = auIdx(b, z); for (let c = 0; c < o.numberOfChannels; c++) { const d = o.getChannelData(c); for (let i = i0; i < i1; i++) d[i] *= (i - i0) / Math.max(1, i1 - i0); } return o; },
+  salida: (b, a, z) => { const o = auTramo(b, 0, b.length), i0 = auIdx(b, a), i1 = auIdx(b, z); for (let c = 0; c < o.numberOfChannels; c++) { const d = o.getChannelData(c); for (let i = i0; i < i1; i++) d[i] *= 1 - (i - i0) / Math.max(1, i1 - i0); } return o; },
+  normalizar: (b) => { let pico = 0; for (let c = 0; c < b.numberOfChannels; c++) for (const v of b.getChannelData(c)) pico = Math.max(pico, Math.abs(v)); const o = auTramo(b, 0, b.length), k = pico ? 0.891 / pico : 1; for (let c = 0; c < o.numberOfChannels; c++) { const d = o.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] *= k; } return o; },
+};
+function auUnir(b, otro) {
+  const ch = Math.max(b.numberOfChannels, otro.numberOfChannels), o = auNuevo(ch, b.length + otro.length, b.sampleRate);
+  for (let c = 0; c < ch; c++) { const x = o.getChannelData(c); x.set(b.getChannelData(Math.min(c, b.numberOfChannels - 1))); x.set(otro.getChannelData(Math.min(c, otro.numberOfChannels - 1)), b.length); }
+  return o;
+}
+/** Nivel en dB de cada tramo de 20 ms (el más fuerte de los canales). */
+function auNiveles(b) {
+  const n = Math.round(b.sampleRate * 0.02), out = new Float32Array(Math.ceil(b.length / n));
+  for (let f = 0; f < out.length; f++) { let m = 0; for (let c = 0; c < b.numberOfChannels; c++) { const d = b.getChannelData(c); let s = 0; for (let i = f * n; i < Math.min(b.length, (f + 1) * n); i++) s += d[i] * d[i]; m = Math.max(m, s / n); } out[f] = 10 * Math.log10(m + 1e-12); }
+  return out;
+}
+const auPercentil = (xs, p) => { const s = Float32Array.from(xs).sort(); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; };
+/** Limpieza de voz: filtro de graves (85 Hz) y agudos (9 kHz) y una compuerta que baja el ruido de fondo y las respiraciones suaves entre frases. */
+async function auLimpiar(b, fuerza = 0.8) {
+  const off = new OfflineAudioContext(b.numberOfChannels, b.length, b.sampleRate), src = off.createBufferSource(); src.buffer = b;
+  const hp = off.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 85; hp.Q.value = 0.7;
+  const lp = off.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = Math.min(9000, b.sampleRate / 2 - 100);
+  src.connect(hp).connect(lp).connect(off.destination); src.start();
+  const f = await off.startRendering();
+  const niv = auNiveles(f), piso = auPercentil(niv, 0.1), alto = auPercentil(niv, 0.9), n = Math.round(b.sampleRate * 0.02);
+  // Sin pausas claras (voz continua o música) la compuerta no se usa: solo los filtros.
+  if (alto - piso < 12) return { buf: f, antes: Math.round(piso), despues: Math.round(auPercentil(auNiveles(f), 0.1)), sinPausas: true };
+  const umbral = Math.max(piso + Math.max(6, (alto - piso) * 0.35), -62), reduccion = 10 ** (-(20 * fuerza + 6) / 20);
+  // Ganancia por tramo con ataque rápido y liberación suave (no corta el final de las palabras).
+  const g = new Float32Array(niv.length); let actual = reduccion;
+  for (let i = 0; i < niv.length; i++) { const obj = niv[i] > umbral ? 1 : reduccion; actual = obj > actual ? obj : actual * 0.85 + obj * 0.15; g[i] = actual; }
+  for (let c = 0; c < f.numberOfChannels; c++) { const d = f.getChannelData(c); for (let i = 0; i < d.length; i++) { const k = i / n, j = Math.floor(k), t = k - j; d[i] *= g[j] * (1 - t) + (g[Math.min(g.length - 1, j + 1)] ?? g[j]) * t; } }
+  const despues = auPercentil(auNiveles(f), 0.1);
+  return { buf: f, antes: Math.round(piso), despues: Math.round(despues) };
+}
+function auWav(b) {
+  const ch = b.numberOfChannels, n = b.length, dv = new DataView(new ArrayBuffer(44 + n * ch * 2)), w = (o, t) => [...t].forEach((x, i) => dv.setUint8(o + i, x.charCodeAt(0)));
+  w(0, "RIFF"); dv.setUint32(4, 36 + n * ch * 2, true); w(8, "WAVE"); w(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true); dv.setUint32(24, b.sampleRate, true); dv.setUint32(28, b.sampleRate * ch * 2, true); dv.setUint16(32, ch * 2, true); dv.setUint16(34, 16, true); w(36, "data"); dv.setUint32(40, n * ch * 2, true);
+  const datos = [...Array(ch)].map((_, c) => b.getChannelData(c));
+  let o = 44; for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const v = Math.max(-1, Math.min(1, datos[c][i])); dv.setInt16(o, v < 0 ? v * 0x8000 : v * 0x7fff, true); o += 2; }
+  return new Blob([dv.buffer], { type: "audio/wav" });
+}
+function auAnalizar(b) {
+  let pico = 0, rec = 0;
+  for (let c = 0; c < b.numberOfChannels; c++) for (const v of b.getChannelData(c)) { const a = Math.abs(v); if (a > pico) pico = a; if (a >= 0.999) rec++; }
+  const niv = auNiveles(b), rms = 10 * Math.log10(niv.reduce((s, x) => s + 10 ** (x / 10), 0) / niv.length + 1e-12);
+  // Tono fundamental aproximado (autocorrelación en el tramo más fuerte).
+  const d = b.getChannelData(0), fuerte = niv.indexOf(Math.max(...niv)), i0 = Math.min(Math.max(0, fuerte * Math.round(b.sampleRate * 0.02)), Math.max(0, d.length - 2048));
+  let mejor = 0, lag = 0; for (let L = Math.round(b.sampleRate / 500); L < Math.round(b.sampleRate / 60); L++) { let s = 0; for (let i = 0; i < 2048 - L && i0 + i + L < d.length; i++) s += d[i0 + i] * d[i0 + i + L]; if (s > mejor) { mejor = s; lag = L; } }
+  return { duracion: b.duration, frecuencia: b.sampleRate, canales: b.numberOfChannels, picoDb: Math.round(20 * Math.log10(pico + 1e-12) * 10) / 10, rmsDb: Math.round(rms * 10) / 10, silencio: Math.round((niv.filter((x) => x < -50).length / niv.length) * 100), saturadas: rec, pisoDb: Math.round(auPercentil(niv, 0.1)), tono: lag && pico > 0.01 ? Math.round(b.sampleRate / lag) : null };
+}
+function auDibujarOnda(cv, b, a, z, cursor) {
+  const W = (cv.width = cv.clientWidth * devicePixelRatio), H = (cv.height = cv.clientHeight * devicePixelRatio), g = cv.getContext("2d"), d = b.getChannelData(0), paso = Math.max(1, Math.floor(d.length / W));
+  const css = getComputedStyle(document.documentElement);
+  g.clearRect(0, 0, W, H);
+  if (z > a) { g.fillStyle = "rgba(108,211,240,.22)"; g.fillRect((a / b.duration) * W, 0, ((z - a) / b.duration) * W, H); }
+  g.fillStyle = css.getPropertyValue("--ion").trim() || "#2a9fd6";
+  for (let x = 0; x < W; x++) { let mn = 1, mx = -1; for (let i = x * paso; i < Math.min(d.length, (x + 1) * paso); i++) { const v = d[i]; if (v < mn) mn = v; if (v > mx) mx = v; } g.fillRect(x, ((1 - mx) / 2) * H, 1, Math.max(1, ((mx - mn) / 2) * H)); }
+  if (cursor != null) { g.fillStyle = "#e0283c"; g.fillRect((cursor / b.duration) * W, 0, 2, H); }
+}
+function auEspectrograma(cv, b) {
+  const W = (cv.width = Math.min(900, cv.clientWidth * devicePixelRatio)), H = (cv.height = 256), g = cv.getContext("2d"), d = b.getChannelData(0), N = 512, img = g.createImageData(W, H);
+  const fft = (re, im) => { const n = re.length; for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } } for (let len = 2; len <= n; len <<= 1) { const ang = (-2 * Math.PI) / len; for (let i = 0; i < n; i += len) for (let k = 0; k < len / 2; k++) { const c = Math.cos(ang * k), s_ = Math.sin(ang * k), a = i + k, bb = i + k + len / 2, tr = re[bb] * c - im[bb] * s_, ti = re[bb] * s_ + im[bb] * c; re[bb] = re[a] - tr; im[bb] = im[a] - ti; re[a] += tr; im[a] += ti; } } };
+  const fmax = Math.min(b.sampleRate / 2, 8000), kmax = Math.max(8, Math.floor((fmax / (b.sampleRate / 2)) * (N / 2))), cols = [];
+  let tope = -200;
+  for (let x = 0; x < W; x++) {
+    const i0 = Math.floor((x / W) * Math.max(0, d.length - N)), re = new Float32Array(N), im = new Float32Array(N);
+    for (let i = 0; i < N; i++) re[i] = (d[i0 + i] || 0) * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1)));
+    fft(re, im);
+    const col = new Float32Array(H);
+    for (let y = 0; y < H; y++) { const k = Math.min(kmax - 1, Math.floor((y / H) * kmax)); col[y] = 10 * Math.log10(re[k] * re[k] + im[k] * im[k] + 1e-12); if (col[y] > tope) tope = col[y]; }
+    cols.push(col);
+  }
+  // 80 dB de rango desde lo más fuerte del archivo.
+  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) { const v = Math.max(0, Math.min(1, (cols[x][y] - tope + 80) / 80)), p = ((H - 1 - y) * W + x) * 4; img.data[p] = 255 * Math.min(1, v * 1.8); img.data[p + 1] = 255 * Math.max(0, v * 1.6 - 0.6); img.data[p + 2] = 255 * (v < 0.5 ? v * 1.4 : 1 - v); img.data[p + 3] = 255; }
+  g.putImageData(img, 0, 0);
+}
+function auReproducir(desde = AU.a, hasta = AU.b > AU.a ? AU.b : AU.buf.duration) {
+  auParar();
+  const ctx = auCtx(), src = ctx.createBufferSource(); src.buffer = AU.buf; src.connect(ctx.destination);
+  const t0 = ctx.currentTime; src.start(0, desde, Math.max(0.01, hasta - desde));
+  AU.reproduciendo = src; src.onended = () => { if (AU.reproduciendo === src) { AU.reproduciendo = null; auRedibujar(null); } };
+  const tic = () => { if (AU.reproduciendo !== src) return; auRedibujar(desde + ctx.currentTime - t0); requestAnimationFrame(tic); }; tic();
+}
+function auParar() { const s = AU.reproduciendo; AU.reproduciendo = null; try { s?.stop(); } catch {} }
+function auRedibujar(cursor) { const cv = $("#au-onda"); if (cv && AU.buf) auDibujarOnda(cv, AU.buf, AU.a, AU.b, cursor); const o = $("#au-selt"); if (o && AU.buf) o.textContent = AU.b > AU.a ? `Selección: ${AU.a.toFixed(2)} s – ${AU.b.toFixed(2)} s (${(AU.b - AU.a).toFixed(2)} s)` : `Duración ${AU.buf.duration.toFixed(2)} s · arrastrá sobre la onda para elegir un tramo`; }
+function auConectarOnda() {
+  const cv = $("#au-onda"); if (!cv || !AU.buf) return;
+  let ini = null; const t = (e) => { const r = cv.getBoundingClientRect(); return Math.max(0, Math.min(AU.buf.duration, ((e.clientX - r.left) / r.width) * AU.buf.duration)); };
+  cv.onpointerdown = (e) => { cv.setPointerCapture(e.pointerId); ini = t(e); AU.a = ini; AU.b = ini; auRedibujar(); };
+  cv.onpointermove = (e) => { if (ini == null) return; const x = t(e); AU.a = Math.min(ini, x); AU.b = Math.max(ini, x); auRedibujar(); };
+  cv.onpointerup = () => { if (ini == null) return; ini = null; pintarAudio(); };
+  auRedibujar();
+}
+const auReloj = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function pintarAudio() {
+  const el = $("#audiov"); if (!el) return;
+  const d = AU.datos || { audios: [], etiquetas: [], categorias: [], gemini: false }, aud = d.audios;
+  const pest = [["biblioteca", "Biblioteca"], ["editor", "Editor"], ["analisis", "Análisis"], ["transcribir", "Transcribir y subtitular"], ["traducir", "Traductor de voz"], ["grabar", "Grabar reunión"], ["voces", "Voces de compañeros"]];
+  const elegir = (c) => html`<div class="fila" style="gap:8px;flex-wrap:wrap"><select class="inp" data-c="${c}" style="flex:1;min-width:220px">${aud.length ? aud.map((x) => html`<option ${si(x.ruta === AU.sel, "selected")}>${x.ruta}</option>`) : html`<option value="">No hay audios: subí uno</option>`}</select><label class="btn out sm" style="cursor:pointer">${ico("download", "s")}Subir<input type="file" hidden accept="audio/*,.wav,.mp3,.ogg,.m4a,.webm,.flac" data-c="au-subir"></label></div>`;
+  const sinGemini = html`<p class="u-wait">Transcribir y separar hablantes usa Gemini (gratis con una clave de aistudio.google.com, en Ajustes). Sin la clave esta parte no está disponible; el editor, el análisis y la biblioteca andan igual.</p>`;
+  const tr = AU.sel ? aud.find((x) => x.ruta === AU.sel)?.transcripcion : null;
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Audio Studio</h1><p>Editá, limpiá y analizá grabaciones acá mismo (sin IA y sin costo); transcribí con hablantes, generá subtítulos y traducí; grabá reuniones con consentimiento y configurá la voz de cada compañero.</p></div></header>
+    <nav class="cd-modos dl-pest" aria-label="Secciones">${pest.map(([k, t]) => html`<button class="chip" aria-pressed="${String(AU.pest === k)}" data-a="au-pest" data-v="${k}">${t}</button>`)}</nav>
+    ${AU.pest === "biblioteca" ? html`
+      <form class="dl-armar" data-f="au-filtro"><label class="fld" style="grid-column:span 2"><span>Buscar</span><input class="inp" type="search" name="q" value="${AU.filtro.q}" placeholder="nombre, etiqueta o nota"></label><label class="fld"><span>Etiqueta</span><select class="inp" name="etiqueta"><option value="">Todas</option>${d.etiquetas.map((e) => html`<option ${si(e === AU.filtro.etiqueta, "selected")}>${e}</option>`)}</select></label><label class="fld"><span>Categoría</span><select class="inp" name="categoria"><option value="">Todas</option>${d.categorias.map((c) => html`<option ${si(c === AU.filtro.categoria, "selected")}>${c}</option>`)}</select></label><label class="fila" style="gap:6px"><input type="checkbox" name="fav" ${si(AU.filtro.fav, "checked")}> Favoritos</label><div class="dl-acc"><button class="btn out">Filtrar</button></div></form>
+      <div class="fila" style="gap:8px;margin:6px 0"><label class="btn out sm" style="cursor:pointer">${ico("download", "s")}Subir audio<input type="file" hidden accept="audio/*,.wav,.mp3,.ogg,.m4a,.webm,.flac" data-c="au-subir"></label></div>
+      ${aud.length ? html`<ul class="hist">${aud.map((x) => html`<li><div class="fila" style="gap:8px;flex-wrap:wrap;align-items:center"><button class="btn ghost sm" data-a="au-fav" data-r="${x.ruta}" aria-label="Favorito" title="Favorito">${x.favorito ? "★" : "☆"}</button><b style="flex:1;min-width:180px">${x.ruta}</b><small class="muted">${tamano(x.tamano)} · ${diaHora(x.modificado)}${x.consentimiento ? ` · consentimiento: ${x.consentimiento.participantes}` : ""}${x.transcripcion ? " · transcripto" : ""}</small></div>
+        <audio controls preload="none" src="${vistaDe(x.ruta)}" style="width:100%;height:36px;margin:4px 0"></audio>
+        <form class="fila" data-f="au-meta" data-r="${x.ruta}" style="gap:6px;flex-wrap:wrap"><input class="inp" name="etiquetas" value="${x.etiquetas.join(", ")}" placeholder="etiquetas, separadas por coma" style="flex:1;min-width:160px"><select class="inp" name="categoria" style="width:auto"><option value="">Sin categoría</option>${d.categorias.map((c) => html`<option ${si(c === x.categoria, "selected")}>${c}</option>`)}</select><button class="btn ghost sm">Guardar</button><button class="btn ghost sm" type="button" data-a="au-abrir" data-r="${x.ruta}" data-v="editor">Editar</button></form></li>`)}</ul>` : html`<p class="muted">No hay audios en la computadora. Subí uno, grabá una reunión o generá una voz en Creative Studio.</p>`}` : ""}
+    ${AU.pest === "editor" ? html`${elegir("au-sel")}
+      ${AU.buf ? html`<canvas id="au-onda" class="au-onda" aria-label="Forma de onda: arrastrá para seleccionar"></canvas><p id="au-selt" class="muted" style="font-size:12.5px;margin:4px 0"></p>
+        <div class="fila" style="gap:6px;flex-wrap:wrap"><button class="btn pri sm" data-a="au-play">${ico("play", "s")}Escuchar</button><button class="btn out sm" data-a="au-stop">${ico("stop", "s")}Parar</button><span style="width:8px"></span>
+          ${[["recortar", "Dejar solo la selección"], ["borrar", "Borrar selección"], ["silenciar", "Silenciar"], ["entrada", "Fundido de entrada"], ["salida", "Fundido de salida"]].map(([k, t]) => html`<button class="btn out sm" data-a="au-op" data-v="${k}" ${si(!(AU.b > AU.a), "disabled")}>${t}</button>`)}
+          <button class="btn out sm" data-a="au-op" data-v="normalizar">Normalizar</button><button class="btn out sm" data-a="au-limpiar">Limpiar voz</button><button class="btn ghost sm" data-a="au-deshacer" ${si(!AU.deshacer.length, "disabled")}>Deshacer</button></div>
+        ${AU.limpieza ? html`<p class="muted" style="font-size:12.5px">Ruido de fondo: ${AU.limpieza.antes} dB → ${AU.limpieza.despues} dB (graves bajo 85 Hz y agudos sobre 9 kHz filtrados${AU.limpieza.sinPausas ? "; sin pausas claras, así que no se atenuó nada más" : "; pausas y respiraciones suaves atenuadas"}).</p>` : ""}
+        <form class="fila" data-f="au-unir" style="gap:6px;flex-wrap:wrap;margin-top:8px"><select class="inp" name="otro" style="flex:1;min-width:200px">${aud.filter((x) => x.ruta !== AU.sel).map((x) => html`<option>${x.ruta}</option>`)}</select><button class="btn out sm">Unir al final</button></form>
+        <form class="fila" data-f="au-guardar" style="gap:6px;flex-wrap:wrap;margin-top:8px"><input class="inp" name="nombre" value="${(AU.sel || "audio").split("/").pop().replace(/\.\w+$/, "")}-editado" style="flex:1;min-width:200px"><button class="btn pri sm">Guardar como WAV</button></form>
+        <p class="muted" style="font-size:12px">El original no se toca: se guarda un archivo nuevo en audio/.</p>` : AU.sel ? html`<button class="btn pri sm" data-a="au-abrir" data-r="${AU.sel}" data-v="editor">Abrir en el editor</button>` : ""}` : ""}
+    ${AU.pest === "analisis" ? html`${elegir("au-sel")}
+      ${AU.buf ? html`<canvas id="au-onda" class="au-onda"></canvas><p id="au-selt" class="muted" style="font-size:12px"></p><canvas id="au-esp" class="au-esp" aria-label="Espectrograma"></canvas><p class="muted" style="font-size:12px">Espectrograma: tiempo de izquierda a derecha, frecuencia de abajo (graves) hacia arriba (hasta ${Math.round(Math.min(AU.buf.sampleRate / 2, 8000) / 1000)} kHz, donde está la voz).</p>
+        ${AU.info ? html`<div class="ops-k"><div><b>${AU.info.duracion.toFixed(1)} s</b><span>duración</span></div><div><b>${AU.info.frecuencia / 1000} kHz</b><span>${AU.info.canales === 1 ? "mono" : `${AU.info.canales} canales`}</span></div><div><b>${AU.info.picoDb} dB</b><span>pico</span></div><div><b>${AU.info.rmsDb} dB</b><span>nivel medio</span></div><div><b>${AU.info.pisoDb} dB</b><span>ruido de fondo</span></div><div><b>${AU.info.silencio}%</b><span>silencio</span></div><div><b>${AU.info.saturadas}</b><span>muestras saturadas</span></div><div><b>${AU.info.tono ? `${AU.info.tono} Hz` : "—"}</b><span>tono aprox.</span></div></div>${AU.info.saturadas > 10 ? html`<p class="u-wait">Hay saturación: bajá la ganancia al grabar.</p>` : ""}${AU.info.pisoDb > -45 ? html`<p class="u-wait">El ruido de fondo es alto: probá «Limpiar voz» en el editor.</p>` : ""}` : ""}` : AU.sel ? html`<button class="btn pri sm" data-a="au-abrir" data-r="${AU.sel}" data-v="analisis">Analizar</button>` : ""}` : ""}
+    ${AU.pest === "transcribir" ? html`${d.gemini ? "" : sinGemini}${elegir("au-sel-t")}
+      <form class="dl-armar" data-f="au-transcribir"><label class="fld"><span>Personas que hablan</span><input class="inp" type="number" name="hablantes" min="1" max="20" placeholder="no sé"></label><label class="fld"><span>Idioma</span><input class="inp" name="idioma" placeholder="detectar"></label><div class="dl-acc"><button class="btn pri" ${si(!d.gemini || !AU.sel, "disabled")}>Transcribir</button></div></form>
+      <p class="muted" style="font-size:12px">Gemini escucha el archivo (gratis con su clave, con límites diarios de Google). Genera la transcripción con hablantes y los subtítulos .srt y .vtt al lado del audio.</p>
+      ${tr ? html`<section class="card dl-card"><h2>Transcripción</h2><p class="muted" style="font-size:12.5px">${tr.idioma} · ${plural(tr.segmentos.length, "segmento", "segmentos")} · ${tr.modelo} · ${diaHora(tr.fecha)}</p>${tr.resumen ? html`<p>${tr.resumen}</p>` : ""}
+        <audio id="au-tr-audio" controls src="${vistaDe(AU.sel)}" style="width:100%"></audio>
+        <div class="au-seg" style="margin-top:8px">${tr.segmentos.map((x) => html`<button data-a="au-ir" data-t="${x.inicio}">${auReloj(x.inicio)}</button><b>${x.hablante}</b><span>${x.texto}</span>`)}</div>
+        <form class="dl-armar" data-f="au-hablantes" style="margin-top:10px">${[...new Set(tr.segmentos.map((x) => x.hablante))].map((h) => html`<label class="fld"><span>${h}</span><input class="inp" name="${h}" placeholder="Nombre"></label>`)}<div class="dl-acc"><button class="btn out">Renombrar hablantes</button></div></form>
+        <p class="muted" style="font-size:12px">Archivos: ${AU.sel.replace(/\.\w+$/, "")}.srt, .vtt y .transcripcion.md</p></section>` : ""}` : ""}
+    ${AU.pest === "traducir" ? html`
+      <section class="card dl-card"><h2>Traducir una grabación</h2>${d.gemini ? "" : sinGemini}${elegir("au-sel-t")}
+        <form class="fila" data-f="au-traducir" style="gap:6px;flex-wrap:wrap;margin-top:8px"><input class="inp" name="idioma" required placeholder="Idioma de destino (ej.: inglés)" style="flex:1;min-width:200px"><button class="btn pri sm" ${si(!AU.sel, "disabled")}>Traducir</button></form>
+        <p class="muted" style="font-size:12px">Usa la transcripción (si no hay, primero transcribí) y el modelo configurado para traducir cada frase con sus mismos tiempos: queda un .srt y .vtt traducidos.</p>
+        ${AU.trad ? html`<div class="au-seg">${AU.trad.segmentos.map((x) => html`<span class="muted">${auReloj(x.inicio)}</span><b>${x.hablante}</b><span>${x.texto}</span>`)}</div><p class="muted" style="font-size:12px">${AU.trad.archivos.join(" · ")}</p>` : ""}</section>
+      <section class="card dl-card"><h2>Conversación</h2><p class="sub">Hablá o escribí una frase: se traduce y se lee en voz alta en el otro idioma.</p>
+        <form class="dl-armar" data-f="au-frase"><label class="fld"><span>De</span><select class="inp" name="de">${Object.entries(IDIOMAS_BOT).map(([k, [n]]) => html`<option value="${k}">${n}</option>`)}</select></label><label class="fld"><span>A</span><select class="inp" name="a">${Object.entries(IDIOMAS_BOT).map(([k, [n]]) => html`<option value="${k}" ${si(k === "en", "selected")}>${n}</option>`)}</select></label><label class="fld" style="grid-column:1/-1"><span>Frase</span><input class="inp" name="texto" placeholder="Escribí o tocá «Hablar»"></label><div class="dl-acc"><button class="btn out" type="button" data-a="au-hablar">${ico("mic", "s")}Hablar</button><button class="btn pri">Traducir</button></div></form>
+        ${AU.frase ? html`<p><span class="muted">${AU.frase.original}</span><br><b style="font-size:17px">${AU.frase.texto}</b></p>` : ""}</section>` : ""}
+    ${AU.pest === "grabar" ? html`<section class="card dl-card"><h2>Grabar una reunión</h2>
+      ${AU.grab?.rec ? html`<p class="au-rec" id="au-rec-t">Grabando</p><p class="muted">Participantes que aceptaron: ${AU.grab.participantes}</p><button class="btn pri" data-a="au-grab-fin">${ico("stop", "s")}Terminar y guardar</button>` : html`
+        <form class="dl-armar" data-f="au-grabar"><label class="fld" style="grid-column:1/-1"><span>Participantes</span><input class="inp" name="participantes" required placeholder="Ana, Beto, Carla"></label><label class="fila" style="gap:8px;grid-column:1/-1;align-items:flex-start"><input type="checkbox" name="ok" required> <span>Todos los participantes saben que se graba y están de acuerdo. (Grabar sin consentimiento puede ser ilegal.)</span></label><div class="dl-acc"><button class="btn pri">${ico("mic", "s")}Empezar a grabar</button></div></form>
+        <p class="muted" style="font-size:12px">Usa el micrófono de este dispositivo (Android te va a pedir permiso). La grabación queda en audio/reuniones/ con el consentimiento registrado; después la podés transcribir.</p>`}</section>` : ""}
+    ${AU.pest === "voces" ? html`<p class="sub">Cómo suena cada compañero en las llamadas (voz del dispositivo, velocidad y tono) y al narrar con Gemini (voz y estilo).</p>
+      ${S.bots.length ? S.bots.map((b) => { const a = { ...AVATAR_DEF, ...(b.avatar || {}) }; return html`<section class="card dl-card"><form class="dl-armar" data-f="au-voz" data-id="${b.id}"><h2 style="grid-column:1/-1;font-size:15px">${b.nombre} <small class="muted">${b.titulo || ""}</small></h2>
+        <label class="fld"><span>Voz del dispositivo</span><select class="inp" name="voz">${opcionesVoz(a)}</select></label>
+        <label class="fld"><span>Velocidad · ${fmtVel(a.velocidad)}×</span><input type="range" class="rng" name="velocidad" min="0.5" max="2" step="0.05" value="${a.velocidad}"></label>
+        <label class="fld"><span>Tono · ${fmtVel(a.tono || 1)}</span><input type="range" class="rng" name="tono" min="0.6" max="1.6" step="0.05" value="${a.tono || 1}"></label>
+        <label class="fld"><span>Voz de Gemini</span><select class="inp" name="vozGemini">${["Kore", "Puck", "Charon", "Aoede", "Fenrir", "Leda", "Orus", "Zephyr"].map((v) => html`<option ${si(v === (a.vozGemini || "Kore"), "selected")}>${v}</option>`)}</select></label>
+        <label class="fld" style="grid-column:span 2"><span>Estilo al narrar</span><input class="inp" name="estilo" maxlength="200" value="${a.estilo || ""}" placeholder="tranquilo y cálido · enérgico, como locutor de radio"></label>
+        <div class="dl-acc"><button class="btn out sm" type="button" data-a="au-probar-voz" data-id="${b.id}">Probar</button><button class="btn out sm" type="button" data-a="au-narrar" data-id="${b.id}" ${si(!d.gemini, "disabled")}>Narrar con Gemini</button><button class="btn pri sm">Guardar</button></div></form></section>`; }) : html`<p class="muted">Todavía no hay compañeros.</p>`}` : ""}`);
+  if ((AU.pest === "editor" || AU.pest === "analisis") && AU.buf) { auConectarOnda(); if (AU.pest === "analisis") { const e = $("#au-esp"); if (e) auEspectrograma(e, AU.buf); } }
+}
+
 // ================================================================ Gravity Vision
 // Con IA (modelo configurado, con imagen): describir, objetos, leer documentos, capturas de interfaz y
 // diagramas. Sin IA, con los píxeles reales en el navegador: contraste WCAG de los componentes, comparar dos
@@ -5552,7 +5728,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["vision", "Gravity Vision", "eye", "Analizá imágenes, documentos, capturas y videos; compará y buscá parecidas"], ["conocimiento", "Gravity Knowledge", "book", "Cuadernos por tema: preguntas con fuentes, mapas, líneas de tiempo y fichas"], ["cloud", "Gravity Cloud", "globe", "Otros Gravity: compilar allá, estado, copias cifradas y costos"], ["creativo", "Creative Studio", "image", "Imágenes, voces, presentaciones, logos y animaciones"], ["midia", "Mi día", "clock", "Objetivos, plan del día, recordatorios y resumen de lo que pasó"], ["investigacion", "Investigación", "search", "Fuentes consultadas, páginas que cambian y búsqueda en PDF y Word"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["audio", "Audio Studio", "audio", "Editá, limpiá, transcribí, subtitulá y traducí grabaciones; voces de los compañeros"], ["vision", "Gravity Vision", "eye", "Analizá imágenes, documentos, capturas y videos; compará y buscá parecidas"], ["conocimiento", "Gravity Knowledge", "book", "Cuadernos por tema: preguntas con fuentes, mapas, líneas de tiempo y fichas"], ["cloud", "Gravity Cloud", "globe", "Otros Gravity: compilar allá, estado, copias cifradas y costos"], ["creativo", "Creative Studio", "image", "Imágenes, voces, presentaciones, logos y animaciones"], ["midia", "Mi día", "clock", "Objetivos, plan del día, recordatorios y resumen de lo que pasó"], ["investigacion", "Investigación", "search", "Fuentes consultadas, páginas que cambian y búsqueda en PDF y Word"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -7024,6 +7200,23 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "au-pest": async (t) => { AU.pest = t.dataset.v; if ((AU.pest === "editor" || AU.pest === "analisis") && AU.sel && !AU.buf) { try { await auCargar(AU.sel); if (AU.pest === "analisis") AU.info = auAnalizar(AU.buf); } catch (e) { toast(e.message, "err"); } } if (AU.pest === "analisis" && AU.buf && !AU.info) AU.info = auAnalizar(AU.buf); pintarAudio(); },
+  "au-abrir": async (t) => { AU.pest = t.dataset.v; try { await auCargar(t.dataset.r); if (AU.pest === "analisis") AU.info = auAnalizar(AU.buf); } catch (e) { toast(e.message, "err"); } pintarAudio(); },
+  "au-fav": async (t) => { const x = AU.datos.audios.find((a) => a.ruta === t.dataset.r); await api("PUT", "/api/audio/meta", { ruta: x.ruta, favorito: !x.favorito }); await montarAudio(); },
+  "au-play": () => auReproducir(),
+  "au-stop": () => { auParar(); auRedibujar(null); },
+  "au-op": (t) => { AU.deshacer.push(AU.buf); if (AU.deshacer.length > 15) AU.deshacer.shift(); AU.buf = AU_OPS[t.dataset.v](AU.buf, AU.a, AU.b); if (t.dataset.v === "recortar" || t.dataset.v === "borrar") { AU.a = 0; AU.b = 0; } AU.info = null; pintarAudio(); },
+  "au-limpiar": (t) => conCarga(t, async () => { AU.deshacer.push(AU.buf); const r = await auLimpiar(AU.buf); AU.buf = r.buf; AU.limpieza = r; pintarAudio(); }),
+  "au-deshacer": () => { AU.buf = AU.deshacer.pop() || AU.buf; AU.limpieza = null; pintarAudio(); },
+  "au-ir": (t) => { const a = $("#au-tr-audio"); if (a) { a.currentTime = Number(t.dataset.t); a.play().catch(() => {}); } },
+  "au-hablar": () => {
+    const f = $('form[data-f="au-frase"]'); const de = IDIOMAS_BOT[f.de.value][1];
+    const quitar = Voz.on((e) => { if (e.tipo === "parcial") f.texto.value = e.texto; if (e.tipo === "final") { quitar(); f.texto.value = e.texto; f.requestSubmit(); } if (e.tipo === "silencio" || e.tipo === "error") { quitar(); if (e.tipo === "error") toast(e.mensaje || "No se pudo escuchar.", "err"); } });
+    try { Voz.escuchar(de); } catch (err) { quitar(); toast(String(err?.message || err), "err"); }
+  },
+  "au-grab-fin": () => { AU.grab?.rec?.stop(); },
+  "au-probar-voz": (t) => { const f = t.closest("form"), b = bot(t.dataset.id); try { Voz.callar(); Voz.hablar(`prueba-${Date.now()}`, `Hola, soy ${b?.nombre || "tu compañero"}.`, { voz: f.voz.value || null, velocidad: Number(f.velocidad.value), tono: Number(f.tono.value) }); } catch (err) { toast(String(err?.message || err), "err"); } },
+  "au-narrar": (t) => conCarga(t, async () => { const b = bot(t.dataset.id); const r = await api("POST", `/api/bots/${t.dataset.id}/narrar`, { texto: `Hola, soy ${b?.nombre || "tu compañero"}. Así sueno cuando narro.` }); toast(`Narración guardada en ${r.ruta}`); new Audio(vistaDe(r.ruta)).play().catch(() => {}); }),
   "vi-pest": async (t) => { VI.pest = t.dataset.v; if (VI.pest === "fotogramas" && !VI.videos) { VI.videos = await api("GET", "/api/vision/imagenes?video=1"); VI.video = VI.video || VI.videos[0]?.ruta || ""; } if (VI.pest === "historial") VI.hist = await api("GET", "/api/vision/historial"); pintarVision(); },
   "vi-modo": (t) => { VI.modo = t.dataset.v; pintarVision(); },
   "vi-ver": async (t) => { const a = VI.hist.find((h) => h.id === t.dataset.id); VI.res = a; VI.ruta = a.ruta; VI.modo = a.modo; VI.pest = "analizar"; await viContrasteCaptura(a).catch(() => {}); pintarVision(); },
@@ -7474,6 +7667,38 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "au-filtro"(f) { AU.filtro = { q: f.q.value.trim(), etiqueta: f.etiqueta.value, categoria: f.categoria.value, fav: f.fav.checked }; await montarAudio(); },
+  async "au-meta"(f) { await conCarga(f.querySelector("button"), async () => { await api("PUT", "/api/audio/meta", { ruta: f.dataset.r, etiquetas: f.etiquetas.value.split(",").map((x) => x.trim()).filter(Boolean), categoria: f.categoria.value || null }); toast("Guardado."); await montarAudio(); }); },
+  async "au-unir"(f) { await conCarga(f.querySelector("button"), async () => { const r = await fetch(vistaDe(f.otro.value)); const otro = await auCtx().decodeAudioData(await r.arrayBuffer()); AU.deshacer.push(AU.buf); AU.buf = auUnir(AU.buf, otro); AU.info = null; pintarAudio(); }); },
+  async "au-guardar"(f) { await conCarga(f.querySelector("button"), async () => { const r = await fetch(`/api/audio/subir?nombre=${encodeURIComponent(f.nombre.value.trim() || "audio")}.wav`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: auWav(AU.buf) }); const j = await r.json(); if (!r.ok) throw new Error(j.error || "No se pudo guardar."); toast(`Guardado en ${j.ruta}`); AU.sel = j.ruta; AU.deshacer = []; await montarAudio(); }); },
+  async "au-transcribir"(f) { await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/audio/transcribir", { ruta: AU.sel, hablantes: Number(f.hablantes.value) || null, idioma: f.idioma.value.trim() || null }); await montarAudio(); }); },
+  async "au-hablantes"(f) { await conCarga(f.querySelector("button"), async () => { const nombres = Object.fromEntries([...f.querySelectorAll("input")].filter((i) => i.value.trim()).map((i) => [i.name, i.value.trim()])); await api("PUT", "/api/audio/hablantes", { ruta: AU.sel, nombres }); await montarAudio(); }); },
+  async "au-traducir"(f) { await conCarga(f.querySelector("button"), async () => { AU.trad = await api("POST", "/api/audio/traducir", { ruta: AU.sel, idioma: f.idioma.value.trim() }); pintarAudio(); }); },
+  async "au-frase"(f) { const texto = f.texto.value.trim(); if (!texto) return; await conCarga(f.querySelector("button:not([type])"), async () => { const [nombre, tag] = IDIOMAS_BOT[f.a.value]; const r = await api("POST", "/api/audio/traducir-frase", { texto, idioma: nombre }); AU.frase = { original: texto, texto: r.texto }; pintarAudio(); try { Voz.callar(); Voz.hablar(`trad-${Date.now()}`, r.texto, { idioma: tag }); } catch {} }); },
+  async "au-grabar"(f) {
+    if (!f.ok.checked) return;
+    const participantes = f.participantes.value.trim();
+    let flujo;
+    try { flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch { toast("Sin permiso para usar el micrófono.", "err"); return; }
+    const tipo = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find((x) => window.MediaRecorder?.isTypeSupported?.(x)) || "";
+    const rec = new MediaRecorder(flujo, tipo ? { mimeType: tipo } : {}), partes = [], t0 = Date.now();
+    rec.ondataavailable = (e) => e.data.size && partes.push(e.data);
+    const reloj = setInterval(() => { const e = $("#au-rec-t"); if (e) e.textContent = `Grabando · ${auReloj((Date.now() - t0) / 1000)}`; }, 500);
+    rec.onstop = async () => {
+      clearInterval(reloj); flujo.getTracks().forEach((x) => x.stop());
+      const blob = new Blob(partes, { type: rec.mimeType || "audio/webm" }), ext = /mp4/.test(blob.type) ? "m4a" : /ogg/.test(blob.type) ? "ogg" : "webm";
+      const nombre = `reunion-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.${ext}`;
+      const r = await fetch(`/api/audio/subir?carpeta=reuniones&nombre=${encodeURIComponent(nombre)}&consentimiento=${encodeURIComponent(participantes)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: blob });
+      const j = await r.json().catch(() => ({}));
+      AU.grab = null;
+      if (!r.ok) { toast(j.error || "No se pudo guardar la grabación.", "err"); pintarAudio(); return; }
+      toast(`Grabación guardada en ${j.ruta}`); AU.sel = j.ruta; AU.pest = "transcribir"; AU.buf = null; await montarAudio();
+    };
+    rec.start(1000);
+    AU.grab = { rec, participantes };
+    pintarAudio();
+  },
+  async "au-voz"(f) { await conCarga(f.querySelector("button:not([type])"), async () => { await api("PUT", `/api/bots/${f.dataset.id}/voz`, { voz: f.voz.value || null, velocidad: Number(f.velocidad.value), tono: Number(f.tono.value), vozGemini: f.vozGemini.value, estilo: f.estilo.value.trim() }); toast("Voz guardada."); }); },
   async "vi-analizar"(f) { await conCarga(f.querySelector("button"), async () => { VI.res = await api("POST", "/api/vision/analizar", { ruta: VI.ruta, modo: VI.modo, pregunta: f.pregunta.value.trim() || undefined }); await viContrasteCaptura(VI.res).catch(() => {}); VI.hist = null; pintarVision(); }); },
   async "vi-comparar"(f) { await conCarga(f.querySelector("button"), async () => { VI.cmpA = f.a.value; VI.cmpB = f.b.value; VI.cmp = await viComparar(f.a.value, f.b.value, Number(f.umbral.value)); pintarVision(); }); },
   async "kn-crear"(f) { await conCarga(f.querySelector("button"), async () => { const c = await api("POST", "/api/conocimiento", { nombre: f.nombre.value.trim(), tema: f.tema.value.trim() }); KN.sel = c.nombre; KN.sub = "contenido"; await montarKnowledge(); }); },
@@ -7986,6 +8211,16 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "au-sel": async (t) => { if (!t.value) return; try { await auCargar(t.value); if (AU.pest === "analisis") AU.info = auAnalizar(AU.buf); } catch (e) { toast(e.message, "err"); } pintarAudio(); },
+  "au-sel-t": (t) => { AU.sel = t.value; AU.buf = null; AU.trad = null; pintarAudio(); },
+  "au-subir": async (t) => {
+    const f = t.files?.[0]; if (!f) return;
+    const r = await fetch(`/api/audio/subir?nombre=${encodeURIComponent(f.name)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(j.error || "No se pudo subir.", "err"); return; }
+    AU.sel = j.ruta; AU.buf = null; await montarAudio();
+    if (AU.pest === "editor" || AU.pest === "analisis") { try { await auCargar(j.ruta); if (AU.pest === "analisis") AU.info = auAnalizar(AU.buf); } catch (e) { toast(e.message, "err"); } pintarAudio(); }
+  },
   "vi-ruta": (t) => { VI.ruta = t.value; VI.res = null; pintarVision(); },
   "vi-video": (t) => { VI.video = t.value; VI.fot = null; pintarVision(); },
   "vi-ref": (t) => { VI.ref = t.value; VI.par = null; pintarVision(); },

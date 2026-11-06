@@ -142,6 +142,8 @@ const DatosAvatar = z.object({
   gestos: z.object({ apagados: z.array(z.string().max(20)).max(20).default([]), firma: z.string().max(20).nullable().default(null) }).optional(),
   accesorio: z.enum(["ninguno", "antena", "cresta", "visera"]).default("ninguno"),
   tono: z.number().min(0.5).max(2).transform((v) => Math.round(v * 100) / 100).default(1),
+  estilo: z.string().trim().max(200).optional(),
+  vozGemini: z.string().max(20).nullable().optional(),
   color: z
     .string()
     .trim()
@@ -297,7 +299,7 @@ function verificarOrigen(req: http.IncomingMessage): void {
   // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
   const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
   // Data Lab sube tablas como binario (CSV, Excel): tampoco es un tipo "simple".
-  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir|conocimiento\/[\w-]+\/subir|vision\/subir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
+  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir|conocimiento\/[\w-]+\/subir|vision\/subir|audio\/subir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
   if (!tipo.startsWith("application/json") && !esRespaldo && !esTabla) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
@@ -709,7 +711,8 @@ ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {
     puedeEnviarAfuera: d.puedeEnviarAfuera ?? bot.puedeEnviarAfuera,
     esfuerzo: d.esfuerzo === undefined ? bot.esfuerzo : d.esfuerzo,
     icono: d.icono === undefined ? bot.icono : d.icono,
-    avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar,
+    // El perfil no manda el estilo ni la voz de Gemini (se editan en Audio Studio): se conservan.
+    avatar: d.avatar === undefined ? (bot.avatar ?? null) : d.avatar && { ...d.avatar, estilo: d.avatar.estilo ?? bot.avatar?.estilo, vozGemini: d.avatar.vozGemini === undefined ? (bot.avatar?.vozGemini ?? null) : d.avatar.vozGemini },
     bloqueadas: d.bloqueadas === undefined ? normalizarBloqueadas(bot.bloqueadas) : normalizarBloqueadas(d.bloqueadas),
     ensenanza: d.ensenanza ?? bot.ensenanza ?? false,
     verificacion: d.verificacion ?? bot.verificacion ?? false,
@@ -1515,6 +1518,82 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   const M = await import("./midia.ts");
   const d = validar(z.object({ disponibilidad: z.string().max(500).default("") }), await cuerpo());
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+});
+
+// ---- Gravity Audio Studio (ver audio.ts) ----
+const conAu = async <T>(f: (K: typeof import("./audio.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./audio.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+ruta("GET", "/api/audio", async ({ url }) => conAu(async (K) => {
+  const { hayGemini } = await import("./proveedores.ts");
+  const p = url.searchParams;
+  return { audios: K.biblioteca({ q: p.get("q") ?? "", etiqueta: p.get("etiqueta") ?? "", categoria: p.get("categoria") ?? "", favoritos: p.get("favoritos") === "1" }), etiquetas: K.todasLasEtiquetas(), categorias: K.CATEGORIAS, gemini: hayGemini };
+}));
+ruta("POST", "/api/audio/subir", async ({ req, url }) => {
+  const K = await import("./audio.ts");
+  const carpeta = url.searchParams.get("carpeta") === "reuniones" ? "audio/reuniones" : "audio";
+  const nombre = path.basename(url.searchParams.get("nombre") ?? "audio.wav").replace(/[^\w.\- ]+/g, "_");
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const p of req) { total += (p as Buffer).length; if (total > 200 * 1024 * 1024) throw new ErrorHttp(413, "El audio pasa los 200 MB."); partes.push(p as Buffer); }
+  const datos = Buffer.concat(partes);
+  const tipo = K.tipoAudio(datos);
+  if (!tipo) throw new ErrorHttp(400, "No es un audio WAV, MP3, OGG, WEBM, M4A o FLAC.");
+  const ext = { "audio/wav": ".wav", "audio/mpeg": ".mp3", "audio/ogg": ".ogg", "audio/flac": ".flac", "audio/webm": ".webm", "audio/mp4": ".m4a" }[tipo]!;
+  const base = path.parse(nombre).name.slice(0, 80) || "audio";
+  await mkdir(path.join(COMPUTADORA, carpeta), { recursive: true });
+  let rel = `${carpeta}/${base}${ext}`;
+  if (url.searchParams.get("reemplazar") !== "1") for (let n = 2; await stat(path.join(COMPUTADORA, rel)).then(() => true, () => false); n++) rel = `${carpeta}/${base}-${n}${ext}`;
+  await writeFile(path.join(COMPUTADORA, rel), datos);
+  const consentimiento = url.searchParams.get("consentimiento");
+  if (carpeta === "audio/reuniones") {
+    if (!consentimiento) { await rm(path.join(COMPUTADORA, rel), { force: true }); throw new ErrorHttp(400, "Una grabación de reunión necesita el consentimiento de los participantes."); }
+    K.registrarConsentimiento(rel, consentimiento);
+  }
+  emitir("computadora");
+  return { ruta: rel };
+});
+ruta("PUT", "/api/audio/meta", async ({ cuerpo }) => {
+  const K = await import("./audio.ts");
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), etiquetas: z.array(z.string().max(30)).max(20).optional(), categoria: z.enum(K.CATEGORIAS).nullable().optional(), favorito: z.boolean().optional(), nota: z.string().max(1000).optional() }), await cuerpo());
+  return conAu((A) => A.etiquetar(d.ruta, d));
+});
+ruta("POST", "/api/audio/transcribir", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), hablantes: z.number().int().min(1).max(20).nullish(), idioma: z.string().max(40).nullish() }), await cuerpo());
+  const r = await conAu((K) => K.transcribir(d.ruta, d, AbortSignal.timeout(15 * 60_000)));
+  emitir("computadora");
+  return r;
+});
+ruta("PUT", "/api/audio/hablantes", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), nombres: z.record(z.string().max(40), z.string().max(40)) }), await cuerpo());
+  const r = await conAu((K) => K.renombrarHablantes(d.ruta, d.nombres));
+  emitir("computadora");
+  return r;
+});
+ruta("POST", "/api/audio/traducir", async ({ cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), idioma: z.string().trim().min(2).max(40) }), await cuerpo());
+  const r = await conAu((K) => K.traducir(d.ruta, d.idioma, AbortSignal.timeout(10 * 60_000)));
+  emitir("computadora");
+  return r;
+});
+ruta("POST", "/api/audio/traducir-frase", async ({ cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().trim().min(1).max(4000), idioma: z.string().trim().min(2).max(40) }), await cuerpo());
+  return conAu(async (K) => ({ texto: await K.traducirFrase(d.texto, d.idioma, AbortSignal.timeout(60_000)) }));
+});
+ruta("PUT", "/api/bots/:id/voz", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ voz: z.string().max(200).nullable().optional(), velocidad: z.number().min(0.5).max(2).optional(), tono: z.number().min(0.5).max(2).optional(), estilo: z.string().trim().max(200).optional(), vozGemini: z.string().max(20).nullable().optional() }), await cuerpo());
+  const bot = buscarBot(params[0]!);
+  if (!bot) throw new ErrorHttp(404, "No existe ese compañero.");
+  const base = bot.avatar ?? { activo: true, color: "#6CD3F0", expresividad: 60, calidad: "auto" as const, voz: null, velocidad: 1, tono: 1, accesorio: "ninguno" as const };
+  bot.avatar = { ...base, ...Object.fromEntries(Object.entries(d).filter(([, v]) => v !== undefined)) };
+  guardarEstado();
+  emitir("bots");
+  return bot.avatar;
+});
+ruta("POST", "/api/bots/:id/narrar", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().trim().min(1).max(5000) }), await cuerpo());
+  const bot = buscarBot(params[0]!);
+  if (!bot) throw new ErrorHttp(404, "No existe ese compañero.");
+  const C = await import("./creativo.ts");
+  try { const ruta = await C.generarVoz(d.texto, bot.avatar?.vozGemini ?? "Kore", bot.avatar?.estilo ?? "", AbortSignal.timeout(120_000)); emitir("computadora"); return { ruta }; } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
 // ---- Gravity Vision (ver vision.ts) ----

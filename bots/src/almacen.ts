@@ -40,6 +40,9 @@ export interface Avatar {
   velocidad: number;
   // Tono de la voz (1 = normal; menos es más grave).
   tono?: number;
+  // Estilo para narrar con voz de Gemini («tranquilo y cálido», «como locutor de radio») y qué voz usar.
+  estilo?: string;
+  vozGemini?: string | null;
   // Accesorio del robot.
   accesorio?: "ninguno" | "antena" | "cresta" | "visera";
 }

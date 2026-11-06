@@ -59,3 +59,18 @@ Imágenes y videos de la computadora (o subidos a `vision/`; las imágenes grand
 331. ✅ Búsqueda visual: imágenes parecidas de toda la computadora por huella perceptual (dHash) y colores, con porcentaje de parecido. Sin IA.
 
 Pruebas: `pruebas/vision.test.mjs` (tipo por contenido, rutas fuera de la computadora, contraste, cajas, texto guardado, historial, error del modelo) y e2e con imágenes y un video reales (ffmpeg): captura con contraste, documento, comparar, fotogramas, parecidas, historial y celular 390 px.
+
+## 32. Gravity Audio Studio (`#/audio`, `audio.ts`)
+Editar, limpiar y analizar se hace en el navegador con Web Audio (sin IA, sin costo, anda en el celular) y el resultado vuelve como WAV real a `audio/`; el original no se toca. Transcribir usa Gemini (gratis con su clave; sin ella se muestra el requisito y esa parte queda deshabilitada). Traducir usa el modelo configurado.
+332. ✅ Editor: forma de onda con selección táctil, escuchar el tramo, dejar solo la selección, borrar, silenciar, fundidos de entrada y salida, normalizar, unir otro audio al final, deshacer (15 pasos) y guardar como WAV.
+333. ✅ Limpieza de voz: filtro de graves (85 Hz) y agudos (9 kHz) y una compuerta con ataque rápido y liberación suave que baja el ruido entre frases y las respiraciones suaves; si el audio no tiene pausas claras, solo filtra (no destruye voz continua ni música). Muestra el ruido de fondo antes y después.
+334. ✅ Transcripción: Gemini escucha el archivo (se reusa la subida de «analizar videos») y devuelve segmentos con tiempos; se ordenan, se corrigen solapamientos y se guardan `.transcripcion.md`.
+335. 🟡 Hablantes: los separa Gemini al transcribir (se le puede decir cuántos son) y se renombran («Hablante 1» → «Ana») regenerando los archivos. Es la separación del modelo, no una diarización acústica propia.
+336. ✅ Subtítulos `.srt` y `.vtt` sincronizados: bloques de hasta 2 líneas de 42 caracteres y 7 segundos, con el hablante.
+337. ✅ Voces de compañeros: voz del dispositivo, velocidad y tono (los que usan las llamadas) y voz y estilo de Gemini para narrar; «Probar» y «Narrar con Gemini». El perfil del compañero conserva estos datos.
+338. ✅ Grabador de reuniones: exige escribir los participantes y confirmar que todos aceptan; usa el micrófono con el permiso de Android; guarda en `audio/reuniones/` con el consentimiento registrado (el servidor rechaza una grabación de reunión sin consentimiento) y lleva directo a transcribir.
+339. ✅ Traductor de voz: grabaciones (frase por frase con los mismos tiempos → `.<idioma>.srt/.vtt`) y conversación (hablás o escribís una frase, se traduce y se lee en voz alta en el otro idioma).
+340. ✅ Análisis: forma de onda, espectrograma (FFT, hasta 8 kHz, 80 dB de rango), duración, frecuencia de muestreo, canales, pico, nivel medio, ruido de fondo, % de silencio, muestras saturadas y tono aproximado, con avisos.
+341. ✅ Biblioteca de sonidos: todos los audios de la computadora con etiquetas, categoría (voz, reunión, música, efecto, ambiente), favoritos, nota, búsqueda y reproducción.
+
+`/vista` responde pedidos por rango (para saltar dentro del audio). Pruebas: `pruebas/audio.test.mjs` (5: tipos, subtítulos, biblioteca, transcripción/hablantes/traducción con modelo simulado, consentimiento) y e2e con audios hechos con ffmpeg y micrófono simulado (editar y verificar con ffprobe, limpieza, análisis, requisito de Gemini, traducción de frase, grabación con consentimiento, voces, celular).
