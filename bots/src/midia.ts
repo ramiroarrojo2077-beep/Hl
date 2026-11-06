@@ -54,6 +54,28 @@ export function pendientes(fecha = hoy()) {
   return { proyectos, recordatorios, diarias, reuniones, objetivos };
 }
 
+// ---- Calendario del equipo: lo que viene en los próximos días (datos reales) ----
+
+export async function calendario(dias = 14): Promise<{ fecha: string; hora: string; tipo: "rutina" | "reunion" | "recordatorio" | "vence" | "objetivo"; titulo: string; quien: string }[]> {
+  const { proximaEjecucion } = await import("./rutinas.ts");
+  const fin = Date.now() + dias * 86_400_000;
+  const xs: { fecha: string; hora: string; tipo: "rutina" | "reunion" | "recordatorio" | "vence" | "objetivo"; titulo: string; quien: string }[] = [];
+  const hm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  for (const r of listarRutinas().filter((x) => x.activa)) {
+    let d = proximaEjecucion(r);
+    for (let k = 0; k < 20 && d.getTime() <= fin; k++) {
+      if (d.getTime() >= Date.now() - 3600_000) xs.push({ fecha: hoy(d), hora: hm(d), tipo: r.reunion ? "reunion" : r.horario.tipo === "una" ? "recordatorio" : "rutina", titulo: r.nombre, quien: buscarBot(r.botId)?.nombre ?? "" });
+      if (r.horario.tipo === "una") break;
+      const paso = r.horario.tipo === "intervalo" ? r.horario.minutos * 60_000 : r.horario.tipo === "diaria" ? 86_400_000 : 7 * 86_400_000;
+      if (r.horario.tipo === "intervalo" && r.horario.minutos < 360) break; // las muy frecuentes se muestran una vez
+      d = new Date(d.getTime() + paso);
+    }
+  }
+  for (const p of listarProyectos().filter((x) => x.estado === "activo")) for (const t of p.tareas) if (t.vence && t.estado !== "completada" && Date.parse(t.vence) <= fin) xs.push({ fecha: t.vence.slice(0, 10), hora: "", tipo: "vence", titulo: `${t.titulo} (${p.nombre})`, quien: t.asignadoA ? buscarBot(t.asignadoA)?.nombre ?? "" : "vos" });
+  for (const o of datos.objetivos) if (!o.cerrado && o.fechaLimite && Date.parse(o.fechaLimite) <= fin) xs.push({ fecha: o.fechaLimite, hora: "", tipo: "objetivo", titulo: o.titulo, quien: "vos" });
+  return xs.sort((a, b) => `${a.fecha} ${a.hora || "99"}`.localeCompare(`${b.fecha} ${b.hora || "99"}`)).slice(0, 200);
+}
+
 // ---- Plan del día (el modelo ordena; los datos son los reales) ----
 
 const Plan = z.object({ items: z.array(z.object({ hora: z.string().describe("HH:MM"), actividad: z.string(), motivo: z.string().describe("Por qué a esa hora o qué la justifica (prioridad, vencimiento, hito)"), tipo: z.enum(["tarea", "reunion", "objetivo", "recordatorio", "pausa", "otro"]) })).max(20) });

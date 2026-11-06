@@ -31,3 +31,21 @@ test("Mi día: objetivos con hitos, pendientes reales y resumen del día", () =>
   assert.equal(M.cambiarObjetivo(o.id, { borrar: true }), null);
   assert.equal(M.listarObjetivos().length, 0);
 });
+
+test("calendario del equipo: rutinas, recordatorios, vencimientos y objetivos de los próximos días", async () => {
+  const b = A.crearBot({ nombre: "Cal", titulo: "x", descripcion: "x" });
+  const manana = new Date(Date.now() + 86_400_000);
+  const f = M.hoy(manana);
+  A.crearRutina({ botId: b.id, nombre: "Resumen diario", instrucciones: "x", habilidadId: null, horario: { tipo: "diaria", hora: "18:30" }, activa: true });
+  A.crearRutina({ botId: b.id, nombre: "Pagar alquiler", instrucciones: "x", habilidadId: null, horario: { tipo: "una", fecha: f, hora: "10:00" }, activa: true });
+  const p = P.crearProyecto({ nombre: "Web", objetivo: "x" });
+  P.agregarTarea(p.id, { titulo: "Publicar", vence: f });
+  M.crearObjetivo({ titulo: "Meta", fechaLimite: f });
+  const cal = await M.calendario(3);
+  const del = cal.filter((x) => x.fecha === f).map((x) => `${x.tipo}:${x.titulo}`);
+  assert.ok(del.includes("recordatorio:Pagar alquiler"));
+  assert.ok(del.includes("rutina:Resumen diario"));
+  assert.ok(del.includes("vence:Publicar (Web)"));
+  assert.ok(del.includes("objetivo:Meta"));
+  assert.ok(cal.filter((x) => x.titulo === "Resumen diario").length >= 2, "la diaria aparece cada día");
+});

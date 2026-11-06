@@ -1486,6 +1486,7 @@ ruta("GET", "/api/midia", async () => {
   const M = await import("./midia.ts");
   return { hoy: M.hoy(), objetivos: M.listarObjetivos().map((o) => ({ ...o, progreso: M.progresoObjetivo(o) })), plan: M.planDe(), pendientes: M.pendientes(), resumen: M.resumenDelDia() };
 });
+ruta("GET", "/api/midia/calendario", async () => (await import("./midia.ts")).calendario(14));
 ruta("POST", "/api/midia/objetivos", async ({ cuerpo }) => {
   const M = await import("./midia.ts");
   const d = validar(z.object({ titulo: z.string().trim().min(1).max(200), descripcion: z.string().max(2000).optional(), fechaLimite: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(), proyectoId: z.string().max(40).nullish(), hitos: z.array(z.string().max(200)).max(30).optional() }), await cuerpo());
@@ -1715,6 +1716,24 @@ ruta("GET", "/api/code/problemas", async ({ url }) => {
   const p = codeDe(url);
   const e = Code.listarEjecuciones(p).find((x) => x.id === url.searchParams.get("id"));
   return e ? Code.problemas(p, e.salida) : [];
+});
+// Completar con IA: el usuario lo pide (no en cada tecla). Devuelve solo el código a insertar en el cursor.
+ruta("POST", "/api/code/completar", async ({ url, cuerpo }) => {
+  const p = codeDe(url);
+  const d = validar(z.object({ ruta: z.string().max(500), antes: z.string().max(6000), despues: z.string().max(2000), pedido: z.string().max(500).default("") }), await cuerpo());
+  const { client, modeloPara, BETA_FALLBACK } = await import("./cliente.ts");
+  const { llamar } = await import("./cupo.ts");
+  const { registrarUso } = await import("./gasto.ts");
+  try {
+    const m = await llamar("code", "usuario", AbortSignal.timeout(60_000), () => client.beta.messages.create({ model: modeloPara("rapido"), max_tokens: 1200, betas: [BETA_FALLBACK], fallbacks: "default", output_config: { effort: "low" },
+      system: "Completás código en el cursor. Devolvé SOLO el código a insertar (sin explicaciones, sin ``` y sin repetir lo que ya está antes o después del cursor), siguiendo el estilo y el lenguaje del archivo. Si no hay nada razonable que agregar, devolvé vacío.",
+      messages: [{ role: "user", content: `Proyecto: ${p}\nArchivo: ${d.ruta}${d.pedido ? `\nPedido: ${d.pedido}` : ""}\n\n<antes_del_cursor>\n${d.antes}\n</antes_del_cursor>\n<despues_del_cursor>\n${d.despues}\n</despues_del_cursor>` }] }, { signal: AbortSignal.timeout(60_000) }));
+    registrarUso("code", m);
+    const texto = m.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").replace(/^```[\w-]*\n?|```\s*$/g, "");
+    return { codigo: texto };
+  } catch (err) {
+    throw new ErrorHttp(400, (err as Error).message);
+  }
 });
 ruta("POST", "/api/code/desplegar", async ({ url }) => { const r = Code.prepararDespliegue(codeDe(url)); emitir("computadora"); return { creados: r }; });
 // Revisión multiagente: cada revisor recibe por separado (sin ver a los otros) los archivos cambiados.

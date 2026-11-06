@@ -1,6 +1,6 @@
 # Gravity NEXT · Estado de las funciones 171–271
 
-✅ hecho y probado · 🟡 parcial (qué falta) · ⛔ falta · 🧪 experimental (se marca así también en la app). Estado al 5/11/2026.
+✅ hecho y probado · 🟡 parcial (qué falta) · ⛔ falta · 🧪 experimental (se marca así también en la app). Estado al 6/11/2026.
 Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDIENTE.md`.
 
 ## 16. Inteligencia multiagente
@@ -15,7 +15,7 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 179. 🟡 Conflictos: la auditoría detecta cuando dos compañeros cambian el mismo archivo con menos de 30 min de diferencia (posible pisada) y lleva a las versiones. Falta detectar decisiones contradictorias en texto.
 180. ✅ Biblioteca de estrategias: habilidades guardadas + mercado de habilidades + lecciones por compañero.
 
-## 17. Gravity Universe 3D
+## 17. Gravity Universe 3D (`#/universo`)
 181. ✅ Centro de operaciones 3D (`#/universo`). 184. ✅ Animaciones de trabajo (teclean, levantan la mano al esperar). 186. ✅ Cámara libre (arrastrar, pellizcar, rueda). 188. ✅ Hologramas con información real.
 182. 🟡 Personalización por dispositivo: escenario, color de acento e intensidad de la luz (se guardan en el celular). Falta mover muebles a mano.
 183. ✅ Robots que caminan: cuando un manager reparte una tarea, su robot va hasta la estación de quien la recibe y vuelve; los que entran a una reunión caminan a la sala del centro y se quedan mirando la mesa hasta que termina.
@@ -99,7 +99,7 @@ Dentro de Gravity Code (panel «Proyecto» y terminal).
 251. ✅ Canales (`#/canales`, `bots/src/canales.ts`): uno por equipo y uno por proyecto activo (se crean solos), libres que creás vos, y #anuncios. Los compañeros leen y publican con la herramienta `canales` (solo en los suyos).
 252. ✅ Mensajes internos estructurados (delegar, tareas, resultados, canales, comentarios).
 253. ✅ Menciones: @Nombre (sin importar acentos ni mayúsculas) en un canal o en un comentario le avisa a ese compañero con los últimos mensajes como contexto; tope de 20 avisos por hora por canal para evitar cadenas entre compañeros.
-254. ✅ Archivos compartidos con versiones. 255. 🟡 Reuniones programadas (falta una vista de calendario).
+254. ✅ Archivos compartidos con versiones. 255. ✅ Calendario del equipo (Mi día): los próximos 14 días con rutinas, reuniones programadas, recordatorios, vencimientos de tareas y fechas de objetivos.
 256. ✅ Bandeja de aprobaciones.
 257. ✅ Comentarios en tareas de proyecto (usuario y compañeros con `proyectos` → comentar); avisan al responsable y a los mencionados.
 258. ✅ Transferir conversaciones: en el chat, «Pasar» le manda a otro compañero los últimos mensajes (solo texto del usuario y respuestas, sin resultados de herramientas ni datos de conexiones) y tu nota.
@@ -125,4 +125,7 @@ Dentro de Gravity Code (panel «Proyecto» y terminal).
 - Memoria técnica por proyecto (`.gravity/memoria.md`): arquitectura, dependencias, decisiones, convenciones, errores y soluciones, pendientes e historial. Los compañeros la leen y la actualizan.
 - Compañeros en el proyecto con modos Chat, Editor, Agente, Equipo, Autónomo supervisado y Reparación (desde un comando que falló: «Reparar con un compañero»), selector de modelo, y «Equipo de desarrollo» (coordinador, arquitecto, programador, diseñador, tester, debugger y revisor) de un toque.
 
-🟡 Falta: operaciones de Git (commit, ramas, push) dentro de la app; autocompletado con IA en el editor; compilar Android y emuladores (necesitan Gravity Code Cloud, un servidor remoto); el robot 3D como asistente dentro del editor.
+- «Completar» con IA en el cursor (lo pedís vos; se deshace con Ctrl+Z), con el modelo rápido.
+- Panel «Proyecto»: entorno, dependencias, revisión multiagente y despliegue (ver 241–250).
+
+🟡 Falta: operaciones de Git dentro de la app (hoy por la terminal donde haya git); Gravity Code Cloud (servidor remoto para compilar Android, emuladores y proyectos grandes); el robot 3D como asistente dentro del editor.
