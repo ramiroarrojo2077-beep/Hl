@@ -449,7 +449,7 @@ async function enviarArchivo(res: http.ServerResponse, archivo: string, descarga
 // (style.css, app.js) funcionan dentro del marco. Se sirve con CSP «sandbox»: origen opaco, sin acceso
 // a Gravity ni a sus cookies, sin formularios hacia afuera ni conexiones a otros sitios.
 const TOKEN_VISTA = randomBytes(18).toString("base64url");
-const TIPOS_VISTA: Record<string, string> = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8" };
+const TIPOS_VISTA: Record<string, string> = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".mp4": "video/mp4", ".webm": "video/webm" };
 async function servirVista(res: http.ServerResponse, ruta: string): Promise<void> {
   const partes = ruta.split("/").slice(2);
   const token = partes.shift() ?? "";
@@ -1411,6 +1411,41 @@ ruta("POST", "/api/documentos/buscar", async ({ cuerpo }) => {
 ruta("GET", "/api/documentos", async () => {
   const D = await import("./documentos.ts");
   return (await listarArchivos(COMPUTADORA)).filter((a) => !a.carpeta && /\.(pdf|docx|odt|pptx)$/i.test(a.ruta) && D.EXT_DOCUMENTOS.test(a.ruta));
+});
+
+// ---- Creative Studio (ver creativo.ts) ----
+const conCreativo = async <T>(f: (C: typeof import("./creativo.ts"), signal: AbortSignal) => Promise<T>): Promise<T> => {
+  const C = await import("./creativo.ts");
+  try { const r = await f(C, AbortSignal.timeout(180_000)); emitir("computadora"); return r; } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+};
+ruta("GET", "/api/creativo", async () => {
+  const C = await import("./creativo.ts");
+  const P = await import("./proveedores.ts");
+  return { gemini: P.hayGemini, voces: C.VOCES_GEMINI, obras: (await listarArchivos(path.join(COMPUTADORA, "creativo"))).filter((a) => !a.carpeta).map((a) => ({ ...a, ruta: `creativo/${a.ruta}` })).sort((a, b) => b.modificado.localeCompare(a.modificado)).slice(0, 80) };
+});
+ruta("POST", "/api/creativo/imagen", async ({ cuerpo }) => {
+  const d = validar(z.object({ pedido: z.string().trim().min(3).max(2000), base: z.string().max(500).nullish(), aspecto: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4"]).optional() }), await cuerpo());
+  return conCreativo((C, s) => C.generarImagen(d.pedido, { base: d.base, aspecto: d.aspecto }, s));
+});
+ruta("POST", "/api/creativo/voz", async ({ cuerpo }) => {
+  const d = validar(z.object({ texto: z.string().trim().min(1).max(4000), voz: z.string().max(20).default("Kore"), estilo: z.string().max(200).default("") }), await cuerpo());
+  return conCreativo(async (C, s) => ({ ruta: await C.generarVoz(d.texto, d.voz, d.estilo, s) }));
+});
+ruta("POST", "/api/creativo/presentacion", async ({ cuerpo }) => {
+  const d = validar(z.object({ tema: z.string().trim().min(3).max(3000), diapositivas: z.number().int().min(3).max(30).default(8), publico: z.string().max(200).default(""), acento: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#6CD3F0") }), await cuerpo());
+  return conCreativo((C, s) => C.crearPresentacion(d.tema, d.diapositivas, d.publico, d.acento, s));
+});
+ruta("POST", "/api/creativo/presentacion/rehacer", async ({ cuerpo }) => {
+  const d = validar(z.object({ json: z.string().min(1).max(500), acento: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#6CD3F0") }), await cuerpo());
+  return conCreativo(async (C) => ({ html: C.rehacerPresentacion(d.json, d.acento) }));
+});
+ruta("POST", "/api/creativo/logos", async ({ cuerpo }) => {
+  const d = validar(z.object({ marca: z.string().trim().min(1).max(80), rubro: z.string().max(200).default(""), estilo: z.string().max(200).default("") }), await cuerpo());
+  return conCreativo((C, s) => C.crearLogos(d.marca, d.rubro, d.estilo, s));
+});
+ruta("POST", "/api/creativo/animacion", async ({ cuerpo }) => {
+  const d = validar(z.object({ descripcion: z.string().trim().min(5).max(3000) }), await cuerpo());
+  return conCreativo(async (C, s) => ({ ruta: await C.crearAnimacion(d.descripcion, s) }));
 });
 
 // ---- Mi día (ver midia.ts) ----

@@ -27,8 +27,15 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 ## 18. Robots 3D
 191–200. 🟡 El robot de las llamadas ya tiene gestos (saludo, asentir), ojos LED con expresión, levitación y personalidad; falta el resto.
 
-## 19. Creative Studio (201–210)
-⛔ (en curso).
+## 19. Creative Studio (201–210) · `#/creativo`, `bots/src/creativo.ts`
+201. ✅ Generador de imágenes con Gemini (`gemini-2.5-flash-image`, cambiable con `GRAVITY_GEMINI_IMAGEN`), con formato (1:1, 16:9, 9:16…). Necesita la clave de Gemini; según el plan puede tener costo.
+202. ✅ Editor de imágenes con IA: elegís una imagen de la computadora y pedís el cambio (fondo, objetos, luz, estilo).
+203–204. ⛔ Video: necesita un servicio de video pago (por ejemplo Veo) que todavía no está conectado.
+205. ✅ Generador de voces con Gemini TTS: 8 voces, estilo opcional, guarda un .wav.
+206. ✅ Presentaciones: el modelo arma las diapositivas (portada, contenido, cifras, citas, cierre, notas del orador) y Gravity genera un HTML autosuficiente (flechas, deslizar, notas, imprimir a PDF); el .json queda para editar y «Rehacer».
+207. ✅ Logos: 3 propuestas en SVG (limpiado: sin scripts, eventos ni enlaces externos).
+208–209. ⛔ Modelos 3D y estudio de animación de personajes.
+210. ✅ Motion graphics: animación explicativa en un HTML autosuficiente (SVG + CSS), vista previa aislada.
 
 ## 20. Investigación (211–220) · `#/investigacion`
 211. ✅ Navegación web de los compañeros (buscar y leer páginas; con modelos gratis, lector propio que no entra a redes privadas).
