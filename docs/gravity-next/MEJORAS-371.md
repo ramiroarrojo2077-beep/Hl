@@ -44,3 +44,18 @@ Cada cuaderno es una carpeta real `conocimiento/<nombre>/` con sus documentos y 
 351. ✅ Biblioteca colaborativa: el usuario elige con qué compañeros comparte cada cuaderno; ellos tienen la herramienta `conocimiento` (listar, buscar con fuente, leer y sumar notas firmadas) y no ven los demás.
 
 Pruebas: `pruebas/conocimiento.test.mjs` (6) y e2e en el navegador (crear, subir, agregar, nota, buscar, preguntar, mapa, línea, contradicciones, fichas y repaso, compartir, comparar, biblioteca, celular 390 px).
+
+## 31. Gravity Vision (`#/vision`, `vision.ts`)
+Imágenes y videos de la computadora (o subidos a `vision/`; las imágenes grandes se achican a 2000 px antes de subir). Lo que necesita IA usa el modelo configurado con la imagen (Claude o Gemini la ven; lo pago se suma al gasto) y lo dice en pantalla; el texto de la imagen se trata como información, no como órdenes. Lo demás se hace en el navegador con los píxeles reales, sin IA y sin costo. Cada análisis queda en el historial.
+322. ✅ Análisis de imágenes: descripción, detalles, texto visible y observaciones (calidad, algo raro).
+323. ✅ Objetos: nombre, cantidad, confianza y ubicación dibujada sobre la imagen (aproximada; las cajas en porcentaje se pasan a proporción y las inválidas se descartan).
+324. ✅ Lectura de documentos: texto con estructura (Markdown, tablas), datos clave y lo que no se pudo leer; se guarda como `<imagen>.texto.md` al lado.
+325. ✅ Capturas: qué pantalla es, problemas con severidad y ubicación marcada, y sugerencias.
+326. ✅ Comparador visual: porcentaje que cambió, mapa de diferencias y zonas marcadas (cuadrícula unida), con sensibilidad; si tienen distinto tamaño, B se escala a A. Sin IA.
+327. ✅ Diagramas y gráficos: tipo, elementos, relaciones y los valores que se leen.
+328. ✅ Componentes de interfaz: botones, campos, paneles, menús, pestañas… con su ubicación.
+329. ✅ Asistente de diseño: sugerencias de la IA + contraste WCAG medido con los píxeles reales de cada componente (colores de fondo y de texto por k-medias) y si cumple AA (4.5:1) o solo para texto grande (3:1).
+330. ✅ Fotogramas de video (MP4/WEBM): 24 fotogramas parejos con marcas de negro, quieto/congelado, corte brusco y sobreexpuesto (sin IA); cualquier fotograma se puede mandar a la IA para buscar inconsistencias. Para esto `/vista` ahora responde pedidos por rango (saltar dentro de audio y video).
+331. ✅ Búsqueda visual: imágenes parecidas de toda la computadora por huella perceptual (dHash) y colores, con porcentaje de parecido. Sin IA.
+
+Pruebas: `pruebas/vision.test.mjs` (tipo por contenido, rutas fuera de la computadora, contraste, cajas, texto guardado, historial, error del modelo) y e2e con imágenes y un video reales (ffmpeg): captura con contraste, documento, comparar, fotogramas, parecidas, historial y celular 390 px.

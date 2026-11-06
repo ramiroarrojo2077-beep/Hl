@@ -297,7 +297,7 @@ function verificarOrigen(req: http.IncomingMessage): void {
   // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
   const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
   // Data Lab sube tablas como binario (CSV, Excel): tampoco es un tipo "simple".
-  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir|conocimiento\/[\w-]+\/subir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
+  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir|conocimiento\/[\w-]+\/subir|vision\/subir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
   if (!tipo.startsWith("application/json") && !esRespaldo && !esTabla) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
@@ -451,7 +451,7 @@ async function enviarArchivo(res: http.ServerResponse, archivo: string, descarga
 // a Gravity ni a sus cookies, sin formularios hacia afuera ni conexiones a otros sitios.
 const TOKEN_VISTA = randomBytes(18).toString("base64url");
 const TIPOS_VISTA: Record<string, string> = { ".html": "text/html; charset=utf-8", ".htm": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".mp4": "video/mp4", ".webm": "video/webm" };
-async function servirVista(res: http.ServerResponse, ruta: string): Promise<void> {
+async function servirVista(req: http.IncomingMessage, res: http.ServerResponse, ruta: string): Promise<void> {
   const partes = ruta.split("/").slice(2);
   const token = partes.shift() ?? "";
   if (token.length !== TOKEN_VISTA.length || !timingSafeEqual(Buffer.from(token), Buffer.from(TOKEN_VISTA))) throw new ErrorHttp(404, "No encontrado.");
@@ -473,12 +473,26 @@ async function servirVista(res: http.ServerResponse, ruta: string): Promise<void
     const i = texto.search(/<head[^>]*>/i);
     datos = Buffer.from(i >= 0 ? texto.replace(/<head[^>]*>/i, (h) => h + avisador) : avisador + texto);
   }
-  res.writeHead(200, {
+  const cabeceras = {
     "Content-Type": TIPOS_VISTA[path.extname(archivo).toLowerCase()] ?? "application/octet-stream",
     "Content-Security-Policy": "sandbox allow-scripts; default-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src 'self'; form-action 'none'; frame-ancestors 'self'",
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store",
-  });
+    "Accept-Ranges": "bytes",
+  };
+  // Rangos (audio y video): sin esto el navegador no puede saltar a otro momento del archivo.
+  const rango = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ""));
+  if (rango && (rango[1] || rango[2])) {
+    const total = datos.length;
+    let ini = rango[1] ? Number(rango[1]) : Math.max(0, total - Number(rango[2]));
+    let fin = rango[1] && rango[2] ? Math.min(Number(rango[2]), total - 1) : total - 1;
+    if (ini >= total || ini > fin) { res.writeHead(416, { ...cabeceras, "Content-Range": `bytes */${total}` }); res.end(); return; }
+    ini = Math.max(0, ini); fin = Math.max(ini, fin);
+    res.writeHead(206, { ...cabeceras, "Content-Range": `bytes ${ini}-${fin}/${total}`, "Content-Length": String(fin - ini + 1) });
+    res.end(datos.subarray(ini, fin + 1));
+    return;
+  }
+  res.writeHead(200, cabeceras);
   res.end(datos);
 }
 
@@ -1503,6 +1517,55 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
+// ---- Gravity Vision (ver vision.ts) ----
+ruta("GET", "/api/vision/imagenes", async ({ url }) => {
+  const V = await import("./vision.ts");
+  const q = (url.searchParams.get("q") ?? "").toLowerCase(), video = url.searchParams.get("video") === "1";
+  const ext = video ? /\.(mp4|webm)$/i : V.EXT_IMAGEN;
+  const out: { ruta: string; tamano: number; modificado: string }[] = [];
+  const recorrer = async (dir: string, prof: number): Promise<void> => {
+    if (prof > 6 || out.length >= 1500) return;
+    for (const e of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+      if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "build" || e.name === "dist") continue;
+      const abs = path.join(dir, e.name);
+      if (e.isDirectory()) { await recorrer(abs, prof + 1); continue; }
+      const rel = path.relative(COMPUTADORA, abs).split(path.sep).join("/");
+      if (!ext.test(e.name) || (q && !rel.toLowerCase().includes(q))) continue;
+      const st = await stat(abs);
+      out.push({ ruta: rel, tamano: st.size, modificado: st.mtime.toISOString() });
+    }
+  };
+  await recorrer(COMPUTADORA, 0);
+  return out.sort((a, b) => b.modificado.localeCompare(a.modificado));
+});
+ruta("POST", "/api/vision/subir", async ({ req, url }) => {
+  const V = await import("./vision.ts");
+  const nombre = path.basename(url.searchParams.get("nombre") ?? "imagen.png").replace(/[^\w.\- ]+/g, "_");
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const p of req) { total += (p as Buffer).length; if (total > 40 * 1024 * 1024) throw new ErrorHttp(413, "El archivo pasa los 40 MB."); partes.push(p as Buffer); }
+  const datos = Buffer.concat(partes);
+  const esVideo = /\.(mp4|webm)$/i.test(nombre) && (datos.subarray(4, 8).toString("latin1") === "ftyp" || datos.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3])));
+  const tipo = V.tipoImagen(datos);
+  if (!tipo && !esVideo) throw new ErrorHttp(400, "Subí una imagen PNG, JPG, WEBP o GIF, o un video MP4 o WEBM.");
+  if (tipo && datos.length > V.MAX_BYTES) throw new ErrorHttp(413, "La imagen pasa los 5 MB.");
+  const ext = esVideo ? path.extname(nombre).toLowerCase() : { "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif" }[tipo!];
+  const base = path.parse(nombre).name.slice(0, 80) || "imagen";
+  await mkdir(path.join(COMPUTADORA, "vision"), { recursive: true });
+  let rel = `vision/${base}${ext}`;
+  for (let n = 2; await stat(path.join(COMPUTADORA, rel)).then(() => true, () => false); n++) rel = `vision/${base}-${n}${ext}`;
+  await writeFile(path.join(COMPUTADORA, rel), datos);
+  emitir("computadora");
+  return { ruta: rel };
+});
+ruta("POST", "/api/vision/analizar", async ({ cuerpo }) => {
+  const V = await import("./vision.ts");
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), modo: z.enum(V.MODOS), pregunta: z.string().max(1000).optional() }), await cuerpo());
+  try { const r = await V.analizar(d.ruta, d.modo, d.pregunta, AbortSignal.timeout(180_000)); if (r.guardado) emitir("computadora"); return r; } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+});
+ruta("GET", "/api/vision/historial", async ({ url }) => (await import("./vision.ts")).listarHistorial(url.searchParams.get("ruta") ?? undefined));
+ruta("DELETE", "/api/vision/historial/:id", async ({ params }) => { (await import("./vision.ts")).borrarAnalisis(params[0]!); return { ok: true }; });
+
 // ---- Gravity Knowledge (ver conocimiento.ts) ----
 const conKn = async <T>(f: (K: typeof import("./conocimiento.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./conocimiento.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
 const conKnIa = <T>(f: (K: typeof import("./conocimiento.ts"), s: AbortSignal) => Promise<T>) => conKn((K) => f(K, AbortSignal.timeout(180_000)));
@@ -2199,7 +2262,7 @@ async function atender(req: http.IncomingMessage, res: http.ServerResponse): Pro
   verificarOrigen(req);
 
   if (req.method === "GET" && (await servirPublico(res, url.pathname))) return;
-  if (req.method === "GET" && url.pathname.startsWith("/vista/")) return servirVista(res, url.pathname);
+  if (req.method === "GET" && url.pathname.startsWith("/vista/")) return servirVista(req, res, url.pathname);
   // La app de Android comprueba que en el puerto está este motor (y no otra app) antes de mandar el token.
   if (req.method === "GET" && url.pathname === "/api/hola" && TOKEN_APP) {
     const reto = url.searchParams.get("reto") ?? "";
