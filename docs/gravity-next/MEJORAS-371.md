@@ -119,3 +119,18 @@ El mismo robot 3D de las llamadas (Three.js, materiales PBR, esqueleto con gesto
 301. ✅ Animación adaptable: 5 niveles (resolución, sombras y detalle del modelo) que bajan solos si no llega a ~50 cuadros por segundo; robot 2D si no hay WebGL2; «Medir 5 segundos» muestra fps, nivel y resolución.
 
 Pruebas: `pruebas/robotlab.test.mjs` y e2e con WebGL por software (editor guardado, estados y gestos nuevos, frase, presentación + quiz, panel e investigación, luces guardadas, en vivo, medición, celular).
+
+## 27. Gravity Game Studio (`#/juegos`, `juegos.ts`, `public/vendor/juego/motor.js`)
+Cada juego es un proyecto real de Gravity Code (`codigo/<nombre>/`) con `juego.json`, el motor de Gravity y un `index.html`. El motor es propio y sin dependencias: la misma lógica corre en el navegador (canvas 2D o Three.js en 3D) y en Node para el probador.
+282. ✅ Generador: describís el juego y el modelo arma mapa, personajes con IA, ítems, físicas, historia e interfaz; se valida con el esquema, se prueba y, si falla, se le pide que corrija con los errores (un reintento). Sin descripción, arranca de un ejemplo jugable. Plataformas o aventura (vista de arriba), en 2D o 3D.
+283. ✅ Editor de escenarios: pintás el mapa tocando o arrastrando (aire, sólido, plataforma, bloque, pinchos, agua, moneda, meta, inicio, puerta), agregás o quitás filas y columnas, y ubicás personajes.
+284. ✅ Diseñador de personajes: nombre, rol (jugador, NPC, enemigo), forma (bloque, blob, robot, caballero), color, velocidad, salto, vida y diálogo.
+285. ✅ Historia: sinopsis, misiones (recolectar, llegar, hablar, derrotar) y diálogos generados con IA usando solo los personajes e ítems que existen (descarta las misiones que no se pueden cumplir y sugiere personajes nuevos aparte); también editable a mano. Queda en `HISTORIA.md`.
+286. ✅ IA de NPC: quieto, patrullar (sin tirarse de los bordes), perseguir y huir con rango, y camino por puntos.
+287. ✅ Animaciones: caminar (ritmo y rebote de piernas) y salto (estirar y aplastar) por personaje, en 2D y en 3D.
+288. ✅ Físicas: gravedad, fricción, rebote y caída máxima; colisiones por tile eje por eje; en plataformas, caerle encima a un enemigo lo derrota y caer por un pozo hace perder.
+289. ✅ Interfaz del juego: menú de inicio, HUD (vida, puntos, misiones), pausa con reiniciar, inventario, configuración (volumen, guardada en el dispositivo), diálogos, pantalla final y controles táctiles en el celular.
+290. ✅ Probador: valida los datos (inicio único, personajes e ítems referidos, misiones posibles), calcula si la meta y los ítems son alcanzables con ese salto y esa gravedad (sin atravesar paredes) y juega 4 partidas con el motor real buscando errores, valores inválidos o atascos. Sin IA.
+291. ✅ Exportador: HTML único (se abre sin servidor ni internet, 2D), .zip web (2D y 3D) y mapa en formato Tiled (.tmj), que abren Tiled y los importadores de Godot, Unity, Phaser y Defold.
+
+La vista aislada (`/vista`) ahora permite que los módulos JS del proyecto se carguen con `import` (CORS solo para .js/.mjs). Pruebas: `pruebas/juegos.test.mjs` (7: motor, IA de NPC, pozos, probador con errores reales, guardar y exportar, generar con reintento) y e2e (jugar con teclado dentro de la vista, editar mapa arrastrando, IA de un personaje, historia, probador, exportar y abrir el HTML único, juego 3D con WebGL, celular).

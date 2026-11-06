@@ -484,6 +484,8 @@ async function servirVista(req: http.IncomingMessage, res: http.ServerResponse, 
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store",
     "Accept-Ranges": "bytes",
+    // La vista es un documento aislado (origen opaco): sus módulos JS (import) se piden con CORS.
+    ...(/\.m?js$/i.test(archivo) ? { "Access-Control-Allow-Origin": "*" } : {}),
   };
   // Rangos (audio y video): sin esto el navegador no puede saltar a otro momento del archivo.
   const rango = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ""));
@@ -1521,6 +1523,41 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   const M = await import("./midia.ts");
   const d = validar(z.object({ disponibilidad: z.string().max(500).default("") }), await cuerpo());
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+});
+
+// ---- Gravity Game Studio (ver juegos.ts) ----
+const conJu = async <T>(f: (K: typeof import("./juegos.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./juegos.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, err instanceof z.ZodError ? `Juego inválido: ${err.issues.slice(0, 3).map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}` : (err as Error).message); } };
+const pJuego = (url: URL) => (url.searchParams.get("p") ?? "").trim();
+ruta("GET", "/api/juegos", async () => conJu((K) => ({ juegos: K.listar() })));
+ruta("GET", "/api/juegos/uno", async ({ url }) => conJu((K) => K.leer(pJuego(url))));
+ruta("POST", "/api/juegos", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().trim().min(1).max(60), descripcion: z.string().max(3000).default(""), genero: z.enum(["plataformas", "aventura"]).optional(), vista: z.enum(["2d", "3d"]).optional() }), await cuerpo());
+  const r = await conJu(async (K) => {
+    if (K.listar().some((x) => x.nombre === d.nombre)) throw new Error("Ya hay un juego con ese nombre.");
+    if (!d.descripcion.trim()) { const juego = K.guardar(d.nombre, { ...K.EJEMPLO, nombre: d.nombre, genero: d.genero ?? K.EJEMPLO.genero, vista: d.vista ?? "2d", ui: { ...K.EJEMPLO.ui, titulo: d.nombre } }); return { juego, informe: await K.probar(juego) }; }
+    const g = await K.generar(d.descripcion, { genero: d.genero, vista: d.vista }, AbortSignal.timeout(300_000));
+    return { juego: K.guardar(d.nombre, { ...g.juego, nombre: d.nombre }), informe: g.informe };
+  });
+  emitir("computadora");
+  return r;
+});
+ruta("PUT", "/api/juegos", async ({ url, cuerpo }) => { const datos = await cuerpo(); const r = await conJu((K) => K.guardar(pJuego(url), datos)); emitir("computadora"); return r; });
+ruta("POST", "/api/juegos/probar", async ({ url }) => conJu(async (K) => K.probar(K.leer(pJuego(url)))));
+ruta("POST", "/api/juegos/historia", async ({ url, cuerpo }) => { const d = validar(z.object({ idea: z.string().max(2000).default("") }), await cuerpo()); return conJu((K) => K.generarHistoria(K.leer(pJuego(url)), d.idea, AbortSignal.timeout(180_000))); });
+ruta("POST", "/api/juegos/exportar", async ({ url, cuerpo }) => {
+  const d = validar(z.object({ formato: z.enum(["web", "html", "tiled"]) }), await cuerpo());
+  const r = await conJu(async (K) => {
+    const p = pJuego(url), j = K.leer(p), dir = path.join(COMPUTADORA, "codigo", p), salida = path.join(COMPUTADORA, "juegos-exportados");
+    await mkdir(salida, { recursive: true });
+    const base = p.replace(/[^\w-]+/g, "-");
+    if (d.formato === "html") { await writeFile(path.join(salida, `${base}.html`), K.htmlUnico(j)); return { ruta: `juegos-exportados/${base}.html` }; }
+    if (d.formato === "tiled") { await writeFile(path.join(salida, `${base}.tmj`), JSON.stringify(K.tiled(j), null, 1)); return { ruta: `juegos-exportados/${base}.tmj` }; }
+    const { exportarCarpeta } = await import("./respaldo.ts");
+    exportarCarpeta(dir, path.join(salida, `${base}-web.zip`));
+    return { ruta: `juegos-exportados/${base}-web.zip` };
+  });
+  emitir("computadora");
+  return r;
 });
 
 // ---- Gravity Labs: funciones experimentales (ver labs.ts) ----
