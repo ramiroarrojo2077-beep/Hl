@@ -43,7 +43,15 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 220. ✅ Modo verificación (Perfil): cada afirmación con su evidencia (fuente, archivo o comando), contradicciones señaladas e incertidumbre marcada.
 
 ## 21. Asistente personal (221–230)
-Ya existen: correo con aprobación (224 ✅), recordatorios (225 ✅), calendario por Microsoft 365 (221 🟡). El resto ⛔ (en curso).
+Pantalla «Mi día» (`#/midia`, `bots/src/midia.ts`).
+221. 🟡 Agenda: recordatorios, rutinas y reuniones programadas de Gravity; calendarios externos por Microsoft 365 (Google necesita registrar una app).
+222. ✅ Planificador diario: con tu disponibilidad, el modelo ordena tus pendientes reales (tareas de proyectos por prioridad y vencimiento, recordatorios, reuniones y el próximo hito de cada objetivo) y explica cada elección; se guarda por día.
+223. 🟡 Organizador de archivos: los compañeros ordenan la computadora con sus herramientas (escribir y mover piden aprobación).
+224. ✅ Asistente de correo (conexión de correo; mandar pide aprobación).
+225. ✅ Recordatorios de una sola vez (y diarios); Mi día muestra los de hoy.
+226. ✅ Resumen del día con datos reales: tareas terminadas y trabadas, hitos logrados, acciones por compañero, aprobaciones, reuniones y gasto.
+227–229. ✅ Plantilla «Tutor y planificador de estudio» (Teo): plan por materia con repasos espaciados, ejercicios con corrección aparte, explicaciones adaptadas y progreso en su memoria; recordatorios de repaso con rutinas.
+230. ✅ Panel de objetivos: metas con fecha, hitos que se tildan y progreso; los logrados quedan aparte.
 
 ## 22. Gravity Data Lab (231–240) · `#/datos`, `bots/src/datos.ts`
 231. ✅ Lee CSV/TSV (separador y coma decimal detectados), JSON y Excel .xlsx (lector propio, sin internet); perfil de cada columna (tipo, vacíos, distintos, mín/máx, media, mediana, desvío, valores frecuentes) y primeras filas.

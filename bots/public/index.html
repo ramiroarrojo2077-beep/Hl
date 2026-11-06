@@ -887,6 +887,9 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
+.md-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}.md-g .card h2{font-size:16px;margin:0 0 8px}.md-ancha{grid-column:1/-1}
+.md-plan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.md-plan li{display:grid;grid-template-columns:52px auto 1fr;gap:8px;align-items:start}.md-plan li div{display:flex;flex-direction:column}.md-h{font-variant-numeric:tabular-nums;font-weight:600}
+.md-obj{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}.md-hitos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}.md-sub{font-size:13.5px;margin:12px 0 4px}
 .inv-l{list-style:none;margin:12px 0;padding:0;display:flex;flex-direction:column;gap:8px}.inv-l li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--s1);border:1px solid var(--line)}.inv-l a{display:flex;flex-direction:column;min-width:0;flex:1;color:inherit;text-decoration:none}.inv-l a small{color:var(--tx3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inv-mas{color:var(--ion);font-size:12.5px}.inv-menos{color:var(--sig);font-size:12.5px;text-decoration:line-through}.inv-pre{white-space:pre-wrap;font-size:12.5px;max-height:300px;overflow:auto;background:var(--s2);padding:10px;border-radius:10px}
 .cn{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0;min-height:calc(100dvh - 120px);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--s1)}
@@ -1816,7 +1819,7 @@ const S = {
   compartidos: null, compartido: null,
 };
 const TABS = [["chat", "Chat", "chat"], ["computadora", "Computadora", "computer"], ["rutinas", "Rutinas", "clock"], ["memoria", "Memoria", "memory"], ["perfil", "Perfil", "user"]];
-const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales", "investigacion"];
+const VISTAS = ["chats", "equipo", "mensajes", "reuniones", "aprobaciones", "computadora", "conexiones", "ajustes", "compartido", "llamada", "proyectos", "operaciones", "arquitecto", "buscar", "laboratorio", "mapa", "studio", "automatizaciones", "universo", "code", "datos", "canales", "investigacion", "midia"];
 const HUES = ["jade", "iris", "lilac", "steel", "orchid", "sage"];
 const ESF = { low: "Económico", medium: "Normal", high: "Cuidadoso", xhigh: "Muy cuidadoso", max: "Máximo" };
 
@@ -2129,6 +2132,7 @@ function montar(antes) {
   if (v === "operaciones") return montarOps();
   if (v === "automatizaciones") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="autom"></div></div>`; pintarAutomatizaciones(); cargarAutomatizaciones().then(pintarAutomatizaciones); return; }
   if (v === "studio") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="studio"></div></div>`; STU.errores = []; pintarStudio(); cargarStudio(); return; }
+  if (v === "midia") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="midia"></div></div>`; montarMiDia().catch((e) => toast(e.message, "err")); return; }
   if (v === "investigacion") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="invest"></div></div>`; montarInvestigacion().catch((e) => toast(e.message, "err")); return; }
   if (v === "canales") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in ancha" id="canales"></div></div>`; montarCanales().catch((e) => toast(e.message, "err")); return; }
   if (v === "datos") { $("#vista").innerHTML = `<div class="pag"><div class="pag-in" id="datalab"></div></div>`; montarDatos().catch((e) => toast(e.message, "err")); return; }
@@ -3736,6 +3740,41 @@ function mesaRobots(fac, ps, habla) {
     ${robots}</svg>`);
 }
 
+// ================================================================ Mi día
+// Objetivos con hitos, el plan del día (el modelo ordena tus pendientes reales), recordatorios y el
+// resumen de lo que pasó hoy (con los datos de Gravity, sin modelo).
+const MD = { d: null };
+async function montarMiDia() { MD.d = await api("GET", "/api/midia"); pintarMiDia(); }
+function pintarMiDia() {
+  const el = $("#midia");
+  if (!el || !MD.d) return;
+  const { objetivos, plan, pendientes: pe, resumen: r } = MD.d;
+  const tipoIco = { tarea: "check", reunion: "meet", objetivo: "flag", recordatorio: "clock", pausa: "dot", otro: "list" };
+  pintar(el, html`<header class="pag-h"><div class="tt"><h1>Mi día</h1><p>${new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })} · tus objetivos, el plan de hoy y lo que pasó.</p></div></header>
+    <div class="md-g">
+    <section class="card"><h2>Plan de hoy</h2>
+      ${plan ? html`<ol class="md-plan">${plan.items.map((x) => html`<li><span class="md-h">${x.hora}</span><span class="tag">${ico(tipoIco[x.tipo] || "list", "s")}${x.tipo}</span><div><b>${x.actividad}</b><small class="muted">${x.motivo}</small></div></li>`)}</ol><p class="muted" style="font-size:12px">Armado ${diaHora(plan.creado)}${plan.disponibilidad ? ` · disponibilidad: ${plan.disponibilidad}` : ""}.</p>` : html`<p class="muted" style="font-size:13px">Todavía no armaste el plan de hoy.</p>`}
+      <form class="fila" data-f="md-plan" style="gap:8px;flex-wrap:wrap;margin-top:8px"><input class="inp" name="disp" style="flex:1;min-width:200px" placeholder="Ej.: de 9 a 13 y de 15 a 18; a las 16 tengo el dentista" value="${plan?.disponibilidad || ""}" aria-label="Disponibilidad"><button class="btn pri">${plan ? "Rehacer el plan" : "Planificar mi día"}</button></form>
+      <p class="muted" style="font-size:12px">Usa tus tareas de proyectos, recordatorios, reuniones y objetivos (${pe.proyectos.length} tarea(s) pendiente(s), ${pe.recordatorios.length} recordatorio(s) hoy).</p></section>
+    <section class="card"><h2>Recordatorios de hoy</h2>
+      ${pe.recordatorios.length || pe.diarias.length ? html`<ul class="hist">${[...pe.recordatorios.map((x) => ({ ...x, una: true })), ...pe.diarias].sort((a, b) => a.hora.localeCompare(b.hora)).map((x) => html`<li><b>${x.hora}</b> ${x.nombre} <small class="muted">· ${x.de}${x.una ? "" : " · todos los días"}</small></li>`)}</ul>` : html`<p class="muted" style="font-size:13px">No hay recordatorios para hoy. Pedíselos a un compañero («recordame mañana a las 10…») o creá una rutina «Una sola vez».</p>`}</section>
+    <section class="card md-ancha"><h2>Objetivos</h2>
+      ${objetivos.filter((o) => !o.cerrado).map((o) => html`<article class="md-obj"><div class="fila" style="justify-content:space-between;gap:8px"><b>${o.titulo}</b><span class="fila" style="gap:6px"><small class="muted">${o.fechaLimite ? `para el ${o.fechaLimite}` : ""}</small><button class="btn ghost sm" data-a="md-cerrar" data-id="${o.id}">Logrado</button><button class="btn ghost sm" data-a="md-borrar" data-id="${o.id}" aria-label="Borrar ${o.titulo}">×</button></span></div>
+        <span class="barra" role="img" aria-label="${o.progreso}% de los hitos"><i style="width:${o.progreso}%"></i></span><small class="muted">${o.progreso}% · ${o.hitos.filter((h) => h.hecho).length} de ${o.hitos.length} hitos</small>
+        <ul class="md-hitos">${o.hitos.map((h) => html`<li><label class="chk-s"><input type="checkbox" data-c="md-hito" data-o="${o.id}" data-h="${h.id}" ${si(h.hecho, "checked")}> ${h.texto}</label></li>`)}</ul>
+        <form class="fila" data-f="md-hito" data-id="${o.id}" style="gap:6px"><input class="inp" name="texto" placeholder="Nuevo hito" maxlength="200" style="flex:1" aria-label="Nuevo hito para ${o.titulo}"><button class="btn out sm">Agregar</button></form></article>`)}
+      ${objetivos.some((o) => o.cerrado) ? html`<details class="mas"><summary>${ico("right", "s")}Logrados (${objetivos.filter((o) => o.cerrado).length})</summary><ul class="hist">${objetivos.filter((o) => o.cerrado).map((o) => html`<li>${o.titulo} <small class="muted">· ${diaHora(o.cerrado)}</small></li>`)}</ul></details>` : ""}
+      <details class="mas" ${si(!objetivos.length, "open")}><summary>${ico("plus", "s")}Objetivo nuevo</summary><form class="dl-armar" data-f="md-objetivo"><label class="fld" style="grid-column:1/-1"><span>Qué querés lograr</span><input class="inp" name="titulo" required maxlength="200"></label><label class="fld"><span>Para cuándo</span><input class="inp" type="date" name="fecha"></label><label class="fld" style="grid-column:span 2"><span>Hitos (uno por línea)</span><textarea class="inp" name="hitos" rows="3"></textarea></label><div class="dl-acc"><button class="btn pri">Crear</button></div></form></details></section>
+    <section class="card md-ancha"><h2>Resumen del día</h2>
+      <div class="ops-k" style="margin-top:6px"><div><b>${r.completadas.length + r.proyectos.length}</b><span>tareas terminadas</span></div><div><b>${r.acciones.reduce((a, x) => a + x.n, 0)}</b><span>acciones de compañeros</span></div><div><b>${r.aprobadas}</b><span>aprobaciones${r.negadas ? ` (${r.negadas} negadas)` : ""}</span></div><div><b>${r.gasto != null ? usd(r.gasto) : "—"}</b><span>gasto de hoy</span></div></div>
+      ${r.completadas.length || r.proyectos.length ? html`<h3 class="md-sub">Terminado</h3><ul class="hist">${[...r.completadas, ...r.proyectos].map((x) => html`<li>✅ ${x}</li>`)}</ul>` : ""}
+      ${r.hitos.length ? html`<h3 class="md-sub">Hitos logrados</h3><ul class="hist">${r.hitos.map((x) => html`<li>🎯 ${x}</li>`)}</ul>` : ""}
+      ${r.trabadas.length ? html`<h3 class="md-sub">Trabado</h3><ul class="hist">${r.trabadas.map((x) => html`<li>⚠️ ${x}</li>`)}</ul>` : ""}
+      ${r.acciones.length ? html`<p class="muted" style="font-size:12.5px">Más activos: ${r.acciones.slice(0, 4).map((x) => `${x.nombre} (${x.n})`).join(", ")}${r.errores ? ` · ${r.errores} acciones con error` : ""}.</p>` : html`<p class="muted" style="font-size:13px">Hoy todavía no hubo actividad.</p>`}
+      <p class="muted" style="font-size:12.5px">Quedan ${r.pendientes} tarea(s) de proyectos pendientes.</p></section>
+    </div>`);
+}
+
 // ================================================================ Investigación
 // Biblioteca de fuentes (lo que leyeron y buscaron los compañeros + las tuyas), monitor de cambios de
 // páginas y búsqueda dentro de documentos (PDF, Word, PowerPoint), también largos.
@@ -5031,7 +5070,7 @@ function abrirBotsConexion(id) {
 function abrirMas() {
   const g = S.gasto || {};
   const vivas = reunionesVivas().length;
-  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["investigacion", "Investigación", "search", "Fuentes consultadas, páginas que cambian y búsqueda en PDF y Word"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
+  const xs = [["reuniones", "Reuniones", "meet", vivas ? `${plural(vivas, "reunión en vivo", "reuniones en vivo")} ahora` : "Dailies y discusiones del equipo"], ["proyectos", "Proyectos", "flag", "Objetivos con tareas, responsables y progreso"], ["operaciones", "Operaciones", "grid", "Quién trabaja, en qué, qué espera y auditoría"], ["arquitecto", "Gravity Architect", "bolt", "Contá un objetivo y te propone el equipo"], ["buscar", "Buscar", "search", "Compañeros, chats, proyectos, memoria y archivos"], ["midia", "Mi día", "clock", "Objetivos, plan del día, recordatorios y resumen de lo que pasó"], ["investigacion", "Investigación", "search", "Fuentes consultadas, páginas que cambian y búsqueda en PDF y Word"], ["canales", "Canales", "chat", "Conversaciones por equipo y proyecto, con @menciones y #anuncios"], ["code", "Gravity Code", "term", "Programá con editor, terminal, pruebas reales y un equipo de agentes"], ["datos", "Gravity Data Lab", "grid", "Tablas CSV y Excel: gráficos, comparaciones, anomalías y pronósticos"], ["studio", "Gravity Studio", "computer", "Describí una app o página y se arma sola"], ["automatizaciones", "Automatizaciones", "bolt", "«Si pasa esto, que tal compañero haga esto», en nodos"], ["laboratorio", "Laboratorio", "sliders", "Compará modelos y personalidades con la misma consulta"], ["mapa", "Mapa", "grid", "Quién trabaja con quién y en qué proyectos"], ["universo", "Gravity Universe", "meet", "Cada compañero en su estación de trabajo, en 3D y en vivo"], ["computadora", "Computadora", "computer", "Archivos y terminal del equipo"], ["conexiones", "Conexiones", "plug", "Correo y otras apps, opcionales"], ["ajustes", "Ajustes", "sliders", `Gasto de hoy: ${usd(g.hoy)}${g.tope ? ` de ${usd(g.tope)}` : ""} · permisos · tema`]];
   abrirDialogo(html`<nav class="dlg-f" aria-labelledby="dlg-t"><h2 id="dlg-t">Más</h2><div class="hoja">${xs.map(([k, t, i, d]) => html`<a class="hf" href="#/${k}" data-a="cerrar-dlg-ir" data-h="#/${k}" ${si(S.ruta.vista === k, 'aria-current="page"')}><span class="ic">${ico(i)}</span><span>${t}<small>${d}</small></span>${ico("right", "s")}</a>`)}${!S.local ? html`<hr><button class="hf" data-a="salir"><span class="ic">${ico("logout")}</span><span>Salir<small>Cerrar la sesión en este dispositivo</small></span></button>` : ""}</div></nav>`, true);
 }
 const errDlg = (texto) => { const e = $("#dlg .err"); if (e) e.textContent = texto; else toast(texto, "err"); };
@@ -6426,6 +6465,8 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  "md-cerrar": async (t) => { await api("PUT", `/api/midia/objetivos/${t.dataset.id}`, { cerrar: true }); toast("¡Objetivo logrado!"); await montarMiDia(); },
+  "md-borrar": async (t) => { if (!(await confirmar("¿Borrar el objetivo?", "Se borran sus hitos.", "Borrar", true))) return; await api("PUT", `/api/midia/objetivos/${t.dataset.id}`, { borrar: true }); await montarMiDia(); },
   "inv-pest": (t) => { INV.pest = t.dataset.v; pintarInvestigacion(); },
   "inv-quitar": async (t) => { await api("DELETE", `/api/fuentes?url=${encodeURIComponent(t.dataset.url)}`); await montarInvestigacion(); },
   "inv-seguir": (t) => { INV.pest = "monitores"; INV.urlNueva = t.dataset.url; pintarInvestigacion(); },
@@ -6791,6 +6832,9 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async "md-plan"(f) { await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/midia/plan", { disponibilidad: f.disp.value.trim() }); await montarMiDia(); }); },
+  async "md-objetivo"(f) { await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/midia/objetivos", { titulo: f.titulo.value.trim(), fechaLimite: f.fecha.value || null, hitos: f.hitos.value.split("\n").map((x) => x.trim()).filter(Boolean) }); await montarMiDia(); }); },
+  async "md-hito"(f) { const texto = f.texto.value.trim(); if (!texto) return; await api("PUT", `/api/midia/objetivos/${f.dataset.id}`, { agregarHito: texto }); await montarMiDia(); },
   async "inv-buscar"(f) { INV.q = f.q.value.trim(); INV.fuentes = await api("GET", `/api/fuentes?q=${encodeURIComponent(INV.q)}`); pintarInvestigacion(); },
   async "inv-fuente"(f) {
     await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/fuentes", { url: f.url.value.trim(), titulo: f.titulo.value.trim(), nota: f.nota.value.trim(), etiquetas: f.etiquetas.value.split(",").map((x) => x.trim()).filter(Boolean) }); f.reset(); await montarInvestigacion(); });
@@ -7248,6 +7292,7 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "md-hito": async (t) => { await api("PUT", `/api/midia/objetivos/${t.dataset.o}`, { hito: t.dataset.h, hecho: t.checked }); await montarMiDia(); },
   "dl-archivo": (t) => (t.value ? dlAbrir(t.value) : null),
   "dl-subir": async (t) => {
     const f = t.files?.[0];

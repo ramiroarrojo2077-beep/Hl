@@ -1413,6 +1413,27 @@ ruta("GET", "/api/documentos", async () => {
   return (await listarArchivos(COMPUTADORA)).filter((a) => !a.carpeta && /\.(pdf|docx|odt|pptx)$/i.test(a.ruta) && D.EXT_DOCUMENTOS.test(a.ruta));
 });
 
+// ---- Mi día (ver midia.ts) ----
+ruta("GET", "/api/midia", async () => {
+  const M = await import("./midia.ts");
+  return { hoy: M.hoy(), objetivos: M.listarObjetivos().map((o) => ({ ...o, progreso: M.progresoObjetivo(o) })), plan: M.planDe(), pendientes: M.pendientes(), resumen: M.resumenDelDia() };
+});
+ruta("POST", "/api/midia/objetivos", async ({ cuerpo }) => {
+  const M = await import("./midia.ts");
+  const d = validar(z.object({ titulo: z.string().trim().min(1).max(200), descripcion: z.string().max(2000).optional(), fechaLimite: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(), proyectoId: z.string().max(40).nullish(), hitos: z.array(z.string().max(200)).max(30).optional() }), await cuerpo());
+  return malPedido(() => M.crearObjetivo(d));
+});
+ruta("PUT", "/api/midia/objetivos/:id", async ({ params, cuerpo }) => {
+  const M = await import("./midia.ts");
+  const d = validar(z.object({ hito: z.string().max(40).optional(), hecho: z.boolean().optional(), agregarHito: z.string().max(200).optional(), cerrar: z.boolean().optional(), borrar: z.boolean().optional() }), await cuerpo());
+  return malPedido(() => M.cambiarObjetivo(params[0]!, d)) ?? { ok: true };
+});
+ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
+  const M = await import("./midia.ts");
+  const d = validar(z.object({ disponibilidad: z.string().max(500).default("") }), await cuerpo());
+  try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
+});
+
 // ---- Gravity Evolution (experimental, ver evolucion.ts): propone; aplica solo cuando el usuario toca Aplicar ----
 ruta("GET", "/api/evolucion", async () => propuestasEvolucion());
 ruta("POST", "/api/evolucion/aplicar", async ({ cuerpo }) => {
