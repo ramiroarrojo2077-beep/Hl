@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Llamadas de voz con los compañeros: el micrófono se abre solo mientras te escucha, con la app a la vista. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Gravity Phone: vibrar y poner alarmas o temporizadores con la app de reloj (permisos normales). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
 
     <!-- Android 11+: sin esto la app no ve el reconocedor de voz ni el motor de texto a voz
          (SpeechRecognizer.isRecognitionAvailable da false). -->

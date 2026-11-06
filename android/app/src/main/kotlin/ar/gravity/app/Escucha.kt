@@ -54,6 +54,11 @@ class Escucha : NotificationListenerService() {
 
     @Volatile
     private var escuchadas: Set<String> = emptySet()
+    /** Gravity Phone: apps cuyas notificaciones el usuario autorizó resumir (aparte de la mensajería). */
+    private var resumir: Set<String> = emptySet()
+    private val resumidas = object : LinkedHashMap<String, Boolean>(64, 0.75f, false) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>) = size > 300
+    }
     private var estadoAl = 0L
 
     private lateinit var hilo: HandlerThread
@@ -106,8 +111,9 @@ class Escucha : NotificationListenerService() {
     private fun procesar(sbn: StatusBarNotification) {
         try {
             refrescarEstado(forzar = false)
-            if (!activa) return
             val paquete = sbn.packageName ?: return
+            if (paquete != packageName && paquete in resumir) resumirNotificacion(sbn, paquete)
+            if (!activa) return
             if (paquete == packageName || paquete !in escuchadas) return
             val notif = sbn.notification ?: return
             // Resumen de grupo (la notificación "paraguas"): los mensajes vienen en las hijas.
@@ -156,6 +162,30 @@ class Escucha : NotificationListenerService() {
                 .put("mensajes", nuevos)
             MotorLocal.pedir(this, "POST", "/api/mensajeria/entrante", cuerpo)
             sondearSalientes()
+        } catch (e: Exception) {
+            // Una notificación rara no debe tirar abajo el servicio.
+        }
+    }
+
+    /** Gravity Phone: título y texto de una notificación de una app autorizada, para el resumen. */
+    private fun resumirNotificacion(sbn: StatusBarNotification, paquete: String) {
+        try {
+            val notif = sbn.notification ?: return
+            if (notif.flags and (Notification.FLAG_GROUP_SUMMARY or Notification.FLAG_ONGOING_EVENT) != 0) return
+            val extras = notif.extras ?: return
+            val titulo = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
+            val texto = (extras.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: extras.getCharSequence(Notification.EXTRA_TEXT))?.toString()?.trim().orEmpty()
+            if (titulo.isEmpty() && texto.isEmpty()) return
+            val firma = "${sbn.key}\u0000$titulo\u0000$texto"
+            if (resumidas.put(firma, true) != null) return
+            val cuerpo = JSONObject()
+                .put("app", paquete)
+                .put("appNombre", nombreApp(paquete))
+                .put("titulo", titulo.take(200))
+                .put("texto", texto.take(1000))
+                .put("categoria", notif.category ?: "")
+                .put("hora", sbn.postTime)
+            MotorLocal.pedir(this, "POST", "/api/telefono/notificaciones", cuerpo)
         } catch (e: Exception) {
             // Una notificación rara no debe tirar abajo el servicio.
         }
@@ -375,6 +405,8 @@ class Escucha : NotificationListenerService() {
                 }
             }
             escuchadas = set
+            val r = json.optJSONArray("resumir")
+            resumir = if (r == null) emptySet() else (0 until r.length()).mapNotNull { r.optString(it).takeIf { x -> x.isNotEmpty() } }.toSet()
         } catch (e: Exception) {
             // Respuesta ilegible: se mantiene el último estado conocido.
         }

@@ -1525,6 +1525,36 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
+// ---- Gravity Phone (ver telefono.ts y android/.../TelefonoPuente.kt) ----
+const conTel = async <T>(f: (K: typeof import("./telefono.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./telefono.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+ruta("GET", "/api/telefono", async () => conTel((K) => ({ apps: K.listarApps(), ...K.notificaciones(), ajustes: K.AJUSTES })));
+ruta("POST", "/api/telefono/notificaciones", async ({ cuerpo }) => {
+  const d = validar(z.object({ app: z.string().max(200), appNombre: z.string().max(100).default(""), titulo: z.string().max(400).default(""), texto: z.string().max(2000).default(""), categoria: z.string().max(40).default(""), hora: z.number() }), await cuerpo());
+  const ok = await conTel((K) => K.recibir({ ...d, appNombre: d.appNombre || d.app }));
+  if (ok) emitir("telefono");
+  return { ok };
+});
+ruta("DELETE", "/api/telefono/notificaciones", async ({ url }) => conTel((K) => { K.borrarNotificaciones(url.searchParams.get("app") ?? undefined); return { ok: true }; }));
+ruta("PUT", "/api/telefono/apps", async ({ cuerpo }) => { const d = validar(z.object({ paquete: z.string().max(200), nombre: z.string().max(60).default(""), activa: z.boolean() }), await cuerpo()); return conTel((K) => K.autorizarApp(d.paquete, d.nombre, d.activa)); });
+ruta("POST", "/api/telefono/resumen", async () => conTel((K) => K.resumir(AbortSignal.timeout(120_000))));
+ruta("GET", "/api/telefono/ajustes", async ({ url }) => conTel((K) => K.buscarAjuste(url.searchParams.get("q") ?? "")));
+ruta("POST", "/api/telefono/ajustes/ayuda", async ({ cuerpo }) => { const d = validar(z.object({ pregunta: z.string().trim().min(3).max(1000), info: z.record(z.string(), z.unknown()).nullish() }), await cuerpo()); return conTel((K) => K.ayudaAjuste(d.pregunta, d.info ?? null, AbortSignal.timeout(90_000))); });
+ruta("POST", "/api/telefono/diagnostico", async ({ cuerpo }) => {
+  const d = validar(z.object({ info: z.record(z.string(), z.unknown()).default({}) }), await cuerpo());
+  const m = process.memoryUsage();
+  return conTel((K) => K.diagnostico(d.info as never, { rssMb: Math.round(m.rss / 1_048_576) }));
+});
+ruta("GET", "/api/telefono/descargas", async () => conTel((K) => K.descargas()));
+ruta("DELETE", "/api/telefono/descargas", async ({ url }) => conTel(async (K) => {
+  const r = url.searchParams.get("ruta") ?? "";
+  // Solo archivos de la lista de descargas de Gravity.
+  if (!K.descargas().archivos.some((x) => x.ruta === r)) throw new Error("Ese archivo no es una descarga de Gravity.");
+  await rm(path.join(COMPUTADORA, r), { force: true });
+  emitir("computadora");
+  return { ok: true };
+}));
+ruta("GET", "/api/telefono/permisos", async () => conTel((K) => K.permisosGravity()));
+
 // ---- Gravity Game Studio (ver juegos.ts) ----
 const conJu = async <T>(f: (K: typeof import("./juegos.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./juegos.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, err instanceof z.ZodError ? `Juego inválido: ${err.issues.slice(0, 3).map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}` : (err as Error).message); } };
 const pJuego = (url: URL) => (url.searchParams.get("p") ?? "").trim();
@@ -2412,7 +2442,8 @@ ruta("POST", "/api/mensajeria/salientes/:id/resultado", async ({ params, cuerpo 
   return { ok: true };
 });
 
-ruta("GET", "/api/mensajeria/estado", async () => estadoMensajeria());
+// Escucha.kt también lee de acá qué apps autorizó el usuario para el resumen de notificaciones (Gravity Phone).
+ruta("GET", "/api/mensajeria/estado", async () => ({ ...estadoMensajeria(), resumir: (await import("./telefono.ts")).appsResumir() }));
 
 ruta("PUT", "/api/mensajeria/estado", async ({ cuerpo }) => activarMensajeria(validar(z.object({ activa: z.boolean() }), await cuerpo()).activa));
 

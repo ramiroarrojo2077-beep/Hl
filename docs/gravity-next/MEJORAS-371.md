@@ -134,3 +134,18 @@ Cada juego es un proyecto real de Gravity Code (`codigo/<nombre>/`) con `juego.j
 291. ✅ Exportador: HTML único (se abre sin servidor ni internet, 2D), .zip web (2D y 3D) y mapa en formato Tiled (.tmj), que abren Tiled y los importadores de Godot, Unity, Phaser y Defold.
 
 La vista aislada (`/vista`) ahora permite que los módulos JS del proyecto se carguen con `import` (CORS solo para .js/.mjs). Pruebas: `pruebas/juegos.test.mjs` (7: motor, IA de NPC, pozos, probador con errores reales, guardar y exportar, generar con reintento) y e2e (jugar con teclado dentro de la vista, editar mapa arrastrando, IA de un personaje, historia, probador, exportar y abrir el HTML único, juego 3D con WebGL, celular).
+
+## 29. Gravity Phone (`#/telefono`, `telefono.ts`, `android/.../TelefonoPuente.kt`, contrato en `android/TELEFONO.md`)
+Todo con APIs y permisos normales de Android (sin servicio de accesibilidad ni permisos especiales). El puente nativo exige un token que solo recibe la página principal: las vistas de proyectos no pueden usarlo. En el navegador (sin la app) lo nativo aparece marcado como «solo en la app de Android».
+302. ✅ Panel de acciones: linterna, vibrar, volumen, cámara, temporizador y alarma (los pone la app de reloj, que deja revisarlos) y compartir texto. Nada se hace sin tocarlo.
+303. ✅ Asistente de notificaciones: el usuario autoriza app por app; `Escucha.kt` manda solo título y texto de esas apps; se guardan 72 h, agrupadas, y se resumen con IA marcando las que necesitan atención (tratadas como contenido de terceros). Quitar el permiso borra lo guardado.
+304. ✅ Buscador de archivos en las carpetas que el usuario elige con el selector de Android (permiso persistente que se puede quitar): buscar, abrir y copiar a la computadora de Gravity.
+305. ✅ Organizador de almacenamiento: los más grandes y los duplicados reales (mismo tamaño y mismo SHA-256); borrar pide confirmación.
+306. ✅ Asistente de configuración: catálogo de 20 pantallas de Ajustes con explicación y búsqueda; la IA explica cómo hacer algo y sugiere solo pantallas que existen; se abren desde Gravity.
+307. ✅ Accesibilidad: letra más grande y más contraste en toda la app; comandos por voz con permiso del micrófono («abrir chats», «leer pantalla», «volver», «buscar …») o escritos; acceso directo a TalkBack.
+308. ✅ Rendimiento: memoria, almacenamiento, núcleos, estado térmico del sistema y CPU/memoria del motor, con diagnóstico y sugerencias.
+309. 🟡 Batería: nivel, temperatura, consumo actual, ahorro y optimización; lo que usa Gravity (red, CPU de la pantalla, espacio) y sugerencias con la configuración real (rutinas muy frecuentes, robot en calidad alta). Android no da el % de batería por app sin permisos de sistema: se explica en pantalla.
+310. ✅ Descargas de Gravity: lo recibido de otras apps, juegos exportados, investigaciones, datos, creativo, audio, vision, copias y lo traído de otros Gravity, por categoría; guardar en el teléfono o borrar (solo dentro de esa lista).
+311. ✅ Centro de permisos: permisos de Android (micrófono, notificaciones, leer notificaciones, segundo plano, alarmas exactas) con acceso para darlos o quitarlos, carpetas permitidas (quitar), y los accesos de cada módulo de Gravity: herramientas apagadas por compañero, aprobación automática, conexiones, cuadernos compartidos, otros Gravity vinculados y apps del resumen.
+
+Pruebas: `pruebas/telefono.test.mjs` (5) y e2e en el navegador con el puente nativo simulado con el mismo contrato (y sin él). El Kotlin lo compila el CI del APK; probarlo en un teléfono real queda pendiente (ver PENDIENTE.md).

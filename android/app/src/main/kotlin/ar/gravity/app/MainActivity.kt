@@ -80,6 +80,7 @@ class MainActivity : Activity() {
     private lateinit var manija: ImageButton
     /** Voz nativa de las llamadas (window.GravityVoz): el WebView no trae la Web Speech API. */
     private lateinit var voz: VozPuente
+    private lateinit var telefono: TelefonoPuente
 
     private val principal = Handler(Looper.getMainLooper())
     private val preferencias by lazy { getSharedPreferences("gravity", Context.MODE_PRIVATE) }
@@ -261,6 +262,9 @@ class MainActivity : Activity() {
         // Cada método de GravityVoz verifica que la página sea la del motor local antes de hacer algo.
         voz = VozPuente(this, web)
         web.addJavascriptInterface(voz, "GravityVoz")
+        // Gravity Phone: exige un token que solo recibe el marco principal (ver TelefonoPuente).
+        telefono = TelefonoPuente(this, web)
+        web.addJavascriptInterface(telefono, "GravityTelefono")
     }
 
     private inner class ClienteWeb : WebViewClient() {
@@ -277,6 +281,7 @@ class MainActivity : Activity() {
 
         override fun onPageFinished(view: WebView, url: String?) {
             progreso.visibility = View.GONE
+            telefono.paginaLista()
             if (errorPendiente) {
                 // El motor se cayó o se está reiniciando: se espera a que vuelva y se recarga solo.
                 errorPendiente = false
@@ -309,6 +314,7 @@ class MainActivity : Activity() {
             if (rendererCaido) return true
             rendererCaido = true
             voz.liberar()
+            telefono.liberar()
             (view.parent as? ViewGroup)?.removeView(view)
             view.destroy()
             recreate()
@@ -342,6 +348,10 @@ class MainActivity : Activity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == TelefonoPuente.PEDIDO_CARPETA) {
+            telefono.carpetaElegida(resultCode, data)
+            return
+        }
         if (requestCode == PEDIDO_ARCHIVOS) {
             callbackArchivos?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
             callbackArchivos = null
@@ -807,6 +817,7 @@ class MainActivity : Activity() {
         callbackArchivos?.onReceiveValue(null)
         callbackArchivos = null
         voz.liberar()
+        if (::telefono.isInitialized) telefono.liberar()
         if (!rendererCaido) {
             (web.parent as? ViewGroup)?.removeView(web)
             web.destroy()

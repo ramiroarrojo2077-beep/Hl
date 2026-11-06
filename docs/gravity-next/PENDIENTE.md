@@ -54,3 +54,10 @@ Ninguno de la lista 56–60: están todos hechos (ver arriba).
 - WhatsApp Business por la API oficial: el módulo `bots/src/whatsapp.ts` existe pero necesita una URL pública para el webhook.
 - Pantalla de inicio tipo panel, accesibilidad completa, revisión de seguridad y medición de rendimiento.
 - **Firma del APK**: el APK de CI se firma con la clave de prueba (`android/firma/gravity-debug.jks`). El `gravity-8-arreglado.apk` del usuario tiene otra firma: para instalar encima sin perder datos hace falta esa clave como secretos `ANDROID_KEYSTORE_*` del repo, o hacer una copia (Ajustes > Copia de seguridad) antes de desinstalar.
+
+## Lista 272–371 (noviembre 2026)
+- Gravity Phone: probar `TelefonoPuente.kt` en un teléfono real (linterna, alarma, selector de carpetas, duplicados en carpetas grandes, resumen de notificaciones).
+- Seguridad: `GravityVoz` valida la URL del marco principal, pero un iframe de la misma página podría llamarlo. Pasarlo al mismo esquema de token que `GravityTelefono`.
+- Gravity Cloud: límite de almacenamiento por trabajo y reintentar trabajos cortados por una caída (357, 360). Publicar en proveedores externos (359) cuando el usuario conecte uno.
+- Audio: diarización acústica propia (hoy los hablantes los separa Gemini).
+- Browser: los formularios de sitios que dependen de JavaScript no funcionan (320 es experimental).
