@@ -75,7 +75,7 @@ import { generarStudio, listarStudio } from "./studio.ts";
 import { instalarDelMercado, vistaMercado } from "./mercado.ts";
 import { borrarWebhook, crearWebhook, listarWebhooks, recibirWebhook } from "./webhooks.ts";
 import { confianzaDe, cargaDe, iniciarTalento } from "./talento.ts";
-import { agregarNota } from "./almacen.ts";
+import { agregarNota, nuevoId } from "./almacen.ts";
 import { EVENTOS, borrarAutomatizacion, cambiarAutomatizacion, crearAutomatizacion, iniciarAutomatizaciones, listarAutomatizaciones } from "./automatizaciones.ts";
 import { Propuesta, aplicar as aplicarArquitecto, proponer as proponerArquitecto } from "./arquitecto.ts";
 import { ESTADOS_TAREA, agregarTarea, borrarProyecto, borrarTarea, buscarProyecto, cambiarProyecto, cambiarTarea, crearProyecto, listarProyectos, progreso, quitarBotDeProyectos, type Proyecto } from "./proyectos.ts";
@@ -139,6 +139,7 @@ class ErrorHttp extends Error {
 // Robot y voz de las llamadas (ver Avatar en almacen.ts). Lo que falte toma el valor por defecto.
 const DatosAvatar = z.object({
   activo: z.boolean().default(true),
+  gestos: z.object({ apagados: z.array(z.string().max(20)).max(20).default([]), firma: z.string().max(20).nullable().default(null) }).optional(),
   accesorio: z.enum(["ninguno", "antena", "cresta", "visera"]).default("ninguno"),
   tono: z.number().min(0.5).max(2).transform((v) => Math.round(v * 100) / 100).default(1),
   color: z
@@ -1446,6 +1447,38 @@ ruta("POST", "/api/creativo/logos", async ({ cuerpo }) => {
 ruta("POST", "/api/creativo/animacion", async ({ cuerpo }) => {
   const d = validar(z.object({ descripcion: z.string().trim().min(5).max(3000) }), await cuerpo());
   return conCreativo(async (C, s) => ({ ruta: await C.crearAnimacion(d.descripcion, s) }));
+});
+
+// ---- Competencia de soluciones: varios compañeros resuelven lo mismo por separado y un juez compara ----
+const A_COMP = path.join(DATOS, "competencias.json");
+type Competencia = { id: string; pedido: string; participantes: string[]; carpeta: string; creada: string; juez: string | null };
+const leerComp = async () => JSON.parse(await readFile(A_COMP, "utf8").catch(() => "[]")) as Competencia[];
+ruta("GET", "/api/competencias", async () => (await leerComp()).slice(-20).reverse());
+ruta("POST", "/api/competencias", async ({ cuerpo }) => {
+  const d = validar(z.object({ pedido: z.string().trim().min(5).max(4000), botIds: z.array(z.string().max(40)).min(2).max(4) }), await cuerpo());
+  const bots = [...new Set(d.botIds)].map(botDe);
+  if (bots.length < 2) throw new ErrorHttp(400, "Elegí al menos dos compañeros distintos.");
+  const c: Competencia = { id: nuevoId(), pedido: d.pedido, participantes: bots.map((b) => b.id), carpeta: `competencias/${new Date().toISOString().slice(0, 10)}-${nuevoId()}`, creada: new Date().toISOString(), juez: null };
+  for (const b of bots) {
+    await mkdir(path.join(COMPUTADORA, c.carpeta, b.nombre.replace(/[^\w-]+/g, "_")), { recursive: true });
+    enviarMensaje(b.id, `[Competencia de soluciones] Resolvé esto por tu cuenta, con tu propio enfoque: ${d.pedido}\n\nTrabajá solo en ${c.carpeta}/${b.nombre.replace(/[^\w-]+/g, "_")}/ y no mires las carpetas de los demás (otros compañeros lo resuelven en paralelo). Al terminar dejá ahí RESUMEN.md con tu solución, cómo la verificaste, costo/tiempo estimado y sus riesgos.`);
+  }
+  const xs = await leerComp();
+  xs.push(c);
+  await writeFile(A_COMP, JSON.stringify(xs.slice(-50), null, 1));
+  emitir("computadora");
+  return c;
+});
+ruta("POST", "/api/competencias/:id/comparar", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ juezId: z.string().max(40) }), await cuerpo());
+  const xs = await leerComp();
+  const c = xs.find((x) => x.id === params[0]);
+  if (!c) throw new ErrorHttp(404, "No existe esa competencia.");
+  const juez = botDe(d.juezId);
+  enviarMensaje(juez.id, `[Juez de competencia] Compará las soluciones independientes a: ${c.pedido}\n\nEstán en ${c.carpeta}/ (una carpeta por participante, cada una con RESUMEN.md). Leelas, verificá lo que se pueda (corré pruebas con probar_aislado si hay código) y armá en ${c.carpeta}/COMPARACION.md una tabla con criterios (cumple el pedido, calidad, riesgos, costo, tiempo), cuál recomendás y por qué, y qué tomarías de las otras. Sé imparcial: no importa quién la hizo.`);
+  c.juez = juez.id;
+  await writeFile(A_COMP, JSON.stringify(xs, null, 1));
+  return { ok: true };
 });
 
 // ---- Mi día (ver midia.ts) ----

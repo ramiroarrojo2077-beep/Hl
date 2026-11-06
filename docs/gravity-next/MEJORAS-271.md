@@ -10,7 +10,7 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 174. ✅ Delegación inteligente: el manager puede delegar a «auto» y Gravity elige según afinidad con el encargo (puesto y descripción), carga abierta, confianza y tope de gasto; el motivo queda en el resultado.
 175. ✅ Agentes de respaldo (Ajustes > Agentes de respaldo, apagado de fábrica): si una tarea falla o se vence, otro miembro del equipo la retoma una vez con el mismo presupuesto y se avisa al manager.
 176. ✅ Confianza: puntaje 0–100 con los resultados reales (tareas del equipo y de proyectos), visible en el Perfil y en Operaciones; se usa para delegar.
-177. ⛔ Competencia de soluciones (hoy: Laboratorio compara modelos y personalidades, no agentes con tareas).
+177. ✅ Competencia de soluciones (Laboratorio): 2 a 4 compañeros resuelven lo mismo por separado, cada uno en su carpeta con RESUMEN.md; un juez compara con criterios en COMPARACION.md y recomienda.
 178. ✅ Colaboración simultánea: proyectos con tareas en paralelo y dependencias; los equipos trabajan a la vez.
 179. 🟡 Conflictos: la auditoría detecta cuando dos compañeros cambian el mismo archivo con menos de 30 min de diferencia (posible pisada) y lleva a las versiones. Falta detectar decisiones contradictorias en texto.
 180. ✅ Biblioteca de estrategias: habilidades guardadas + mercado de habilidades + lecciones por compañero.
@@ -25,7 +25,17 @@ Las de la lista 1–170 siguen en `MEJORAS-170.md`; detalles técnicos en `PENDI
 190. ✅ Escenarios: estación espacial (estrellas, planeta con anillo), laboratorio futurista y oficina con biblioteca.
 
 ## 18. Robots 3D
-191–200. 🟡 El robot de las llamadas ya tiene gestos (saludo, asentir), ojos LED con expresión, levitación y personalidad; falta el resto.
+Robot de las llamadas (modelo 3D con esqueleto: animaciones por clips + movimiento procedural):
+191. ✅ Lenguaje corporal contextual: el gesto lo marca el ritmo de la voz y lo sesga el texto (preguntas → encogerse; «yo» → mano al pecho; «vos» → señalar; «listo» → asentir; logros → festejo).
+192. ✅ Seguimiento visual: sigue el dedo/puntero, mira la transcripción cuando hablás, el campo de texto cuando escribís y arriba al costado cuando piensa.
+193. ✅ Gestos explicativos (explicar, abrir las manos, ambas manos) con las oraciones largas.
+194. ✅ Postura de concentración al pensar: mano al mentón, dedos que tamborilean, ojos en modo «procesando».
+195. ✅ Celebración: festejo (brazos arriba, salto, ojos felices) cuando dice que algo salió bien o cuando él o su equipo completan una tarea durante la llamada.
+196. ✅ Expresiones LED sin boca: feliz, sorpresa, duda (un ojo entrecerrado y cabeza inclinada), apenado (ojos más chicos y apagados, cabeza baja), además del parpadeo y el brillo con la voz.
+197. ✅ Hologramas: cuando dice cifras o pasos, aparece un panel holográfico junto a su mano con hasta 3 líneas y lo señala.
+198. ✅ Editor de gestos (Perfil > Llamadas): apagar gestos y elegir un gesto «firma» que hace más seguido.
+199. ✅ Robot flotante: levita con halo y sombra (no camina en la llamada; en Universe se desplaza flotando).
+200. ✅ Robot acompañante: robot chico en la esquina con el estado del equipo (color, número, parpadeo), accesos rápidos (Aprobar, Mi día, Operaciones, Universe, Canales); se oculta en llamadas, Universe, Gravity Code y modo concentración, y se apaga en Ajustes > Estilo.
 
 ## 19. Creative Studio (201–210) · `#/creativo`, `bots/src/creativo.ts`
 201. ✅ Generador de imágenes con Gemini (`gemini-2.5-flash-image`, cambiable con `GRAVITY_GEMINI_IMAGEN`), con formato (1:1, 16:9, 9:16…). Necesita la clave de Gemini; según el plan puede tener costo.

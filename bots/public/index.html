@@ -888,6 +888,15 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
+.acomp{position:fixed;right:16px;bottom:20px;z-index:40;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.acomp-b{position:relative;width:58px;height:58px;border-radius:50%;border:2px solid var(--line);background:var(--s1);display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18);animation:acomp-flota 3.2s ease-in-out infinite}
+.acomp-b[data-s=work]{border-color:var(--ion)}.acomp-b[data-s=wait]{border-color:var(--sig);animation:acomp-flota 3.2s ease-in-out infinite,acomp-pulso 1.6s ease-in-out infinite}
+.acomp-ojos rect{fill:var(--ion);animation:acomp-parpadeo 4.8s infinite;transform-origin:center;transform-box:fill-box}.acomp-b[data-s=wait] .acomp-ojos rect{fill:var(--sig)}.acomp-b[data-s=idle] .acomp-ojos rect{fill:#8D98B0}
+.acomp-ant{fill:var(--ion)}.acomp-b[data-s=wait] .acomp-ant{fill:var(--sig)}.acomp-b[data-s=work] .acomp-ojos rect{animation:acomp-parpadeo 4.8s infinite,acomp-scan 1.2s ease-in-out infinite}
+.acomp-n{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;border-radius:11px;background:var(--sig);color:#05070d;font-size:12px;display:grid;place-items:center;padding:0 5px}
+.acomp-menu{background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:8px;display:flex;flex-direction:column;min-width:200px;box-shadow:0 12px 32px rgba(0,0,0,.2)}.acomp-menu a,.acomp-menu button{display:flex;gap:8px;align-items:center;padding:9px 10px;border-radius:10px;color:var(--tx);text-decoration:none;border:0;background:none;font:inherit;font-size:14px;cursor:pointer;min-height:40px;text-align:left}.acomp-menu a:hover,.acomp-menu button:hover{background:var(--s2)}.acomp-t{margin:2px 10px 6px;font-size:12.5px;color:var(--tx2)}
+@keyframes acomp-flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes acomp-pulso{0%,100%{box-shadow:0 0 0 0 rgba(255,176,122,.5)}50%{box-shadow:0 0 0 8px rgba(255,176,122,0)}}@keyframes acomp-parpadeo{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}@keyframes acomp-scan{0%,100%{opacity:1}50%{opacity:.55}}
+@media (max-width:760px){.acomp{bottom:84px;right:12px}}@media (prefers-reduced-motion:reduce){.acomp-b,.acomp-ojos rect{animation:none!important}}
 .cr-imgs,.cr-logos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px}.cr-imgs img,.cr-logos img{width:100%;border-radius:12px;border:1px solid var(--line);background:#fff;display:block}.cr-imgs figure,.cr-logos figure{margin:0}.cr-imgs figcaption,.cr-logos figcaption{font-size:12px;color:var(--tx2);display:flex;flex-direction:column;margin-top:4px}
 .md-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}.md-g .card h2{font-size:16px;margin:0 0 8px}.md-ancha{grid-column:1/-1}
 .md-plan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.md-plan li{display:grid;grid-template-columns:52px auto 1fr;gap:8px;align-items:start}.md-plan li div{display:flex;flex-direction:column}.md-h{font-variant-numeric:tabular-nums;font-weight:600}
@@ -1670,6 +1679,7 @@ input.rng{width:100%;accent-color:var(--ion);height:28px;margin:0}
 </div>
 <nav class="mnav" id="mnav" aria-label="Áreas"></nav>
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="acomp" id="acomp"></div>
 <dialog class="dlg" id="dlg" aria-labelledby="dlg-t"></dialog>
 
 <script>
@@ -2065,7 +2075,34 @@ const derivadas = () => (S.chats || []).filter((c) => c.derivada);
 const estadoMarca = () => (S.aprobaciones.length || derivadas().length ? "wait" : S.bots.some((b) => b.estado === "trabajando") ? "work" : "idle");
 // «G en órbita»: tres cuartos de órbita que bajan al centro como travesaño, masa central y compañero a la 1:30.
 const marcaSvg = (sz) => html`<svg class="marca" viewBox="0 0 32 32" width="${sz}" height="${sz}" data-s="${estadoMarca()}" aria-hidden="true"><path d="M16 6A10 10 0 1 0 26 16H16" fill="none" stroke="var(--tx)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="16" r="4" fill="var(--tx)"/><circle class="halo" cx="23" cy="9" r="3"/><circle class="sat" cx="23" cy="9" r="3"/></svg>`;
+// Robot acompañante: un robot chico en una esquina que muestra la actividad del equipo (color y número) y
+// abre accesos rápidos. No aparece en llamadas, Universe, Gravity Code ni en modo concentración.
+// Solo en pantallas de paneles (en los chats y canales taparía el botón de enviar).
+const ACOMP_EN = ["equipo", "operaciones", "midia", "proyectos", "mapa", "laboratorio", "investigacion", "datos", "creativo", "automatizaciones", "ajustes", "buscar", "aprobaciones", "reuniones", "computadora", "conexiones"];
+function pintarAcompanante() {
+  const el = $("#acomp");
+  if (!el) return;
+  const v = S.ruta?.vista;
+  const oculto = leerLocal("gravity-acompanante", "1") === "0" || !S.cargado || !S.bots.length || !(ACOMP_EN.includes(v) || (v === "chats" && !S.botId)) || (v === "reuniones" && S.ruta.id) || S.foco;
+  el.hidden = oculto;
+  if (oculto) return;
+  const c = conteo(S.bots), esperan = S.aprobaciones.length;
+  const estado = esperan ? "wait" : c.work ? "work" : "idle";
+  const abierto = el.dataset.abierto === "1";
+  pintar(el, html`${abierto ? html`<div class="acomp-menu" role="menu" aria-label="Accesos rápidos">
+      <p class="acomp-t">${esperan ? `${plural(esperan, "aprobación espera", "aprobaciones esperan")} tu respuesta` : c.work ? `${plural(c.work, "compañero trabajando", "compañeros trabajando")}` : "Todo tranquilo"}</p>
+      ${esperan ? html`<a role="menuitem" href="#/aprobaciones" data-a="acomp-cerrar">${ico("inbox", "s")}Aprobar</a>` : ""}
+      <a role="menuitem" href="#/midia" data-a="acomp-cerrar">${ico("clock", "s")}Mi día</a>
+      <a role="menuitem" href="#/operaciones" data-a="acomp-cerrar">${ico("grid", "s")}Operaciones</a>
+      <a role="menuitem" href="#/universo" data-a="acomp-cerrar">${ico("orbit", "s")}Universe</a>
+      <a role="menuitem" href="#/canales" data-a="acomp-cerrar">${ico("chat", "s")}Canales</a>
+      <button role="menuitem" data-a="acomp-ocultar">${ico("x", "s")}Ocultar el robot</button></div>` : ""}
+    <button class="acomp-b" data-a="acomp" data-s="${estado}" aria-expanded="${String(abierto)}" aria-label="Robot acompañante: ${esperan ? `${esperan} aprobaciones` : `${c.work} trabajando`}. Accesos rápidos">
+      <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><circle cx="32" cy="8" r="3.4" class="acomp-ant"/><path d="M32 11v6" stroke="#AEB7C5" stroke-width="2"/><rect x="10" y="17" width="44" height="36" rx="16" fill="#F3F5F9"/><rect x="15" y="25" width="34" height="19" rx="9" fill="#05070D"/><g class="acomp-ojos"><rect x="21" y="30" width="7" height="9" rx="3.5"/><rect x="36" y="30" width="7" height="9" rx="3.5"/></g><circle cx="9" cy="35" r="4" fill="#C9D0DB"/><circle cx="55" cy="35" r="4" fill="#C9D0DB"/></svg>
+      ${esperan || c.work ? html`<b class="acomp-n">${esperan || c.work}</b>` : ""}</button>`);
+}
 function pintarRail() {
+  pintarAcompanante();
   const v = S.ruta.vista;
   const nAp = S.aprobaciones.length, vivas = reunionesVivas().length;
   const nDer = derivadas().length, nMsj = (S.chats || []).reduce((n, c) => n + (c.noLeidos && c.modo !== "apagado" ? 1 : 0), 0);
@@ -3639,6 +3676,7 @@ function pintarAjustes() {
       <section class="card" aria-labelledby="aj-i"><h2 id="aj-i">Esta instalación</h2>
         <dl class="info"><dt>Modelo</dt><dd>${S.config.modelo}</dd><dt>Esfuerzo</dt><dd>${S.config.esfuerzo}</dd><dt>Computadora</dt><dd>${S.config.computadora}</dd><dt>Zona</dt><dd>${S.config.zona}</dd></dl>
         <label class="fld" style="margin-top:12px"><span>Estilo</span><select class="inp" data-c="estilo" style="max-width:220px"><option value="" ${si(!leerLocal("gravity-estilo", ""), "selected")}>Clásico</option><option value="cristal" ${si(leerLocal("gravity-estilo", "") === "cristal", "selected")}>Cristal (futurista, oscuro)</option></select><small>Cristal: paneles translúcidos con brillos cian y violeta. Usa un poco más de batería.</small></label>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" class="sw" data-c="acompanante" ${si(leerLocal("gravity-acompanante", "1") !== "0", "checked")}><span>Robot acompañante<small>Un robot chico en la esquina con la actividad del equipo y accesos rápidos.</small></span></label>
         <label class="fld" style="margin-top:12px" ${si(leerLocal("gravity-estilo", "") === "cristal", "hidden")}><span>Tema</span><select class="inp" data-c="tema" style="max-width:220px"><option value="" ${si(!tema, "selected")}>Como el sistema</option><option value="dark" ${si(tema === "dark", "selected")}>Oscuro</option><option value="light" ${si(tema === "light", "selected")}>Claro</option></select></label></section>
     </div>`);
 }
@@ -4617,7 +4655,7 @@ function pintarMapa() {
 // ================================================================ laboratorio
 // La misma consulta con el modelo automático, el rápido y el potente (con la personalidad de un
 // compañero si se elige), lado a lado y con el tiempo de cada uno. Es una consulta suelta: no queda en chats.
-const LAB = { pregunta: "", botId: "", res: null, cargando: false };
+const LAB = { pregunta: "", botId: "", res: null, cargando: false, comp: null };
 const SIM = { objetivo: "", alternativas: "", res: null, cargando: false };
 function pintarLab() {
   const el = $("#lab");
@@ -4636,7 +4674,15 @@ function pintarLab() {
     ${SIM.cargando ? html`<p class="muted" role="status">Comparando…</p>` : ""}
     ${SIM.res ? html`<p class="muted" style="font-size:12.5px;margin-top:10px">Estimaciones del modelo, no datos reales.</p><div class="proys">${SIM.res.alternativas.map((a) => html`<article class="tk"><div class="tk-h"><b>${a.nombre}</b></div><p style="margin:0;font-size:13.5px">${a.resumen}</p><span class="tk-m">⏱ ${a.tiempo} · 💲 ${a.costo}</span><span class="tk-m"><b>Pasos:</b> ${a.pasos.join(" → ")}</span><span class="tk-m"><b>A favor:</b> ${a.ventajas.join("; ")}</span><span class="tk-m"><b>Riesgos:</b> ${a.riesgos.join("; ")}</span></article>`)}</div>
       <div class="callout" style="margin-top:10px"><span><b>Recomendación:</b> ${SIM.res.recomendacion}${SIM.res.supuestos.length ? html`<br><small>Supuestos: ${SIM.res.supuestos.join("; ")}</small>` : ""}</span></div>
-      <div class="acts" style="margin-top:8px"><a class="btn out sm" href="#/arquitecto">Armar el equipo con Architect</a></div>` : ""}`);
+      <div class="acts" style="margin-top:8px"><a class="btn out sm" href="#/arquitecto">Armar el equipo con Architect</a></div>` : ""}
+    <div class="sec-h"><h2>Competencia de soluciones</h2></div>
+    <p class="muted" style="font-size:13px">Dos a cuatro compañeros resuelven lo mismo por separado, cada uno en su carpeta; después un juez compara y recomienda.</p>
+    ${S.bots.length >= 2 ? html`<form class="form-card" data-f="competencia"><label class="fld"><span>Qué tienen que resolver</span><textarea class="inp" name="pedido" rows="2" required minlength="5" maxlength="4000" placeholder="Ej.: proponé cómo bajar 20% el costo de envíos sin perder clientes"></textarea></label>
+      <fieldset class="fld"><legend>Participantes</legend><div class="dl-chks">${S.bots.map((b) => html`<label class="chk-s"><input type="checkbox" name="p" value="${b.id}"> ${b.nombre}</label>`)}</div></fieldset>
+      <div class="acts"><button class="btn pri">Lanzar la competencia</button></div></form>` : html`<p class="muted">Hacen falta al menos dos compañeros.</p>`}
+    ${(LAB.comp || []).length ? html`<ul class="hist">${LAB.comp.map((c) => html`<li><b>${c.pedido.slice(0, 120)}</b><br><small class="muted">${c.participantes.map((id) => bot(id)?.nombre || "?").join(" vs ")} · ${diaHora(c.creada)} · carpeta ${c.carpeta}${c.juez ? ` · juez: ${bot(c.juez)?.nombre || "?"}` : ""}</small>
+      <form class="fila" data-f="comp-comparar" data-id="${c.id}" style="gap:6px;margin-top:4px"><select class="inp" name="juez" style="width:auto">${S.bots.map((b) => html`<option value="${b.id}">${b.nombre}</option>`)}</select><button class="btn out sm">${c.juez ? "Volver a comparar" : "Pedir comparación"}</button></form></li>`)}</ul>` : ""}`);
+  if (!LAB.comp) api("GET", "/api/competencias").then((xs) => { LAB.comp = xs; if (xs.length) pintarLab(); }).catch(() => {});
 }
 
 // ================================================================ buscador global
@@ -5464,6 +5510,8 @@ function pintarParcial() { const p = $("#ll-parcial"); if (p && p.textContent !=
 function agregarTrans(quien, texto, id = null, turnoId = null) {
   const cont = $("#ll-tr");
   if (!cont) return;
+  // Lo que dice el usuario aparece en la transcripción, abajo: el robot mira hacia ahí un momento.
+  if (quien === "vos") LL.motor?.cerebro?.mirarA(0, 0.8, 1400);
   let l = cont.lastElementChild;
   if (!(quien === "bot" && l && l.dataset.q === "bot" && l.dataset.t === turnoId)) {
     l = document.createElement("p");
@@ -5801,6 +5849,8 @@ function htmlLlamadasPerfil(b) {
       <div class="fld"><span id="pf-col-l">Color de acento</span><div class="av-col"><input type="color" name="avColor" value="${a.color.toLowerCase()}" data-i="av-color" aria-labelledby="pf-col-l"><span class="sw-c" role="group" aria-label="Colores sugeridos">${COLORES_ACENTO.map(([c, n]) => html`<button type="button" data-a="av-color-pre" data-v="${c.toLowerCase()}" style="background:${c}" aria-label="${n}" title="${n}"></button>`)}</span><code id="av-col-v">${a.color.toUpperCase()}</code></div><small>Ojos, auriculares y el satélite del logo.</small></div>
       <label class="fld"><span>Expresividad · <output id="av-expr-v">${a.expresividad}%</output></span><input type="range" class="rng" name="avExpr" min="0" max="100" step="5" value="${a.expresividad}" data-i="av-expr"><small>Cuánto gesticula mientras habla.</small></label>
     </div>
+    <fieldset class="fld"><legend>Gestos</legend><div class="dl-chks">${Object.entries(NOMBRES_GESTOS).map(([g, n]) => html`<label class="chk-s"><input type="checkbox" name="avGesto" value="${g}" ${si(!(a.gestos?.apagados || []).includes(g), "checked")}> ${n}</label>`)}</div>
+      <label class="fld" style="margin-top:6px"><span>Gesto firma (lo hace más seguido)</span><select class="inp" name="avFirma" style="max-width:240px"><option value="">Ninguno</option>${Object.entries(NOMBRES_GESTOS).map(([g, n]) => html`<option value="${g}" ${si(a.gestos?.firma === g, "selected")}>${n}</option>`)}</select></label><small>Los que destildes no los hace en las llamadas. Los elige según lo que dice y el ritmo de su voz.</small></fieldset>
     <label class="fld"><span>Accesorio</span><select class="inp" name="avAccesorio" style="max-width:220px">${[["ninguno", "Ninguno"], ["antena", "Antena con luz"], ["cresta", "Cresta violeta"], ["visera", "Visera"]].map(([v, t]) => html`<option value="${v}" ${si((a.accesorio || "ninguno") === v, "selected")}>${t}</option>`)}</select></label>
     <fieldset class="fld"><legend>Calidad del robot</legend><div class="segc">${[["auto", "Automática"], ["alta", "Alta"], ["baja", "Baja"]].map(([v, t]) => html`<label><input type="radio" name="avCalidad" value="${v}" ${si(a.calidad === v, "checked")}>${t}</label>`)}</div><small>Automática baja la calidad sola si el dispositivo no da abasto.</small></fieldset>
     <div class="g2">
@@ -5819,7 +5869,9 @@ function refrescarVocesPerfil() {
 }
 function datosAvatar(f) {
   const d = new FormData(f);
-  return { tono: Number(d.get("avTono")) || 1, accesorio: d.get("avAccesorio") || "ninguno", activo: d.get("avActivo") === "on", color: String(d.get("avColor") || AVATAR_DEF.color).toUpperCase(), expresividad: Math.round(Number(d.get("avExpr")) || 0), calidad: d.get("avCalidad") || "auto", voz: d.get("avVoz") || null, velocidad: Number(d.get("avVel")) || 1 };
+  const si_ = new Set(d.getAll("avGesto"));
+  const gestos = f.querySelector("[name=avGesto]") ? { apagados: Object.keys(NOMBRES_GESTOS).filter((g) => !si_.has(g)), firma: d.get("avFirma") || null } : undefined;
+  return { ...(gestos ? { gestos } : {}), tono: Number(d.get("avTono")) || 1, accesorio: d.get("avAccesorio") || "ninguno", activo: d.get("avActivo") === "on", color: String(d.get("avColor") || AVATAR_DEF.color).toUpperCase(), expresividad: Math.round(Number(d.get("avExpr")) || 0), calidad: d.get("avCalidad") || "auto", voz: d.get("avVoz") || null, velocidad: Number(d.get("avVel")) || 1 };
 }
 function probarVoz(f) {
   const b = bot(S.botId);
@@ -5833,17 +5885,46 @@ function probarVoz(f) {
 // El cerebro no dibuja: decide. Lo usan el robot 3D y el indicador 2D.
 const ESTADOS_ROBOT = ["idle", "escuchando", "pensando", "hablando", "entusiasmado"];
 // Duración de cada gesto (s): tienen que coincidir con los clips del robot 3D.
-const GESTOS = { abrir: 1.5, explicar: 1.45, ambas: 1.1, asentir: 0.95, senalar: 1.45, pecho: 1.7, encoger: 1.5, pulgar: 1.6, saludo: 2.0 };
+const GESTOS = { abrir: 1.5, explicar: 1.45, ambas: 1.1, asentir: 0.95, senalar: 1.45, pecho: 1.7, encoger: 1.5, pulgar: 1.6, saludo: 2.0, festejo: 2.0 };
+const NOMBRES_GESTOS = { abrir: "Abrir las manos", explicar: "Explicar", ambas: "Ambas manos", asentir: "Asentir", senalar: "Señalar", pecho: "Mano al pecho", encoger: "Encogerse de hombros", pulgar: "Pulgar arriba", saludo: "Saludar", festejo: "Festejar" };
+// Expresiones de los ojos LED según el sentido de lo que dice (sin boca).
+function expresionDe(texto) {
+  const t = norm(texto || "");
+  if (/\b(lo siento|perdon|lamentablemente|no pude|no se pudo|que pena|disculpa)\b/.test(t)) return "apenado";
+  if (/\b(no estoy seguro|quizas|tal vez|capaz|depende|no se si|dudo)\b/.test(t) || /\?\s*$/.test(texto || "")) return "duda";
+  if (/\b(wow|increible|en serio|que bueno|sorpresa|no lo puedo creer)\b/.test(t) || /!.*!/.test(texto || "")) return "sorpresa";
+  if (/\b(lo logramos|terminamos|termine|listo|felicitaciones|genial|excelente|salio perfecto|funciona)\b/.test(t)) return "feliz";
+  return null;
+}
+// Líneas para el holograma de la mano: cifras o enumeraciones de la oración (si las hay).
+function hologramaDe(texto) {
+  const s = String(texto || "");
+  const cifras = s.match(/[^,;:.]*\d[\d.,%$]*[^,;:.]*/g)?.map((x) => x.trim()).filter((x) => x.length > 2) || [];
+  if (cifras.length >= 2) return cifras.slice(0, 3);
+  const pasos = s.split(/\b(?:primero|segundo|tercero|despues|luego|por ultimo|finalmente)\b/i).map((x) => x.replace(/^[\s,:]+|[\s,]+$/g, "")).filter((x) => x.length > 3);
+  return pasos.length >= 3 ? pasos.slice(0, 3) : null;
+}
 function crearCerebro(op = {}) {
   const pesos = Object.fromEntries(ESTADOS_ROBOT.map((s) => [s, s === "idle" ? 1 : 0]));
   const c = {
     estado: "idle", pesos, expr: Math.max(0, Math.min(1, op.expresividad ?? 0.6)), reducido: !!op.reducido,
     pista: null, rapida: 0, lenta: 0, amp: 0, enVoz: false, ultimaVoz: 0, nivelMic: 0,
     gestos: [], historial: [], ultimoGesto: -1e9, gestoHasta: 0, disparo: null, reposo: false, gesticulando: false,
+    expresion: null, holo: null, mirada: null, prefs: op.gestos || { apagados: [], firma: null },
     fijar(e) { if (e in pesos) c.estado = e; },
+    // Mirar un lugar de la pantalla (x: -1 izquierda … 1 derecha; y: -1 arriba … 1 abajo) un rato.
+    mirarA(x, y, ms = 1800) { c.mirada = { x, y, hasta: performance.now() + ms }; },
+    festejar() { c.disparo = "festejo"; c.expresion = { tipo: "feliz", hasta: performance.now() + 2600 }; },
     // Lo que está sonando: envolvente real (0..1 cada `paso` ms) desde t0. null = terminó de hablar.
     audio(p) {
-      if (p) { c.pista = { ...p, env: p.env || [] }; return; }
+      if (p) {
+        c.pista = { ...p, env: p.env || [] };
+        const ex = expresionDe(p.texto);
+        if (ex) c.expresion = { tipo: ex, hasta: performance.now() + 2600 };
+        const h = c.expr > 0.03 && !c.reducido ? hologramaDe(p.texto) : null;
+        if (h) { c.holo = { lineas: h, hasta: performance.now() + 4200, nuevo: true }; if (performance.now() >= c.gestoHasta && !(c.prefs.apagados || []).includes("explicar")) { c.disparo = "explicar"; c.ultimoGesto = performance.now(); c.gestoHasta = c.ultimoGesto + GESTOS.explicar * 1000; } }
+        return;
+      }
       if (c.pista) { c.pista = null; c.enVoz = false; c.reposo = true; c.gestoHasta = 0; }
     },
     sincronizar(id, ms) { if (c.pista && c.pista.id === id && Number.isFinite(ms)) c.pista.t0 = performance.now() - ms; },
@@ -5899,7 +5980,11 @@ function elegirGesto(c, texto, inicio, fuerte) {
   if (c.estado === "entusiasmado") { w.pulgar = 1.8; w.abrir += 0.8; if (inicio && /\b(hola|buen dia|buenas)\b/.test(t)) w.saludo = 3; }
   if (inicio) { w.abrir += 0.6; w.explicar += 0.4; }
   if (fuerte) { w.senalar += 0.6; w.abrir += 0.4; }
-  if (c.reducido) { delete w.ambas; delete w.encoger; delete w.saludo; }
+  if (c.estado === "entusiasmado" && /\b(lo logramos|terminamos|termine|felicitaciones|genial|excelente|salio perfecto)\b/.test(t)) w.festejo = 2.6;
+  if (c.reducido) { delete w.ambas; delete w.encoger; delete w.saludo; delete w.festejo; }
+  // Editor de gestos (Perfil > Llamadas): los apagados no salen y la «firma» sale más seguido.
+  for (const g of c.prefs?.apagados || []) delete w[g];
+  if (c.prefs?.firma && w[c.prefs.firma] != null) w[c.prefs.firma] += 1.5;
   for (const g of c.historial.slice(-2)) delete w[g];
   const xs = Object.entries(w);
   let r = Math.random() * xs.reduce((s, [, v]) => s + v, 0);
@@ -5913,7 +5998,7 @@ function arrancarMotor() {
   // Movimiento según la personalidad: un estilo tranquilo o formal gesticula menos; uno entusiasta, más.
   const estilo = (bot(LL.botId)?.estilo || "").toLowerCase();
   const factor = /tranquil|seri[oa]|formal|calm|sobri|pausad/.test(estilo) ? 0.6 : /entusiast|energ|divertid|alegr|humor|expresiv|euf/.test(estilo) ? 1.35 : 1;
-  const cerebro = crearCerebro({ expresividad: Math.min(1, (LL.av.expresividad / 100) * factor), reducido: matchMedia("(prefers-reduced-motion: reduce)").matches });
+  const cerebro = crearCerebro({ expresividad: Math.min(1, (LL.av.expresividad / 100) * factor), reducido: matchMedia("(prefers-reduced-motion: reduce)").matches, gestos: LL.av.gestos });
   const m = { cerebro, robot: null, raf: 0, fin: false, ultimo: 0 };
   LL.motor = m;
   exponerRobot(m);
@@ -5964,6 +6049,11 @@ function exponerRobot(m) {
     get fps() { return m.robot?.fps ?? null; },
     probarGesto: (n) => m.cerebro.probarGesto(n),
     fijar: (e) => m.cerebro.fijar(e),
+    // Para probar en pantalla y en las pruebas: expresión de los ojos, holograma, festejo y mirada.
+    expresar: (tipo, ms = 2600) => { m.cerebro.expresion = { tipo, hasta: performance.now() + ms }; },
+    holograma: (lineas, ms = 4200) => { m.cerebro.holo = { lineas, hasta: performance.now() + ms, nuevo: true }; },
+    festejar: () => m.cerebro.festejar(),
+    mirarA: (x, y, ms) => m.cerebro.mirarA(x, y, ms),
   };
 }
 
@@ -6020,6 +6110,7 @@ const CLIPS_ROBOT = {
   pecho: { hombro_D: [[0, 0, 0, 0], [0.45, -0.38, -0.25, -0.3], [1.25, -0.36, -0.22, -0.28], [1.7, 0, 0, 0]], codo_D: [[0, 0, 0, 0], [0.45, -0.85, 0, 0], [1.25, -0.82, 0, 0], [1.7, 0, 0, 0]], muneca_D: [[0, 0, 0, 0], [0.45, 0.25, -0.5, 0.15], [1.25, 0.25, -0.5, 0.15], [1.7, 0, 0, 0]], dedos1_D: [[0, 0, 0, 0], [0.45, 0, 0, 0.25], [1.7, 0, 0, 0]], dedos2_D: [[0, 0, 0, 0], [0.45, 0, 0, 0.2], [1.7, 0, 0, 0]], cabeza: [[0, 0, 0, 0], [0.5, 0.1, 0, 0.04], [1.25, 0.08, 0, 0.03], [1.7, 0, 0, 0]], torso: [[0, 0, 0, 0], [0.5, 0.05, 0, 0], [1.7, 0, 0, 0]] },
   encoger: { hombro: [[0, 0, 0, 0], [0.36, -0.1, 0, 0.36], [1.0, -0.08, 0, 0.33], [1.5, 0, 0, 0]], codo: [[0, 0, 0, 0], [0.36, 0.18, 0, 0], [1.5, 0, 0, 0]], muneca: [[0, 0, 0, 0], [0.36, -0.1, 1.15, 0], [1.0, -0.1, 1.1, 0], [1.5, 0, 0, 0]], dedos1: [[0, 0, 0, 0], [0.36, 0, 0, 0.3], [1.5, 0, 0, 0]], cabeza: [[0, 0, 0, 0], [0.38, -0.08, 0, 0.18], [1.0, -0.07, 0, 0.16], [1.5, 0, 0, 0]], cuello: [[0, 0, 0, 0], [0.38, -0.04, 0, 0], [1.5, 0, 0, 0]] },
   pulgar: { hombro_D: [[0, 0, 0, 0], [0.36, -0.5, 0, 0.04], [1.15, -0.48, 0, 0.04], [1.6, 0, 0, 0]], codo_D: [[0, 0, 0, 0], [0.36, -0.45, 0, 0], [1.15, -0.42, 0, 0], [1.6, 0, 0, 0]], muneca_D: [[0, 0, 0, 0], [0.36, 0, 1.2, 0.2], [1.15, 0, 1.15, 0.2], [1.6, 0, 0, 0]], dedos1_D: [[0, 0, 0, 0], [0.36, 0, 0, -1.25], [1.15, 0, 0, -1.25], [1.6, 0, 0, 0]], dedos2_D: [[0, 0, 0, 0], [0.36, 0, 0, -1.3], [1.15, 0, 0, -1.3], [1.6, 0, 0, 0]], pulgar1_D: [[0, 0, 0, 0], [0.36, 0.5, 0, 0.5], [1.15, 0.5, 0, 0.5], [1.6, 0, 0, 0]], pulgar2_D: [[0, 0, 0, 0], [0.36, 0, 0, 0.3], [1.6, 0, 0, 0]], cabeza: [[0, 0, 0, 0], [0.4, -0.05, 0, -0.12], [1.15, -0.04, 0, -0.1], [1.6, 0, 0, 0]] },
+  festejo: { hombro: [[0, 0, 0, 0], [0.3, -2.3, 0, 0.3], [0.65, -2.6, 0, 0.42], [1.0, -2.35, 0, 0.3], [1.35, -2.6, 0, 0.42], [2.0, 0, 0, 0]], codo: [[0, 0, 0, 0], [0.3, -0.35, 0, 0], [1.35, -0.3, 0, 0], [2.0, 0, 0, 0]], muneca: [[0, 0, 0, 0], [0.3, 0, 0.4, 0], [0.65, 0, 0.4, 0.3], [1.0, 0, 0.4, -0.3], [1.35, 0, 0.4, 0.3], [2.0, 0, 0, 0]], cabeza: [[0, 0, 0, 0], [0.3, -0.16, 0, 0], [1.0, -0.12, 0.1, 0], [1.6, -0.14, -0.1, 0], [2.0, 0, 0, 0]] },
   saludo: { hombro_D: [[0, 0, 0, 0], [0.38, -0.12, 0, 1.0], [1.6, -0.1, 0, 0.98], [2.0, 0, 0, 0]], codo_D: [[0, 0, 0, 0], [0.38, -0.95, 0, 0], [1.6, -0.9, 0, 0], [2.0, 0, 0, 0]], muneca_D: [[0, 0, 0, 0], [0.38, 0, 0.35, 0], [0.62, 0, 0.35, 0.4], [0.86, 0, 0.35, -0.3], [1.1, 0, 0.35, 0.4], [1.34, 0, 0.35, -0.3], [1.6, 0, 0.35, 0], [2.0, 0, 0, 0]], dedos1_D: [[0, 0, 0, 0], [0.38, 0, 0, 0.3], [1.6, 0, 0, 0.3], [2.0, 0, 0, 0]], dedos2_D: [[0, 0, 0, 0], [0.38, 0, 0, 0.3], [2.0, 0, 0, 0]], cabeza: [[0, 0, 0, 0], [0.4, 0, -0.08, 0.12], [1.6, 0, -0.06, 0.1], [2.0, 0, 0, 0]] },
 };
 // Expande una clave (genérica o de un lado) a [índice de articulación, signo y/z].
@@ -6131,6 +6222,24 @@ function crearRobot3D(T, cont, cerebro, op) {
   const halo = new T.Mesh(new T.PlaneGeometry(0.95, 0.95), matBrillo(T, acento, temaOscuro ? 0.32 : 0.18, true));
   halo.rotation.x = -Math.PI / 2; halo.position.y = 0.008;
   escena.add(suelo, mancha, halo);
+  // Holograma flotante junto a la mano derecha (lo usa el cerebro cuando dice cifras o pasos).
+  const holoCanvas = document.createElement("canvas"); holoCanvas.width = 512; holoCanvas.height = 320;
+  const holoTex = new T.CanvasTexture(holoCanvas); holoTex.colorSpace = T.SRGBColorSpace;
+  const holo = { k: 0, mat: new T.MeshBasicMaterial({ map: holoTex, transparent: true, opacity: 0, depthWrite: false, side: T.DoubleSide, toneMapped: false }) };
+  holo.malla = new T.Mesh(new T.PlaneGeometry(0.54, 0.34), holo.mat);
+  holo.malla.position.set(0.5, 1.02, 0.42); holo.malla.rotation.y = -0.3; holo.malla.visible = false;
+  escena.add(holo.malla);
+  const exK = { feliz: 0, sorpresa: 0, duda: 0, apenado: 0 };
+  function dibujarHolo(lineas) {
+    const g = holoCanvas.getContext("2d"), W = 512, H = 320, col = "#" + acento.getHexString();
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = "rgba(6,12,24,.78)"; g.beginPath(); g.roundRect(4, 4, W - 8, H - 8, 26); g.fill();
+    g.strokeStyle = col; g.lineWidth = 4; g.stroke();
+    g.fillStyle = col + "22"; for (let y = 14; y < H - 10; y += 7) g.fillRect(12, y, W - 24, 2);
+    g.font = "600 34px Geist, system-ui, sans-serif"; g.fillStyle = "#e8ecf5";
+    lineas.slice(0, 3).forEach((l, i) => { g.fillStyle = col; g.beginPath(); g.arc(38, 72 + i * 92, 9, 0, Math.PI * 2); g.fill(); g.fillStyle = "#e8ecf5"; let txt = String(l); while (g.measureText(txt).width > W - 90 && txt.length > 4) txt = txt.slice(0, -2); g.fillText(txt === String(l) ? txt : `${txt}…`, 62, 84 + i * 92); });
+    holoTex.needsUpdate = true;
+  }
   // Materiales PBR: plástico blanco con barniz, grises, juntas oscuras, visor negro brillante y luces.
   const M = {
     blanco: new T.MeshPhysicalMaterial({ color: 0xf3f5f9, roughness: 0.34, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.26 }),
@@ -6414,7 +6523,8 @@ function crearRobot3D(T, cont, cerebro, op) {
     mancha.scale.set(sombraK, sombraK, 1);
     halo.material.uniforms.opacidad.value = (temaOscuro ? 0.3 : 0.16) * (0.85 + 0.15 * r + 0.4 * a * hab);
     // 3. mirada: al usuario (escuchando/hablando), arriba al costado (pensando), paseo (idle) o al puntero
-    if (mir.puntero && now - mir.puntero.t < 2500) { mir.tx = mir.puntero.x * 0.55; mir.ty = mir.puntero.y * 0.35; }
+    if (c.mirada && now < c.mirada.hasta) { mir.tx = c.mirada.x * 0.55; mir.ty = c.mirada.y * 0.35; }
+    else if (mir.puntero && now - mir.puntero.t < 2500) { mir.tx = mir.puntero.x * 0.55; mir.ty = mir.puntero.y * 0.35; }
     else if (now > mir.prox) {
       if (pz > 0.5) { mir.tx = 0.24 + (Math.random() - 0.5) * 0.14; mir.ty = -0.17 + (Math.random() - 0.5) * 0.06; mir.prox = now + 320 + Math.random() * 480; }
       else if (w.idle > 0.5) { const mira = Math.random() < 0.45; mir.tx = mira ? 0 : (Math.random() - 0.5) * 0.6; mir.ty = mira ? 0 : (Math.random() - 0.5) * 0.22; mir.prox = now + 1700 + Math.random() * 2600; }
@@ -6422,7 +6532,7 @@ function crearRobot3D(T, cont, cerebro, op) {
     }
     const km = 1 - Math.exp(-dt * (reducido ? 4 : 8));
     mir.x += (mir.tx - mir.x) * km; mir.y += (mir.ty - mir.y) * km;
-    sumar("cabeza", mir.y * 0.42, mir.x * 0.52, 0);
+    sumar("cabeza", mir.y * 0.42 + 0.12 * exK.apenado, mir.x * 0.52, 0.12 * exK.duda);
     sumar("cuello", mir.y * 0.1, mir.x * 0.18, 0);
     R.ojos.position.set(mir.x * 0.045, 0.305 - mir.y * 0.034, 0);
     // 4. hablando: la amplitud real mueve cabeza, codos y muñecas (además de los gestos)
@@ -6457,20 +6567,33 @@ function crearRobot3D(T, cont, cerebro, op) {
     if (dp < 150) abierto = 1 - Math.sin((Math.PI * dp) / 150);
     else if (parp.doble && dp > 230 && dp < 380) abierto = 1 - Math.sin((Math.PI * (dp - 230)) / 150);
     abierto = Math.max(0.07, abierto);
-    const feliz = w.entusiasmado;
-    const sy = abierto * (1 - 0.6 * pz) * (1 + 0.07 * w.escuchando) * (1 - 0.1 * a * hab);
+    const ex2 = c.expresion && now < c.expresion.hasta ? c.expresion.tipo : null;
+    exK.feliz += ((ex2 === "feliz" ? 1 : 0) - exK.feliz) * km; exK.sorpresa += ((ex2 === "sorpresa" ? 1 : 0) - exK.sorpresa) * km;
+    exK.duda += ((ex2 === "duda" ? 1 : 0) - exK.duda) * km; exK.apenado += ((ex2 === "apenado" ? 1 : 0) - exK.apenado) * km;
+    const feliz = Math.min(1, w.entusiasmado + exK.feliz);
+    const sy = abierto * (1 - 0.6 * pz) * (1 + 0.07 * w.escuchando) * (1 - 0.1 * a * hab) * (1 + 0.3 * exK.sorpresa) * (1 - 0.35 * exK.apenado);
     const base = 0.8 + 0.12 * w.escuchando + 0.45 * a * hab + 0.1 * feliz;
     for (const [k, fase] of [["I", 0], ["D", 1.7]]) {
       const o = R.ojo[k];
       const scan = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(t * 6.5 - fase));
       const b = base * (1 - pz) + scan * pz;
-      o.pastilla.scale.set(1 + 0.06 * w.escuchando, Math.max(0.001, sy * (1 - feliz)), 1);
+      const duda = k === "D" ? 1 - 0.55 * exK.duda : 1 + 0.08 * exK.duda;
+      o.pastilla.scale.set((1 + 0.06 * w.escuchando) * (1 + 0.18 * exK.sorpresa), Math.max(0.001, sy * (1 - feliz) * duda), 1);
+      o.pastilla.position.y = -0.016 * exK.apenado + (k === "D" ? -0.006 : 0.006) * exK.duda;
       o.pastilla.visible = sy * (1 - feliz) > 0.01;
       o.feliz.visible = feliz > 0.02;
       o.feliz.scale.set(Math.max(0.001, feliz), Math.max(0.001, feliz * abierto), 1);
-      M[`ojo${k}`].color.copy(acento).multiplyScalar(Math.min(1, b)).lerp(blanco, Math.max(0, b - 1) * 0.5);
+      M[`ojo${k}`].color.copy(acento).multiplyScalar(Math.min(1, b) * (1 - 0.3 * exK.apenado)).lerp(blanco, Math.max(0, b - 1) * 0.5 + 0.25 * exK.sorpresa);
       M[`brillo${k}`].uniforms.opacidad.value = 0.42 * b * Math.max(sy * (1 - feliz), feliz);
     }
+    // Holograma de la mano: aparece con cifras o pasos de lo que dice, y se desvanece.
+    if (c.holo?.nuevo) { c.holo.nuevo = false; dibujarHolo(c.holo.lineas); }
+    const verHolo = c.holo && now < c.holo.hasta ? 1 : 0;
+    holo.k += (verHolo - holo.k) * Math.min(1, dt * 5);
+    holo.malla.visible = holo.k > 0.02;
+    holo.mat.opacity = 0.92 * holo.k;
+    holo.malla.position.y = 1.02 + 0.02 * Math.sin(t * 1.8);
+    holo.malla.scale.setScalar(0.7 + 0.3 * holo.k);
     M.sat.color.copy(acento).multiplyScalar(0.82 + 0.18 * r);
     M.brilloSat.uniforms.opacidad.value = 0.45 + 0.15 * r + 0.35 * a * hab;
     M.led.emissiveIntensity = 1.1 + 0.9 * a * hab + 0.35 * w.escuchando * (0.5 + 0.5 * Math.sin(t * 3.2));
@@ -6515,6 +6638,9 @@ function crearRobot3D(T, cont, cerebro, op) {
 
 // ================================================================ acciones (delegación de eventos)
 const A = {
+  acomp: () => { const el = $("#acomp"); el.dataset.abierto = el.dataset.abierto === "1" ? "0" : "1"; pintarAcompanante(); },
+  "acomp-cerrar": (t) => { $("#acomp").dataset.abierto = "0"; ir(t.getAttribute("href")); pintarAcompanante(); },
+  "acomp-ocultar": () => { guardarLocal("gravity-acompanante", "0"); $("#acomp").dataset.abierto = "0"; pintarAcompanante(); toast("Robot acompañante oculto. Lo volvés a mostrar en Ajustes > Estilo."); },
   "cr-pest": (t) => { CR.pest = t.dataset.v; pintarCreativo(); },
   "cr-rehacer": (t) => conCarga(t, async () => { const r = await api("POST", "/api/creativo/presentacion/rehacer", { json: t.dataset.v }); toast(`Rehecha: ${r.html}`); CR.ult = { ...CR.ult, r: { ...CR.ult.r, html: r.html } }; await montarCreativo(); }),
   "md-cerrar": async (t) => { await api("PUT", `/api/midia/objetivos/${t.dataset.id}`, { cerrar: true }); toast("¡Objetivo logrado!"); await montarMiDia(); },
@@ -6887,6 +7013,12 @@ function despues(botId) {
 
 // formularios
 const F = {
+  async competencia(f) {
+    const ids = [...f.querySelectorAll("input[name=p]:checked")].map((x) => x.value);
+    if (ids.length < 2) throw new Error("Elegí al menos dos participantes.");
+    await conCarga(f.querySelector("button"), async () => { await api("POST", "/api/competencias", { pedido: f.pedido.value.trim(), botIds: ids }); toast(`Compiten ${ids.length} compañeros, cada uno en su carpeta.`); LAB.comp = await api("GET", "/api/competencias"); pintarLab(); });
+  },
+  async "comp-comparar"(f) { await conCarga(f.querySelector("button"), async () => { await api("POST", `/api/competencias/${f.dataset.id}/comparar`, { juezId: f.juez.value }); toast(`${bot(f.juez.value)?.nombre} va a comparar las soluciones.`); LAB.comp = await api("GET", "/api/competencias"); pintarLab(); }); },
   async "cr-imagen"(f) { await conCarga(f.querySelector("button"), async () => { const r = await api("POST", "/api/creativo/imagen", { pedido: f.pedido.value.trim(), aspecto: f.aspecto.value, base: f.base.value || null }); CR.ult = { tipo: "imagen", pedido: f.pedido.value.trim(), r }; await montarCreativo(); }); },
   async "cr-voz"(f) { await conCarga(f.querySelector("button"), async () => { const r = await api("POST", "/api/creativo/voz", { texto: f.texto.value.trim(), voz: f.voz.value, estilo: f.estilo.value.trim() }); CR.ult = { tipo: "voz", r }; await montarCreativo(); }); },
   async "cr-presentacion"(f) { await conCarga(f.querySelector("button"), async () => { const r = await api("POST", "/api/creativo/presentacion", { tema: f.tema.value.trim(), diapositivas: Number(f.n.value) || 8, publico: f.publico.value.trim(), acento: f.acento.value.toUpperCase() }); CR.ult = { tipo: "presentacion", r }; await montarCreativo(); }); },
@@ -7357,6 +7489,7 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  acompanante: (t) => { guardarLocal("gravity-acompanante", t.checked ? "1" : "0"); pintarAcompanante(); },
   "md-hito": async (t) => { await api("PUT", `/api/midia/objetivos/${t.dataset.o}`, { hito: t.dataset.h, hecho: t.checked }); await montarMiDia(); },
   "dl-archivo": (t) => (t.value ? dlAbrir(t.value) : null),
   "dl-subir": async (t) => {
@@ -7463,6 +7596,7 @@ document.addEventListener("change", (e) => { const t = e.target.closest("[data-c
 document.addEventListener("input", (e) => { const t = e.target.closest("[data-i]"); if (t && I[t.dataset.i]) I[t.dataset.i](t, e); });
 // Formulario de asignación de una conversación con cambios sin guardar.
 for (const ev of ["input", "change"]) document.addEventListener(ev, (e) => { const f = e.target.closest?.("#msj-ctx form[data-f=msj-config]"); if (f) S.cfgSucio = f.dataset.id; });
+document.addEventListener("focusin", (e) => { if (e.target.closest?.("#ll-f")) LL.motor?.cerebro?.mirarA(0, 1, 2500); });
 document.addEventListener("submit", (e) => { const f = e.target.closest("form[data-f]"); if (!f) return; e.preventDefault(); if (F[f.dataset.f]) intentar(F[f.dataset.f])(f, e); });
 document.addEventListener("toggle", (e) => {
   const d = e.target;
@@ -7636,6 +7770,8 @@ function conectar() {
     const i = S.tareas.findIndex((x) => x.id === t.id);
     const u = $("#univ-3d")?.univ;
     if (u) { const antes = i >= 0 ? S.tareas[i].estado : null; if (t.estado === "completa" && antes !== "completa") u.festejar(t.paraId); else if (i < 0 && t.estado === "pendiente") u.visitar(t.deId, t.paraId); }
+    // En una llamada: si el compañero (o alguien de su equipo) termina una tarea, el robot festeja.
+    if (LL.activa && t.estado === "completa" && (t.paraId === LL.botId || t.deId === LL.botId) && !(i >= 0 && S.tareas[i].estado === "completa")) LL.motor?.cerebro?.festejar();
     if (i >= 0) S.tareas[i] = t; else S.tareas.push(t);
     for (const id of [t.paraId, t.deId]) { const b = bot(id); if (b) b.tareasAbiertas = S.tareas.filter((x) => x.paraId === b.id && tareaAbierta(x)).length; }
     programar("ctx", "equipo", "reuniones");

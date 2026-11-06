@@ -27,6 +27,8 @@ export type Cargo = "manager" | "miembro";
 // tienen y la interfaz usa los valores por defecto.
 export interface Avatar {
   activo: boolean;
+  // Editor de gestos: los que no quiere que haga y su gesto «firma» (lo hace más seguido).
+  gestos?: { apagados: string[]; firma: string | null };
   // Acento (ojos, anillos de los auriculares, satélite del logo): "#rrggbb".
   color: string;
   // 0-100: cuánto gesticula.
