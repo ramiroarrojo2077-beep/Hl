@@ -883,7 +883,8 @@ button.nodo{cursor:pointer;min-height:44px}button.nodo[aria-pressed=true]{outlin
 .cd-res{list-style:none;margin:0;padding:0}.cd-res button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:6px;border-radius:6px;cursor:pointer}.cd-res button:hover{background:#151d30}.cd-res b{font-size:12px;color:#6cd3f0;font-weight:500}.cd-res code{font-size:12px;color:#cfd7e6;white-space:pre-wrap;word-break:break-all}
 .cd-ag{display:flex;flex-direction:column;gap:8px}.cd-ag select.inp{width:auto;flex:1}.cd-est{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cfd7e6}
 .cd-conv{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}.cd-conv li{padding:8px 10px;border-radius:10px;background:#121a2b;overflow-wrap:anywhere}.cd-conv li.u{background:#1a2742;align-self:flex-end;max-width:92%;white-space:pre-wrap}.cd-conv li.a{background:none;padding:2px 4px;color:#8d98b0;font-size:12px;display:flex;gap:6px}.cd-conv li.a.e{color:#ffb07a}.cd-conv pre{white-space:pre-wrap;font-size:12px}
-.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-msg button{align-self:flex-end}
+.cd-msg{display:flex;flex-direction:column;gap:6px}.cd-h3{font-size:13px;margin:12px 0 4px;color:#e3e8f2}.cd-env{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;display:grid;grid-template-columns:1fr;gap:2px}.cd-env li{display:flex;justify-content:space-between;gap:8px}.cd .dl-t th{background:#0d1220}.cd .dl-t th,.cd .dl-t td{border-color:#1a2133}.cd-rev{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-top:6px}.cd-rev select{background:#121a2b;color:#e3e8f2;border:1px solid #26304a;border-radius:6px}
+.cd-prob{list-style:none;margin:4px 0;padding:0}.cd-prob button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;background:rgba(255,176,122,.08);color:inherit;font:inherit;text-align:left;padding:6px 8px;border-radius:6px;cursor:pointer;margin-top:3px}.cd-prob b{font-size:12px;color:#ffb07a;font-weight:500}.cd-prob span{font-size:12px;color:#cfd7e6}.cd-msg button{align-self:flex-end}
 .cd-dlg{max-width:min(980px,96vw)}.cd-diff{max-height:62vh;overflow:auto;border-radius:10px;border:1px solid var(--line)}.mono{font-family:ui-monospace,monospace;font-size:13px}
 @media (max-width:1100px){.cd-cuerpo{grid-template-columns:200px minmax(0,1fr) 320px}}
 @media (max-width:860px){.cd-seg{display:flex}.cd-cuerpo{grid-template-columns:1fr}.cd-arbol,.cd-centro,.cd-panel{display:none;border:0}.cd[data-movil=archivos] .cd-arbol,.cd[data-movil=editor] .cd-centro,.cd[data-movil=panel] .cd-panel{display:flex}}
@@ -4000,6 +4001,8 @@ const CD_MODOS = {
   equipo: ["Equipo", "Coordiná a tu equipo: repartí partes independientes (delegar), integrá los resultados y verificá que todo funcione junto."],
   supervisado: ["Autónomo supervisado", "Ejecutá un plan de varias etapas. Antes de empezar contá el plan en pasos numerados; pedí aprobación para lo sensible (borrar, publicar, gastar) y al terminar resumí qué cambió y cómo lo verificaste."],
   reparacion: ["Reparación", "Encontrá la causa del error, corregila con el cambio mínimo y demostrá con un comando real (probar_aislado) que quedó arreglado."],
+  pruebas: ["Generar pruebas", "Escribí pruebas automáticas a partir del comportamiento esperado (casos normales, bordes y errores) con el framework que ya use el proyecto, corrélas con probar_aislado y mostrá el resultado real."],
+  documentar: ["Documentar", "Generá o actualizá la documentación técnica a partir del código real (README, cómo correr y probar, módulos, API y decisiones) y actualizá la memoria técnica. No inventes funciones que no están."],
 };
 const cdRutaRel = (r) => (CD.p ? r.slice(`codigo/${CD.p}/`.length) : r);
 const cdLeer = (ruta) => fetch(`/api/computadora/archivo?ruta=${encodeURIComponent(ruta)}`, { cache: "no-store" }).then(async (r) => { if (!r.ok) throw new Error((await r.text()) || `Error ${r.status}`); return r.text(); });
@@ -4111,7 +4114,7 @@ async function cdAbrir(ruta, linea) {
 function pintarCodePanel() {
   const el = $("#cd-panel");
   if (!el) return;
-  const PANELES = [["terminal", "Terminal"], ["agentes", "Compañeros"], ["buscar", "Buscar"]];
+  const PANELES = [["terminal", "Terminal"], ["agentes", "Compañeros"], ["buscar", "Buscar"], ["proyecto", "Proyecto"]];
   const cab = html`<div class="cd-ptabs" role="tablist">${PANELES.map(([k, t]) => html`<button role="tab" aria-selected="${String(CD.panel === k)}" class="${CD.panel === k ? "on" : ""}" data-a="cd-panel" data-v="${k}">${t}</button>`)}</div>`;
   if (!CD.p) { pintar(el, cab); return; }
   let cuerpo = "";
@@ -4122,7 +4125,15 @@ function pintarCodePanel() {
       <div class="cd-rap">${["npm install", "npm test", "npm start", "node --test", "python -m unittest", "ls -la"].map((c) => html`<button class="chip" data-a="cd-cmd" data-v="${c}">${c}</button>`)}</div>
       <ol class="cd-ejec">${CD.ejec.map((e) => html`<li><div class="cd-ej-h"><span class="tag ${est[e.estado][1]}">${est[e.estado][0]}</span><code>${e.comando}</code>${e.aislado ? html`<span class="tag">aislado</span>` : ""}<small class="muted">${e.segundos != null ? `${e.segundos} s` : ""}${e.codigo != null ? ` · código ${e.codigo}` : ""}</small>
         ${e.estado === "corriendo" ? html`<button class="btn ghost sm" data-a="cd-detener" data-id="${e.id}">Detener</button>` : e.estado !== "ok" ? html`<button class="btn ghost sm" data-a="cd-reparar" data-id="${e.id}">Reparar con un compañero</button>` : ""}</div>
+        ${CD.problemas?.[e.id]?.length ? html`<ul class="cd-prob">${CD.problemas[e.id].map((x) => html`<li><button data-a="cd-ir" data-r="${x.ruta}" data-l="${x.linea}"><b>${cdRutaRel(x.ruta)}:${x.linea}</b><span>${x.mensaje}</span></button></li>`)}</ul>` : ""}
         <pre class="cd-sal">${e.salida.slice(-6000) || (e.estado === "corriendo" ? "…" : "(sin salida)")}</pre></li>`)}</ol>`;
+  } else if (CD.panel === "proyecto") {
+    const en = CD.entorno, dp = CD.deps;
+    cuerpo = html`<h3 class="cd-h3">Entorno</h3>${en ? html`<p class="muted" style="font-size:12.5px;margin:0">${en.tipo.join(" · ") || "Tipo no detectado"}</p><ul class="cd-env">${en.herramientas.map((h) => html`<li><b>${h.nombre}</b><span class="${h.version ? "" : "muted"}">${h.version || "no instalado"}</span></li>`)}</ul>` : html`<button class="btn out sm" data-a="cd-entorno">Detectar herramientas</button>`}
+      <h3 class="cd-h3">Dependencias</h3>${dp ? (dp.length ? html`<table class="dl-t"><thead><tr><th>Paquete</th><th>Usada</th><th>Última</th><th></th></tr></thead><tbody>${dp.map((d) => html`<tr><td>${d.nombre}</td><td>${d.usada}</td><td>${d.ultima || "?"}</td><td><span class="tag ${d.estado === "mayor" ? "sig" : d.estado === "al día" ? "ok" : ""}">${d.estado}</span></td></tr>`)}</tbody></table><p class="muted" style="font-size:12px">«mayor»: hay una versión nueva que puede romper cosas; revisá sus cambios antes de actualizar.</p>` : html`<p class="muted" style="font-size:13px">No hay package.json ni requirements.txt.</p>`) : html`<button class="btn out sm" data-a="cd-deps">Revisar dependencias</button>`}
+      <h3 class="cd-h3">Revisión multiagente</h3><p class="muted" style="font-size:12.5px;margin:0">Cada revisor mira por separado los archivos cambiados, corre las pruebas y entrega una lista priorizada. No cambian nada.</p>
+      <form data-f="cd-revision" class="cd-rev">${S.bots.slice(0, 12).map((b) => html`<label class="chk-s"><input type="checkbox" name="rev" value="${b.id}"> ${b.nombre}</label>`)}<label class="chk-s">Últimas <select name="horas">${[6, 24, 72, 168].map((h) => html`<option value="${h}" ${si(h === 24, "selected")}>${h} h</option>`)}</select></label><button class="btn out sm">Pedir revisión</button></form>
+      <h3 class="cd-h3">Despliegue</h3><p class="muted" style="font-size:12.5px;margin:0">Crea Dockerfile, .dockerignore y DESPLIEGUE.md (con la lista de control) según el tipo de proyecto. No publica nada.</p><button class="btn out sm" data-a="cd-desplegar">Preparar despliegue</button>`;
   } else if (CD.panel === "buscar") {
     cuerpo = html`<form class="cd-bus" data-f="cd-buscar"><input class="inp" name="q" value="${CD.q}" placeholder="Buscar en todo el proyecto" data-k="cd-q" aria-label="Buscar"><input class="inp" name="r" placeholder="Reemplazar por (opcional)" data-k="cd-r" aria-label="Reemplazar por">
       <div class="fila" style="gap:10px;flex-wrap:wrap"><label class="chk-s"><input type="checkbox" name="regex" ${si(CD.regex, "checked")}> Expresión regular</label><label class="chk-s"><input type="checkbox" name="mayus" ${si(CD.mayus, "checked")}> Distinguir mayúsculas</label><span class="sp"></span><button class="btn out sm" name="accion" value="buscar">Buscar</button><button class="btn ghost sm" name="accion" value="reemplazar">Reemplazar todo</button></div></form>
@@ -4150,7 +4161,12 @@ function cdSondear() {
   if (!$("#code") || !CD.p) return;
   const corriendo = CD.ejec.some((e) => e.estado === "corriendo");
   if (!corriendo) return;
-  CD.sondeo = setTimeout(async () => { try { CD.ejec = await api("GET", `/api/code/ejecuciones?p=${encodeURIComponent(CD.p)}`); } catch {} if (CD.panel === "terminal") pintarCodePanel(); cdSondear(); }, 900);
+  CD.sondeo = setTimeout(async () => { try { CD.ejec = await api("GET", `/api/code/ejecuciones?p=${encodeURIComponent(CD.p)}`); await cdProblemas(); } catch {} if (CD.panel === "terminal") pintarCodePanel(); cdSondear(); }, 900);
+}
+// Errores con archivo y línea de los comandos que fallaron: se muestran como enlaces al editor.
+async function cdProblemas() {
+  CD.problemas ??= {};
+  for (const e of CD.ejec.filter((x) => (x.estado === "error" || x.estado === "cortado") && !CD.problemas[x.id]).slice(0, 5)) CD.problemas[e.id] = await api("GET", `/api/code/problemas?p=${encodeURIComponent(CD.p)}&id=${e.id}`).catch(() => []);
 }
 function cdContexto() {
   const t = CD.tabs.find((x) => x.ruta === CD.activa);
@@ -6605,7 +6621,7 @@ const A = {
   "cd-nuevo": () => {
     abrirDialogo(html`<form class="dlg-f" data-f="cd-crear"><h2 id="dlg-t">Proyecto nuevo</h2>
       <label class="fld"><span>Nombre</span><input class="inp" name="nombre" required maxlength="60" pattern="[\\w][\\w .\\-]{0,59}" placeholder="mi-app"></label>
-      <fieldset class="fld"><legend>Plantilla</legend><div class="segc">${(CD.plantillas || ["vacio"]).map((p, i) => html`<label><input type="radio" name="plantilla" value="${p}" ${si(i === 0, "checked")}>${{ vacio: "Vacío", web: "Web", node: "Node.js", python: "Python" }[p] || p}</label>`)}</div></fieldset>
+      <fieldset class="fld"><legend>Plantilla</legend><div class="segc">${(CD.plantillas || ["vacio"]).map((p, i) => html`<label><input type="radio" name="plantilla" value="${p}" ${si(i === 0, "checked")}>${{ vacio: "Vacío", web: "Web", node: "Node.js", python: "Python", api: "API REST" }[p] || p}</label>`)}</div></fieldset>
       <label class="fld"><span>Qué va a hacer (para la memoria técnica)</span><textarea class="inp" name="descripcion" rows="3" maxlength="2000"></textarea></label>
       <div class="acts"><button type="button" class="btn ghost" data-a="cerrar-dlg">Cancelar</button><button class="btn pri">Crear</button></div></form>`, true);
   },
@@ -6639,6 +6655,9 @@ const A = {
     await cdCargarConv(); pintarCode(); toast(`${bot(CD.botId)?.nombre} está investigando el error.`);
   },
   "cd-modo": (t) => { CD.modo = t.dataset.v; pintarCodePanel(); },
+  "cd-entorno": (t) => conCarga(t, async () => { CD.entorno = await api("GET", `/api/code/entorno?p=${encodeURIComponent(CD.p)}`); pintarCodePanel(); }),
+  "cd-deps": (t) => conCarga(t, async () => { CD.deps = await api("GET", `/api/code/dependencias?p=${encodeURIComponent(CD.p)}`); pintarCodePanel(); }),
+  "cd-desplegar": (t) => conCarga(t, async () => { const r = await api("POST", `/api/code/desplegar?p=${encodeURIComponent(CD.p)}`, {}); toast(r.creados.length ? `Creado: ${r.creados.join(", ")}.` : "Ya estaba todo preparado."); await cargarCodeArchivos(); pintarCode(); }),
   "cd-equipo": async () => {
     if (!(await confirmar("¿Crear un equipo de desarrollo?", "Coordinador (manager) con Arquitecto, Programador, Diseñador, Tester, Debugger y Revisor. Trabajan en paralelo en partes independientes; todo lo sensible sigue pidiendo tu aprobación.", "Crear equipo"))) return;
     const r = await api("POST", "/api/equipos", { manager: { titulo: "Coordinador de desarrollo", descripcion: "Coordina el equipo de desarrollo: divide el trabajo en partes independientes, reparte con delegar, integra los cambios, pide revisión y pruebas, y mantiene la memoria técnica de cada proyecto en codigo/<proyecto>/.gravity/memoria.md." },
@@ -7009,6 +7028,11 @@ const F = {
     }
     CD.res = await api("GET", `/api/code/buscar?p=${encodeURIComponent(CD.p)}&q=${encodeURIComponent(CD.q)}&regex=${CD.regex ? 1 : 0}&mayus=${CD.mayus ? 1 : 0}`);
     pintarCode();
+  },
+  async "cd-revision"(f) {
+    const ids = [...f.querySelectorAll("input[name=rev]:checked")].map((x) => x.value);
+    if (!ids.length) throw new Error("Elegí al menos un revisor.");
+    await conCarga(f.querySelector("button"), async () => { const r = await api("POST", `/api/code/revision?p=${encodeURIComponent(CD.p)}`, { botIds: ids, horas: Number(f.horas.value) }); toast(`${r.revisores} revisor(es) miran ${r.archivos} archivo(s).`); });
   },
   async "cd-pedir"(f) {
     const texto = f.texto.value.trim();

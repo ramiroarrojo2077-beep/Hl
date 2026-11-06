@@ -73,7 +73,17 @@ Pantalla «Mi día» (`#/midia`, `bots/src/midia.ts`).
 240. ✅ Agente analista: «Analista de datos» crea un compañero que usa la herramienta `datos` (cálculos exactos sobre los archivos reales); cualquier compañero con la computadora también la tiene.
 
 ## 23. Developer Pro (241–250)
-241. ✅ Terminal de desarrollo con entorno aislado (Gravity Code y `probar_aislado`). 248. 🟡 Comparador de versiones de archivos (sin commits de Git). El resto, ver Gravity Code.
+Dentro de Gravity Code (panel «Proyecto» y terminal).
+241. ✅ Terminal de desarrollo con copia aislada (Gravity Code y `probar_aislado`).
+242. 🟡 Depurador: los errores de un comando que falla se convierten en enlaces a archivo y línea (Node, Python, TypeScript, Java/Kotlin…) con el mensaje; falta inspeccionar variables paso a paso.
+243. ✅ Análisis de dependencias: package.json y requirements.txt contra la última versión publicada en npm y PyPI (al día / menor / mayor).
+244. ✅ Generador de pruebas: modo «Generar pruebas» (las escribe y las corre de verdad).
+245. ✅ Revisión de código multiagente: varios revisores, cada uno por separado, con los archivos cambiados; corren las pruebas y entregan una lista priorizada sin cambiar nada.
+246. ✅ Documentación automática: modo «Documentar» (desde el código real, actualiza la memoria técnica).
+247. ✅ Administrador de entornos: detecta tipo de proyecto y versiones reales de node, npm, python, git, java y gradle.
+248. 🟡 Comparador de versiones de archivos (lado a lado o unificado); commits de Git solo por la terminal si git está instalado.
+249. ✅ Generador de APIs: plantilla «API REST» (servidor sin dependencias, rutas, validación, errores y pruebas que pasan).
+250. ✅ Asistente de despliegue: Dockerfile, .dockerignore y DESPLIEGUE.md con lista de control según el tipo de proyecto (no publica nada).
 
 ## 24. Comunicación (251–260)
 251. ✅ Canales (`#/canales`, `bots/src/canales.ts`): uno por equipo y uno por proyecto activo (se crean solos), libres que creás vos, y #anuncios. Los compañeros leen y publican con la herramienta `canales` (solo en los suyos).

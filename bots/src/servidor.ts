@@ -1676,6 +1676,27 @@ ruta("POST", "/api/code/ejecutar", async ({ url, cuerpo }) => {
   return malPedido(() => Code.ejecutarEnProyecto(codeDe(url), d.comando, d.aislado, () => emitir("computadora")));
 });
 ruta("GET", "/api/code/ejecuciones", async ({ url }) => Code.listarEjecuciones(url.searchParams.get("p") ?? undefined));
+ruta("GET", "/api/code/entorno", async ({ url }) => Code.entorno(codeDe(url)));
+ruta("GET", "/api/code/dependencias", async ({ url }) => Code.dependencias(codeDe(url)));
+ruta("GET", "/api/code/problemas", async ({ url }) => {
+  const p = codeDe(url);
+  const e = Code.listarEjecuciones(p).find((x) => x.id === url.searchParams.get("id"));
+  return e ? Code.problemas(p, e.salida) : [];
+});
+ruta("POST", "/api/code/desplegar", async ({ url }) => { const r = Code.prepararDespliegue(codeDe(url)); emitir("computadora"); return { creados: r }; });
+// Revisión multiagente: cada revisor recibe por separado (sin ver a los otros) los archivos cambiados.
+ruta("POST", "/api/code/revision", async ({ url, cuerpo }) => {
+  const p = codeDe(url);
+  const d = validar(z.object({ botIds: z.array(z.string().max(40)).min(1).max(4), horas: z.number().min(1).max(168).default(24) }), await cuerpo());
+  const desde = Date.now() - d.horas * 3600_000;
+  const archivos = (await listarArchivos(path.join(COMPUTADORA, "codigo", p))).filter((a) => !a.carpeta && Date.parse(a.modificado) >= desde).map((a) => `codigo/${p}/${a.ruta}`).slice(0, 40);
+  if (!archivos.length) throw new ErrorHttp(400, `No hay archivos cambiados en las últimas ${d.horas} h.`);
+  for (const id of d.botIds) {
+    const b = botDe(id);
+    enviarMensaje(b.id, `[Revisión de código independiente · proyecto «${p}»] Revisá estos archivos cambiados en las últimas ${d.horas} h:\n${archivos.map((x) => `- ${x}`).join("\n")}\n\nLeé la memoria técnica (codigo/${p}/.gravity/memoria.md) y los archivos. Buscá errores, problemas de seguridad, casos no cubiertos y pruebas que falten; corré las pruebas con probar_aislado. No cambies nada: entregá una lista priorizada (bloqueante / importante / menor) con archivo y línea, y si lo aprobarías. Otros revisores lo miran por separado.`);
+  }
+  return { archivos: archivos.length, revisores: d.botIds.length };
+});
 ruta("POST", "/api/code/ejecuciones/:id/detener", async ({ params }) => ({ ok: Code.detenerEjecucion(params[0]!) }));
 ruta("GET", "/api/code/exportar", async ({ url, res }) => {
   const p = codeDe(url);

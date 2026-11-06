@@ -114,7 +114,115 @@ const PLANTILLAS: Record<string, Record<string, string>> = {
     "README.md": "# {{nombre}}\n\n{{descripcion}}\n\n- Correr: `python main.py`\n- Probar: `python -m unittest`\n",
   },
 };
+PLANTILLAS.api = {
+  "package.json": '{\n  "name": "{{slug}}",\n  "version": "0.1.0",\n  "type": "module",\n  "scripts": { "start": "node servidor.js", "test": "node --test" }\n}\n',
+  "servidor.js": 'import http from "node:http";\n\n// API REST mínima sin dependencias: rutas, JSON, validación y errores claros.\nconst items = new Map();\nlet siguiente = 1;\n\nexport function manejar(metodo, ruta, cuerpo) {\n  if (metodo === "GET" && ruta === "/salud") return [200, { ok: true }];\n  if (metodo === "GET" && ruta === "/items") return [200, [...items.values()]];\n  if (metodo === "POST" && ruta === "/items") {\n    if (!cuerpo || typeof cuerpo.nombre !== "string" || !cuerpo.nombre.trim()) return [400, { error: "Falta nombre" }];\n    const item = { id: siguiente++, nombre: cuerpo.nombre.trim() };\n    items.set(item.id, item);\n    return [201, item];\n  }\n  const m = /^\\/items\\/(\\d+)$/.exec(ruta);\n  if (m && metodo === "GET") return items.has(Number(m[1])) ? [200, items.get(Number(m[1]))] : [404, { error: "No existe" }];\n  if (m && metodo === "DELETE") return items.delete(Number(m[1])) ? [204, null] : [404, { error: "No existe" }];\n  return [404, { error: "Ruta desconocida" }];\n}\n\nexport function crearServidor() {\n  return http.createServer((req, res) => {\n    let datos = "";\n    req.on("data", (c) => (datos += c));\n    req.on("end", () => {\n      let cuerpo = null;\n      try { cuerpo = datos ? JSON.parse(datos) : null; } catch { res.writeHead(400).end(JSON.stringify({ error: "JSON inválido" })); return; }\n      const [estado, salida] = manejar(req.method, new URL(req.url, "http://x").pathname, cuerpo);\n      res.writeHead(estado, { "content-type": "application/json" });\n      res.end(salida === null ? "" : JSON.stringify(salida));\n    });\n  });\n}\n\nif (import.meta.url === `file://${process.argv[1]}`) {\n  const puerto = Number(process.env.PORT ?? 3000);\n  crearServidor().listen(puerto, () => console.log(`{{nombre}} escuchando en http://localhost:${puerto}`));\n}\n',
+  "servidor.test.js": 'import test from "node:test";\nimport assert from "node:assert/strict";\nimport { manejar } from "./servidor.js";\n\ntest("crear, leer y borrar items", () => {\n  assert.deepEqual(manejar("POST", "/items", {}), [400, { error: "Falta nombre" }]);\n  const [estado, item] = manejar("POST", "/items", { nombre: "Primero" });\n  assert.equal(estado, 201);\n  assert.deepEqual(manejar("GET", `/items/${item.id}`), [200, item]);\n  assert.deepEqual(manejar("DELETE", `/items/${item.id}`), [204, null]);\n  assert.equal(manejar("GET", `/items/${item.id}`)[0], 404);\n});\n',
+  "README.md": "# {{nombre}}\n\n{{descripcion}}\n\nAPI REST sin dependencias.\n\n| Método | Ruta | Qué hace |\n|---|---|---|\n| GET | /salud | Estado |\n| GET | /items | Lista |\n| POST | /items | Crea (`{\"nombre\": \"...\"}`) |\n| GET | /items/:id | Uno |\n| DELETE | /items/:id | Borra |\n\n- Correr: `npm start` (puerto `PORT`, 3000 por defecto)\n- Probar: `npm test`\n",
+};
 export const PLANTILLAS_CODIGO = Object.keys(PLANTILLAS);
+
+// ---- Developer Pro: entorno, dependencias, problemas y despliegue ----
+
+/** Qué herramientas hay en este equipo (versión real de cada una) y qué tipo de proyecto es. */
+export async function entorno(nombre: string): Promise<{ tipo: string[]; herramientas: { nombre: string; version: string | null }[] }> {
+  const dir = carpetaProyecto(nombre);
+  const tipo: string[] = [];
+  if (existsSync(path.join(dir, "package.json"))) tipo.push("Node.js");
+  if (["requirements.txt", "pyproject.toml", "main.py"].some((f) => existsSync(path.join(dir, f)))) tipo.push("Python");
+  if (["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"].some((f) => existsSync(path.join(dir, f)))) tipo.push("Android/Gradle");
+  if (existsSync(path.join(dir, "index.html"))) tipo.push("Web");
+  if (existsSync(path.join(dir, ".git"))) tipo.push("Git");
+  const probar = (cmd: string) => new Promise<string | null>((r) => {
+    const p = spawn(SHELL, ["-c", `${cmd} 2>&1`], { cwd: dir, env: process.env });
+    let o = "";
+    p.stdout.on("data", (d) => (o += d));
+    const t = setTimeout(() => { p.kill("SIGKILL"); r(null); }, 5000);
+    p.on("close", (c) => { clearTimeout(t); r(c === 0 ? o.trim().split("\n")[0]!.slice(0, 80) : null); });
+    p.on("error", () => { clearTimeout(t); r(null); });
+  });
+  const lista: [string, string][] = [["node", "node --version"], ["npm", "npm --version"], ["python", "python3 --version || python --version"], ["git", "git --version"], ["java", "java -version 2>&1 | grep -i version | head -1"], ["gradle", "gradle --version | head -3 | tail -1"]];
+  const herramientas = await Promise.all(lista.map(async ([n, c]) => ({ nombre: n, version: await probar(c) })));
+  return { tipo, herramientas };
+}
+
+export interface Dependencia { nombre: string; usada: string; ultima: string | null; estado: "al día" | "menor" | "mayor" | "desconocida"; ecosistema: "npm" | "pypi" }
+const limpiarVersion = (v: string) => v.replace(/^[\^~>=<\s]+/, "").split(/[\s,]/)[0] ?? v;
+function comparar(usada: string, ultima: string | null): Dependencia["estado"] {
+  if (!ultima) return "desconocida";
+  const a = limpiarVersion(usada).split(".").map(Number), b = ultima.split(".").map(Number);
+  if (a.some(Number.isNaN)) return "desconocida";
+  if ((b[0] ?? 0) > (a[0] ?? 0)) return "mayor";
+  if ((b[1] ?? 0) > (a[1] ?? 0) || ((b[1] ?? 0) === (a[1] ?? 0) && (b[2] ?? 0) > (a[2] ?? 0))) return "menor";
+  return "al día";
+}
+/** Dependencias declaradas y su última versión publicada (registro de npm o PyPI). */
+export async function dependencias(nombre: string, traer: (url: string) => Promise<unknown> = (u) => fetch(u, { signal: AbortSignal.timeout(15_000) }).then((r) => (r.ok ? r.json() : null))): Promise<Dependencia[]> {
+  const dir = carpetaProyecto(nombre);
+  const salida: Dependencia[] = [];
+  const pj = path.join(dir, "package.json");
+  if (existsSync(pj)) {
+    const j = JSON.parse(readFileSync(pj, "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    for (const [n, v] of Object.entries({ ...j.dependencies, ...j.devDependencies }).slice(0, 80)) {
+      const d = (await traer(`https://registry.npmjs.org/${n.replace("/", "%2F")}/latest`).catch(() => null)) as { version?: string } | null;
+      salida.push({ nombre: n, usada: v, ultima: d?.version ?? null, estado: comparar(v, d?.version ?? null), ecosistema: "npm" });
+    }
+  }
+  const req = path.join(dir, "requirements.txt");
+  if (existsSync(req)) {
+    for (const linea of readFileSync(req, "utf8").split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).slice(0, 80)) {
+      const m = /^([A-Za-z0-9_.-]+)\s*(?:[=<>~!]=?\s*([\w.]+))?/.exec(linea);
+      if (!m) continue;
+      const d = (await traer(`https://pypi.org/pypi/${m[1]}/json`).catch(() => null)) as { info?: { version?: string } } | null;
+      salida.push({ nombre: m[1]!, usada: m[2] ?? "(sin versión)", ultima: d?.info?.version ?? null, estado: m[2] ? comparar(m[2], d?.info?.version ?? null) : "desconocida", ecosistema: "pypi" });
+    }
+  }
+  return salida;
+}
+
+/** Errores con archivo y línea en una salida (Node, Python, TypeScript, Kotlin/Java, compiladores). */
+export function problemas(nombre: string, salida: string): { ruta: string; linea: number; mensaje: string }[] {
+  const dir = carpetaProyecto(nombre);
+  const vistos = new Set<string>();
+  const out: { ruta: string; linea: number; mensaje: string }[] = [];
+  const lineas = salida.split("\n");
+  const patrones = [/(?:file:\/\/)?([\w./\\ -]+\.(?:m?[jt]sx?|py|kt|java|c|cpp|go|rs|css|html)):(\d+)(?::\d+)?/, /File "([^"]+)", line (\d+)/, /([\w./-]+\.(?:ts|tsx))\((\d+),\d+\)/];
+  lineas.forEach((l0, i) => {
+    let l = l0;
+    try { l = decodeURI(l0); } catch { /* deja la línea como está */ }
+    for (const re of patrones) {
+      const m = re.exec(l);
+      if (!m) continue;
+      const abs = path.resolve(dir, m[1]!.trim());
+      if (!abs.startsWith(dir + path.sep) || !existsSync(abs) || abs.includes(`${path.sep}node_modules${path.sep}`)) continue;
+      const rel = path.relative(COMPUTADORA, abs).split(path.sep).join("/");
+      const k = `${rel}:${m[2]}`;
+      if (vistos.has(k)) continue;
+      vistos.add(k);
+      const cerca = [...lineas.slice(i + 1, i + 12), ...lineas.slice(Math.max(0, i - 8), i).reverse()];
+      const msj = (cerca.find((x) => /^\s*(\w*Error|AssertionError|Exception|SyntaxError)\b|^\s*(expected|actual|message|error):\s*\S/i.test(x) && !/\|-\s*$|location:/.test(x)) ?? l).trim().slice(0, 200);
+      out.push({ ruta: rel, linea: Number(m[2]), mensaje: msj });
+      break;
+    }
+  });
+  return out.slice(0, 30);
+}
+
+/** Prepara el despliegue: Dockerfile, .dockerignore y DESPLIEGUE.md según el tipo de proyecto (no pisa lo que exista). */
+export function prepararDespliegue(nombre: string): string[] {
+  const dir = carpetaProyecto(nombre);
+  const creados: string[] = [];
+  const escribir = (f: string, c: string) => { const abs = path.join(dir, f); if (existsSync(abs)) return; writeFileSync(abs, c); creados.push(f); };
+  const esNode = existsSync(path.join(dir, "package.json")), esPy = existsSync(path.join(dir, "requirements.txt")) || existsSync(path.join(dir, "main.py")), esWeb = existsSync(path.join(dir, "index.html")) && !esNode;
+  if (esNode) {
+    const pj = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8")) as { scripts?: Record<string, string> };
+    escribir("Dockerfile", `FROM node:22-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --omit=dev || npm install --omit=dev\nCOPY . .\nENV NODE_ENV=production PORT=3000\nEXPOSE 3000\nCMD ["npm", "${pj.scripts?.start ? "start" : "run"}"${pj.scripts?.start ? "" : ', "start"'}]\n`);
+  } else if (esPy) escribir("Dockerfile", "FROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt* ./\nRUN [ -f requirements.txt ] && pip install --no-cache-dir -r requirements.txt || true\nCOPY . .\nEXPOSE 8000\nCMD [\"python\", \"main.py\"]\n");
+  else if (esWeb) escribir("Dockerfile", "FROM nginx:alpine\nCOPY . /usr/share/nginx/html\nEXPOSE 80\n");
+  if (creados.includes("Dockerfile")) escribir(".dockerignore", "node_modules\n.git\n.gravity\n*.log\n.env\n");
+  escribir("DESPLIEGUE.md", `# Despliegue de ${nombre}\n\nPreparado por Gravity Code. Revisalo antes de publicar: publicar no se hace solo.\n\n## Antes de publicar\n- [ ] Las pruebas pasan (\`${esNode ? "npm test" : esPy ? "python -m unittest" : "abrir index.html"}\`).\n- [ ] No hay claves ni contraseñas en el código (usá variables de entorno).\n- [ ] Probado en un entorno de prueba.\n\n## Con Docker\n\n\`\`\`\ndocker build -t ${nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-")} .\ndocker run -p 8080:${esNode ? 3000 : esPy ? 8000 : 80} ${nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-")}\n\`\`\`\n\n## Opciones\n${esWeb ? "- Sitio estático: GitHub Pages, Netlify o Cloudflare Pages (subiendo esta carpeta).\n" : "- Un servicio que acepte Docker (Render, Railway, Fly.io, Google Cloud Run).\n"}- Exportá el proyecto con «Exportar .zip» desde Gravity Code.\n`);
+  return creados;
+}
 
 export function crearProyectoCodigo(nombre: string, plantilla: string, descripcion = ""): ProyectoCodigo {
   const dir = carpetaProyecto(nombre);
