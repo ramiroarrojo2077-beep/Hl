@@ -297,7 +297,7 @@ function verificarOrigen(req: http.IncomingMessage): void {
   // El respaldo se sube como zip: tampoco es un tipo "simple", así que otro sitio no puede mandarlo sin CORS.
   const esRespaldo = (req.url ?? "").startsWith("/api/respaldo/importar") && tipo.startsWith("application/zip");
   // Data Lab sube tablas como binario (CSV, Excel): tampoco es un tipo "simple".
-  const esTabla = /^\/api\/(datos\/subir|code\/captura)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
+  const esTabla = /^\/api\/(datos\/subir|code\/captura|code\/importar-zip|cloud\/recibir)/.test(req.url ?? "") && tipo.startsWith("application/octet-stream");
   if (!tipo.startsWith("application/json") && !esRespaldo && !esTabla) {
     throw new ErrorHttp(415, "Se espera Content-Type: application/json.");
   }
@@ -1503,6 +1503,87 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
+// ---- Gravity Cloud (ver cloud.ts) ----
+const conCloud = async <T>(f: (K: typeof import("./cloud.ts")) => Promise<T>): Promise<T> => { const K = await import("./cloud.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+ruta("GET", "/api/cloud/servidores", async () => (await import("./cloud.ts")).listarServidores());
+ruta("POST", "/api/cloud/servidores", async ({ cuerpo }) => {
+  const d = validar(z.object({ nombre: z.string().max(60).default(""), url: z.string().min(8).max(300), clave: z.string().min(1).max(200) }), await cuerpo());
+  return conCloud(async (K) => {
+    const s = K.agregarServidor(d);
+    const u = await K.revisar(s.id);
+    // Solo queda guardado si se pudo entrar: una clave mala o una dirección que no responde no se guardan.
+    if (!u?.ok) { K.quitarServidor(s.id); throw new Error(`No pude conectarme: ${u?.error ?? "sin respuesta"}`); }
+    return K.listarServidores().find((x) => x.id === s.id);
+  });
+});
+ruta("DELETE", "/api/cloud/servidores/:id", async ({ params }) => { (await import("./cloud.ts")).quitarServidor(params[0]!); return { ok: true }; });
+ruta("POST", "/api/cloud/servidores/:id/revisar", async ({ params }) => conCloud((K) => K.revisar(params[0]!)));
+ruta("POST", "/api/cloud/servidores/:id/ejecutar", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ proyecto: z.string().min(1).max(60), comando: z.string().trim().min(1).max(2000), memoriaMb: z.number().min(64).max(65536).nullish(), cpuSeg: z.number().min(1).max(86400).nullish() }), await cuerpo());
+  Code.carpetaProyecto(d.proyecto);
+  return conCloud((K) => K.ejecutarRemoto(params[0]!, d.proyecto, d.comando, { memoriaMb: d.memoriaMb, cpuSeg: d.cpuSeg }));
+});
+ruta("POST", "/api/cloud/repartir", async ({ cuerpo }) => {
+  const d = validar(z.object({ proyecto: z.string().min(1).max(60), comandos: z.array(z.string().trim().min(1).max(2000)).min(1).max(50), memoriaMb: z.number().min(64).max(65536).nullish(), cpuSeg: z.number().min(1).max(86400).nullish() }), await cuerpo());
+  Code.carpetaProyecto(d.proyecto);
+  return conCloud((K) => K.repartir(d.proyecto, d.comandos, { memoriaMb: d.memoriaMb, cpuSeg: d.cpuSeg }));
+});
+ruta("GET", "/api/cloud/servidores/:id/trabajos", async ({ params, url }) => conCloud((K) => K.trabajosRemotos(params[0]!, url.searchParams.get("p") ?? undefined)));
+ruta("POST", "/api/cloud/servidores/:id/traer", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500), proyecto: z.string().min(1).max(60) }), await cuerpo());
+  const dir = path.join(Code.carpetaProyecto(d.proyecto), "remoto");
+  await mkdir(dir, { recursive: true });
+  const destino = path.join(dir, path.basename(d.ruta));
+  const bytes = await conCloud((K) => K.traerArchivo(params[0]!, d.ruta, destino));
+  emitir("computadora");
+  return { ruta: path.relative(COMPUTADORA, destino), bytes };
+});
+ruta("POST", "/api/cloud/servidores/:id/copia", async ({ params }) => conCloud((K) => K.enviarCopia(params[0]!)));
+ruta("GET", "/api/cloud/servidores/:id/copias", async ({ params }) => conCloud((K) => K.pedir(params[0]!, "GET", "/api/cloud/copias")));
+ruta("POST", "/api/cloud/servidores/:id/traer-copia", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ ruta: z.string().min(1).max(500) }), await cuerpo());
+  await mkdir(path.join(COMPUTADORA, "copias-traidas"), { recursive: true });
+  const rel = `copias-traidas/${path.basename(d.ruta).replace(/\.gravity$/, "")}.zip`;
+  const bytes = await conCloud((K) => K.traerCopia(params[0]!, d.ruta, path.join(COMPUTADORA, rel)));
+  emitir("computadora");
+  return { ruta: rel, bytes };
+});
+ruta("GET", "/api/cloud/servidores/:id/companeros", async ({ params }) => conCloud(async (K) => ((await K.pedir(params[0]!, "GET", "/api/estado")) as { bots: { id: string; nombre: string; titulo: string; estado: string }[] }).bots.map((b) => ({ id: b.id, nombre: b.nombre, titulo: b.titulo, estado: b.estado }))));
+ruta("POST", "/api/cloud/servidores/:id/mensaje", async ({ params, cuerpo }) => {
+  const d = validar(z.object({ botId: z.string().max(40), texto: z.string().trim().min(1).max(8000) }), await cuerpo());
+  return conCloud((K) => K.pedir(params[0]!, "POST", `/api/bots/${encodeURIComponent(d.botId)}/mensajes`, { texto: d.texto }));
+});
+// Del lado del Gravity remoto: recibir un proyecto (zip) y guardar copias cifradas.
+ruta("POST", "/api/code/importar-zip", async ({ req, url }) => {
+  const p = url.searchParams.get("p") ?? "";
+  const dir = Code.carpetaProyecto(p);
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const x of req) { total += (x as Buffer).length; if (total > 300 * 1024 * 1024) throw new ErrorHttp(413, "El proyecto pasa los 300 MB."); partes.push(x as Buffer); }
+  const zip = path.join(tmpdir(), `gravity-importar-${Date.now()}.zip`);
+  await writeFile(zip, Buffer.concat(partes));
+  try {
+    const { extraerZip } = await import("./respaldo.ts");
+    const archivos = malPedido(() => extraerZip(zip, dir, { quitarRaiz: false })) as number;
+    emitir("computadora");
+    return { archivos };
+  } finally {
+    await rm(zip, { force: true });
+  }
+});
+ruta("POST", "/api/cloud/recibir", async ({ req }) => {
+  const partes: Buffer[] = [];
+  let total = 0;
+  for await (const x of req) { total += (x as Buffer).length; if (total > 2 * 1024 * 1024 * 1024) throw new ErrorHttp(413, "La copia es demasiado grande."); partes.push(x as Buffer); }
+  const datos = Buffer.concat(partes);
+  if (!datos.subarray(0, 16).toString().startsWith("GRAVITY-COPIA-1")) throw new ErrorHttp(400, "No es una copia cifrada de Gravity.");
+  await mkdir(path.join(COMPUTADORA, "copias-recibidas"), { recursive: true });
+  const rel = `copias-recibidas/copia-${new Date().toISOString().replace(/[:.]/g, "-")}.gravity`;
+  await writeFile(path.join(COMPUTADORA, rel), datos);
+  return { ruta: rel, bytes: datos.length };
+});
+ruta("GET", "/api/cloud/copias", async () => (await listarArchivos(path.join(COMPUTADORA, "copias-recibidas")).catch(() => [])).filter((a) => !a.carpeta).map((a) => ({ ...a, ruta: `copias-recibidas/${a.ruta}` })));
+
 // ---- Gravity Evolution (experimental, ver evolucion.ts): propone; aplica solo cuando el usuario toca Aplicar ----
 ruta("GET", "/api/evolucion", async () => propuestasEvolucion());
 ruta("POST", "/api/evolucion/aplicar", async ({ cuerpo }) => {
@@ -1706,8 +1787,8 @@ ruta("POST", "/api/code/archivos", async ({ url, cuerpo }) => {
   return { ok: true };
 });
 ruta("POST", "/api/code/ejecutar", async ({ url, cuerpo }) => {
-  const d = validar(z.object({ comando: z.string().trim().min(1).max(2000), aislado: z.boolean().default(false) }), await cuerpo());
-  return malPedido(() => Code.ejecutarEnProyecto(codeDe(url), d.comando, d.aislado, () => emitir("computadora")));
+  const d = validar(z.object({ comando: z.string().trim().min(1).max(2000), aislado: z.boolean().default(false), memoriaMb: z.number().min(64).max(65536).nullish(), cpuSeg: z.number().min(1).max(86400).nullish() }), await cuerpo());
+  return malPedido(() => Code.ejecutarEnProyecto(codeDe(url), d.comando, d.aislado, () => emitir("computadora"), { memoriaMb: d.memoriaMb, cpuSeg: d.cpuSeg }));
 });
 ruta("GET", "/api/code/ejecuciones", async ({ url }) => Code.listarEjecuciones(url.searchParams.get("p") ?? undefined));
 // Git Manager (ver git.ts). Subir, traer y abrir pull requests los hace el usuario con su botón.
@@ -2140,6 +2221,7 @@ iniciarAutomatizaciones();
 iniciarTalento();
 Canales.iniciarCanales();
 Inv.iniciarMonitores(leerPagina);
+void import("./cloud.ts").then((K) => K.iniciarMonitorServidores());
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {

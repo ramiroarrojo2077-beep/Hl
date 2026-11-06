@@ -411,10 +411,20 @@ export const listarEjecuciones = (proyecto?: string) => ejecuciones.filter((e) =
  * Corre un comando del usuario en la carpeta del proyecto (o en una copia aislada). El estado queda
  * registrado: corriendo → ok / error / cortado, con la salida real.
  */
-export function ejecutarEnProyecto(nombre: string, comando: string, aislado: boolean, alTerminar?: (e: Ejecucion) => void): Ejecucion {
+/** Límites por trabajo (Linux/Android: ulimit): memoria virtual en MB y segundos de CPU. */
+export interface Limites { memoriaMb?: number | null; cpuSeg?: number | null }
+export const conLimites = (comando: string, l?: Limites) => {
+  const partes: string[] = [];
+  if (l?.memoriaMb) partes.push(`ulimit -v ${Math.max(64, Math.round(l.memoriaMb)) * 1024} 2>/dev/null`);
+  if (l?.cpuSeg) partes.push(`ulimit -t ${Math.max(1, Math.round(l.cpuSeg))} 2>/dev/null`);
+  return partes.length ? `${partes.join("; ")}; ${comando}` : comando;
+};
+
+export function ejecutarEnProyecto(nombre: string, comando: string, aislado: boolean, alTerminar?: (e: Ejecucion) => void, limites?: Limites): Ejecucion {
   const dir = carpetaProyecto(nombre);
   if (!existsSync(dir)) throw new Error("No existe ese proyecto.");
   if (!comando.trim()) throw new Error("Escribí un comando.");
+  const real = conLimites(comando, limites);
   const e: Ejecucion = { id: nuevoId(), proyecto: nombre, comando: comando.slice(0, 2000), aislado, inicio: new Date().toISOString(), estado: "corriendo", codigo: null, salida: "", segundos: null };
   ejecuciones.push(e);
   if (ejecuciones.length > 200) ejecuciones.splice(0, ejecuciones.length - 200);
@@ -426,14 +436,14 @@ export function ejecutarEnProyecto(nombre: string, comando: string, aislado: boo
   if (aislado) {
     const control = new AbortController();
     detenedores.set(e.id, () => control.abort());
-    ejecutarAislado(path.relative(COMPUTADORA, dir), comando, { timeoutMs: 300_000, signal: control.signal })
+    ejecutarAislado(path.relative(COMPUTADORA, dir), real, { timeoutMs: 300_000, signal: control.signal })
       .then(cerrar)
       .catch((err) => cerrar({ codigo: -1, salida: String((err as Error).message), segundos: 0, cortadoPorTiempo: false }));
     return e;
   }
   const env: NodeJS.ProcessEnv = Object.fromEntries(VARIABLES_PERMITIDAS.filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
   const inicio = Date.now();
-  const p = spawn(SHELL, ["-c", comando], { cwd: dir, env });
+  const p = spawn(SHELL, ["-c", real], { cwd: dir, env });
   let salida = "";
   let cortado = false;
   const sumar = (d: Buffer) => { if (salida.length < 60_000) salida += d.toString(); e.salida = salida; };

@@ -39,6 +39,10 @@ function cifrar(datos: unknown): string {
   return [iv, c.getAuthTag(), cuerpo].map((b) => b.toString("base64")).join(".");
 }
 
+/** Para otros módulos (servidores de Gravity Cloud): mismo cifrado local que los secretos de las conexiones. */
+export const cifrarSecreto = (datos: unknown) => cifrar(datos);
+export const descifrarSecreto = <T>(texto: string) => descifrar<T>(texto);
+
 function descifrar<T>(texto: string): T {
   const [iv, tag, cuerpo] = texto.split(".").map((p) => Buffer.from(p, "base64"));
   const d = createDecipheriv("aes-256-gcm", claveLocal(), iv!);
