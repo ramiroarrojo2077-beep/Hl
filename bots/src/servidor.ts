@@ -1550,6 +1550,33 @@ ruta("POST", "/api/midia/plan", async ({ cuerpo }) => {
   try { return await M.planificar(d.disponibilidad, AbortSignal.timeout(90_000)); } catch (err) { throw new ErrorHttp(400, (err as Error).message); }
 });
 
+// ---- Publicar en X (ver x.ts; la conexión y sus claves cifradas, en conexiones.ts) ----
+const conX = async <T>(f: (X: typeof import("./x.ts"), C: typeof import("./conexiones.ts")) => T | Promise<T>): Promise<T> => { const X = await import("./x.ts"); const C = await import("./conexiones.ts"); try { return await f(X, C); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
+ruta("GET", "/api/x", async () => conX((X, C) => ({ cuentas: C.cuentasX(), programadas: X.programadas(), historial: X.historial(), max: X.MAX_PESO, maxImagenes: X.MAX_IMAGENES })));
+ruta("POST", "/api/x/dividir", async ({ cuerpo }) => { const d = validar(z.object({ texto: z.string().max(25_000) }), await cuerpo()); return conX((X) => ({ partes: X.dividirHilo(d.texto).map((t) => ({ texto: t, peso: X.peso(t) })), peso: X.peso(d.texto) })); });
+ruta("POST", "/api/x/publicar", async ({ cuerpo }) => {
+  const d = validar(z.object({ conexion: z.string().max(40), textos: z.array(z.string().max(2000)).min(1).max(25), imagenes: z.array(z.string().max(500)).max(4).default([]), cuando: z.string().max(40).nullish(), responderA: z.string().max(30).nullish() }), await cuerpo());
+  return conX(async (X, C) => {
+    const cred = C.credencialesX(d.conexion);
+    if (!cred) throw new Error("Esa cuenta de X no está conectada.");
+    const textos = d.textos.map((t) => t.trim()).filter(Boolean);
+    if (d.cuando) { const p = X.programar({ conexion: d.conexion, textos, imagenes: d.imagenes, cuando: d.cuando }); emitir("x"); return { programada: p }; }
+    const r = await X.publicarHilo(cred, textos, d.imagenes, d.responderA ?? null);
+    X.anotar({ conexion: d.conexion, usuario: r.usuario, ids: r.ids, urls: r.urls, texto: textos.join("\n\n"), quien: "usuario" });
+    emitir("x");
+    return r;
+  });
+});
+ruta("DELETE", "/api/x/programadas/:id", async ({ params }) => conX((X) => { X.cancelar(params[0]!); emitir("x"); return { ok: true }; }));
+ruta("DELETE", "/api/x/publicaciones/:id", async ({ params, url }) => conX(async (X, C) => {
+  const cred = C.credencialesX(url.searchParams.get("conexion") ?? "");
+  if (!cred) throw new Error("Esa cuenta de X no está conectada.");
+  await X.borrar(cred, params[0]!);
+  X.marcarBorrada(params[0]!);
+  emitir("x");
+  return { ok: true };
+}));
+
 // ---- Gravity Phone (ver telefono.ts y android/.../TelefonoPuente.kt) ----
 const conTel = async <T>(f: (K: typeof import("./telefono.ts")) => T | Promise<T>): Promise<T> => { const K = await import("./telefono.ts"); try { return await f(K); } catch (err) { throw new ErrorHttp(400, (err as Error).message); } };
 ruta("GET", "/api/telefono", async () => conTel((K) => ({ apps: K.listarApps(), ...K.notificaciones(), ajustes: K.AJUSTES })));
@@ -2652,6 +2679,8 @@ iniciarTalento();
 Canales.iniciarCanales();
 Inv.iniciarMonitores(leerPagina);
 void import("./cloud.ts").then((K) => K.iniciarMonitorServidores());
+// Publicaciones programadas en X: se revisan cada 30 segundos.
+setInterval(() => { void import("./x.ts").then(async (X) => { const C = await import("./conexiones.ts"); await X.revisarProgramadas((id) => C.credencialesX(id), () => emitir("x")); }).catch(() => {}); }, 30_000).unref();
 
 // Al apagar: se escribe todo lo pendiente antes de salir.
 for (const senal of ["SIGINT", "SIGTERM"] as const) {

@@ -764,7 +764,88 @@ const tipoGithub: TipoConexion = {
   },
 };
 
-const TIPOS: TipoConexion[] = [tipoCorreo("gmail"), tipoMicrosoft, tipoCorreo("correo"), tipoMcp, tipoTelegram, tipoGithub];
+// ---- X (Twitter) con las claves de la app de desarrollador del usuario (OAuth 1.0a), ver x.ts ----
+
+const credX = (c: Conexion) => { const s = secretoDe(c); return { apiKey: s.apiKey ?? "", apiSecret: s.apiSecret ?? "", accessToken: s.accessToken ?? "", accessSecret: s.accessSecret ?? "" }; };
+const tipoX: TipoConexion = {
+  tipo: "x",
+  nombre: "X (Twitter)",
+  descripcion: "Publicar en tu cuenta de X con la API oficial: textos, hilos e imágenes, ahora o programado, y ver o borrar tus publicaciones. Cada publicación de un compañero pide tu aprobación.",
+  campos: [
+    { clave: "apiKey", etiqueta: "API Key (Consumer Key)", tipo: "clave", ayuda: "developer.x.com → tu app → Keys and tokens" },
+    { clave: "apiSecret", etiqueta: "API Key Secret", tipo: "clave", ayuda: "La que viene junto con la API Key" },
+    { clave: "accessToken", etiqueta: "Access Token", tipo: "clave", ayuda: "Generalo después de darle a la app permisos «Read and write»" },
+    { clave: "accessSecret", etiqueta: "Access Token Secret", tipo: "clave", ayuda: "La que viene junto con el Access Token" },
+  ],
+  pasos: [
+    "Entrá a developer.x.com con tu cuenta de X y creá un proyecto y una app (el plan gratuito de la API permite publicar con un límite mensual; X puede cambiar sus planes y precios).",
+    "En la app, «User authentication settings»: permisos «Read and write».",
+    "En «Keys and tokens» copiá API Key y API Key Secret, y generá Access Token y Access Token Secret (si los generaste antes de cambiar los permisos, regeneralos).",
+    "Pegá las cuatro claves acá: se guardan cifradas en este dispositivo. Publicás desde «Publicar en X»; si un compañero quiere publicar, te pide aprobación.",
+  ],
+  acciones: {
+    publicar: {
+      descripcion: "Publica en X un texto (si es largo, como hilo) con hasta 4 imágenes de la computadora.",
+      escritura: true,
+      firma: "publicar({texto, imagenes?: [rutas], responder_a?})",
+      parametros: z.object({ texto: z.string().min(1).max(25_000), imagenes: opcional(z.array(z.string().max(500)).max(4)), responder_a: opcional(z.string().max(30)) }),
+      ejecutar: async (c, p) => {
+        const X = await import("./x.ts");
+        const r = await X.publicarHilo(credX(c), X.dividirHilo(String(p.texto)), (p.imagenes as string[] | null) ?? [], (p.responder_a as string | null) ?? null);
+        X.anotar({ conexion: c.id, usuario: r.usuario, ids: r.ids, urls: r.urls, texto: String(p.texto), quien: "compañero" });
+        emitir("x");
+        return `Publicado${r.ids.length > 1 ? ` (hilo de ${r.ids.length})` : ""}: ${r.urls.join(" ")}`;
+      },
+    },
+    mis_publicaciones: {
+      descripcion: "Lee tus últimas publicaciones en X con sus métricas.",
+      escritura: false,
+      firma: "mis_publicaciones({max?})",
+      parametros: z.object({ max: opcional(z.number()) }),
+      ejecutar: async (c, p) => {
+        const X = await import("./x.ts");
+        const xs = await X.mias(credX(c), Number(p.max ?? 10));
+        return externo(xs.map((t) => `- ${t.fecha.slice(0, 16)} · ${t.texto.replace(/\s+/g, " ").slice(0, 200)} · ❤ ${t.metricas.like_count ?? 0} · 🔁 ${t.metricas.retweet_count ?? 0} · id ${t.id}`).join("\n") || "No hay publicaciones.");
+      },
+    },
+    borrar: {
+      descripcion: "Borra una publicación tuya de X.",
+      escritura: true,
+      firma: "borrar({id})",
+      parametros: z.object({ id: z.string().regex(/^\d{1,25}$/) }),
+      ejecutar: async (c, p) => {
+        const X = await import("./x.ts");
+        await X.borrar(credX(c), String(p.id));
+        X.marcarBorrada(String(p.id));
+        emitir("x");
+        return "Borrada.";
+      },
+    },
+  },
+  conectar: async (c, datos) => {
+    const cred = { apiKey: (datos.apiKey ?? "").trim(), apiSecret: (datos.apiSecret ?? "").trim(), accessToken: (datos.accessToken ?? "").trim(), accessSecret: (datos.accessSecret ?? "").trim() };
+    if (!cred.apiKey || !cred.apiSecret || !cred.accessToken || !cred.accessSecret) throw new Error("Faltan claves: son cuatro (API Key, API Key Secret, Access Token y Access Token Secret).");
+    if (!/^\d+-/.test(cred.accessToken)) throw new Error("El Access Token de X empieza con números y un guion (ej.: 12345-AbC…). Revisá que no sea el Bearer Token.");
+    const X = await import("./x.ts");
+    const u = await X.yo(cred);
+    guardarSecreto(c, cred);
+    c.cuenta = `@${u.usuario}`;
+    c.estado = "conectada";
+  },
+  probar: async (c) => {
+    const u = await (await import("./x.ts")).yo(credX(c));
+    return `Conectado como @${u.usuario}.`;
+  },
+};
+
+/** Cuentas de X conectadas (para la pantalla Publicar en X y las programadas). */
+export const cuentasX = () => conexiones.filter((c) => c.tipo === "x" && c.estado === "conectada").map((c) => ({ id: c.id, nombre: c.nombre, cuenta: c.cuenta }));
+export function credencialesX(id: string) {
+  const c = conexiones.find((x) => x.id === id && x.tipo === "x" && x.estado === "conectada");
+  return c ? credX(c) : null;
+}
+
+const TIPOS: TipoConexion[] = [tipoCorreo("gmail"), tipoMicrosoft, tipoCorreo("correo"), tipoMcp, tipoTelegram, tipoGithub, tipoX];
 const tipoDe = (tipo: string) => TIPOS.find((t) => t.tipo === tipo);
 
 function accionesDe(c: Conexion): AccionInfo[] {
