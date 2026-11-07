@@ -690,11 +690,36 @@ ruta("POST", "/api/bots", async ({ cuerpo }) => {
 });
 
 ruta("POST", "/api/equipos", async ({ cuerpo }) => {
-  const d = validar(DatosEquipo, await cuerpo());
+  const crudo = (await cuerpo()) as Record<string, unknown>;
+  // Equipo «Programación»: opcionalmente, el proyecto de Gravity Code donde trabaja (uno existente o uno nuevo).
+  const codigo = validar(z.object({ proyecto: z.string().trim().min(1).max(60), plantilla: z.string().max(20).optional(), probarSinPermiso: z.boolean().default(true) }).nullish(), crudo?.codigo ?? null);
+  const d = validar(DatosEquipo, { ...crudo, codigo: undefined });
+  if (codigo) {
+    const existe = Code.listarProyectosCodigo().some((x) => x.nombre === codigo.proyecto);
+    if (!existe && !codigo.plantilla) throw new ErrorHttp(400, "Ese proyecto de Gravity Code no existe.");
+    if (existe && (await import("./equipo-codigo.ts")).leerEquipo(codigo.proyecto)) throw new ErrorHttp(400, "Ese proyecto de Gravity Code ya tiene equipo.");
+  }
   const { manager, miembros } = malPedido(() => crearEquipo({ ...d, reportaA: d.reportaA ?? null })) as ReturnType<typeof crearEquipo>;
+  let proyectoCodigo: string | null = null;
+  if (codigo) {
+    const E = await import("./equipo-codigo.ts");
+    try {
+      if (!Code.listarProyectosCodigo().some((x) => x.nombre === codigo.proyecto)) Code.crearProyectoCodigo(codigo.proyecto, codigo.plantilla ?? "vacio", "");
+      E.vincularEquipoCodigo(codigo.proyecto, manager.id, { escribirSinPermiso: d.carpetaLibre ?? true, probarSinPermiso: codigo.probarSinPermiso });
+      proyectoCodigo = codigo.proyecto;
+      emitir("proyectos");
+      emitir("computadora");
+    } catch (err) {
+      // El equipo queda creado igual; se avisa qué faltó.
+      return { manager: vistaBot(manager), miembros: miembros.map(vistaBot), proyectoCodigo: null, aviso: `El equipo se creó, pero no se pudo vincular a Gravity Code: ${(err as Error).message}` };
+    } finally {
+      emitir("bots");
+      emitir("reglas");
+    }
+  }
   emitir("bots");
   emitir("reglas");
-  return { manager: vistaBot(manager), miembros: miembros.map(vistaBot) };
+  return { manager: vistaBot(manager), miembros: miembros.map(vistaBot), proyectoCodigo };
 });
 
 ruta("PUT", "/api/bots/:id", async ({ params, cuerpo }) => {

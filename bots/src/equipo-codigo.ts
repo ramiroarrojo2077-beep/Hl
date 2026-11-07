@@ -119,6 +119,44 @@ export function armarEquipoCodigo(p: string, op: { cantidad: number; escribirSin
   return e;
 }
 
+// Del título de un puesto de la plantilla «Programación» (o uno parecido) al rol del equipo de código.
+export function rolDeTitulo(titulo: string): string {
+  const t = titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (t.includes("arquitect")) return "arquitecto";
+  if (t.includes("frontend") || t.includes("interfaz")) return t.includes("disen") ? "disenador" : "frontend";
+  if (t.includes("backend")) return "backend";
+  if (t.includes("test") || t.includes("qa")) return "tester";
+  if (t.includes("revis")) return "revisor";
+  if (t.includes("debug")) return "debugger";
+  if (t.includes("devops") || t.includes("despliegue")) return "devops";
+  if (t.includes("document")) return "documentador";
+  if (t.includes("disen")) return "disenador";
+  return "programador";
+}
+
+/**
+ * Vincula un equipo ya creado (por ejemplo, con la plantilla «Programación» desde Equipo) a un proyecto de
+ * Gravity Code: le indica la carpeta a cada uno, arma el proyecto de Gravity que reparte las tareas y deja
+ * el equipo registrado en .gravity/equipo.json, igual que si se hubiera armado desde Gravity Code.
+ */
+export function vincularEquipoCodigo(p: string, managerId: string, op: { escribirSinPermiso: boolean; probarSinPermiso: boolean }): EquipoCodigo {
+  const dir = carpetaProyecto(p);
+  if (!existsSync(dir)) throw new Error("No existe ese proyecto de Gravity Code.");
+  if (leerEquipo(p)) throw new Error("Ese proyecto de Gravity Code ya tiene equipo.");
+  const jefe = buscarBot(managerId);
+  if (!jefe) throw new Error("No existe ese manager.");
+  const carpeta = `${CARPETA_CODIGO}/${p}/`;
+  const nota = (d: string) => (d.includes(carpeta) ? d : `${d} Proyecto: ${carpeta}`);
+  jefe.descripcion = nota(jefe.descripcion);
+  const miembros = directos(jefe.id).map((b) => { b.descripcion = nota(b.descripcion); return { id: b.id, rol: rolDeTitulo(b.titulo) }; });
+  guardarEstado();
+  const proyecto = crearProyecto({ nombre: `Code · ${p}`.slice(0, 120), objetivo: `Desarrollo del proyecto de Gravity Code «${p}» (carpeta ${carpeta}).`, coordinadorId: jefe.id, carpeta }, "usuario");
+  if (op.escribirSinPermiso) agregarRegla("editor", carpeta, { tipo: "equipo", managerId: jefe.id });
+  const e: EquipoCodigo = { coordinadorId: jefe.id, lideres: [], miembros, proyectoId: proyecto.id, probarSinPermiso: op.probarSinPermiso, escribirSinPermiso: op.escribirSinPermiso, creado: ahora() };
+  guardar(p, e);
+  return e;
+}
+
 function nombreLibre(): string {
   const usados = new Set(listarBots().map((b) => b.nombre.toLowerCase()));
   for (let k = 1; ; k++) {

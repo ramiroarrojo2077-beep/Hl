@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es-AR">
+<html lang="es-AR" data-estilo="nova">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -338,6 +338,10 @@ select.inp{padding-right:28px;appearance:none;-webkit-appearance:none;background
 .bh-meta .rep{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 100 auto}
 .cola{font:500 12px var(--font);color:var(--tx2);background:var(--s3);border-radius:999px;padding:3px 8px;white-space:nowrap}
 .bh-act{display:flex;gap:6px;position:relative;flex:none}
+/* Si la columna del chat es angosta (por ejemplo un líder de equipo con varios botones), los botones quedan solo con
+   su icono (tienen aria-label) y el nombre nunca queda tapado. */
+.bh{container-type:inline-size}.bh-id{min-width:150px}
+@container (max-width:700px){.bh-act .t{display:none}.bh-act .btn.sm{padding:0 9px}}
 .bh-m{display:none}
 .back{display:none!important}
 .tabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);position:relative;flex:none;overflow-x:auto;scrollbar-width:none}
@@ -1585,6 +1589,157 @@ input.rng{width:100%;accent-color:var(--ion);height:28px;margin:0}
 @keyframes sube{from{transform:translateY(36px);opacity:.5}}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
+/* ======================================================================================
+   Nova: sistema de diseño de Gravity (estilo predeterminado; Clásico y Cristal siguen en Ajustes).
+   Capa 1 · tokens (escala de espacios, tipos, radios, elevación, movimiento) en claro y oscuro.
+   Capa 2 · componentes: se redefinen las piezas base sin tocar su HTML. Ver docs/gravity-next/DISENO-NOVA.md
+   ====================================================================================== */
+:root[data-estilo="nova"]{
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-8:32px;
+  --fs-xs:12px;--fs-sm:13px;--fs-base:14.5px;--fs-md:16px;--fs-lg:20px;--fs-xl:26px;--fs-2xl:32px;
+  --r-sm:8px;--r-md:12px;--r-lg:18px;--r-xl:24px;--r-pill:999px;
+  --dur-1:.12s;--dur-2:.2s;--ease:cubic-bezier(.2,.8,.2,1);
+  --font:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  /* Oscuro (predeterminado): grafito con acento índigo-violeta y señal coral */
+  color-scheme:dark;
+  --bg:#0D0E13;--rail:#0A0B0F;--s1:#14161D;--s2:#1A1D26;--s3:#242836;
+  --line:#262A37;--line2:#353A4C;--glow:rgba(124,108,255,.12);
+  --tx:#F3F2F8;--tx2:#B7B5C6;--tx3:#8F8CA1;
+  --ion:#8B85FF;--ion-tx:#A9A4FF;--ion-bg:rgba(139,133,255,.14);--ion2:#C17BFF;
+  --sig:#FF7A59;--sig-tx:#FF9C80;--sig-bg:rgba(255,122,89,.12);--sig-line:rgba(255,122,89,.45);--on-sig:#1E0A04;
+  --pri:#F3F2F8;--on-pri:#0D0E13;--on-ion:#FFFFFF;
+  --ok:#3FD6A0;--ok-bg:rgba(63,214,160,.12);
+  --e1:0 1px 0 rgba(255,255,255,.03) inset,0 1px 2px rgba(0,0,0,.35);
+  --e2:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.38);
+  --e3:0 24px 64px rgba(0,0,0,.55);
+  --shadow:var(--e3);--scrim:rgba(5,5,10,.6);
+  --foco:0 0 0 3px rgba(139,133,255,.42);
+}
+@media (prefers-color-scheme: light){
+  :root[data-estilo="nova"]:not([data-theme="dark"]){
+    color-scheme:light;
+    --bg:#F6F4EF;--rail:#EFECE5;--s1:#FFFFFF;--s2:#FCFBF8;--s3:#F0EDE6;
+    --line:#E6E1D6;--line2:#D6D0C3;--glow:rgba(91,75,255,.08);
+    --tx:#17151F;--tx2:#55515F;--tx3:#6E6A78;
+    --ion:#5B4BFF;--ion-tx:#4335D6;--ion-bg:rgba(91,75,255,.09);--ion2:#9B4BFF;
+    --sig:#E8532E;--sig-tx:#B23A1A;--sig-bg:rgba(232,83,46,.09);--sig-line:rgba(232,83,46,.42);--on-sig:#FFFFFF;
+    --pri:#17151F;--on-pri:#FFFFFF;
+    --ok:#0F9F6E;--ok-bg:rgba(15,159,110,.1);
+    --e1:0 1px 2px rgba(40,30,10,.06),0 0 0 1px rgba(40,30,10,.02);
+    --e2:0 2px 4px rgba(40,30,10,.05),0 10px 28px rgba(40,30,10,.08);
+    --e3:0 24px 64px rgba(40,30,10,.18);
+    --scrim:rgba(30,24,16,.36);
+    --foco:0 0 0 3px rgba(91,75,255,.28);
+  }
+}
+:root[data-estilo="nova"][data-theme="light"]{
+  color-scheme:light;
+  --bg:#F6F4EF;--rail:#EFECE5;--s1:#FFFFFF;--s2:#FCFBF8;--s3:#F0EDE6;
+  --line:#E6E1D6;--line2:#D6D0C3;--glow:rgba(91,75,255,.08);
+  --tx:#17151F;--tx2:#55515F;--tx3:#6E6A78;
+  --ion:#5B4BFF;--ion-tx:#4335D6;--ion-bg:rgba(91,75,255,.09);--ion2:#9B4BFF;
+  --sig:#E8532E;--sig-tx:#B23A1A;--sig-bg:rgba(232,83,46,.09);--sig-line:rgba(232,83,46,.42);--on-sig:#FFFFFF;
+  --pri:#17151F;--on-pri:#FFFFFF;
+  --ok:#0F9F6E;--ok-bg:rgba(15,159,110,.1);
+  --e1:0 1px 2px rgba(40,30,10,.06),0 0 0 1px rgba(40,30,10,.02);
+  --e2:0 2px 4px rgba(40,30,10,.05),0 10px 28px rgba(40,30,10,.08);
+  --e3:0 24px 64px rgba(40,30,10,.18);
+  --scrim:rgba(30,24,16,.36);
+  --foco:0 0 0 3px rgba(91,75,255,.28);
+}
+/* Base */
+:root[data-estilo="nova"] body{font-size:var(--fs-base);letter-spacing:-.003em}
+:root[data-estilo="nova"] :focus-visible{outline:none;box-shadow:var(--foco);border-radius:var(--r-sm)}
+:root[data-estilo="nova"] .pag{background:radial-gradient(1000px 520px at 85% -20%,var(--glow),transparent 65%),radial-gradient(700px 420px at -10% 0%,color-mix(in oklab,var(--sig) 5%,transparent),transparent 60%),var(--bg)}
+:root[data-estilo="nova"] .pag-in{padding:var(--sp-8) var(--sp-8) 48px;max-width:1160px}
+:root[data-estilo="nova"] .pag-h{gap:var(--sp-4);margin-bottom:var(--sp-5)}
+:root[data-estilo="nova"] .pag-h h1{font:700 var(--fs-2xl)/1.1 var(--font);letter-spacing:-.035em;margin:0 0 6px}
+:root[data-estilo="nova"] .pag-h p{font-size:var(--fs-md);color:var(--tx2);line-height:1.55;max-width:72ch}
+:root[data-estilo="nova"] h2{letter-spacing:-.02em}
+/* Navegación lateral: píldoras con el icono, indicador de acento */
+:root[data-estilo="nova"] .app{grid-template-columns:84px minmax(0,1fr)}
+:root[data-estilo="nova"] .rail{background:var(--rail);border-right:1px solid var(--line);padding:16px 0;gap:4px}
+:root[data-estilo="nova"] .rl{width:72px;border-radius:var(--r-md);padding:6px 0 7px;gap:4px;font-size:11px;color:var(--tx2);transition:color var(--dur-1) var(--ease)}
+:root[data-estilo="nova"] .rl .i{width:40px;height:30px;padding:5px 10px;border-radius:var(--r-pill);transition:background var(--dur-2) var(--ease),color var(--dur-2) var(--ease)}
+:root[data-estilo="nova"] .rl:hover{background:transparent;color:var(--tx)}
+:root[data-estilo="nova"] .rl:hover .i{background:var(--s3)}
+:root[data-estilo="nova"] .rl.on{background:transparent;color:var(--tx);font-weight:650}
+:root[data-estilo="nova"] .rl.on .i{background:var(--ion-bg);color:var(--ion-tx);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--ion) 30%,transparent)}
+:root[data-estilo="nova"] .rl.on::before{display:none}
+:root[data-estilo="nova"] .bdg{top:2px;left:44px;background:var(--sig);color:var(--on-sig);box-shadow:0 0 0 2px var(--rail)}
+:root[data-estilo="nova"] .live{top:6px;left:48px}
+/* Botones */
+:root[data-estilo="nova"] .btn{height:38px;padding:0 16px;border-radius:var(--r-md);font-size:var(--fs-sm);font-weight:600;gap:8px;transition:transform var(--dur-1) var(--ease),box-shadow var(--dur-2) var(--ease),background var(--dur-2) var(--ease),border-color var(--dur-2) var(--ease),color var(--dur-2) var(--ease)}
+:root[data-estilo="nova"] .btn:active:not(:disabled){transform:translateY(1px) scale(.99)}
+:root[data-estilo="nova"] .btn:disabled{opacity:.5;cursor:not-allowed}
+:root[data-estilo="nova"] .btn.pri{background:linear-gradient(135deg,var(--ion),var(--ion2));color:var(--on-ion);box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 6px 18px color-mix(in oklab,var(--ion) 32%,transparent)}
+:root[data-estilo="nova"] .btn.pri:hover:not(:disabled){opacity:1;box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 10px 26px color-mix(in oklab,var(--ion) 42%,transparent);transform:translateY(-1px)}
+:root[data-estilo="nova"] .btn.sig{background:var(--sig);color:var(--on-sig);box-shadow:0 6px 18px color-mix(in oklab,var(--sig) 28%,transparent)}
+:root[data-estilo="nova"] .btn.out{background:var(--s1);border-color:var(--line2);box-shadow:var(--e1)}
+:root[data-estilo="nova"] .btn.out:hover:not(:disabled){border-color:color-mix(in oklab,var(--ion) 55%,var(--line2));color:var(--ion-tx)}
+:root[data-estilo="nova"] .btn.ghost{color:var(--tx2)}
+:root[data-estilo="nova"] .btn.ghost:hover:not(:disabled){background:var(--s3);color:var(--tx)}
+:root[data-estilo="nova"] .btn.sm{height:32px;padding:0 12px;font-size:var(--fs-xs);border-radius:10px}
+/* Chips y pestañas */
+:root[data-estilo="nova"] .chip{height:32px;padding:0 14px;border-radius:var(--r-pill);background:var(--s1);border:1px solid var(--line);color:var(--tx2);font-size:var(--fs-sm);font-weight:550;transition:all var(--dur-2) var(--ease)}
+:root[data-estilo="nova"] .chip:hover{color:var(--tx);border-color:var(--line2);background:var(--s2)}
+:root[data-estilo="nova"] :is(.chip.on,.chip[aria-pressed=true],.cd-modos .chip[aria-checked=true]){background:var(--pri);color:var(--on-pri);border-color:var(--pri);box-shadow:var(--e1)}
+:root[data-estilo="nova"] .dl-pest{gap:6px;margin:var(--sp-2) 0 var(--sp-4)}
+/* Tarjetas y métricas */
+:root[data-estilo="nova"] .card{border-radius:var(--r-lg);background:var(--s1);border:1px solid var(--line);padding:var(--sp-5);box-shadow:var(--e1)}
+:root[data-estilo="nova"] .card>h2,:root[data-estilo="nova"] .dl-card h2{font-size:var(--fs-md);font-weight:650;letter-spacing:-.015em}
+:root[data-estilo="nova"] .cards{gap:var(--sp-4)}
+:root[data-estilo="nova"] :is(.proy,.reu,.ops-b){border-radius:var(--r-lg);transition:box-shadow var(--dur-2) var(--ease),transform var(--dur-2) var(--ease),border-color var(--dur-2) var(--ease)}
+:root[data-estilo="nova"] :is(.proy,.reu,.ops-b):hover{box-shadow:var(--e2);transform:translateY(-1px);border-color:var(--line2)}
+:root[data-estilo="nova"] .ops-k{gap:var(--sp-3)}
+:root[data-estilo="nova"] .ops-k>div{border-radius:var(--r-lg);background:var(--s1);padding:var(--sp-4);box-shadow:var(--e1);position:relative;overflow:hidden}
+:root[data-estilo="nova"] .ops-k>div::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--ion),var(--ion2));opacity:.75}
+:root[data-estilo="nova"] .ops-k b{font-size:24px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+/* Formularios */
+:root[data-estilo="nova"] .fld{gap:7px}
+:root[data-estilo="nova"] .fld>span,:root[data-estilo="nova"] .fld>legend{font-size:var(--fs-xs);font-weight:600;color:var(--tx2);letter-spacing:.01em}
+:root[data-estilo="nova"] .inp{height:40px;border-radius:var(--r-md);background:var(--s2);border:1px solid var(--line2);padding:0 13px;font-size:var(--fs-sm);transition:border-color var(--dur-2) var(--ease),box-shadow var(--dur-2) var(--ease)}
+:root[data-estilo="nova"] textarea.inp{height:auto;padding:10px 13px}
+:root[data-estilo="nova"] .inp:hover{border-color:color-mix(in oklab,var(--tx3) 60%,var(--line2))}
+:root[data-estilo="nova"] .inp:focus{border-color:var(--ion);box-shadow:var(--foco)}
+:root[data-estilo="nova"] .inp.sm{height:32px}
+/* Etiquetas, avisos y detalles */
+:root[data-estilo="nova"] .tag{height:22px;padding:0 9px;border-radius:var(--r-pill);font-size:11.5px;font-weight:650}
+:root[data-estilo="nova"] .tag.ok{background:var(--ok-bg);color:var(--ok)}
+:root[data-estilo="nova"] .u-wait{border-radius:var(--r-md)}
+:root[data-estilo="nova"] details.mas>summary{font-weight:600;color:var(--ion-tx)}
+:root[data-estilo="nova"] .barra>i{background:linear-gradient(90deg,var(--ion),var(--ion2))}
+:root[data-estilo="nova"] .hist{gap:8px}
+/* Lateral de compañeros y chat */
+:root[data-estilo="nova"] .side{background:var(--s1)}
+:root[data-estilo="nova"] .side-h h1{letter-spacing:-.03em}
+/* Chat: el compositor marca el foco en su borde (no en el campo de adentro) y la cabecera queda compacta */
+:root[data-estilo="nova"] .cmp-bar{border-radius:var(--r-lg);background:var(--s1);box-shadow:var(--e2);transition:border-color var(--dur-2) var(--ease),box-shadow var(--dur-2) var(--ease)}
+:root[data-estilo="nova"] .cmp-bar:focus-within{border-color:var(--ion);box-shadow:var(--e2),var(--foco)}
+:root[data-estilo="nova"] .cmp textarea:focus-visible{box-shadow:none}
+:root[data-estilo="nova"] .bh .btn.sm{height:30px;padding:0 10px}
+:root[data-estilo="nova"] .bh .inp{height:32px}
+/* Diálogos y avisos flotantes */
+:root[data-estilo="nova"] dialog.dlg{border-radius:var(--r-xl);border-color:var(--line);box-shadow:var(--e3)}
+:root[data-estilo="nova"] dialog.dlg::backdrop{background:var(--scrim);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+:root[data-estilo="nova"] .toast{border-radius:var(--r-lg);padding:12px 16px;box-shadow:var(--e3)}
+/* Entrada suave de las páginas */
+@keyframes nova-entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+:root[data-estilo="nova"] .pag-in>*{animation:nova-entra var(--dur-2) var(--ease) both}
+@media (prefers-reduced-motion: reduce){:root[data-estilo="nova"] .pag-in>*{animation:none}:root[data-estilo="nova"] .btn,:root[data-estilo="nova"] .chip{transition:none}}
+/* Celular: barra inferior con la píldora de acento */
+@media (max-width:760px){
+  :root[data-estilo="nova"] .app{grid-template-columns:minmax(0,1fr)}
+  :root[data-estilo="nova"] .pag-in{padding:var(--sp-5) var(--sp-4) 40px}
+  :root[data-estilo="nova"] .pag-h h1{font-size:var(--fs-xl)}
+  :root[data-estilo="nova"] .pag-h p{font-size:var(--fs-sm)}
+  :root[data-estilo="nova"] .mnav{background:color-mix(in oklab,var(--rail) 88%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+  :root[data-estilo="nova"] .mnav .on{color:var(--ion-tx)}
+  :root[data-estilo="nova"] .mnav .on::before{background:var(--ion-bg);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--ion) 30%,transparent)}
+  :root[data-estilo="nova"] .btn{height:40px}
+  :root[data-estilo="nova"] .btn.sm{height:34px}
 }
 </style>
 </head>
@@ -3698,9 +3853,9 @@ function pintarAjustes() {
         ${S.diagnostico ? html`<div class="callout ${S.diagnostico.ok ? "" : "sig"}" role="status" style="margin-top:10px"><span>${S.diagnostico.ok ? html`<b>Funciona.</b> Respondió ${S.diagnostico.modelo} en ${(S.diagnostico.ms / 1000).toFixed(1)} s.` : html`<b>${S.diagnostico.causa}</b><br><small>${S.diagnostico.detalle}</small>`}</span></div>` : ""}</section>
       <section class="card" aria-labelledby="aj-i"><h2 id="aj-i">Esta instalación</h2>
         <dl class="info"><dt>Modelo</dt><dd>${S.config.modelo}</dd><dt>Esfuerzo</dt><dd>${S.config.esfuerzo}</dd><dt>Computadora</dt><dd>${S.config.computadora}</dd><dt>Zona</dt><dd>${S.config.zona}</dd></dl>
-        <label class="fld" style="margin-top:12px"><span>Estilo</span><select class="inp" data-c="estilo" style="max-width:220px"><option value="" ${si(!leerLocal("gravity-estilo", ""), "selected")}>Clásico</option><option value="cristal" ${si(leerLocal("gravity-estilo", "") === "cristal", "selected")}>Cristal (futurista, oscuro)</option></select><small>Cristal: paneles translúcidos con brillos cian y violeta. Usa un poco más de batería.</small></label>
+        <label class="fld" style="margin-top:12px"><span>Estilo</span><select class="inp" data-c="estilo" style="max-width:220px"><option value="nova" ${si(estiloActual() === "nova", "selected")}>Nova (nuevo)</option><option value="clasico" ${si(estiloActual() === "clasico", "selected")}>Clásico</option><option value="cristal" ${si(estiloActual() === "cristal", "selected")}>Cristal (futurista, oscuro)</option></select><small>Nova: el diseño nuevo, cálido y claro u oscuro según el tema. Clásico: el de antes. Cristal: paneles translúcidos con brillos cian y violeta. Usa un poco más de batería.</small></label>
         <label class="chk" style="margin-top:10px"><input type="checkbox" class="sw" data-c="acompanante" ${si(leerLocal("gravity-acompanante", "1") !== "0", "checked")}><span>Robot acompañante<small>Un robot chico en la esquina con la actividad del equipo y accesos rápidos.</small></span></label>
-        <label class="fld" style="margin-top:12px" ${si(leerLocal("gravity-estilo", "") === "cristal", "hidden")}><span>Tema</span><select class="inp" data-c="tema" style="max-width:220px"><option value="" ${si(!tema, "selected")}>Como el sistema</option><option value="dark" ${si(tema === "dark", "selected")}>Oscuro</option><option value="light" ${si(tema === "light", "selected")}>Claro</option></select></label></section>
+        <label class="fld" style="margin-top:12px" ${si(estiloActual() === "cristal", "hidden")}><span>Tema</span><select class="inp" data-c="tema" style="max-width:220px"><option value="" ${si(!tema, "selected")}>Como el sistema</option><option value="dark" ${si(tema === "dark", "selected")}>Oscuro</option><option value="light" ${si(tema === "light", "selected")}>Claro</option></select></label></section>
     </div>`);
 }
 function formHabilidad(h) {
@@ -6049,9 +6204,11 @@ function abrirCrearEquipo() {
   </section>`);
   dlg().classList.add("alto");
 }
-function abrirEquipoPaso2(id) {
+async function abrirEquipoPaso2(id) {
   const t = S.plantillasEquipo.find((x) => x.id === id);
   if (!t) return;
+  // Equipo «Programación»: los proyectos de Gravity Code a los que se puede vincular.
+  const code = t.id === "programacion" ? await api("GET", "/api/code").catch(() => ({ proyectos: [], plantillas: [] })) : null;
   CE.tpl = t;
   CE.cant = t.miembros.map((m) => Math.max(1, Math.min(MAX_PUESTO, m.cantidad)));
   // Si no entra en los lugares que quedan, se achica desde el último puesto.
@@ -6066,6 +6223,10 @@ function abrirEquipoPaso2(id) {
     </div></fieldset>
     <p class="tot-eq" id="ce-tot" role="status"></p>
     <label class="fld"><span>El equipo reporta a</span><select class="inp" name="reportaA"><option value="">Directo a mí</option>${jefes.map((m) => html`<option value="${m.id}">${m.nombre} · ${m.titulo}</option>`)}</select></label>
+    ${code ? html`<fieldset class="fld ce-code"><legend>Proyecto de Gravity Code</legend>
+      <select class="inp" name="codProyecto" data-c="ce-cod"><option value="__nuevo">Crear un proyecto nuevo</option>${code.proyectos.map((x) => html`<option value="${x.nombre}">${x.nombre}</option>`)}<option value="">Ninguno por ahora</option></select>
+      <div class="ce-cod-nuevo fila" style="gap:8px;flex-wrap:wrap"><input class="inp" name="codNombre" maxlength="60" placeholder="Nombre del proyecto (ej.: tienda-web)" value="${(() => { const usados = new Set(code.proyectos.map((x) => x.nombre)); for (let k = 1; ; k++) { const n = k === 1 ? "mi-app" : `mi-app-${k}`; if (!usados.has(n)) return n; } })()}" style="flex:1;min-width:180px"><select class="inp" name="codPlantilla" style="width:auto">${(code.plantillas || ["vacio"]).map((x) => html`<option ${si(x === "web", "selected")}>${x}</option>`)}</select></div>
+      <small>El equipo trabaja en la carpeta real del proyecto (codigo/…): el líder técnico reparte las tareas, cada uno ve el proyecto en Gravity Code › Equipo y pueden probar en copias aisladas sin pedir permiso.</small></fieldset>` : ""}
     <details class="mas"><summary>${ico("right", "s")}Más opciones</summary><div>
       <label class="fld"><span>Puesto del manager · nombre del equipo</span><input class="inp" name="mTitulo" required maxlength="80" value="${t.manager.titulo}" data-i="ce-prev"></label></div></details>
     <label class="chk"><input type="checkbox" class="sw" name="carpetaLibre" checked><span>Pueden escribir en la carpeta del equipo sin preguntar<small>Comandos y archivos fuera de esa carpeta siguen pidiendo tu aprobación.</small></span></label>
@@ -8751,13 +8912,20 @@ const F = {
       carpetaLibre: f.carpetaLibre.checked,
       puestos: t.miembros.map((m, i) => ({ titulo: m.titulo, descripcion: m.descripcion, cantidad: cant[i], icono: m.icono ?? null })),
     };
+    if (f.codProyecto && f.codProyecto.value) {
+      const nuevo = f.codProyecto.value === "__nuevo";
+      const nombre = nuevo ? f.codNombre.value.trim() : f.codProyecto.value;
+      if (!nombre) return errDlg("Poné el nombre del proyecto de Gravity Code (o elegí «Ninguno por ahora»).");
+      cuerpo.codigo = { proyecto: nombre, ...(nuevo ? { plantilla: f.codPlantilla.value } : {}), probarSinPermiso: true };
+    }
     const boton = $("#ce-ok");
     boton.setAttribute("aria-busy", "true");
     try {
       const r = await api("POST", "/api/equipos", cuerpo);
       cerrarDialogo();
       await cargarEstado();
-      toast(`Listo: ${r.manager.nombre} y ${plural(r.miembros.length, "compañero", "compañeros")}.`);
+      toast(`Listo: ${r.manager.nombre} y ${plural(r.miembros.length, "compañero", "compañeros")}.${r.proyectoCodigo ? ` Trabajan en Gravity Code «${r.proyectoCodigo}».` : ""}`);
+      if (r.aviso) toast(r.aviso, "err");
       if (S.plegados) S.plegados.delete(r.manager.id);
       ir(`#/chats/${r.manager.id}`);
     } catch (err) { errDlg(err.message); } finally { boton.removeAttribute("aria-busy"); }
@@ -8888,6 +9056,7 @@ const F = {
 };
 // cambios en inputs
 const C = {
+  "ce-cod": (t) => { const d = t.closest("fieldset")?.querySelector(".ce-cod-nuevo"); if (d) d.hidden = t.value !== "__nuevo"; },
   "tel-carpeta": (t) => { TEL.carpeta = t.value; TEL.res = TEL.analisis = null; pintarTelefono(); },
   "tel-acc-letra": (t) => { let p = {}; try { p = JSON.parse(localStorage.getItem("gravity-accesibilidad") || "{}"); } catch {} p.letra = t.checked; try { localStorage.setItem("gravity-accesibilidad", JSON.stringify(p)); } catch {} telAplicarAccesibilidad(); },
   "tel-acc-contraste": (t) => { let p = {}; try { p = JSON.parse(localStorage.getItem("gravity-accesibilidad") || "{}"); } catch {} p.contraste = t.checked; try { localStorage.setItem("gravity-accesibilidad", JSON.stringify(p)); } catch {} telAplicarAccesibilidad(); },
@@ -9278,12 +9447,14 @@ setInterval(() => {
 }, 15000);
 setInterval(() => { for (const e of $$("[data-reloj]")) e.textContent = reloj(e.dataset.reloj); }, 1000);
 
+// Nova es el estilo predeterminado; «clasico» y «cristal» se eligen en Ajustes.
+function estiloActual() { const e = leerLocal("gravity-estilo", ""); return e === "clasico" || e === "cristal" ? e : "nova"; }
 function aplicarTema() {
   const t = leerLocal("gravity-tema", "");
-  const estilo = leerLocal("gravity-estilo", "");
+  const estilo = estiloActual();
   // «Cristal» es oscuro siempre: paneles translúcidos sobre azul profundo con brillos cian y violeta.
   if (estilo === "cristal") { document.documentElement.dataset.estilo = "cristal"; document.documentElement.dataset.theme = "dark"; return; }
-  delete document.documentElement.dataset.estilo;
+  if (estilo === "nova") document.documentElement.dataset.estilo = "nova"; else delete document.documentElement.dataset.estilo;
   if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
 }
 aplicarTema();

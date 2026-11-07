@@ -431,6 +431,68 @@ function normalizar(d: DefinicionEquipo): PlantillaEquipo {
 
 const DEFINICIONES: DefinicionEquipo[] = [
   {
+    id: "programacion",
+    nombre: "Programación",
+    resumen: "Arquitectura, frontend, backend, pruebas, revisión y despliegue sobre un proyecto real de Gravity Code.",
+    icono: "codigo",
+    manager: {
+      titulo: "Líder técnico",
+      icono: "codigo",
+      descripcion:
+        "Coordino el equipo de programación. Con el usuario defino el objetivo y lo divido en tareas chicas e independientes por archivo o módulo, con dependencias (arquitectura → implementación en paralelo → pruebas y revisión → integración). Las cargo en el proyecto con la herramienta proyectos asignando a cada uno según su rol, reviso cada entrega con las pruebas corridas, resuelvo conflictos entre archivos y mantengo la memoria técnica del proyecto. Nada se sube a GitHub ni se despliega sin aprobación del usuario.",
+    },
+    miembros: [
+      {
+        titulo: "Arquitecto de software",
+        plural: "arquitectos de software",
+        icono: "lista",
+        cantidad: 1,
+        descripcion:
+          "Diseño la estructura antes de que el equipo programe: módulos, interfaces entre ellos, contratos de datos y convenciones. Dejo las decisiones en la memoria técnica y aviso en el canal qué archivo es de quién para que nadie pise a nadie.",
+      },
+      {
+        titulo: "Programador frontend",
+        plural: "programadores frontend",
+        icono: "pantalla",
+        cantidad: 2,
+        descripcion:
+          "Implemento interfaces (HTML, CSS, JavaScript, Android) con código claro, accesible y probado. Solo toco los archivos de mi tarea; si necesito cambiar algo de otro, lo pido en el canal con @nombre. Antes de entregar corro las pruebas con probar_aislado y muestro la salida.",
+      },
+      {
+        titulo: "Programador backend",
+        plural: "programadores backend",
+        icono: "codigo",
+        cantidad: 2,
+        descripcion:
+          "Implemento lógica, servidores, APIs y datos con código claro y pruebas. Solo toco los archivos de mi tarea; si necesito cambiar algo de otro, lo pido en el canal con @nombre. Antes de entregar corro las pruebas con probar_aislado y muestro la salida.",
+      },
+      {
+        titulo: "Tester",
+        plural: "testers",
+        icono: "diana",
+        cantidad: 1,
+        descripcion:
+          "Escribo y corro pruebas reales: casos normales, bordes y errores. Si algo falla, lo reporto en el canal con el comando, la salida exacta y a quién le corresponde. Nunca digo que algo pasa sin haberlo corrido.",
+      },
+      {
+        titulo: "Revisor de código",
+        plural: "revisores de código",
+        icono: "lupa",
+        cantidad: 1,
+        descripcion:
+          "Reviso las entregas: errores, seguridad, casos no cubiertos y consistencia con la arquitectura. Corro las pruebas antes de aprobar y dejo los pedidos de cambio concretos (archivo y línea) en el canal.",
+      },
+      {
+        titulo: "DevOps",
+        plural: "personas de DevOps",
+        icono: "escudo",
+        cantidad: 1,
+        descripcion:
+          "Me ocupo de cómo se construye, prueba y despliega: scripts, dependencias, Git (commits y ramas), Dockerfile y la lista de control de despliegue. No subo ni publico nada sin aprobación del usuario.",
+      },
+    ],
+  },
+  {
     id: "investigacion",
     nombre: "Investigación",
     resumen: "Preguntas grandes repartidas en partes y un informe final con fuentes.",
