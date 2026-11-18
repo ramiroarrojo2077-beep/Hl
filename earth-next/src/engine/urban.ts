@@ -32,7 +32,7 @@ const LABELS: Record<UrbanElement["kind"], string> = {
   bench: "Banco",
   bus_stop: "Parada de colectivo/autobús",
   traffic_signals: "Semáforo",
-  fountain: "Fuente",
+  fountain: "Fuente de agua",
   waste_basket: "Cesto de residuos",
   bicycle_parking: "Estacionamiento de bicicletas",
   hydrant: "Hidrante",

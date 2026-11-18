@@ -33,21 +33,32 @@ export interface RequestOptions {
 
 /** Estado de red observado (false tras fallos de red consecutivos). */
 export const networkOnline = signal(typeof navigator === "undefined" ? true : navigator.onLine);
-let consecutiveFailures = 0;
+/** Hosts con fallas de red recientes: se considera "sin conexión" sólo si fallan varios servicios distintos. */
+const failingHosts = new Map<string, number>();
 
 if (typeof window !== "undefined") {
   window.addEventListener("online", () => (networkOnline.value = true));
   window.addEventListener("offline", () => (networkOnline.value = false));
 }
 
-function noteSuccess() {
-  consecutiveFailures = 0;
-  if (!networkOnline.value) networkOnline.value = true;
+function hostOf(url: string): string {
+  try {
+    return new URL(url, typeof location !== "undefined" ? location.href : "http://localhost").host;
+  } catch {
+    return url;
+  }
 }
 
-function noteFailure() {
-  consecutiveFailures++;
-  if (consecutiveFailures >= 3) networkOnline.value = false;
+function noteSuccess(url: string) {
+  failingHosts.delete(hostOf(url));
+  if (!networkOnline.value && (typeof navigator === "undefined" || navigator.onLine)) networkOnline.value = true;
+}
+
+function noteFailure(url: string) {
+  const now = Date.now();
+  failingHosts.set(hostOf(url), now);
+  for (const [h, t] of failingHosts) if (now - t > 60_000) failingHosts.delete(h);
+  if (failingHosts.size >= 3) networkOnline.value = false;
 }
 
 const inflight = new Map<string, Promise<unknown>>();
@@ -76,7 +87,7 @@ async function doFetch(url: string, opts: RequestOptions): Promise<Response> {
     try {
       const res = await fetch(url, { method: opts.method ?? "GET", body: opts.body, headers: opts.headers, signal: ctrl.signal });
       if (res.ok) {
-        noteSuccess();
+        noteSuccess(url);
         return res;
       }
       const retryable = res.status === 429 || res.status >= 500;
@@ -86,7 +97,7 @@ async function doFetch(url: string, opts: RequestOptions): Promise<Response> {
     } catch (err) {
       if (opts.signal?.aborted) throw err;
       if (err instanceof HttpError) throw err;
-      noteFailure();
+      noteFailure(url);
       if (attempt >= retries) throw err;
       await sleep(500 * 2 ** attempt + Math.random() * 300, opts.signal);
     } finally {

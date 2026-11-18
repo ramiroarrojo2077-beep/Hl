@@ -267,12 +267,14 @@ export interface Storm {
   country?: string;
   url: string;
   severity?: string;
+  /** true si GDACS lo marca como evento en curso */
+  current: boolean;
 }
 
-/** Ciclones tropicales activos/recientes (GDACS). */
+/** Ciclones tropicales de GDACS (en curso y recientes). */
 export async function activeStorms(signal?: AbortSignal): Promise<Storm[]> {
   const r = await getJson<{
-    features: { geometry: { coordinates: [number, number] }; properties: { eventid: number; name: string; alertlevel: string; fromdate: string; todate: string; country?: string; url?: { report?: string }; severitydata?: { severitytext?: string } } }[];
+    features: { geometry: { coordinates: [number, number] }; properties: { eventid: number; name: string; alertlevel: string; fromdate: string; todate: string; country?: string; iscurrent?: string | boolean; url?: { report?: string }; severitydata?: { severitytext?: string } } }[];
   }>("https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC", { signal, timeoutMs: 15000, cacheKey: "gdacs-tc", cacheTtlMs: 30 * 60_000 });
   return r.features.map((f) => ({
     id: f.properties.eventid,
@@ -285,6 +287,7 @@ export async function activeStorms(signal?: AbortSignal): Promise<Storm[]> {
     country: f.properties.country,
     url: f.properties.url?.report ?? `https://www.gdacs.org/report.aspx?eventtype=TC&eventid=${f.properties.eventid}`,
     severity: f.properties.severitydata?.severitytext,
+    current: f.properties.iscurrent === true || f.properties.iscurrent === "true",
   }));
 }
 

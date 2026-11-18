@@ -1,6 +1,8 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { Cartesian3, Math as CMath } from "cesium";
-import { Star, Trash2, Plus, Plane, FolderPlus, Pencil, Share2 } from "lucide-preact";
+import { Star, Trash2, Plus, Plane, FolderPlus, Pencil, Share2, Database, Upload, Download } from "lucide-preact";
+import { serverStatus } from "../../services/api.ts";
+import { uploadPlace, placesInView, type ServerPlace } from "../../services/places-server.ts";
 import { Panel } from "./PanelHost.tsx";
 import { useEngine } from "../context.ts";
 import { favorites, collections, addFavorite, removeFavorite, renameCollection, deleteCollection, recentPlaces } from "../places.ts";
@@ -10,6 +12,34 @@ import { t } from "../../i18n/index.ts";
 export function PlacesPanel() {
   const engine = useEngine();
   const [col, setCol] = useState(collections.value[0] ?? "Favoritos");
+  const [postgis, setPostgis] = useState(false);
+  const [remote, setRemote] = useState<ServerPlace[] | null>(null);
+  useEffect(() => {
+    void serverStatus().then((s) => setPostgis(s.postgis));
+  }, []);
+
+  const upload = async () => {
+    const items = favorites.value.filter((f) => f.collection === col);
+    let ok = 0;
+    for (const f of items) {
+      try {
+        await uploadPlace({ name: f.name, collection: col, note: f.note, lat: f.lat, lon: f.lon, camera: f.height !== undefined ? { height: f.height, heading: f.heading, pitch: f.pitch } : undefined });
+        ok++;
+      } catch (err) {
+        notify(err instanceof Error ? err.message : String(err), "error");
+        break;
+      }
+    }
+    notify(t("{n} lugares subidos al servidor.", { n: ok }), "success");
+  };
+
+  const loadRemote = async () => {
+    try {
+      setRemote(await placesInView(engine.viewBBox()));
+    } catch (err) {
+      notify(err instanceof Error ? err.message : String(err), "error");
+    }
+  };
 
   const saveView = () => {
     const c = cameraState.value;
@@ -130,6 +160,32 @@ export function PlacesPanel() {
           </button>
         </div>
       ))}
+      {postgis && (
+        <>
+          <div class="section-title row">
+            <Database size={12} /> {t("Servidor (PostGIS)")}
+          </div>
+          <div class="row wrap">
+            <button class="btn small" onClick={upload}>
+              <Upload size={14} /> {t("Subir esta colección")}
+            </button>
+            <button class="btn small" onClick={loadRemote}>
+              <Download size={14} /> {t("Lugares compartidos en esta vista")}
+            </button>
+          </div>
+          {remote?.map((p) => (
+            <button key={p.id} class="list-item" onClick={() => engine.cinematicFlyTo({ lon: p.lon, lat: p.lat }, 1500)}>
+              <div class="grow">
+                <div style={{ fontWeight: 600 }}>{p.name}</div>
+                <div class="faint">
+                  {p.collection} · {p.lat.toFixed(4)}, {p.lon.toFixed(4)}
+                </div>
+              </div>
+            </button>
+          ))}
+          {remote && remote.length === 0 && <span class="faint">{t("No hay lugares compartidos en esta vista.")}</span>}
+        </>
+      )}
       {recentPlaces.value.length > 0 && (
         <>
           <div class="section-title">{t("Búsquedas recientes")}</div>

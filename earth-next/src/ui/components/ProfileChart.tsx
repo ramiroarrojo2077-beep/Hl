@@ -9,7 +9,7 @@ export function ProfileChart({ samples, onHover, units }: { samples: ProfileSamp
   if (samples.length < 2) return null;
   const W = 320;
   const H = 150;
-  const P = { l: 40, r: 8, t: 10, b: 20 };
+  const P = { l: 56, r: 8, t: 10, b: 20 };
   const maxD = samples[samples.length - 1]!.distance || 1;
   let minE = Infinity;
   let maxE = -Infinity;

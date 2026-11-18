@@ -55,7 +55,7 @@ describe("pendientes", () => {
   });
   it("plano horizontal", () => expect(hornSlope(new Array(9).fill(5), 30, 30).aspect).toBeNull());
   it("perfil", () => {
-    const s = profileStats([{ distance: 0, elevation: 100 }, { distance: 100, elevation: 110 }, { distance: 200, elevation: 90 }]);
+    const s = profileStats([{ distance: 0, elevation: 100 }, { distance: 100, elevation: 110 }, { distance: 200, elevation: 90 }], 50);
     expect(s.totalAscent).toBe(10);
     expect(s.totalDescent).toBe(20);
     expect(s.maxGradePercent).toBeCloseTo(20);

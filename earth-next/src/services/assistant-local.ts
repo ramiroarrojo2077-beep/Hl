@@ -25,14 +25,17 @@ const OSM: Source = { name: "OpenStreetMap (Nominatim/Photon)", url: "https://ww
 function clean(s: string): string {
   return s
     .trim()
-    .replace(/^(el|la|los|las|the)\s+/i, "")
     .replace(/[¿?¡!.]+$/g, "")
     .trim();
 }
 
+/** Busca primero el nombre completo ("La Quiaca", "Los Ángeles") y, si no hay resultados, sin artículo ("el Obelisco"). */
 async function place(q: string, lang: string): Promise<Place> {
-  const r = await searchBest(clean(q), { lang });
-  if (!r[0]) throw new Error(lang === "es" ? `No encontré "${clean(q)}".` : `I couldn't find "${clean(q)}".`);
+  const full = clean(q);
+  let r = await searchBest(full, { lang });
+  const bare = full.replace(/^(el|la|los|las|the)\s+/i, "");
+  if (!r[0] && bare !== full) r = await searchBest(bare, { lang });
+  if (!r[0]) throw new Error(lang === "es" ? `No encontré "${full}".` : `I couldn't find "${full}".`);
   return r[0];
 }
 

@@ -1,3 +1,5 @@
+> **Nuevo:** [EARTH NEXT](earth-next/README.md) — plataforma geoespacial 3D (CesiumJS, datos abiertos e IA) en la carpeta `earth-next/`.
+
 # Precio de Fábrica
 
 App web que, para cualquier producto, estima:

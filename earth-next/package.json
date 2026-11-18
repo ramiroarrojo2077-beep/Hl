@@ -15,7 +15,8 @@
     "start": "node --env-file-if-exists=.env server/index.ts",
     "check": "tsc -p tsconfig.json && tsc -p server/tsconfig.json",
     "test": "vitest run",
-    "test:e2e": "node e2e/run.ts"
+    "test:e2e": "node e2e/smoke.cjs http://localhost:5173 && node e2e/features.cjs http://localhost:5173",
+    "db:schema": "node -e \"import('./server/db.ts').then(m=>console.log(m.SCHEMA_SQL))\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",

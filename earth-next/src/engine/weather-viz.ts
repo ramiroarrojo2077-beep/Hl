@@ -22,11 +22,15 @@ import {
   WebMercatorTilingScheme,
   Credit,
   NearFarScalar,
+  HeightReference,
   type Viewer,
 } from "cesium";
 import { signal } from "@preact/signals";
 import { activeStorms, forecastGrid, metarsIn, radarFrames, radarTileUrl, type GridSample, type Metar, type RadarFrame, type Storm } from "../services/weather.ts";
 import { notify } from "../state/store.ts";
+
+/** Distancia (m) dentro de la cual los rótulos ignoran el relieve; más lejos, el planeta los oculta. */
+const NEAR_NO_DEPTH = 400_000;
 
 export const weatherLayers = signal({ radar: false, metar: false, wind: false, storms: false, effects: false });
 export const radarState = signal<{ frames: RadarFrame[]; index: number; playing: boolean; time: number | null }>({ frames: [], index: 0, playing: false, time: null });
@@ -137,7 +141,7 @@ export class WeatherViz {
         this.metarSource.entities.add({
           id: `metar:${m.icao}`,
           position: Cartesian3.fromDegrees(m.lon, m.lat),
-          point: { pixelSize: 8, color: Color.fromCssColorString("#34d399"), outlineColor: Color.WHITE, outlineWidth: 1.5, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+          point: { pixelSize: 8, color: Color.fromCssColorString("#34d399"), outlineColor: Color.WHITE, outlineWidth: 1.5, heightReference: HeightReference.CLAMP_TO_GROUND, disableDepthTestDistance: NEAR_NO_DEPTH },
           label: {
             text,
             font: "600 12px Inter, system-ui, sans-serif",
@@ -148,7 +152,7 @@ export class WeatherViz {
             pixelOffset: new Cartesian2(0, -14),
             verticalOrigin: VerticalOrigin.BOTTOM,
             scaleByDistance: new NearFarScalar(1e4, 1, 3e6, 0.5),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            disableDepthTestDistance: NEAR_NO_DEPTH,
           },
         });
       }
@@ -175,7 +179,7 @@ export class WeatherViz {
             rotation: -((s.windDirection + 180) * Math.PI) / 180,
             alignedAxis: Cartesian3.UNIT_Z,
             scale: 0.8,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            disableDepthTestDistance: NEAR_NO_DEPTH,
           },
           label: {
             text: `${Math.round(s.windSpeed)} km/h · ${Math.round(s.temperature)}°`,
@@ -185,7 +189,7 @@ export class WeatherViz {
             outlineWidth: 3,
             style: LabelStyle.FILL_AND_OUTLINE,
             pixelOffset: new Cartesian2(0, 26),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            disableDepthTestDistance: NEAR_NO_DEPTH,
           },
         });
       }
@@ -199,13 +203,15 @@ export class WeatherViz {
     this.stormSource.entities.removeAll();
     if (!on) return;
     try {
-      this.storms = await activeStorms();
+      const all = await activeStorms();
+      // Sólo eventos en curso (GDACS también lista ciclones ya disipados).
+      this.storms = all.filter((x) => x.current);
       const colors: Record<string, string> = { Red: "#ef4444", Orange: "#f97316", Green: "#22c55e" };
       for (const s of this.storms) {
         this.stormSource.entities.add({
           id: `storm:${s.id}`,
           position: Cartesian3.fromDegrees(s.lon, s.lat),
-          point: { pixelSize: 16, color: Color.fromCssColorString(colors[s.alertLevel] ?? "#eab308"), outlineColor: Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+          point: { pixelSize: 16, color: Color.fromCssColorString(colors[s.alertLevel] ?? "#eab308"), outlineColor: Color.WHITE, outlineWidth: 2, heightReference: HeightReference.CLAMP_TO_GROUND, disableDepthTestDistance: NEAR_NO_DEPTH },
           label: {
             text: `🌀 ${s.name}`,
             font: "700 13px Inter, system-ui, sans-serif",
@@ -214,11 +220,11 @@ export class WeatherViz {
             outlineWidth: 3,
             style: LabelStyle.FILL_AND_OUTLINE,
             pixelOffset: new Cartesian2(0, -18),
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            disableDepthTestDistance: NEAR_NO_DEPTH,
           },
         });
       }
-      notify(this.storms.length ? `${this.storms.length} ciclones tropicales en GDACS.` : "No hay ciclones tropicales activos en GDACS.", "info");
+      notify(this.storms.length ? `${this.storms.length} ciclón(es) tropical(es) en curso según GDACS.` : "No hay ciclones tropicales en curso según GDACS.", "info");
     } catch (err) {
       notify(`Ciclones no disponibles: ${err instanceof Error ? err.message : String(err)}`, "warning");
     }

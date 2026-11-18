@@ -136,14 +136,14 @@ export class UserDataManager {
       verticalOrigin: VerticalOrigin.BOTTOM,
       horizontalOrigin: HorizontalOrigin.CENTER,
       heightReference: HeightReference.CLAMP_TO_GROUND,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      disableDepthTestDistance: 400_000,
       showBackground: false,
     };
     if (g.type === "Point") {
       return ents.add({
         id: `user:${f.id}`,
         position: Cartesian3.fromDegrees(g.coordinates[0], g.coordinates[1]),
-        point: { pixelSize: 12, color, outlineColor: Color.WHITE, outlineWidth: 2, heightReference: HeightReference.CLAMP_TO_GROUND, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+        point: { pixelSize: 12, color, outlineColor: Color.WHITE, outlineWidth: 2, heightReference: HeightReference.CLAMP_TO_GROUND, disableDepthTestDistance: 400_000 },
         label,
       });
     }

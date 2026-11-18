@@ -48,7 +48,11 @@ export interface ProfileStats {
   meanGradePercent: number;
 }
 
-export function profileStats(samples: { distance: number; elevation: number }[]): ProfileStats {
+/**
+ * Estadísticas de un perfil. Las pendientes se calculan sobre tramos de al menos
+ * `minRun` metros para no amplificar el ruido del modelo de elevación.
+ */
+export function profileStats(samples: { distance: number; elevation: number }[], minRun = 30): ProfileStats {
   let min = Infinity;
   let max = -Infinity;
   let up = 0;
@@ -65,13 +69,20 @@ export function profileStats(samples: { distance: number; elevation: number }[])
       const dz = s.elevation - p.elevation;
       if (dz > 0) up += dz;
       else down -= dz;
-      const run = s.distance - p.distance;
+    }
+  }
+  // Pendientes por tramos de longitud mínima
+  let start = 0;
+  for (let k = 1; k < samples.length; k++) {
+    const run = samples[k]!.distance - samples[start]!.distance;
+    if (run >= minRun || k === samples.length - 1) {
       if (run > 0) {
-        const g = Math.abs(dz / run) * 100;
+        const g = (Math.abs(samples[k]!.elevation - samples[start]!.elevation) / run) * 100;
         maxGrade = Math.max(maxGrade, g);
-        gradeSum += g;
-        gradeCount++;
+        gradeSum += g * run;
+        gradeCount += run;
       }
+      start = k;
     }
   }
   return {

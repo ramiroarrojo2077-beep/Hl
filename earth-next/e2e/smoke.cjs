@@ -20,10 +20,11 @@ function check(name, ok, detail = "") {
 
 (async () => {
   const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: "es-AR" });
   const pageErrors = [];
   page.on("pageerror", (e) => pageErrors.push(e.message));
-  page.on("console", (m) => m.type() === "error" && pageErrors.push(`console: ${m.text()}`));
+  // Las respuestas HTTP de servicios externos (p. ej. 429 por límite de uso) no son errores de la app.
+  page.on("console", (m) => m.type() === "error" && !/Failed to load resource/.test(m.text()) && pageErrors.push(`console: ${m.text()}`));
 
   // Overpass puede no ser accesible desde el entorno de pruebas: se sirve un recorte sintético
   // (claramente de prueba) para verificar el pipeline de edificios.
