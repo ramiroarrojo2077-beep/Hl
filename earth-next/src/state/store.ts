@@ -43,6 +43,8 @@ export interface Settings {
   shadows: boolean;
   nightLights: boolean;
   stars: boolean;
+  /** "auto": iluminación solar realista desde el espacio y luz diurna de cerca; "realistic": día/noche también a nivel del suelo */
+  lightingMode: "auto" | "realistic";
   aiEnabled: boolean;
 }
 
@@ -77,6 +79,7 @@ const defaults: Settings = {
   shadows: true,
   nightLights: true,
   stars: true,
+  lightingMode: "auto",
   aiEnabled: true,
 };
 

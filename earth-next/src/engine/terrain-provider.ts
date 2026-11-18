@@ -32,6 +32,7 @@ export class TerrariumTerrainProvider {
   readonly errorEvent = new CesiumEvent();
   readonly credit = new Credit(
     'Terreno: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a> (SRTM, ETOPO1, GMTED y otras fuentes abiertas)',
+    true,
   );
   readonly hasWaterMask = false;
   readonly hasVertexNormals = false;
