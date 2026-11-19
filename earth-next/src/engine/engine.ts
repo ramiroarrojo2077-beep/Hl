@@ -69,6 +69,7 @@ export class Engine {
   private lastCameraPush = 0;
   private hashTimer: number | null = null;
   private terrainKey = "";
+  private collisionTimer = 0;
 
   constructor(container: HTMLElement, creditContainer: HTMLElement) {
     if (settings.value.ionToken) Ion.defaultAccessToken = settings.value.ionToken;
@@ -275,6 +276,10 @@ export class Engine {
       dest = Cartesian3.fromDegrees(opts.lon + dLon, opts.lat + dLat, height);
     }
     const duration = settings.value.reducedMotion ? 0 : opts.duration;
+    if (duration === 0) {
+      this.jumpTo(dest, heading, pitch);
+      return Promise.resolve();
+    }
     return new Promise((resolve) => {
       this.viewer.camera.flyTo({
         destination: dest,
@@ -587,15 +592,26 @@ export class Engine {
   }
 
   /** "#@lat,lon,alturaa,rumboh,cabeceot" */
+  /**
+   * Salto instantáneo de cámara. Cesium evita colisiones con la altura del suelo calculada en el
+   * cuadro anterior; tras un salto largo (p. ej. de los Alpes a Buenos Aires) esa altura es la del
+   * lugar anterior y "empujaría" la cámara hacia arriba. Se suspende la detección un instante.
+   */
+  jumpTo(destination: Cartesian3, headingDeg: number, pitchDeg: number): void {
+    const ctrl = this.viewer.scene.screenSpaceCameraController;
+    ctrl.enableCollisionDetection = false;
+    this.viewer.camera.setView({ destination, orientation: { heading: CMath.toRadians(headingDeg), pitch: CMath.toRadians(pitchDeg), roll: 0 } });
+    window.clearTimeout(this.collisionTimer);
+    this.collisionTimer = window.setTimeout(() => (ctrl.enableCollisionDetection = true), 1500);
+    this.onMoveEnd();
+  }
+
   private restoreFromHash(): boolean {
     const m = location.hash.match(/^#@(-?[\d.]+),(-?[\d.]+),(\d+)a(?:,(-?[\d.]+)h)?(?:,(-?[\d.]+)t)?/);
     if (!m) return false;
     const [lat, lon, height] = [Number(m[1]), Number(m[2]), Number(m[3])];
     if (!Number.isFinite(lat) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return false;
-    this.viewer.camera.setView({
-      destination: Cartesian3.fromDegrees(lon, lat, height),
-      orientation: { heading: CMath.toRadians(Number(m[4] ?? 0)), pitch: CMath.toRadians(Number(m[5] ?? -90)), roll: 0 },
-    });
+    this.jumpTo(Cartesian3.fromDegrees(lon, lat, height), Number(m[4] ?? 0), Number(m[5] ?? -90));
     return true;
   }
 
