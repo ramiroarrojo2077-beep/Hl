@@ -22,6 +22,7 @@ Verificado el 18/11/2026 con Chromium sin interfaz (WebGL por software), servido
 | Perfiles gráficos nuevos (densidad de píxeles, HDR, atmósfera por fragmento, sombras, oclusión ambiental) | Capturas en calidad alta con render por software |
 | Colores reales de edificios y árboles 3D | Capturas con datos **sintéticos** de prueba (Overpass no es accesible desde el entorno de desarrollo) |
 | APK Android (Capacitor 8, API 24–36) | Compilado con Gradle, firmado (apksigner verifica la firma), permisos y contenido revisados. **No se ejecutó en un dispositivo ni emulador**: el contenedor no tiene aceleración KVM |
+| Regresión | 74 unitarias; E2E principal 16/16; E2E de funciones avanzadas 13/14 (el pronóstico falló porque Open-Meteo devolvió 429 por exceso de solicitudes durante las pruebas, no por el código) |
 
 Se descartó que el relieve proyecte sombras con el mapa de sombras: producía manchas por autosombreado y cortes rectangulares; el relieve se sombrea con sus normales y recibe las sombras de edificios y árboles.
 
