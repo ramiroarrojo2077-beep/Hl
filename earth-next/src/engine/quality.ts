@@ -144,6 +144,13 @@ export class QualityManager {
       s.shadowMap.size = p.shadowMapSize;
       s.shadowMap.darkness = 0.35;
       s.shadowMap.fadingEnabled = true;
+      // Sesgo de sombras más alto para primitivas (edificios, árboles): evita el "acné" (franjas
+      // onduladas) en fachadas grandes vistas en ángulo. Campo interno de Cesium: se usa si existe.
+      const bias = (s.shadowMap as unknown as { _primitiveBias?: { normalOffsetScale: number; depthBias: number } })._primitiveBias;
+      if (bias) {
+        bias.normalOffsetScale = 0.6;
+        bias.depthBias = 0.0004;
+      }
     }
     for (let i = 0; i < s.primitives.length; i++) {
       const prim = s.primitives.get(i) as { maximumScreenSpaceError?: number };
