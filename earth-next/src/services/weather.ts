@@ -8,6 +8,7 @@
 import type { LonLat } from "../geo/coords.ts";
 import { getJson } from "./http.ts";
 import { apiUrl } from "./api.ts";
+import { isNative, nativeGetJson } from "../native.ts";
 
 export const WEATHER_SOURCES = {
   openMeteo: { name: "Open-Meteo (modelos meteorológicos nacionales)", url: "https://open-meteo.com", license: "CC BY 4.0" },
@@ -216,7 +217,13 @@ export async function metarsIn(bbox: { west: number; south: number; east: number
   const bb = [bbox.south, bbox.west, bbox.north, bbox.east].map((v) => v.toFixed(2)).join(",");
   const r = await getJson<
     { icaoId: string; name: string; lat: number; lon: number; reportTime: string; temp?: number; dewp?: number; wdir?: number | string; wspd?: number; visib?: string | number; altim?: number; rawOb: string; fltCat?: string; cover?: string }[]
-  >(apiUrl(`/api/proxy/metar?bbox=${bb}`), { signal, timeoutMs: 15000, cacheKey: `metar:${bb}`, cacheTtlMs: 10 * 60_000 });
+  >(apiUrl(`/api/proxy/metar?bbox=${bb}`), { signal, timeoutMs: 15000, cacheKey: `metar:${bb}`, cacheTtlMs: 10 * 60_000 }).catch(async (err) => {
+    // En la app Android sin servidor propio: consulta directa (la app nativa no tiene restricción CORS).
+    if (!isNative) throw err;
+    return nativeGetJson<{ icaoId: string; name: string; lat: number; lon: number; reportTime: string; temp?: number; dewp?: number; wdir?: number | string; wspd?: number; visib?: string | number; altim?: number; rawOb: string; fltCat?: string; cover?: string }[]>(
+      `https://aviationweather.gov/api/data/metar?bbox=${bb}&format=json`,
+    );
+  });
   return r.map((m) => ({
     icao: m.icaoId,
     name: m.name,

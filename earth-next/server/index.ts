@@ -200,8 +200,32 @@ async function serveStatic(req: http.IncomingMessage, res: http.ServerResponse, 
   createReadStream(file).pipe(res);
 }
 
+/** Orígenes permitidos para usar la API desde otra app (p. ej. la app Android: https://localhost). */
+const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "https://localhost,capacitor://localhost,http://localhost")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+function applyCors(req: http.IncomingMessage, res: http.ServerResponse): void {
+  const origin = req.headers.origin;
+  if (origin && (CORS_ORIGINS.includes("*") || CORS_ORIGINS.includes(origin))) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+    res.setHeader("Access-Control-Max-Age", "600");
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  if (url.pathname.startsWith("/api/")) {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      return res.end();
+    }
+  }
   try {
     if (url.pathname === "/api/status") return sendJson(res, 200, { ok: true, ai: aiAvailable(), model: aiAvailable() ? MODEL : undefined, postgis: dbReady(), version: VERSION });
     if (url.pathname === "/api/assistant" && req.method === "POST") return await handleAssistant(req, res);

@@ -1,31 +1,44 @@
 /**
  * Calidad gráfica adaptable: perfiles por dispositivo y regulador automático que baja o sube
  * la calidad según los FPS medidos (objetivo configurable, 60 por defecto).
+ *
+ * Cada perfil controla: densidad de píxeles (nitidez en pantallas de alta densidad), error de
+ * pantalla del terreno, caché de teselas, antialiasing (MSAA/FXAA), sombras (de edificios y del
+ * relieve), HDR con tonemapping, atmósfera por fragmento, oclusión ambiental y precarga de teselas.
  */
-import { ShadowMode, type Viewer } from "cesium";
+import { ShadowMode, Tonemapper, type Viewer } from "cesium";
 import { effectiveQuality, fps, settings, type Quality } from "../state/store.ts";
 
-type Level = Exclude<Quality, "auto">;
+export type Level = Exclude<Quality, "auto">;
 
 interface Profile {
-  resolutionScale: number;
+  /** Densidad de píxeles objetivo (se limita al devicePixelRatio real) */
+  pixelRatio: number;
   maximumScreenSpaceError: number;
   tileCacheSize: number;
   msaa: number;
   fxaa: boolean;
   shadows: boolean;
   softShadows: boolean;
-  fog: boolean;
+  /** El relieve proyecta sombras (no sólo las recibe). Desactivado: con mapas de sombras produce
+   *  manchas por autosombreado; el relieve se sombrea con sus normales y recibe sombras de edificios. */
+  terrainCastsShadows: boolean;
+  shadowMapSize: number;
   hdr: boolean;
+  perFragmentAtmosphere: boolean;
+  ambientOcclusion: boolean;
+  preload: boolean;
   tilesetSse: number;
   loadingDescendantLimit: number;
+  /** Vértices por lado de la malla de terreno en niveles de detalle altos */
+  terrainGrid: number;
 }
 
 export const PROFILES: Record<Level, Profile> = {
-  low: { resolutionScale: 0.65, maximumScreenSpaceError: 4, tileCacheSize: 80, msaa: 1, fxaa: true, shadows: false, softShadows: false, fog: true, hdr: false, tilesetSse: 32, loadingDescendantLimit: 10 },
-  medium: { resolutionScale: 0.85, maximumScreenSpaceError: 2.5, tileCacheSize: 150, msaa: 1, fxaa: true, shadows: false, softShadows: false, fog: true, hdr: false, tilesetSse: 20, loadingDescendantLimit: 20 },
-  high: { resolutionScale: 1, maximumScreenSpaceError: 2, tileCacheSize: 300, msaa: 4, fxaa: true, shadows: true, softShadows: false, fog: true, hdr: false, tilesetSse: 16, loadingDescendantLimit: 20 },
-  ultra: { resolutionScale: 1, maximumScreenSpaceError: 1.33, tileCacheSize: 600, msaa: 8, fxaa: false, shadows: true, softShadows: true, fog: true, hdr: true, tilesetSse: 8, loadingDescendantLimit: 40 },
+  low: { pixelRatio: 0.75, maximumScreenSpaceError: 4, tileCacheSize: 80, msaa: 1, fxaa: true, shadows: false, softShadows: false, terrainCastsShadows: false, shadowMapSize: 1024, hdr: false, perFragmentAtmosphere: false, ambientOcclusion: false, preload: false, tilesetSse: 32, loadingDescendantLimit: 10, terrainGrid: 49 },
+  medium: { pixelRatio: 1, maximumScreenSpaceError: 2.5, tileCacheSize: 150, msaa: 1, fxaa: true, shadows: false, softShadows: false, terrainCastsShadows: false, shadowMapSize: 2048, hdr: false, perFragmentAtmosphere: false, ambientOcclusion: false, preload: false, tilesetSse: 20, loadingDescendantLimit: 20, terrainGrid: 65 },
+  high: { pixelRatio: 1.5, maximumScreenSpaceError: 1.75, tileCacheSize: 300, msaa: 4, fxaa: true, shadows: true, softShadows: true, terrainCastsShadows: false, shadowMapSize: 2048, hdr: true, perFragmentAtmosphere: true, ambientOcclusion: false, preload: true, tilesetSse: 12, loadingDescendantLimit: 24, terrainGrid: 97 },
+  ultra: { pixelRatio: 2, maximumScreenSpaceError: 1.25, tileCacheSize: 600, msaa: 8, fxaa: false, shadows: true, softShadows: true, terrainCastsShadows: false, shadowMapSize: 4096, hdr: true, perFragmentAtmosphere: true, ambientOcclusion: true, preload: true, tilesetSse: 6, loadingDescendantLimit: 40, terrainGrid: 129 },
 };
 
 const ORDER: Level[] = ["low", "medium", "high", "ultra"];
@@ -45,7 +58,11 @@ export function detectInitialLevel(gl?: WebGLRenderingContext | WebGL2RenderingC
   }
   const software = /SwiftShader|llvmpipe|Software|Basic Render/i.test(renderer);
   if (software) return "low";
-  if (mobile) return mem >= 6 ? "medium" : "low";
+  if (mobile) {
+    // GPUs móviles de gama alta (Adreno 7xx, Mali-G7xx/G9xx, Immortalis, Apple) soportan "alta".
+    if (mem >= 8 && /Adreno \(TM\) [7-9]\d\d|Mali-G(7[1-9]|[89]\d|\d{3})|Immortalis|Apple/i.test(renderer)) return "high";
+    return mem >= 6 ? "medium" : "low";
+  }
   if (mem <= 4 || cores <= 4) return "medium";
   if (/RTX|Radeon RX [6-9]|Apple M[2-9]|Apple M1 (Pro|Max|Ultra)/i.test(renderer) && mem >= 16) return "ultra";
   return "high";
@@ -58,12 +75,15 @@ export class QualityManager {
   private highWindows = 0;
   private lastWindow = performance.now();
   private remove: () => void;
+  private ceiling: Level;
 
   constructor(
     private viewer: Viewer,
     initial: Level,
   ) {
     this.level = initial;
+    this.ceiling = initial === "ultra" ? "ultra" : initial === "low" ? "medium" : "high";
+    viewer.useBrowserRecommendedResolution = false;
     this.apply(initial);
     this.remove = viewer.scene.postRender.addEventListener(() => this.onFrame());
   }
@@ -72,36 +92,69 @@ export class QualityManager {
     return this.level;
   }
 
+  get profile(): Profile {
+    return PROFILES[this.level];
+  }
+
   apply(level: Level): void {
     this.level = level;
     effectiveQuality.value = level;
     const p = PROFILES[level];
     const v = this.viewer;
     const s = v.scene;
-    v.resolutionScale = p.resolutionScale;
+    const dpr = window.devicePixelRatio || 1;
+    // resolutionScale se multiplica por devicePixelRatio: se limita la densidad efectiva.
+    v.resolutionScale = Math.min(dpr, p.pixelRatio) / dpr;
     s.globe.maximumScreenSpaceError = p.maximumScreenSpaceError;
     s.globe.tileCacheSize = p.tileCacheSize;
     s.globe.loadingDescendantLimit = p.loadingDescendantLimit;
+    s.globe.preloadAncestors = true;
+    s.globe.preloadSiblings = p.preload;
     s.postProcessStages.fxaa.enabled = p.fxaa;
     try {
       s.msaaSamples = p.msaa;
     } catch {
       /* WebGL1 sin MSAA */
     }
-    s.fog.enabled = p.fog;
+    s.fog.enabled = true;
     s.highDynamicRange = p.hdr && s.highDynamicRangeSupported;
+    if (s.highDynamicRange) {
+      s.postProcessStages.tonemapper = Tonemapper.PBR_NEUTRAL;
+      s.postProcessStages.exposure = 1.0;
+    }
+    if (s.skyAtmosphere) s.skyAtmosphere.perFragmentAtmosphere = p.perFragmentAtmosphere;
+    const ao = s.postProcessStages.ambientOcclusion;
+    ao.enabled = p.ambientOcclusion && settings.value.shadows;
+    if (ao.enabled) {
+      // Oclusión sutil: oscurece esquinas entre edificios y calles sin "halos".
+      ao.uniforms["intensity"] = 1.6;
+      ao.uniforms["bias"] = 0.12;
+      ao.uniforms["lengthCap"] = 0.04;
+      ao.uniforms["stepSize"] = 1.5;
+      ao.uniforms["frustumLength"] = 2500;
+      ao.uniforms["blurStepSize"] = 1.0;
+    }
     const wantShadows = p.shadows && settings.value.shadows;
     v.shadows = wantShadows;
-    v.terrainShadows = wantShadows ? ShadowMode.RECEIVE_ONLY : ShadowMode.DISABLED;
+    v.terrainShadows = !wantShadows ? ShadowMode.DISABLED : p.terrainCastsShadows ? ShadowMode.ENABLED : ShadowMode.RECEIVE_ONLY;
     if (s.shadowMap) {
       s.shadowMap.softShadows = p.softShadows;
-      s.shadowMap.size = level === "ultra" ? 4096 : 2048;
-      s.shadowMap.maximumDistance = 6000;
+      s.shadowMap.size = p.shadowMapSize;
+      s.shadowMap.darkness = 0.35;
+      s.shadowMap.fadingEnabled = true;
     }
     for (let i = 0; i < s.primitives.length; i++) {
-      const prim = s.primitives.get(i) as { maximumScreenSpaceError?: number; isCesium3DTileset?: boolean };
+      const prim = s.primitives.get(i) as { maximumScreenSpaceError?: number };
       if (prim && "maximumScreenSpaceError" in prim && prim.maximumScreenSpaceError !== undefined) prim.maximumScreenSpaceError = p.tilesetSse;
     }
+  }
+
+  /** Distancia de sombras según la altura de la cámara (más cerca = sombras más definidas). */
+  updateShadowDistance(heightAboveGround: number): void {
+    const sm = this.viewer.scene.shadowMap;
+    if (!sm || !this.viewer.shadows) return;
+    const d = Math.min(30_000, Math.max(1_500, heightAboveGround * 8));
+    if (Math.abs(sm.maximumDistance - d) / d > 0.15) sm.maximumDistance = d;
   }
 
   /** Reaplica el perfil actual (p. ej. tras cambiar la opción de sombras). */
@@ -111,6 +164,7 @@ export class QualityManager {
 
   setManual(level: Quality): void {
     if (level === "auto") return;
+    this.ceiling = level;
     this.apply(level);
   }
 
@@ -133,8 +187,8 @@ export class QualityManager {
       }
     } else if (measured >= target * 0.97) {
       this.lowWindows = 0;
-      // Subir es más conservador: 20 s estables.
-      if (++this.highWindows >= 10 && idx < ORDER.indexOf(detectCeiling())) {
+      // Subir es más conservador: 20 s estables y nunca por encima del techo del dispositivo.
+      if (++this.highWindows >= 10 && idx < ORDER.indexOf(this.ceiling)) {
         this.apply(ORDER[idx + 1]!);
         this.highWindows = 0;
       }
@@ -147,10 +201,4 @@ export class QualityManager {
   destroy(): void {
     this.remove();
   }
-}
-
-let ceiling: Level | null = null;
-function detectCeiling(): Level {
-  if (!ceiling) ceiling = detectInitialLevel() === "ultra" ? "ultra" : "high";
-  return ceiling;
 }

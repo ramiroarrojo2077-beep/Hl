@@ -3,7 +3,8 @@
  * sol y sombras según fecha/hora, ciclo día–noche, luces nocturnas, Luna, cielo estrellado,
  * atmósfera y animación acelerada del tiempo.
  */
-import { ClockRange, ClockStep, JulianDate, Moon, type Viewer } from "cesium";
+import { ClockRange, ClockStep, DynamicAtmosphereLightingType, JulianDate, Moon, type Viewer } from "cesium";
+import { sunPosition } from "../geo/astronomy.ts";
 import { sceneTime, settings, timeMultiplier, timePlaying } from "../state/store.ts";
 
 export class TimeController {
@@ -65,7 +66,7 @@ export class TimeController {
 }
 
 export class LightingController {
-  private litFromSpace = true;
+  private force = true;
 
   constructor(private viewer: Viewer) {
     const scene = viewer.scene;
@@ -75,6 +76,15 @@ export class LightingController {
     globe.dynamicAtmosphereLightingFromSun = true;
     globe.atmosphereLightIntensity = 10;
     globe.depthTestAgainstTerrain = true;
+    // Relieve iluminado por el sol con una luz ambiente suave en las laderas en sombra.
+    globe.lambertDiffuseMultiplier = 0.85;
+    globe.vertexShadowDarkness = 0.5;
+    // Atmósfera iluminada por la posición real del Sol, con un leve realce de color.
+    scene.atmosphere.dynamicLighting = DynamicAtmosphereLightingType.SUNLIGHT;
+    scene.atmosphere.saturationShift = -0.05;
+    scene.atmosphere.brightnessShift = 0.03;
+    scene.fog.density = 1.6e-4;
+    scene.fog.minimumBrightness = 0.08;
     if (!scene.moon) scene.moon = new Moon();
     this.apply();
   }
@@ -88,33 +98,30 @@ export class LightingController {
     if (scene.sun) scene.sun.show = true;
     if (scene.moon) scene.moon.show = s.stars;
     const globe = scene.globe;
-    if (s.lightingMode === "realistic") {
-      // Día y noche también de cerca: la ciudad queda a oscuras de noche.
-      globe.lightingFadeOutDistance = 0;
-      globe.lightingFadeInDistance = 1;
-      globe.nightFadeOutDistance = 0;
-      globe.nightFadeInDistance = 1;
-    } else {
-      // Sombreado solar desde el espacio; de cerca la imagen se ve con luz plena para poder leerla.
-      globe.lightingFadeOutDistance = 1.5e6;
-      globe.lightingFadeInDistance = 6e6;
-      globe.nightFadeOutDistance = 1.5e6;
-      globe.nightFadeInDistance = 6e6;
-    }
-    this.litFromSpace = true;
-    this.updateForHeight(this.viewer.camera.positionCartographic.height);
+    // Sin desvanecimiento por distancia: el sombreado depende del Sol real (o se apaga, ver abajo).
+    globe.lightingFadeOutDistance = 0;
+    globe.lightingFadeInDistance = 1;
+    globe.nightFadeOutDistance = 0;
+    globe.nightFadeInDistance = 1;
+    this.force = true;
+    const c = this.viewer.camera.positionCartographic;
+    this.updateForCamera(c.height, (c.latitude * 180) / Math.PI, (c.longitude * 180) / Math.PI, JulianDate.toDate(this.viewer.clock.currentTime));
     scene.requestRender();
   }
 
   /**
-   * Modo "auto": sombreado solar (día/noche) visible desde el espacio y luz plena al acercarse
-   * (bajo ~2000 km), para que la imagen se pueda leer a cualquier hora.
+   * Modo "auto": desde el espacio se ve el día y la noche reales; de cerca, si es de día en el
+   * lugar, el relieve y los edificios se iluminan con el Sol real (luces y sombras); si es de
+   * noche, se muestra con luz plena para poder leer la imagen. Modo "realista": siempre el Sol real.
    */
-  updateForHeight(height: number): void {
+  updateForCamera(height: number, lat: number, lon: number, date: Date): void {
     const globe = this.viewer.scene.globe;
-    const want = settings.value.lightingMode === "realistic" || height > 2_000_000;
-    if (want !== globe.enableLighting || this.litFromSpace) {
-      this.litFromSpace = false;
+    let want = true;
+    if (settings.value.lightingMode !== "realistic" && height < 2_000_000) {
+      want = sunPosition(date, lat, lon).altitude > 1;
+    }
+    if (want !== globe.enableLighting || this.force) {
+      this.force = false;
       globe.enableLighting = want;
       globe.dynamicAtmosphereLighting = want;
     }

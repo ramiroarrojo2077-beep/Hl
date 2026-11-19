@@ -163,6 +163,7 @@ export function LayersPanel() {
             <div class="seg">
               {(
                 [
+                  ["realistic", "Realista"],
                   ["quality", "Calidad del dato"],
                   ["height", "Altura"],
                   ["neutral", "Neutro"],
@@ -174,6 +175,9 @@ export function LayersPanel() {
               ))}
             </div>
           </div>
+          {s.buildingColorMode === "realistic" && (
+            <span class="faint">{t("Colores registrados en OSM (building:colour, roof:colour) o paleta por tipo de edificio. Los volúmenes sin altura conocida se ven translúcidos.")}</span>
+          )}
           {s.buildingColorMode === "quality" && (
             <div class="col faint" style={{ gap: "3px" }}>
               <span class="row">

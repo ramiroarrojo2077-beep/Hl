@@ -30,6 +30,13 @@
   --top: 64px;
   --status: 30px;
   --fs: 14px;
+  /* Áreas seguras (muesca, barras del sistema en Android/iOS) */
+  --sa-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sa-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --sa-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --sa-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --status-total: calc(var(--status) + var(--sa-bottom));
+  --top-offset: calc(12px + 48px + 12px + var(--sa-top));
   color-scheme: dark;
 }
 
@@ -75,6 +82,8 @@ body,
 #app {
   margin: 0;
   height: 100%;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
@@ -306,9 +315,9 @@ hr.sep {
 /* ------------------------------------------------------------------ Barra superior */
 .topbar {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: calc(12px + var(--sa-top));
+  left: calc(12px + var(--sa-left));
+  right: calc(12px + var(--sa-right));
   height: 48px;
   display: flex;
   align-items: center;
@@ -408,7 +417,7 @@ hr.sep {
 /* ------------------------------------------------------------------ Riel y paneles */
 .rail {
   position: fixed;
-  top: calc(12px + 48px + 12px);
+  top: var(--top-offset);
   left: 12px;
   width: var(--rail);
   display: flex;
@@ -434,10 +443,10 @@ hr.sep {
 
 .panel {
   position: fixed;
-  top: calc(12px + 48px + 12px);
+  top: var(--top-offset);
   left: calc(12px + var(--rail) + 10px);
   width: var(--panel-w);
-  max-height: calc(100vh - 72px - var(--status) - 92px);
+  max-height: calc(100dvh - var(--top-offset) - var(--status-total) - 92px);
   display: flex;
   flex-direction: column;
   z-index: 14;
@@ -615,10 +624,10 @@ hr.sep {
 /* ------------------------------------------------------------------ Información (derecha) */
 .drawer-right {
   position: fixed;
-  top: calc(12px + 48px + 12px);
+  top: var(--top-offset);
   right: 12px;
   width: 380px;
-  max-height: calc(100vh - 72px - var(--status) - 92px);
+  max-height: calc(100dvh - var(--top-offset) - var(--status-total) - 92px);
   display: flex;
   flex-direction: column;
   z-index: 14;
@@ -642,7 +651,7 @@ hr.sep {
 .assistant {
   display: flex;
   flex-direction: column;
-  height: min(640px, calc(100vh - 72px - var(--status) - 92px));
+  height: min(640px, calc(100dvh - var(--top-offset) - var(--status-total) - 92px));
 }
 .chat {
   flex: 1;
@@ -719,7 +728,7 @@ hr.sep {
 .navctl {
   position: fixed;
   right: 12px;
-  bottom: calc(var(--status) + 76px);
+  bottom: calc(var(--status-total) + 76px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -755,7 +764,7 @@ hr.sep {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(var(--status) + 12px);
+  bottom: calc(var(--status-total) + 12px);
   width: min(760px, calc(100vw - 24px));
   padding: 8px 12px;
   display: flex;
@@ -784,7 +793,8 @@ hr.sep {
   left: 0;
   right: 0;
   bottom: 0;
-  height: var(--status);
+  height: var(--status-total);
+  padding-bottom: var(--sa-bottom) !important;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -828,7 +838,7 @@ hr.sep {
 .minimap {
   position: fixed;
   left: 12px;
-  bottom: calc(var(--status) + 12px);
+  bottom: calc(var(--status-total) + 12px);
   width: 200px;
   height: 130px;
   overflow: hidden;
@@ -846,7 +856,7 @@ hr.sep {
 .split-handle {
   position: fixed;
   top: 0;
-  bottom: var(--status);
+  bottom: var(--status-total);
   width: 4px;
   margin-left: -2px;
   background: #fff;
@@ -872,7 +882,7 @@ hr.sep {
 }
 .split-label {
   position: fixed;
-  top: 76px;
+  top: calc(76px + var(--sa-top));
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -883,7 +893,7 @@ hr.sep {
 .street {
   position: fixed;
   inset: 0;
-  bottom: var(--status);
+  bottom: var(--status-total);
   z-index: 30;
   background: #000;
   display: flex;
@@ -922,7 +932,7 @@ hr.sep {
 }
 .approx-badge {
   position: fixed;
-  top: 76px;
+  top: calc(76px + var(--sa-top));
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 14px;
@@ -936,7 +946,7 @@ hr.sep {
 /* ------------------------------------------------------------------ Avisos */
 .toasts {
   position: fixed;
-  top: 76px;
+  top: calc(76px + var(--sa-top));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -1069,7 +1079,7 @@ kbd {
     top: auto;
     left: 8px;
     right: 8px;
-    bottom: calc(var(--status) + 8px);
+    bottom: calc(var(--status-total) + 8px);
     width: auto;
     flex-direction: row;
     justify-content: space-around;
@@ -1084,19 +1094,19 @@ kbd {
     left: 8px;
     right: 8px;
     top: auto;
-    bottom: calc(var(--status) + 70px);
+    bottom: calc(var(--status-total) + 70px);
     width: auto;
-    max-height: 58vh;
+    max-height: min(58dvh, calc(100dvh - var(--top-offset) - var(--status-total) - 80px));
   }
   .timeline {
-    bottom: calc(var(--status) + 70px);
+    bottom: calc(var(--status-total) + 70px);
     width: calc(100vw - 16px);
   }
   .timeline .hide-mobile {
     display: none;
   }
   .navctl {
-    bottom: calc(var(--status) + 130px);
+    bottom: calc(var(--status-total) + 130px);
     right: 8px;
   }
   .navctl .mode-pill {

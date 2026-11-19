@@ -70,6 +70,41 @@ export const QUALITY_COLORS: Record<HeightQuality, string> = {
   default: "#8a96a8",
 };
 
+/** Interpreta colores OSM ("white", "#c0a080", "brick"…) o devuelve null. */
+export function parseOsmColor(raw: string | undefined): Color | null {
+  if (!raw) return null;
+  const v = raw.trim().toLowerCase().split(";")[0]!.replace(/_/g, "");
+  const aliases: Record<string, string> = { brick: "#a0522d", cream: "#f3e9d2", beige: "#e8dcc0", sand: "#d8c39a", terracotta: "#c4643f", concrete: "#b8b6b0", lightgrey: "#d3d3d3", darkgrey: "#7a7a7a" };
+  try {
+    const c = Color.fromCssColorString(aliases[v] ?? v);
+    return c ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const TYPE_COLORS: [RegExp, string][] = [
+  [/^(house|detached|semidetached_house|terrace|residential|apartments|bungalow|villa|dormitory)$/, "#e9dfcf"],
+  [/^(commercial|office|retail|supermarket|kiosk|hotel)$/, "#d6dce4"],
+  [/^(industrial|warehouse|factory|manufacture|storage_tank|hangar|garage|garages|shed)$/, "#cbc8c1"],
+  [/^(church|cathedral|chapel|mosque|temple|synagogue|shrine)$/, "#eadbc2"],
+  [/^(school|university|college|hospital|civic|public|government|train_station|transportation)$/, "#e3d5c5"],
+  [/^(stadium|sports_hall|grandstand)$/, "#d9dde0"],
+];
+
+/** Color "realista": el registrado en OSM (building:colour) o una paleta suave por tipo. */
+function realisticColor(f: BuildingFeature): Color {
+  const tagged = parseOsmColor(f.tags["building:colour"]);
+  if (tagged) return tagged;
+  const hex = TYPE_COLORS.find(([re]) => re.test(f.kind))?.[1] ?? "#ece7df";
+  const c = Color.fromCssColorString(hex);
+  // Variación sutil y estable por edificio para evitar un aspecto plástico uniforme.
+  let hsh = 0;
+  for (let i = 0; i < f.id.length; i++) hsh = (hsh * 31 + f.id.charCodeAt(i)) | 0;
+  const k = 1 + ((hsh % 9) - 4) * 0.012;
+  return new Color(Math.min(1, c.red * k), Math.min(1, c.green * k), Math.min(1, c.blue * k), 1);
+}
+
 function heightColor(h: number): Color {
   // Rampa de color por altura (azul → amarillo → rojo)
   const t = Math.min(1, Math.log10(Math.max(3, h)) / Math.log10(300));
@@ -230,6 +265,12 @@ export class BuildingsManager {
     const mode = settings.value.buildingColorMode;
     if (mode === "height") return heightColor(f.height);
     if (mode === "neutral") return Color.fromCssColorString("#e8e4dc");
+    if (mode === "realistic") {
+      const c = realisticColor(f);
+      // Las alturas sin dato siguen marcándose: levemente translúcidas.
+      if (f.quality === "default") c.alpha = 0.72;
+      return c;
+    }
     const c = Color.fromCssColorString(QUALITY_COLORS[f.quality]);
     if (f.quality === "default") c.alpha = 0.62;
     return c;
@@ -259,6 +300,22 @@ export class BuildingsManager {
         attributes: { color: ColorGeometryInstanceAttribute.fromColor(color) },
       });
       (color.alpha < 1 ? translucent : solid).push(inst);
+      // Techo con su color registrado en OSM (roof:colour), como tapa fina sobre el volumen.
+      const roof = f.tags["roof:colour"] && settings.value.buildingColorMode === "realistic" ? parseOsmColor(f.tags["roof:colour"]) : null;
+      if (roof && color.alpha === 1) {
+        solid.push(
+          new GeometryInstance({
+            id: `bld:${f.id}`,
+            geometry: new PolygonGeometry({
+              polygonHierarchy: new PolygonHierarchy(ring, holes),
+              height: top + 0.05,
+              extrudedHeight: top + 0.25,
+              vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT,
+            }),
+            attributes: { color: ColorGeometryInstanceAttribute.fromColor(roof) },
+          }),
+        );
+      }
       map.set(`bld:${f.id}`, f);
     }
     const primitives: Primitive[] = [];

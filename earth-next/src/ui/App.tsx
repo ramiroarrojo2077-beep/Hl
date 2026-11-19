@@ -18,6 +18,8 @@ import { PanelHost } from "./panels/PanelHost.tsx";
 import { AssistantPanel } from "./panels/AssistantPanel.tsx";
 import { StreetViewer, streetImage } from "./panels/StreetViewer.tsx";
 import { tourState } from "../engine/tours.ts";
+import { setupBackButton } from "../native.ts";
+import { activeTool } from "../engine/tools.ts";
 
 export function App() {
   const globeRef = useRef<HTMLDivElement>(null);
@@ -73,6 +75,20 @@ export function App() {
   useEffect(() => {
     if (error) notify(error, "error", 15000);
   }, [error]);
+
+  // Botón "atrás" de Android: cierra lo que esté abierto, en orden.
+  useEffect(() => {
+    void setupBackButton(() => {
+      const e = (window as unknown as { earthNext?: Engine }).earthNext;
+      if (streetImage.value) return (streetImage.value = null), true;
+      if (activeTool.value !== "none" && e) return e.tools.cancel(), true;
+      if (tourState.value.playing && e) return e.tours.stop(), true;
+      if (infoOpen.value) return (infoOpen.value = false), true;
+      if (assistantOpen.value) return (assistantOpen.value = false), true;
+      if (activePanel.value) return (activePanel.value = null), true;
+      return false;
+    });
+  }, []);
 
   const rightOpen = assistantOpen.value || (infoOpen.value && !!selection.value);
 

@@ -27,7 +27,7 @@ export interface Settings {
   terrainExaggeration: number;
   bathymetry: boolean;
   buildings: BuildingSource;
-  buildingColorMode: "quality" | "height" | "neutral";
+  buildingColorMode: "realistic" | "quality" | "height" | "neutral";
   urbanDetails: boolean;
   ionToken: string;
   googleKey: string;
@@ -46,6 +46,8 @@ export interface Settings {
   /** "auto": iluminación solar realista desde el espacio y luz diurna de cerca; "realistic": día/noche también a nivel del suelo */
   lightingMode: "auto" | "realistic";
   aiEnabled: boolean;
+  /** URL del servidor de EARTH NEXT (IA, METAR, PostGIS). Vacío = mismo origen (web) */
+  serverUrl: string;
 }
 
 const defaults: Settings = {
@@ -63,7 +65,7 @@ const defaults: Settings = {
   terrainExaggeration: 1,
   bathymetry: false,
   buildings: "osm",
-  buildingColorMode: "quality",
+  buildingColorMode: "realistic",
   urbanDetails: true,
   ionToken: "",
   googleKey: "",
@@ -81,6 +83,7 @@ const defaults: Settings = {
   stars: true,
   lightingMode: "auto",
   aiEnabled: true,
+  serverUrl: "",
 };
 
 function readStorage<T>(key: string, fallback: T): T {

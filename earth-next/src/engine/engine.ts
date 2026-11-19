@@ -166,7 +166,7 @@ export class Engine {
 
   private async applyTerrain(): Promise<void> {
     const s = settings.value;
-    const key = `${s.terrain}|${s.bathymetry}|${s.ionToken ? 1 : 0}`;
+    const key = `${s.terrain}|${s.bathymetry}|${s.ionToken ? 1 : 0}|${s.quality}`;
     if (key === this.terrainKey) return;
     this.terrainKey = key;
     let provider: TerrainProvider;
@@ -177,11 +177,11 @@ export class Engine {
       } else if (s.terrain === "ellipsoid") {
         provider = new EllipsoidTerrainProvider();
       } else {
-        provider = createTerrariumTerrain({ bathymetry: s.bathymetry });
+        provider = createTerrariumTerrain({ bathymetry: s.bathymetry, detailGrid: this.quality.profile.terrainGrid });
       }
     } catch (err) {
       notify(err instanceof Error ? err.message : String(err), "warning", 7000);
-      provider = createTerrariumTerrain({ bathymetry: s.bathymetry });
+      provider = createTerrariumTerrain({ bathymetry: s.bathymetry, detailGrid: this.quality.profile.terrainGrid });
     }
     this.viewer.terrainProvider = provider;
   }
@@ -210,7 +210,8 @@ export class Engine {
       if (l.level !== lod.value.level) lod.value = l;
     });
     this.imagery.updateNightFade(c.height, settings.value.lightingMode === "realistic");
-    this.lighting.updateForHeight(c.height);
+    this.lighting.updateForCamera(c.height, CMath.toDegrees(c.latitude), CMath.toDegrees(c.longitude), this.time.current);
+    this.quality.updateShadowDistance(hag);
   }
 
   private onCameraChanged() {

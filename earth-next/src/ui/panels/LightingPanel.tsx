@@ -151,13 +151,13 @@ export function LightingPanel() {
       <div class="section-title">{t("Representación")}</div>
       <div class="seg">
         <button class={s.lightingMode === "auto" ? "on" : ""} onClick={() => updateSettings({ lightingMode: "auto" })}>
-          {t("Día/noche desde el espacio")}
+          {t("Automático")}
         </button>
         <button class={s.lightingMode === "realistic" ? "on" : ""} onClick={() => updateSettings({ lightingMode: "realistic" })}>
-          {t("Día/noche también de cerca")}
+          {t("Realista")}
         </button>
       </div>
-      <span class="faint">{t("En el modo realista, de noche las ciudades se ven oscuras con el resplandor de las luces nocturnas (NASA Black Marble, 500 m).")}</span>
+      <span class="faint">{s.lightingMode === "auto" ? t("Automático: el Sol real ilumina relieve y edificios (luces y sombras); de noche, de cerca, la imagen se muestra con luz plena para poder leerla.") : t("Realista: el Sol real en todo momento; de noche las ciudades se ven oscuras con el resplandor de las luces nocturnas (NASA Black Marble, 500 m).")}</span>
       {(
         [
           ["atmosphere", "Atmósfera"],

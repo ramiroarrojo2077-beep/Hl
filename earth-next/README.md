@@ -23,15 +23,23 @@ npm run build && npm start   # sirve dist/ y la API en http://localhost:8787
 
 Sin ninguna clave la aplicación funciona completa con datos abiertos; el asistente usa su **modo básico** (reglas + servicios de datos) hasta que se configure `ANTHROPIC_API_KEY`.
 
+### Android
+
+Hay un APK firmado para instalar directamente y el proyecto Android (Capacitor) para recompilarlo: ver [docs/ANDROID.md](docs/ANDROID.md).
+
+```bash
+npm run android:build   # requiere JDK 21 y Android SDK 36
+```
+
 ## Qué incluye
 
 | Área | Funciones (verificadas en navegador salvo que se indique) |
 |---|---|
 | Globo | Elipsoide WGS84, atmósfera, estrellas, Luna, sol según fecha y hora, ciclo día/noche, luces nocturnas, transiciones sin pantallas de carga entre espacio y calle |
-| Terreno | Streaming de elevación abierta (AWS Terrain Tiles: SRTM, ETOPO1…) decodificada en *web workers*, exageración vertical, batimetría opcional; Cesium World Terrain con token propio |
+| Terreno | Streaming de elevación abierta (AWS Terrain Tiles: SRTM, ETOPO1…) convertida en *web workers* a mallas cuantizadas **con normales**, de modo que el Sol real ilumina laderas y valles; densidad de malla según la calidad (hasta 129×129 por tesela), exageración vertical, batimetría opcional; Cesium World Terrain con token propio |
 | Imágenes | Satélite de alta resolución (Esri), Blue Marble, satélite del día (VIIRS), mapas de calles, topográfico, físico, político (límites y nombres), transporte |
-| Edificios | Huellas OSM por teselas z15 (Overpass) extruidas con su altura; color/transparencia según calidad del dato (altura registrada, estimada por pisos o genérica rotulada como aproximada); LRU de memoria. Opcional: Cesium OSM Buildings o Google Photorealistic 3D Tiles con clave propia |
-| LOD semántico | 0 espacio · 1 países · 2 ciudades · 3 barrios y edificios (< 6 km) · 4 calles y elementos urbanos OSM (< 900 m) · 5 detalles disponibles |
+| Edificios | Huellas OSM por teselas z15 (Overpass) extruidas con su altura, iluminadas por el Sol y con sombras; colores reales registrados en OSM (`building:colour`, techos con `roof:colour`) o paleta por tipo; las alturas sin dato se ven translúcidas y rotuladas como aproximadas; LRU de memoria. Opcional: Cesium OSM Buildings o Google Photorealistic 3D Tiles con clave propia |
+| LOD semántico | 0 espacio · 1 países · 2 ciudades · 3 barrios y edificios (< 6 km) · 4 calles y elementos urbanos OSM (< 900 m), con árboles 3D en su posición real (forma simbólica; altura y copa de OSM si existen) · 5 detalles disponibles |
 | Búsqueda | Sugerencias (Photon), búsqueda y geocodificación inversa (Nominatim, 1 pedido/s), coordenadas decimales, GMS y UTM |
 | Navegación | Orbital, aéreo, dron, peatón (vista 3D aproximada rotulada), satélite (LEO/MEO/GEO), cinematográfico; teclado, ratón y táctil; velocidad, sensibilidad, altura de ojos y campo de visión configurables |
 | Herramientas | Distancia geodésica (Vincenty), superficie y perímetro, altura entre puntos (también sobre edificios), coordenadas en 3 formatos, perfil de elevación con CSV, pendiente (Horn), ruta por calles (OSRM), marcadores, líneas y polígonos, importación GeoJSON/KML/KMZ, exportación GeoJSON/KML/KMZ, capturas PNG con atribuciones, proyectos (navegador o archivo), comparación con divisor |
@@ -44,7 +52,8 @@ Sin ninguna clave la aplicación funciona completa con datos abiertos; el asiste
 | Explorar | Ficha de país y ciudad (Wikidata), lugares de interés OSM y artículos de Wikipedia cercanos, rankings (edificios más altos, montañas, ciudades), comparación de ciudades, lecciones educativas |
 | Lugares | Favoritos, colecciones, compartir colección (GeoJSON), enlace a la vista actual (`#@lat,lon,altura…`), búsquedas recientes; sincronización con PostGIS si el servidor la tiene |
 | Interfaz | Tema oscuro/claro/automático, alto contraste, texto grande, movimiento reducido, español e inglés, diseño móvil, minimapa, atajos de teclado (`?`) |
-| Rendimiento | Calidad adaptable con objetivo de FPS (baja/media/alta/ultra según hardware y FPS medidos), streaming progresivo, caché IndexedDB + LRU en memoria, *service worker* para uso sin conexión parcial, reintentos con retroceso, descarga selectiva por teselas |
+| Gráficos | Perfiles baja/media/alta/ultra: densidad de píxeles hasta 2× en pantallas de alta densidad, MSAA 4–8×, HDR con tonemapping PBR neutro, atmósfera calculada por fragmento e iluminada por el Sol, sombras suaves de edificios y árboles sobre el terreno, oclusión ambiental (ultra), precarga de teselas vecinas |
+| Rendimiento | Calidad adaptable con objetivo de FPS (sube y baja de perfil según los FPS medidos, con techo por dispositivo), streaming progresivo, caché IndexedDB + LRU en memoria, *service worker* para uso sin conexión parcial, reintentos con retroceso, descarga selectiva por teselas |
 
 ## Pruebas
 
@@ -62,3 +71,4 @@ npm run test:e2e   # requiere `npm run dev` y Playwright con Chromium
 - [Arquitectura](docs/ARQUITECTURA.md)
 - [Fuentes de datos, licencias y dependencias externas](docs/FUENTES-Y-LICENCIAS.md)
 - [Estado por fase y verificación](docs/ESTADO.md)
+- [App Android](docs/ANDROID.md)

@@ -13,6 +13,18 @@ Verificado el 18/11/2026 con Chromium sin interfaz (WebGL por software), servido
 | 7. Recorridos y video | Completa | E2E: vuelo a Machu Picchu grabado a MP4 (190 kB); unitarias de interpolación y continuidad de trayectorias |
 | 8. Optimización y pruebas | Completa | Calidad adaptable, caché IndexedDB, *service worker*, 70 pruebas unitarias/integración, 30 verificaciones E2E, diseño móvil sin desbordes |
 
+## Versión 0.2.0 — gráficos y Android (19/11/2026)
+
+| Cambio | Cómo se verificó |
+|---|---|
+| Terreno con normales (mallas cuantizadas generadas en workers) | Unitarias: codificación octaédrica, normales de terreno plano y en pendiente, cuantización, bordes y esfera envolvente; capturas del Aconcagua y del Everest con el relieve iluminado por el Sol |
+| Iluminación automática según el Sol local | Capturas de día (relieve sombreado) y de noche (luz plena de cerca) |
+| Perfiles gráficos nuevos (densidad de píxeles, HDR, atmósfera por fragmento, sombras, oclusión ambiental) | Capturas en calidad alta con render por software |
+| Colores reales de edificios y árboles 3D | Capturas con datos **sintéticos** de prueba (Overpass no es accesible desde el entorno de desarrollo) |
+| APK Android (Capacitor 8, API 24–36) | Compilado con Gradle, firmado (apksigner verifica la firma), permisos y contenido revisados. **No se ejecutó en un dispositivo ni emulador**: el contenedor no tiene aceleración KVM |
+
+Se descartó que el relieve proyecte sombras con el mapa de sombras: producía manchas por autosombreado y cortes rectangulares; el relieve se sombrea con sus normales y recibe las sombras de edificios y árboles.
+
 ## Limitaciones conocidas
 
 - Las alturas de edificios dependen de OpenStreetMap: donde no hay `height` ni `building:levels`, el volumen es genérico y se muestra semitransparente con aviso.
@@ -21,3 +33,5 @@ Verificado el 18/11/2026 con Chromium sin interfaz (WebGL por software), servido
 - El servidor de demostración de OSRM sólo rutea en auto.
 - Los FPS medidos en el entorno de prueba (render por software) no son representativos; en GPU real el objetivo es 60 FPS con degradación automática.
 - El `Dockerfile` y `docker-compose.yml` son de referencia y no se ejecutaron en el entorno de desarrollo.
+- El APK no se probó en un teléfono real ni en emulador; la app que empaqueta es la misma build web verificada en Chromium.
+- En Android el dictado por voz no está disponible (el WebView no implementa Web Speech Recognition).

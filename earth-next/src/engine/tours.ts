@@ -7,6 +7,7 @@ import { signal } from "@preact/signals";
 import { sampleTour, tourDuration, type CameraPose, type Keyframe, type Tour } from "../geo/tour.ts";
 import { navMode, persisted, settings, notify } from "../state/store.ts";
 import type { NavigationController } from "./navigation.ts";
+import { speakText, stopSpeaking } from "../native.ts";
 
 export const tourState = signal<{ playing: boolean; time: number; duration: number; index: number; tourId: string | null }>({
   playing: false,
@@ -122,21 +123,14 @@ export class TourPlayer {
 
   stop(): void {
     if (this.removeTick || tourState.value.playing) this.finish();
-    window.speechSynthesis?.cancel();
+    void stopSpeaking();
   }
 }
 
 /** Narración con la voz del sistema (Web Speech API); no requiere servicios externos. */
 export function speak(text: string): void {
-  if (!settings.value.narrator || !("speechSynthesis" in window)) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = settings.value.lang === "es" ? "es-ES" : "en-US";
-  const voices = window.speechSynthesis.getVoices();
-  const v = voices.find((x) => x.lang.toLowerCase().startsWith(settings.value.lang));
-  if (v) u.voice = v;
-  u.rate = 1;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(u);
+  if (!settings.value.narrator || !text) return;
+  void speakText(text, settings.value.lang);
 }
 
 // ---------------------------------------------------------------------------

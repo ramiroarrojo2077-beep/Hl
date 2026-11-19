@@ -36,8 +36,8 @@ async function loadTile(t: TileXYZ, signal?: AbortSignal): Promise<DecodedTile> 
   const p = (async () => {
     const url = TERRARIUM_URL.replace("{z}", String(t.z)).replace("{x}", String(t.x)).replace("{y}", String(t.y));
     const buf = await getArrayBuffer(url, { signal, timeoutMs: 20000, retries: 2 });
-    const res = await decoderPool().decode(buf.slice(0), 2, null, true);
-    const tile = { heights: res.heights!, size: res.size };
+    const res = await decoderPool().heights(buf.slice(0));
+    const tile = { heights: res.heights, size: res.size };
     tiles.set(key, tile);
     return tile;
   })();

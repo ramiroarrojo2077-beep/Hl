@@ -39,8 +39,10 @@ export function SettingsPanel() {
   const [server, setServer] = useState<ServerStatus | null>(null);
   useEffect(() => {
     void cacheStats().then(setStats);
-    void serverStatus().then(setServer);
   }, []);
+  useEffect(() => {
+    void serverStatus().then(setServer);
+  }, [s.serverUrl]);
 
   return (
     <Panel title={t("Ajustes")}>
@@ -118,6 +120,10 @@ export function SettingsPanel() {
       <label class="col" style={{ gap: "2px" }}>
         <span class="faint">{t("Token de cliente de Mapillary (imágenes de calle)")}</span>
         <input class="input" type="password" value={s.mapillaryToken} onChange={(e) => updateSettings({ mapillaryToken: (e.target as HTMLInputElement).value.trim() })} autocomplete="off" />
+      </label>
+      <label class="col" style={{ gap: "2px" }}>
+        <span class="faint">{t("Servidor de EARTH NEXT (asistente con IA, estaciones METAR, PostGIS)")}</span>
+        <input class="input" placeholder="https://mi-servidor.example.com" value={s.serverUrl} onChange={(e) => updateSettings({ serverUrl: (e.target as HTMLInputElement).value.trim() })} autocomplete="off" inputMode="url" />
       </label>
       <label class="col" style={{ gap: "2px" }}>
         <span class="faint">{t("Servidor Overpass (OpenStreetMap)")}</span>

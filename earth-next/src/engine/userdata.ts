@@ -25,6 +25,7 @@ import type { LonLat } from "../geo/coords.ts";
 import { polygonArea, pathLength } from "../geo/geodesy.ts";
 import { newId } from "../geo/tour.ts";
 import { notify } from "../state/store.ts";
+import { saveFile } from "../native.ts";
 
 export type UserGeometry = { type: "Point"; coordinates: [number, number] } | { type: "LineString"; coordinates: [number, number][] } | { type: "Polygon"; coordinates: [number, number][][] };
 
@@ -258,13 +259,7 @@ export function validateGeoJson(json: unknown): void {
   if (j.type === "FeatureCollection" && !Array.isArray(j.features)) throw new Error("GeoJSON inválido: FeatureCollection sin 'features'.");
 }
 
+/** Guarda un archivo: descarga en el navegador; en Android abre el menú Compartir. */
 export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  void saveFile(blob, filename);
 }

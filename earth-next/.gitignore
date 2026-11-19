@@ -3,3 +3,11 @@ dist/
 .env
 test-results/
 e2e/output/
+android/keystore.properties
+android/*.jks
+android/*.keystore
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/public/
