@@ -98,7 +98,7 @@ export class UrbanDetails {
         appearance: new PerInstanceColorAppearance({ flat: false, translucent: false }),
         asynchronous: true,
         releaseGeometryInstances: true,
-        shadows: ShadowMode.ENABLED,
+        shadows: ShadowMode.CAST_ONLY,
       }),
     ) as Primitive;
   }

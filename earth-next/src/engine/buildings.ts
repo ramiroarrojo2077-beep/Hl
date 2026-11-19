@@ -327,7 +327,8 @@ export class BuildingsManager {
         asynchronous: true,
         releaseGeometryInstances: true,
         allowPicking: true,
-        shadows: translucentFlag ? ShadowMode.DISABLED : ShadowMode.ENABLED,
+        // Proyectan sombra sobre el suelo pero no la reciben: evita franjas de autosombreado en fachadas.
+        shadows: translucentFlag ? ShadowMode.DISABLED : ShadowMode.CAST_ONLY,
       });
       this.viewer.scene.primitives.add(p);
       primitives.push(p);

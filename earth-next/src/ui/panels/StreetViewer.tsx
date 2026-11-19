@@ -88,7 +88,8 @@ export function StreetViewer() {
     setLoading(true);
     try {
       const next = img.provider === "panoramax" ? await panoramaxById(target.id, img.sequence) : null;
-      if (next) streetImage.value = next;
+      // Si mientras cargaba se cerró la vista o se eligió otra imagen, se descarta el resultado.
+      if (next && streetImage.value?.id === img.id) streetImage.value = next;
     } catch {
       notify(t("No se pudo avanzar a la siguiente imagen."), "warning");
     } finally {

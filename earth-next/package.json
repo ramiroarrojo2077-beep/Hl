@@ -1,6 +1,6 @@
 {
   "name": "earth-next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "EARTH NEXT: plataforma geoespacial 3D (CesiumJS + datos abiertos + IA)",
@@ -16,7 +16,9 @@
     "check": "tsc -p tsconfig.json && tsc -p server/tsconfig.json",
     "test": "vitest run",
     "test:e2e": "node e2e/smoke.cjs http://localhost:5173 && node e2e/features.cjs http://localhost:5173",
-    "db:schema": "node -e \"import('./server/db.ts').then(m=>console.log(m.SCHEMA_SQL))\""
+    "db:schema": "node -e \"import('./server/db.ts').then(m=>console.log(m.SCHEMA_SQL))\"",
+    "android:assets": "node scripts/android-assets.cjs",
+    "android:build": "node scripts/android-build.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
