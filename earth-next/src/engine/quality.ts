@@ -24,6 +24,8 @@ interface Profile {
    *  manchas por autosombreado; el relieve se sombrea con sus normales y recibe sombras de edificios. */
   terrainCastsShadows: boolean;
   shadowMapSize: number;
+  /** HDR + tonemapping. Desactivado en todos los perfiles: medido, duplica el tinte azul de
+   *  la atmósfera sobre el relieve (comparación A/B en los Alpes). */
   hdr: boolean;
   perFragmentAtmosphere: boolean;
   ambientOcclusion: boolean;
@@ -37,8 +39,8 @@ interface Profile {
 export const PROFILES: Record<Level, Profile> = {
   low: { pixelRatio: 0.75, maximumScreenSpaceError: 4, tileCacheSize: 80, msaa: 1, fxaa: true, shadows: false, softShadows: false, terrainCastsShadows: false, shadowMapSize: 1024, hdr: false, perFragmentAtmosphere: false, ambientOcclusion: false, preload: false, tilesetSse: 32, loadingDescendantLimit: 10, terrainGrid: 49 },
   medium: { pixelRatio: 1, maximumScreenSpaceError: 2.5, tileCacheSize: 150, msaa: 1, fxaa: true, shadows: false, softShadows: false, terrainCastsShadows: false, shadowMapSize: 2048, hdr: false, perFragmentAtmosphere: false, ambientOcclusion: false, preload: false, tilesetSse: 20, loadingDescendantLimit: 20, terrainGrid: 65 },
-  high: { pixelRatio: 1.5, maximumScreenSpaceError: 1.75, tileCacheSize: 300, msaa: 4, fxaa: true, shadows: true, softShadows: true, terrainCastsShadows: false, shadowMapSize: 2048, hdr: true, perFragmentAtmosphere: true, ambientOcclusion: false, preload: true, tilesetSse: 12, loadingDescendantLimit: 24, terrainGrid: 97 },
-  ultra: { pixelRatio: 2, maximumScreenSpaceError: 1.25, tileCacheSize: 600, msaa: 8, fxaa: false, shadows: true, softShadows: true, terrainCastsShadows: false, shadowMapSize: 4096, hdr: true, perFragmentAtmosphere: true, ambientOcclusion: true, preload: true, tilesetSse: 6, loadingDescendantLimit: 40, terrainGrid: 129 },
+  high: { pixelRatio: 1.5, maximumScreenSpaceError: 1.75, tileCacheSize: 300, msaa: 4, fxaa: true, shadows: true, softShadows: true, terrainCastsShadows: false, shadowMapSize: 2048, hdr: false, perFragmentAtmosphere: true, ambientOcclusion: false, preload: true, tilesetSse: 12, loadingDescendantLimit: 24, terrainGrid: 97 },
+  ultra: { pixelRatio: 2, maximumScreenSpaceError: 1.25, tileCacheSize: 600, msaa: 8, fxaa: false, shadows: true, softShadows: true, terrainCastsShadows: false, shadowMapSize: 4096, hdr: false, perFragmentAtmosphere: true, ambientOcclusion: true, preload: true, tilesetSse: 6, loadingDescendantLimit: 40, terrainGrid: 129 },
 };
 
 const ORDER: Level[] = ["low", "medium", "high", "ultra"];

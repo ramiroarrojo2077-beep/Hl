@@ -78,7 +78,7 @@ export class LightingController {
     globe.depthTestAgainstTerrain = true;
     // Relieve iluminado por el sol con una luz ambiente suave en las laderas en sombra.
     globe.lambertDiffuseMultiplier = 0.85;
-    globe.vertexShadowDarkness = 0.5;
+    globe.vertexShadowDarkness = 0.62;
     // Atmósfera iluminada por la posición real del Sol, con un leve realce de color.
     scene.atmosphere.dynamicLighting = DynamicAtmosphereLightingType.SUNLIGHT;
     scene.atmosphere.saturationShift = -0.05;
@@ -93,7 +93,6 @@ export class LightingController {
     const s = settings.value;
     const scene = this.viewer.scene;
     if (scene.skyAtmosphere) scene.skyAtmosphere.show = s.atmosphere;
-    scene.globe.showGroundAtmosphere = s.atmosphere;
     if (scene.skyBox) scene.skyBox.show = s.stars;
     if (scene.sun) scene.sun.show = true;
     if (scene.moon) scene.moon.show = s.stars;
@@ -120,10 +119,14 @@ export class LightingController {
     if (settings.value.lightingMode !== "realistic" && height < 2_000_000) {
       want = sunPosition(date, lat, lon).altitude > 1;
     }
-    if (want !== globe.enableLighting || this.force) {
+    // La "atmósfera de suelo" da el halo azul visto desde el espacio; de cerca tiñe de azul las
+    // laderas en sombra, así que sólo se muestra por encima de 60 km (la niebla sigue de cerca).
+    const groundAtm = settings.value.atmosphere && height > 60_000;
+    if (want !== globe.enableLighting || groundAtm !== globe.showGroundAtmosphere || this.force) {
       this.force = false;
       globe.enableLighting = want;
       globe.dynamicAtmosphereLighting = want;
+      globe.showGroundAtmosphere = groundAtm;
     }
   }
 }
