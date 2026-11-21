@@ -1,0 +1,24 @@
+[
+ {
+  "id": "5ac2e94d-b32c-45fe-a98f-cf55e4fdff4a",
+  "provider_id": "22b9c67b-e02b-49a7-b5fa-e5eee87af3f1",
+  "model_name": "claude-test-opus",
+  "display_name": "claude-test-opus",
+  "capabilities": [
+   "chat",
+   "tools",
+   "reasoning",
+   "code",
+   "long_context"
+  ],
+  "context_window": 128000,
+  "max_output_tokens": 8192,
+  "input_price_per_mtok": "5.0000",
+  "output_price_per_mtok": "25.0000",
+  "quality_tier": 5,
+  "is_default": true,
+  "is_enabled": true,
+  "is_embedding_default": false,
+  "provider_kind": "anthropic"
+ }
+]

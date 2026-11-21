@@ -1,0 +1,30 @@
+[
+ {
+  "id": "f891f0b5-020f-4759-9777-f47aae879bc9",
+  "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+  "key": "t2",
+  "title": "Prototipo visual",
+  "description": "Proponer UI",
+  "task_type": "design",
+  "agent_id": "a12e91e2-006e-4f3c-8800-66afa98cef69",
+  "status": "completed",
+  "priority": 3,
+  "requires_approval": false,
+  "approved_at": null,
+  "revision_of_id": null,
+  "result": "Resultado de t2: entregable completo y verificable.",
+  "error": null,
+  "attempts": 1,
+  "max_attempts": 3,
+  "model_used": "anthropic:claude-test-opus",
+  "actual_cost_usd": "0.013500",
+  "tokens_used": 1500,
+  "started_at": "2026-11-21T13:51:27.391059Z",
+  "completed_at": "2026-11-21T13:51:27.440606Z",
+  "duration_ms": 33,
+  "created_at": "2026-11-21T13:51:27.308491Z",
+  "depends_on": [],
+  "citations": [],
+  "drafts": []
+ }
+]

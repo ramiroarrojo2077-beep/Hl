@@ -1,0 +1,54 @@
+[
+ {
+  "id": "fc1aa87f-1a3b-418c-97da-b7cc73042895",
+  "project_id": null,
+  "title": "Investigar motores de física",
+  "objective": "Comparar motores de física para el simulador",
+  "description": null,
+  "status": "planning",
+  "status_reason": "NEXUS analiza el objetivo",
+  "priority": 3,
+  "autonomy_mode": "supervised",
+  "budget_usd": null,
+  "spent_usd": "0.000000",
+  "tokens_used": 0,
+  "result": null,
+  "error": null,
+  "started_at": null,
+  "completed_at": null,
+  "created_at": "2026-11-21T13:51:27.857630Z",
+  "updated_at": "2026-11-21T13:51:27.862777Z",
+  "progress": 0.0,
+  "task_counts": {},
+  "agent_ids": []
+ },
+ {
+  "id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+  "project_id": "500abc3e-e0f1-46d8-a412-61503bde27da",
+  "title": "Crear app de gestión de videojuegos",
+  "objective": "Diseñar y prototipar una app para gestionar una colección de videojuegos",
+  "description": null,
+  "status": "completed",
+  "status_reason": "Completada. 1 aprendizajes archivados.",
+  "priority": 3,
+  "autonomy_mode": "supervised",
+  "budget_usd": null,
+  "spent_usd": "0.094500",
+  "tokens_used": 10500,
+  "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
+  "error": null,
+  "started_at": "2026-11-21T13:51:27.352694Z",
+  "completed_at": "2026-11-21T13:51:27.617488Z",
+  "created_at": "2026-11-21T13:51:27.256316Z",
+  "updated_at": "2026-11-21T13:51:27.617831Z",
+  "progress": 1.0,
+  "task_counts": {
+   "completed": 3
+  },
+  "agent_ids": [
+   "a12e91e2-006e-4f3c-8800-66afa98cef69",
+   "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+   "fe45dcee-9b32-4d14-87f6-ce80d31b651b"
+  ]
+ }
+]

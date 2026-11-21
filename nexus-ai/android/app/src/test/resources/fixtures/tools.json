@@ -1,0 +1,560 @@
+[
+ {
+  "key": "webhook.send",
+  "name": "Enviar mensaje por webhook",
+  "description": "Envía un mensaje al webhook externo configurado por el usuario (Slack, Discord, n8n...).",
+  "category": "comunicación",
+  "operation_class": "external_communication",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "message"
+   ],
+   "properties": {
+    "message": {
+     "type": "string",
+     "maxLength": 4000
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": "webhook",
+  "is_enabled": true
+ },
+ {
+  "key": "documents.read",
+  "name": "Leer documento",
+  "description": "Lee un archivo del proyecto (PDF, DOCX, TXT, Markdown, código...). Soporta paginación con offset.",
+  "category": "documentos",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "path"
+   ],
+   "properties": {
+    "path": {
+     "type": "string",
+     "maxLength": 400
+    },
+    "offset": {
+     "type": "integer"
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "drafts.create",
+  "name": "Crear borrador",
+  "description": "Guarda un entregable como borrador (informe, documento, propuesta, código). No modifica nada existente.",
+  "category": "documentos",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "title",
+    "content"
+   ],
+   "properties": {
+    "title": {
+     "type": "string",
+     "maxLength": 200
+    },
+    "format": {
+     "enum": [
+      "md",
+      "txt",
+      "json",
+      "html",
+      "py",
+      "kt",
+      "ts",
+      "js",
+      "sql",
+      "csv"
+     ],
+     "type": "string"
+    },
+    "content": {
+     "type": "string",
+     "maxLength": 200000
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "project.delete_file",
+  "name": "Eliminar archivo",
+  "description": "Elimina un archivo del proyecto con todas sus versiones. Irreversible: requiere confirmación explícita.",
+  "category": "documentos",
+  "operation_class": "irreversible",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "path"
+   ],
+   "properties": {
+    "path": {
+     "type": "string",
+     "maxLength": 400
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "project.list_files",
+  "name": "Listar archivos del proyecto",
+  "description": "Lista los archivos (última versión) del proyecto asociado a la tarea.",
+  "category": "documentos",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [],
+   "properties": {},
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "agents.ask",
+  "name": "Consultar a otro agente",
+  "description": "Hace una pregunta concreta a otro agente del equipo y recibe su respuesta (ejecución real de su modelo).",
+  "category": "equipo",
+  "operation_class": "analysis",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "agent",
+    "question"
+   ],
+   "properties": {
+    "agent": {
+     "type": "string",
+     "maxLength": 40
+    },
+    "question": {
+     "type": "string",
+     "maxLength": 4000
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "agents.list",
+  "name": "Listar agentes",
+  "description": "Lista los agentes del equipo con su rol, especialidades y estado actual.",
+  "category": "equipo",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [],
+   "properties": {},
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "web.fetch",
+  "name": "Leer página web",
+  "description": "Descarga y extrae el texto de una página web pública (http/https). Destinos privados bloqueados.",
+  "category": "investigación",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "url"
+   ],
+   "properties": {
+    "url": {
+     "type": "string",
+     "maxLength": 2000
+    },
+    "offset": {
+     "type": "integer"
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "web.search",
+  "name": "Búsqueda web",
+  "description": "Busca en la web mediante el proveedor de búsqueda autorizado. Devuelve títulos, URLs y fragmentos.",
+  "category": "investigación",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "query"
+   ],
+   "properties": {
+    "count": {
+     "type": "integer"
+    },
+    "query": {
+     "type": "string",
+     "maxLength": 400
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": "web_search",
+  "is_enabled": true
+ },
+ {
+  "key": "memory.propose",
+  "name": "Proponer recuerdo",
+  "description": "Propone guardar un conocimiento útil y duradero (no datos triviales). Queda como no verificado hasta que el usuario lo revise. Indicá confianza (0-1) y fuente si existe.",
+  "category": "memoria",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "content"
+   ],
+   "properties": {
+    "kind": {
+     "enum": [
+      "fact",
+      "decision",
+      "experience",
+      "error",
+      "preference",
+      "learning",
+      "result"
+     ],
+     "type": "string"
+    },
+    "scope": {
+     "enum": [
+      "agent",
+      "shared",
+      "user",
+      "project"
+     ],
+     "type": "string"
+    },
+    "title": {
+     "type": "string",
+     "maxLength": 200
+    },
+    "content": {
+     "type": "string",
+     "maxLength": 4000
+    },
+    "confidence": {
+     "type": "number"
+    },
+    "source_ref": {
+     "type": "string",
+     "maxLength": 500
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "memory.search",
+  "name": "Buscar en memoria",
+  "description": "Busca recuerdos relevantes (memoria del agente, compartida, del usuario y del proyecto actual).",
+  "category": "memoria",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "query"
+   ],
+   "properties": {
+    "limit": {
+     "type": "integer"
+    },
+    "query": {
+     "type": "string",
+     "maxLength": 500
+    },
+    "scopes": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "agent",
+       "shared",
+       "user",
+       "project"
+      ],
+      "type": "string"
+     }
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "missions.create",
+  "name": "Crear misión",
+  "description": "Crea una misión para el equipo cuando el usuario pide un objetivo que requiere trabajo planificado.",
+  "category": "misiones",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "title",
+    "objective"
+   ],
+   "properties": {
+    "title": {
+     "type": "string",
+     "maxLength": 200
+    },
+    "priority": {
+     "type": "integer"
+    },
+    "objective": {
+     "type": "string",
+     "maxLength": 8000
+    },
+    "project_id": {
+     "type": "string",
+     "maxLength": 40
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "missions.list",
+  "name": "Listar misiones",
+  "description": "Lista las misiones recientes del usuario, opcionalmente filtradas por estado.",
+  "category": "misiones",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [],
+   "properties": {
+    "status": {
+     "type": "string",
+     "maxLength": 30
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "missions.status",
+  "name": "Estado de misión",
+  "description": "Muestra el estado real de una misión, sus tareas y su resultado.",
+  "category": "misiones",
+  "operation_class": "read",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "mission_id"
+   ],
+   "properties": {
+    "mission_id": {
+     "type": "string",
+     "maxLength": 40
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "notifications.notify_user",
+  "name": "Notificar al usuario",
+  "description": "Envía una notificación al usuario (push y en la app). Usá needs_input=true si necesitás información suya.",
+  "category": "productividad",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "title",
+    "body"
+   ],
+   "properties": {
+    "body": {
+     "type": "string",
+     "maxLength": 1000
+    },
+    "title": {
+     "type": "string",
+     "maxLength": 120
+    },
+    "needs_input": {
+     "type": "boolean"
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "reminders.create",
+  "name": "Crear recordatorio",
+  "description": "Programa un recordatorio para el usuario en una fecha y hora (ISO 8601).",
+  "category": "productividad",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "title",
+    "at"
+   ],
+   "properties": {
+    "at": {
+     "type": "string",
+     "maxLength": 40
+    },
+    "body": {
+     "type": "string",
+     "maxLength": 1000
+    },
+    "title": {
+     "type": "string",
+     "maxLength": 200
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "code.execute",
+  "name": "Ejecutar código en sandbox",
+  "description": "Ejecuta código (python, bash o node) en un contenedor aislado sin red, con límites de recursos y tiempo.",
+  "category": "programación",
+  "operation_class": "modification",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "language",
+    "code"
+   ],
+   "properties": {
+    "code": {
+     "type": "string",
+     "maxLength": 100000
+    },
+    "files": {
+     "type": "object"
+    },
+    "language": {
+     "enum": [
+      "python",
+      "bash",
+      "node"
+     ],
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": "code_sandbox",
+  "is_enabled": true
+ },
+ {
+  "key": "project.write_file",
+  "name": "Escribir archivo del proyecto",
+  "description": "Crea o modifica un archivo de texto del proyecto. Cada escritura genera una versión nueva revisable.",
+  "category": "programación",
+  "operation_class": "modification",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "path",
+    "content"
+   ],
+   "properties": {
+    "path": {
+     "type": "string",
+     "maxLength": 400
+    },
+    "content": {
+     "type": "string",
+     "maxLength": 400000
+    },
+    "change_note": {
+     "type": "string",
+     "maxLength": 500
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
+  "key": "meetings.request",
+  "name": "Convocar reunión",
+  "description": "Convoca una reunión entre agentes sobre un tema, con participantes y límite de rondas.",
+  "category": "reuniones",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "topic",
+    "objective"
+   ],
+   "properties": {
+    "topic": {
+     "type": "string",
+     "maxLength": 300
+    },
+    "objective": {
+     "type": "string",
+     "maxLength": 4000
+    },
+    "max_rounds": {
+     "type": "integer"
+    },
+    "meeting_type": {
+     "enum": [
+      "planning",
+      "research",
+      "technical",
+      "review",
+      "problem_solving",
+      "evaluation"
+     ],
+     "type": "string"
+    },
+    "participants": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   },
+   "additionalProperties": false
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ }
+]

@@ -1,0 +1,157 @@
+{
+ "personality_axes": [
+  {
+   "key": "introvert_extrovert",
+   "left": "introvertido",
+   "right": "extrovertido"
+  },
+  {
+   "key": "analytical_creative",
+   "left": "analítico",
+   "right": "creativo"
+  },
+  {
+   "key": "calm_energetic",
+   "left": "sereno",
+   "right": "enérgico"
+  },
+  {
+   "key": "curious_cautious",
+   "left": "curioso y exploratorio",
+   "right": "cauteloso y conservador"
+  },
+  {
+   "key": "playful_serious",
+   "left": "lúdico",
+   "right": "serio"
+  }
+ ],
+ "emotional_traits": [
+  {
+   "key": "empathy",
+   "label": "empatía"
+  },
+  {
+   "key": "patience",
+   "label": "paciencia"
+  },
+  {
+   "key": "optimism",
+   "label": "optimismo"
+  },
+  {
+   "key": "assertiveness",
+   "label": "asertividad"
+  }
+ ],
+ "appearance_options": {
+  "body": [
+   "a",
+   "b"
+  ],
+  "hair": [
+   "short",
+   "long",
+   "asymmetric",
+   "buzz",
+   "ponytail",
+   "mohawk",
+   "helmet"
+  ],
+  "outfit": [
+   "suit",
+   "armor",
+   "coat",
+   "jacket",
+   "robe"
+  ],
+  "accessory": [
+   "none",
+   "visor",
+   "headset",
+   "glasses",
+   "halo"
+  ]
+ },
+ "appearance_colors": [
+  "hair_color",
+  "eyes",
+  "skin",
+  "outfit_color",
+  "accent"
+ ],
+ "voice_tones": [
+  "warm",
+  "neutral",
+  "bright",
+  "deep"
+ ],
+ "presets": {
+  "nexus": {
+   "body": "a",
+   "hair": "short",
+   "hair_color": "#C9D6E8",
+   "eyes": "#00D9FF",
+   "skin": "#E8C4A8",
+   "outfit": "suit",
+   "outfit_color": "#16324A",
+   "accent": "#00D9FF",
+   "accessory": "headset"
+  },
+  "atlas": {
+   "body": "b",
+   "hair": "ponytail",
+   "hair_color": "#3B2A20",
+   "eyes": "#38D99B",
+   "skin": "#C68E65",
+   "outfit": "coat",
+   "outfit_color": "#1E3B32",
+   "accent": "#38D99B",
+   "accessory": "glasses"
+  },
+  "cipher": {
+   "body": "a",
+   "hair": "mohawk",
+   "hair_color": "#8A5CFF",
+   "eyes": "#B69CFF",
+   "skin": "#F1D3BC",
+   "outfit": "jacket",
+   "outfit_color": "#221A3D",
+   "accent": "#8A5CFF",
+   "accessory": "visor"
+  },
+  "nova": {
+   "body": "b",
+   "hair": "asymmetric",
+   "hair_color": "#5FB6D9",
+   "eyes": "#4B3BBF",
+   "skin": "#F3D5C3",
+   "outfit": "jacket",
+   "outfit_color": "#1A2230",
+   "accent": "#FF6FB5",
+   "accessory": "none"
+  },
+  "oracle": {
+   "body": "a",
+   "hair": "long",
+   "hair_color": "#E9E4D8",
+   "eyes": "#FFC24B",
+   "skin": "#8D5A3B",
+   "outfit": "robe",
+   "outfit_color": "#2E2614",
+   "accent": "#FFC24B",
+   "accessory": "halo"
+  },
+  "guardian": {
+   "body": "a",
+   "hair": "helmet",
+   "hair_color": "#2A2F3A",
+   "eyes": "#FF5C5C",
+   "skin": "#D9A982",
+   "outfit": "armor",
+   "outfit_color": "#2B1518",
+   "accent": "#FF5C5C",
+   "accessory": "visor"
+  }
+ }
+}

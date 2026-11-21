@@ -1,0 +1,52 @@
+[
+ {
+  "id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+  "project_id": null,
+  "mission_id": null,
+  "meeting_type": "technical",
+  "topic": "Arquitectura del simulador",
+  "objective": "Elegir motor y arquitectura",
+  "status": "completed",
+  "max_rounds": 2,
+  "max_duration_seconds": 900,
+  "budget_usd": null,
+  "spent_usd": "0.081000",
+  "tokens_used": 9000,
+  "current_round": 1,
+  "stop_reason": "El moderador dio por cumplido el objetivo",
+  "summary": "Se acordó un enfoque modular.",
+  "started_at": "2026-11-21T13:51:27.661193Z",
+  "ended_at": "2026-11-21T13:51:27.786865Z",
+  "created_at": "2026-11-21T13:51:27.632384Z",
+  "participants": [
+   {
+    "agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+    "role": "moderator",
+    "turns_taken": 1,
+    "name": "NEXUS",
+    "slug": "nexus"
+   },
+   {
+    "agent_id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+    "role": "participant",
+    "turns_taken": 1,
+    "name": "ATLAS",
+    "slug": "atlas"
+   },
+   {
+    "agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+    "role": "participant",
+    "turns_taken": 1,
+    "name": "CIPHER",
+    "slug": "cipher"
+   },
+   {
+    "agent_id": "be0266a8-4748-4fa3-9eb4-92dadd209f81",
+    "role": "participant",
+    "turns_taken": 1,
+    "name": "ORACLE",
+    "slug": "oracle"
+   }
+  ]
+ }
+]

@@ -167,3 +167,12 @@ async def test_dashboard_and_usage_report_real_numbers(api, fake_llm):
     assert 0 <= status["server"]["cpu_percent"] <= 100 and status["push_configured"] is False
     export = (await api.get("/export")).json()
     assert export["missions"] and "api_key_encrypted" not in json.dumps(export, default=str)
+
+
+async def test_learning_archive_can_be_disabled(api, fake_llm):
+    await configure_provider(api)
+    await api.patch("/settings", {"memory_settings": {"archive_learnings": False}})
+    await api.post("/missions", {"title": "Sin memoria", "objective": "No archivar aprendizajes"})
+    await drain()
+    assert (await api.get("/missions")).json()[0]["status"] == "completed"
+    assert (await api.get("/memory")).json() == []

@@ -1,0 +1,18 @@
+[
+ {
+  "id": "7aba6e59-861d-4e45-a7f5-da4eb24e199e",
+  "project_id": "500abc3e-e0f1-46d8-a412-61503bde27da",
+  "path": "drafts/arquitectura.md",
+  "version": 1,
+  "is_latest": true,
+  "content_type": "text/markdown",
+  "size_bytes": 41,
+  "sha256": "2126026c0a45b8d80871c4c76df45876eb4c0c4ec6bfbde4fcf07c40f67b342b",
+  "created_by_agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+  "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+  "change_note": "Borrador generado por agente",
+  "indexed": false,
+  "index_error": null,
+  "created_at": "2026-11-21T13:51:27.466252Z"
+ }
+]

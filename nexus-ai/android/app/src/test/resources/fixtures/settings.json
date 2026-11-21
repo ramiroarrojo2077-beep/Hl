@@ -1,0 +1,25 @@
+{
+ "autonomy_mode": "supervised",
+ "emergency_stop": false,
+ "emergency_stop_at": null,
+ "emergency_stop_reason": null,
+ "daily_budget_usd": null,
+ "monthly_budget_usd": null,
+ "default_mission_budget_usd": null,
+ "max_tokens_per_mission": 400000,
+ "max_concurrent_tasks": 3,
+ "language": "es",
+ "notification_prefs": {
+  "reminder": true,
+  "report_ready": true,
+  "budget_reached": true,
+  "important_error": true,
+  "mission_blocked": true,
+  "agent_needs_info": true,
+  "meeting_finished": true,
+  "mission_completed": true,
+  "approval_requested": true
+ },
+ "appearance": {},
+ "memory_settings": {}
+}

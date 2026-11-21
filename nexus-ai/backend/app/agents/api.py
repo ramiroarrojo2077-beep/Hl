@@ -108,8 +108,23 @@ async def get_persona_catalog(_: CurrentUser = Depends(current_user)) -> dict:
 
 
 @router.get("", response_model=list[AgentOut])
-async def list_agents(cu: CurrentUser = Depends(current_user), session: AsyncSession = Depends(get_session)) -> list[Agent]:
-    return list((await session.scalars(select(Agent).where(Agent.user_id == cu.id).order_by(Agent.is_system.desc(), Agent.created_at))).all())
+async def list_agents(cu: CurrentUser = Depends(current_user), session: AsyncSession = Depends(get_session)) -> list[AgentOut]:
+    agents = (await session.scalars(select(Agent).where(Agent.user_id == cu.id).order_by(Agent.is_system.desc(), Agent.created_at))).all()
+    primary = {
+        agent_id: name
+        for agent_id, name in (await session.execute(
+            select(AgentModel.agent_id, AIModel.display_name).join(AIModel, AIModel.id == AgentModel.model_id)
+            .where(AgentModel.priority == 0, AgentModel.agent_id.in_([a.id for a in agents]))
+        )).all()
+    } if agents else {}
+    default = await session.scalar(select(AIModel.display_name).where(AIModel.user_id == cu.id, AIModel.is_default.is_(True)))
+    out = []
+    for a in agents:
+        item = AgentOut.model_validate(a)
+        # Sin asignación explícita, el router usa el modelo predeterminado (u otro compatible).
+        item.primary_model = primary.get(a.id) or (f"auto · {default}" if default else None)
+        out.append(item)
+    return out
 
 
 @router.post("", response_model=AgentDetailOut, status_code=status.HTTP_201_CREATED)

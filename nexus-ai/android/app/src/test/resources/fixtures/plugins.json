@@ -1,0 +1,83 @@
+[
+ {
+  "key": "code_sandbox",
+  "name": "Sandbox de código",
+  "description": "Ejecuta código en contenedores Docker aislados, sin red y con límites de CPU/memoria.",
+  "is_enabled": false,
+  "config_public": {},
+  "has_secret": false,
+  "permissions": [
+   {
+    "permission": "tool:code.execute",
+    "granted": false,
+    "granted_at": null,
+    "revoked_at": null
+   },
+   {
+    "permission": "system:docker",
+    "granted": false,
+    "granted_at": null,
+    "revoked_at": null
+   }
+  ],
+  "config_fields": {},
+  "last_used_at": null
+ },
+ {
+  "key": "web_search",
+  "name": "Búsqueda web",
+  "description": "Búsqueda web mediante Brave Search API o Tavily. Requiere API key del proveedor.",
+  "is_enabled": false,
+  "config_public": {},
+  "has_secret": false,
+  "permissions": [
+   {
+    "permission": "tool:web.search",
+    "granted": false,
+    "granted_at": null,
+    "revoked_at": null
+   },
+   {
+    "permission": "network:search-provider",
+    "granted": false,
+    "granted_at": null,
+    "revoked_at": null
+   }
+  ],
+  "config_fields": {
+   "provider": [
+    "brave",
+    "tavily"
+   ],
+   "api_key": "secret"
+  },
+  "last_used_at": null
+ },
+ {
+  "key": "webhook",
+  "name": "Webhook saliente",
+  "description": "Envía mensajes a una URL HTTPS configurada (Slack, Discord, n8n, Zapier...). Comunicación externa.",
+  "is_enabled": false,
+  "config_public": {},
+  "has_secret": false,
+  "permissions": [
+   {
+    "permission": "tool:webhook.send",
+    "granted": false,
+    "granted_at": null,
+    "revoked_at": null
+   },
+   {
+    "permission": "network:webhook-url",
+    "granted": false,
+    "granted_at": null,
+    "revoked_at": null
+   }
+  ],
+  "config_fields": {
+   "url": "string",
+   "secret_header": "secret"
+  },
+  "last_used_at": null
+ }
+]

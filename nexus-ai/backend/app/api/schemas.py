@@ -53,6 +53,7 @@ class AgentOut(ORM):
     daily_budget_usd: Decimal | None
     profile: AgentProfileOut
     created_at: datetime
+    primary_model: str | None = None
 
 
 class AgentModelRef(BaseModel):

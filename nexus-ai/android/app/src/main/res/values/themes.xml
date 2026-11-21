@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.Nexus" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/nexus_bg</item>
+        <item name="android:statusBarColor">@color/nexus_bg</item>
+        <item name="android:navigationBarColor">@color/nexus_bg</item>
+    </style>
+    <style name="Theme.Nexus.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/nexus_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_nexus_core</item>
+        <item name="postSplashScreenTheme">@style/Theme.Nexus</item>
+    </style>
+</resources>

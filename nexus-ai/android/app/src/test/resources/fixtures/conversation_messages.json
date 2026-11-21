@@ -1,0 +1,39 @@
+[
+ {
+  "id": "22c62d85-85fe-415a-917f-9d3bfd4e6cdd",
+  "channel": "chat",
+  "channel_id": "0e584475-07e4-402b-8e6e-5d3c44126183",
+  "sender_type": "user",
+  "sender_agent_id": null,
+  "recipient_agent_id": null,
+  "message_type": "message",
+  "content": "Hola NEXUS, ¿qué podés hacer por mí?",
+  "meta": {
+   "attachments": []
+  },
+  "model_used": null,
+  "turn": null,
+  "created_at": "2026-11-21T13:51:27.811887Z"
+ },
+ {
+  "id": "7f715b02-f635-45c5-90c6-3dd83fae42a5",
+  "channel": "chat",
+  "channel_id": "0e584475-07e4-402b-8e6e-5d3c44126183",
+  "sender_type": "agent",
+  "sender_agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+  "recipient_agent_id": null,
+  "message_type": "message",
+  "content": "Hola, soy NEXUS. ¿En qué trabajamos hoy?",
+  "meta": {
+   "tokens": 1500,
+   "cost_usd": "0.0135",
+   "reply_to": "22c62d85-85fe-415a-917f-9d3bfd4e6cdd",
+   "stream_id": "1fc91f06f3ea45d5a7c7ea7924d20580",
+   "tools_used": [],
+   "consulted_agents": []
+  },
+  "model_used": "anthropic:claude-test-opus",
+  "turn": null,
+  "created_at": "2026-11-21T13:51:27.837227Z"
+ }
+]

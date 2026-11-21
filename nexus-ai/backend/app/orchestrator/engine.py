@@ -33,6 +33,7 @@ from app.models import (
     TaskAttempt,
     TaskDependency,
     ToolExecution,
+    UserSettings,
 )
 from app.models.enums import MissionStatus, TaskStatus, TERMINAL_TASK_STATUSES
 from app.monitoring.audit import record_audit
@@ -657,6 +658,9 @@ Al final agregá un bloque ```json con hasta 5 aprendizajes duraderos y reutiliz
     report, trailing = split_trailing_json(result.text)
     mission.result = report
     learnings = (trailing or {}).get("learnings", []) if isinstance(trailing, dict) else []
+    user_settings = await session.get(UserSettings, mission.user_id)
+    if user_settings is not None and (user_settings.memory_settings or {}).get("archive_learnings") is False:
+        learnings = []  # el usuario desactivó el archivado automático de aprendizajes
     stored = 0
     for item in learnings[:5]:
         if not isinstance(item, dict) or not item.get("content"):

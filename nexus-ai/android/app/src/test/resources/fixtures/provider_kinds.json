@@ -1,0 +1,32 @@
+[
+ {
+  "kind": "anthropic",
+  "label": "Anthropic",
+  "default_base_url": "https://api.anthropic.com",
+  "requires_api_key": true
+ },
+ {
+  "kind": "openai",
+  "label": "OpenAI",
+  "default_base_url": "https://api.openai.com/v1",
+  "requires_api_key": true
+ },
+ {
+  "kind": "openai_compatible",
+  "label": "OpenAI-compatible",
+  "default_base_url": "http://localhost:8000/v1",
+  "requires_api_key": false
+ },
+ {
+  "kind": "gemini",
+  "label": "Google Gemini",
+  "default_base_url": "https://generativelanguage.googleapis.com/v1beta",
+  "requires_api_key": true
+ },
+ {
+  "kind": "ollama",
+  "label": "Ollama",
+  "default_base_url": "http://localhost:11434",
+  "requires_api_key": false
+ }
+]

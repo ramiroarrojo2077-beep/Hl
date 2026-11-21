@@ -1,0 +1,198 @@
+{
+ "id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+ "project_id": "500abc3e-e0f1-46d8-a412-61503bde27da",
+ "title": "Crear app de gestión de videojuegos",
+ "objective": "Diseñar y prototipar una app para gestionar una colección de videojuegos",
+ "description": null,
+ "status": "completed",
+ "status_reason": "Completada. 1 aprendizajes archivados.",
+ "priority": 3,
+ "autonomy_mode": "supervised",
+ "budget_usd": null,
+ "spent_usd": "0.094500",
+ "tokens_used": 10500,
+ "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
+ "error": null,
+ "started_at": "2026-11-21T13:51:27.352694Z",
+ "completed_at": "2026-11-21T13:51:27.617488Z",
+ "created_at": "2026-11-21T13:51:27.256316Z",
+ "updated_at": "2026-11-21T13:51:27.617831Z",
+ "progress": 1.0,
+ "task_counts": {
+  "completed": 3
+ },
+ "agent_ids": [
+  "a12e91e2-006e-4f3c-8800-66afa98cef69",
+  "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+  "fe45dcee-9b32-4d14-87f6-ce80d31b651b"
+ ],
+ "plan": {
+  "model": "anthropic:claude-test-opus",
+  "risks": [
+   "alcance"
+  ],
+  "tasks": [
+   {
+    "key": "t1",
+    "title": "Investigar tecnologías",
+    "priority": 3,
+    "task_type": "research",
+    "agent_slug": "atlas",
+    "depends_on": [],
+    "description": "Comparar stacks",
+    "requires_approval": false
+   },
+   {
+    "key": "t2",
+    "title": "Prototipo visual",
+    "priority": 3,
+    "task_type": "design",
+    "agent_slug": "nova",
+    "depends_on": [],
+    "description": "Proponer UI",
+    "requires_approval": false
+   },
+   {
+    "key": "t3",
+    "title": "Arquitectura",
+    "priority": 3,
+    "task_type": "code",
+    "agent_slug": "cipher",
+    "depends_on": [
+     "t1",
+     "t2"
+    ],
+    "description": "Diseñar arquitectura",
+    "requires_approval": false
+   }
+  ],
+  "analysis": "El usuario quiere una app de gestión de videojuegos.",
+  "strategy": "Investigar y diseñar en paralelo; luego arquitectura.",
+  "complexity": "complex",
+  "needs_research": true
+ },
+ "review": {
+  "model": "anthropic:claude-test-opus",
+  "round": 0,
+  "score": 8,
+  "issues": [],
+  "summary": "Cumple el objetivo",
+  "verdict": "approve"
+ },
+ "security_review": {
+  "model": "anthropic:claude-test-opus",
+  "evidence": {
+   "blocked": [],
+   "approvals": [],
+   "by_status": {
+    "succeeded": 1
+   },
+   "modifications": [],
+   "tool_executions": 1,
+   "untrusted_sources": [],
+   "external_communications": []
+  },
+  "assessment": {
+   "status": "ok",
+   "summary": "Sin hallazgos",
+   "findings": []
+  }
+ },
+ "tasks": [
+  {
+   "id": "2ac2b0a1-d9d4-44b2-b887-04933add2c02",
+   "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+   "key": "t1",
+   "title": "Investigar tecnologías",
+   "description": "Comparar stacks",
+   "task_type": "research",
+   "agent_id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+   "status": "completed",
+   "priority": 3,
+   "requires_approval": false,
+   "approved_at": null,
+   "revision_of_id": null,
+   "result": "Resultado de t1: entregable completo y verificable.",
+   "error": null,
+   "attempts": 1,
+   "max_attempts": 3,
+   "model_used": "anthropic:claude-test-opus",
+   "actual_cost_usd": "0.013500",
+   "tokens_used": 1500,
+   "started_at": "2026-11-21T13:51:27.377332Z",
+   "completed_at": "2026-11-21T13:51:27.414747Z",
+   "duration_ms": 19,
+   "created_at": "2026-11-21T13:51:27.308491Z",
+   "depends_on": [],
+   "citations": [],
+   "drafts": []
+  },
+  {
+   "id": "f891f0b5-020f-4759-9777-f47aae879bc9",
+   "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+   "key": "t2",
+   "title": "Prototipo visual",
+   "description": "Proponer UI",
+   "task_type": "design",
+   "agent_id": "a12e91e2-006e-4f3c-8800-66afa98cef69",
+   "status": "completed",
+   "priority": 3,
+   "requires_approval": false,
+   "approved_at": null,
+   "revision_of_id": null,
+   "result": "Resultado de t2: entregable completo y verificable.",
+   "error": null,
+   "attempts": 1,
+   "max_attempts": 3,
+   "model_used": "anthropic:claude-test-opus",
+   "actual_cost_usd": "0.013500",
+   "tokens_used": 1500,
+   "started_at": "2026-11-21T13:51:27.391059Z",
+   "completed_at": "2026-11-21T13:51:27.440606Z",
+   "duration_ms": 33,
+   "created_at": "2026-11-21T13:51:27.308491Z",
+   "depends_on": [],
+   "citations": [],
+   "drafts": []
+  },
+  {
+   "id": "899dcdb0-8e21-40ce-99eb-762377f4f044",
+   "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+   "key": "t3",
+   "title": "Arquitectura",
+   "description": "Diseñar arquitectura",
+   "task_type": "code",
+   "agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+   "status": "completed",
+   "priority": 3,
+   "requires_approval": false,
+   "approved_at": null,
+   "revision_of_id": null,
+   "result": "Resultado de t3: entregable completo y verificable.",
+   "error": null,
+   "attempts": 1,
+   "max_attempts": 3,
+   "model_used": "anthropic:claude-test-opus",
+   "actual_cost_usd": "0.027000",
+   "tokens_used": 3000,
+   "started_at": "2026-11-21T13:51:27.461693Z",
+   "completed_at": "2026-11-21T13:51:27.512845Z",
+   "duration_ms": 45,
+   "created_at": "2026-11-21T13:51:27.308491Z",
+   "depends_on": [
+    "2ac2b0a1-d9d4-44b2-b887-04933add2c02",
+    "f891f0b5-020f-4759-9777-f47aae879bc9"
+   ],
+   "citations": [],
+   "drafts": [
+    {
+     "agent": "CIPHER",
+     "title": "Arquitectura",
+     "format": "md",
+     "content": "# Arquitectura\nCapas: API, dominio, datos",
+     "created_at": "2026-11-21T13:51:27.488833+00:00"
+    }
+   ]
+  }
+ ]
+}

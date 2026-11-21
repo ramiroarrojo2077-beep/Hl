@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NEXUS AI</string>
+    <string name="channel_events">Eventos de NEXUS</string>
+    <string name="channel_events_desc">Misiones, aprobaciones, reuniones, errores y presupuesto</string>
+</resources>
