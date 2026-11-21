@@ -334,9 +334,15 @@ private fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showMenu) IconButton(onClick = onMenu) { Icon(Icons.Outlined.Menu, "Menú", tint = NexusColors.TextPrimary) }
-        Column(Modifier.weight(1f).padding(start = if (showMenu) 0.dp else 8.dp)) {
-            Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 5.sp, fontWeight = FontWeight.Light), color = NexusColors.Accent)
-            ConnectionIndicator(connection, state.emergency)
+        Row(Modifier.weight(1f).padding(start = if (showMenu) 0.dp else 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            ai.nexus.app.core.design.NexusEmblem(30.dp, online = connection == ConnectionState.Connected && !state.emergency)
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(fontFamily = ai.nexus.app.core.design.Orbitron, letterSpacing = 5.sp,
+                    fontWeight = FontWeight.SemiBold, shadow = androidx.compose.ui.graphics.Shadow(NexusColors.Cyan, androidx.compose.ui.geometry.Offset.Zero, 12f)),
+                    color = Color.White)
+                ConnectionIndicator(connection, state.emergency)
+            }
         }
         if (state.approvals > 0) {
             IconButton(onClick = onApprovals) {
@@ -368,7 +374,7 @@ private fun TopBar(
 fun ConnectionIndicator(connection: ConnectionState, emergency: Boolean) {
     val (label, color) = when {
         emergency -> "AGENTES DETENIDOS" to NexusColors.Red
-        connection == ConnectionState.Connected -> "EN LÍNEA · TIEMPO REAL" to NexusColors.Green
+        connection == ConnectionState.Connected -> "EN LÍNEA" to NexusColors.Green
         connection is ConnectionState.Reconnecting -> "RECONECTANDO (${connection.inSeconds}s)" to NexusColors.Amber
         connection == ConnectionState.Connecting -> "CONECTANDO…" to NexusColors.Amber
         connection == ConnectionState.Unauthorized -> "SESIÓN EXPIRADA" to NexusColors.Red
@@ -415,13 +421,12 @@ private fun BottomNav(current: String, onSelect: (String) -> Unit) {
 private fun SideNav(current: String, state: ShellState, modifier: Modifier, onSelect: (String) -> Unit) {
     Column(modifier.background(NexusColors.Background.copy(alpha = 0.9f)).verticalScroll(rememberScrollState()).padding(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 12.dp)) {
-            Box(Modifier.size(34.dp).clip(CircleShape).border(2.dp, NexusColors.Cyan, CircleShape), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(12.dp).clip(CircleShape).background(NexusColors.Cyan))
-            }
+            ai.nexus.app.core.design.NexusEmblem(38.dp)
             Spacer(Modifier.width(10.dp))
             Column {
-                Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 5.sp), color = NexusColors.TextPrimary)
-                Text("ASISTENTE PERSONAL", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = NexusColors.Accent)
+                Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(fontFamily = ai.nexus.app.core.design.Orbitron, letterSpacing = 5.sp,
+                    shadow = androidx.compose.ui.graphics.Shadow(NexusColors.Cyan, androidx.compose.ui.geometry.Offset.Zero, 12f)), color = Color.White)
+                Text("COMMAND CENTER", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = NexusColors.Accent)
             }
         }
         Spacer(Modifier.height(10.dp))

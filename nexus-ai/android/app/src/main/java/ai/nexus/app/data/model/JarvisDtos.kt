@@ -126,6 +126,7 @@ import kotlinx.serialization.json.JsonObject
     @SerialName("active_automations") val activeAutomations: Int = 0,
 )
 @Serializable data class IdTitle(val id: String, val title: String)
+@Serializable data class ReminderItem(val id: String, val title: String, val at: String)
 @Serializable data class JarvisContextDto(
     val headline: String = "",
     val message: String = "",
@@ -133,6 +134,7 @@ import kotlinx.serialization.json.JsonObject
     val timezone: String? = null,
     val counts: ContextCounts = ContextCounts(),
     @SerialName("finished_missions") val finishedMissions: List<IdTitle> = emptyList(),
+    @SerialName("reminders_today") val remindersToday: List<ReminderItem> = emptyList(),
     @SerialName("conversation_id") val conversationId: String? = null,
     @SerialName("jarvis_settings") val jarvisSettings: JarvisPrefs = JarvisPrefs(),
 )

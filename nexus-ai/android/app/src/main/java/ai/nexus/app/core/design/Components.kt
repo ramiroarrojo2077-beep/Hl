@@ -64,34 +64,40 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import kotlin.math.sin
 
-val PanelShape = RoundedCornerShape(14.dp)
+val PanelShape = RoundedCornerShape(10.dp)
 
-/** Fondo de la app: degradado profundo con retícula tenue. */
+/** Fondo holográfico: azul marino profundo, resplandor cian central, retícula fina y viñeta. */
 @Composable
 fun HudBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     Box(
         modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(NexusColors.Background, Color(0xFF0A0F1C), NexusColors.Background)))
+            .background(Brush.verticalGradient(listOf(Color(0xFF041024), NexusColors.Background, Color(0xFF020711))))
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            val step = 48.dp.toPx()
-            val grid = Color(0x0D00D9FF)
-            var x = 0f
-            while (x < size.width) {
-                drawLine(grid, Offset(x, 0f), Offset(x, size.height), 1f); x += step
-            }
-            var y = 0f
-            while (y < size.height) {
-                drawLine(grid, Offset(0f, y), Offset(size.width, y), 1f); y += step
-            }
             drawCircle(
-                Brush.radialGradient(listOf(Color(0x1400D9FF), Color.Transparent), center = Offset(size.width * 0.5f, size.height * 0.2f), radius = size.width),
-                radius = size.width, center = Offset(size.width * 0.5f, size.height * 0.2f),
+                Brush.radialGradient(listOf(Color(0x3317B8E6), Color(0x110A5C8C), Color.Transparent), center = Offset(size.width * 0.5f, size.height * 0.28f),
+                    radius = size.width * 1.1f),
+                radius = size.width * 1.1f, center = Offset(size.width * 0.5f, size.height * 0.28f),
             )
+            val step = 32.dp.toPx()
+            val grid = Color(0x0B1ED6FF)
+            var x = 0f
+            while (x < size.width) { drawLine(grid, Offset(x, 0f), Offset(x, size.height), 1f); x += step }
+            var y = 0f
+            while (y < size.height) { drawLine(grid, Offset(0f, y), Offset(size.width, y), 1f); y += step }
+            // puntos de luz tenues en las intersecciones
+            var gy = step
+            while (gy < size.height) {
+                var gx = step
+                while (gx < size.width) { drawCircle(Color(0x141ED6FF), 1.2f, Offset(gx, gy)); gx += step * 2 }
+                gy += step * 2
+            }
+            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0x99020711)), startY = size.height * 0.75f, endY = size.height))
         }
         content()
     }
@@ -112,8 +118,13 @@ fun HudPanel(
     Column(
         modifier
             .clip(PanelShape)
-            .background(Brush.verticalGradient(listOf(NexusColors.Surface.copy(alpha = 0.92f), NexusColors.BackgroundAlt.copy(alpha = 0.92f))))
-            .border(BorderStroke(1.dp, Brush.linearGradient(listOf(accent.copy(alpha = if (glow) 0.45f else 0.25f), NexusColors.Violet.copy(alpha = 0.12f), accent.copy(alpha = 0.2f)))), PanelShape)
+            .background(Brush.verticalGradient(listOf(Color(0xE00C2038), Color(0xE0081628), Color(0xE6061223))))
+            .border(BorderStroke(1.dp, Brush.verticalGradient(listOf(accent.copy(alpha = if (glow) 0.65f else 0.4f), accent.copy(alpha = 0.18f), accent.copy(alpha = 0.32f)))), PanelShape)
+            .drawWithContent {
+                // brillo interior superior (vidrio)
+                drawRect(Brush.verticalGradient(listOf(accent.copy(alpha = 0.10f), Color.Transparent), endY = 36.dp.toPx()))
+                drawContent()
+            }
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .drawCornerBrackets(accent)
             .padding(contentPadding),
@@ -121,9 +132,8 @@ fun HudPanel(
         if (title != null || action != null) {
             Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (title != null) {
-                    Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
-                    Spacer(Modifier.width(8.dp))
-                    Text(title.uppercase(), style = MaterialTheme.typography.labelMedium, color = NexusColors.TextPrimary, modifier = Modifier.weight(1f))
+                    Text(title.uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 2.2.sp), color = NexusColors.TextPrimary,
+                        modifier = Modifier.weight(1f))
                 } else {
                     Spacer(Modifier.weight(1f))
                 }
@@ -217,13 +227,14 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier.heightIn(min = 48.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = NexusColors.Accent, contentColor = NexusColors.Background,
-            disabledContainerColor = NexusColors.Accent.copy(alpha = 0.25f)),
+        modifier = modifier.heightIn(min = 48.dp)
+            .border(1.dp, Brush.horizontalGradient(listOf(NexusColors.Accent.copy(alpha = if (enabled) 0.9f else 0.3f), NexusColors.Accent.copy(alpha = if (enabled) 0.5f else 0.2f))), RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = NexusColors.Accent.copy(alpha = 0.20f), contentColor = NexusColors.TextPrimary,
+            disabledContainerColor = NexusColors.Accent.copy(alpha = 0.06f), disabledContentColor = NexusColors.TextMuted),
     ) {
         if (loading) {
-            CircularProgressIndicator(Modifier.size(18.dp), color = NexusColors.Background, strokeWidth = 2.dp)
+            CircularProgressIndicator(Modifier.size(18.dp), color = NexusColors.Accent, strokeWidth = 2.dp)
         } else {
             if (icon != null) { Icon(icon, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)) }
             Text(text.uppercase(), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -237,8 +248,8 @@ fun GhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.heightIn(min = 48.dp),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, color.copy(alpha = if (enabled) 0.6f else 0.2f)),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = if (enabled) 0.55f else 0.2f)),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = color),
     ) {
@@ -283,21 +294,36 @@ fun NexusTextField(
     )
 }
 
-/** Slider de rasgo con dos polos, al estilo [Introvertido/Extrovertido] 70%. */
+/** Slider de rasgo al estilo NOVA: «[Introvertido/Extrovertido] 70%» con barra fina luminosa. */
 @Composable
 fun TraitSlider(left: String, right: String?, value: Int, onChange: (Int) -> Unit, color: Color = NexusColors.Cyan, enabled: Boolean = true) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    val label = if (right != null) "[${left.replaceFirstChar { it.uppercase() }}/${right.replaceFirstChar { it.uppercase() }}]" else "[${left.replaceFirstChar { it.uppercase() }}]"
+    Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (right != null) "[${left.replaceFirstChar { it.uppercase() }}/${right.replaceFirstChar { it.uppercase() }}]" else "[${left.replaceFirstChar { it.uppercase() }}]",
-                style = MaterialTheme.typography.bodySmall, color = NexusColors.TextPrimary, modifier = Modifier.weight(1f))
-            Text("$value%", style = MaterialTheme.typography.labelMedium.copy(fontFamily = Mono), color = color)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = NexusColors.TextPrimary, modifier = Modifier.weight(1f))
+            Text("$value%", style = MaterialTheme.typography.titleSmall, color = NexusColors.TextPrimary)
         }
         Slider(
             value = value.toFloat(),
             onValueChange = { onChange(it.toInt()) },
             valueRange = 0f..100f,
             enabled = enabled,
-            colors = SliderDefaults.colors(thumbColor = color, activeTrackColor = color, inactiveTrackColor = color.copy(alpha = 0.18f)),
+            modifier = Modifier.height(30.dp),
+            thumb = {
+                Box(Modifier.size(14.dp).drawWithContent {
+                    drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.55f), Color.Transparent)), radius = size.minDimension)
+                    drawCircle(Color.White, radius = size.minDimension / 3.2f)
+                    drawCircle(color, radius = size.minDimension / 2.2f, style = Stroke(2.dp.toPx()))
+                })
+            },
+            track = { state ->
+                val fraction = (state.value - state.valueRange.start) / (state.valueRange.endInclusive - state.valueRange.start)
+                Canvas(Modifier.fillMaxWidth().height(6.dp)) {
+                    val y = size.height / 2
+                    drawLine(color.copy(alpha = 0.18f), Offset(0f, y), Offset(size.width, y), 4.dp.toPx(), StrokeCap.Round)
+                    drawLine(Brush.horizontalGradient(listOf(color.copy(alpha = 0.55f), color)), Offset(0f, y), Offset(size.width * fraction, y), 4.dp.toPx(), StrokeCap.Round)
+                }
+            },
         )
     }
 }
@@ -446,4 +472,22 @@ fun KeyValue(label: String, value: String, modifier: Modifier = Modifier, valueC
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), modifier.padding(top = 14.dp, bottom = 6.dp), style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
+}
+
+
+/** Emblema de NEXUS (anillo luminoso con núcleo), como el logo de la referencia. */
+@Composable
+fun NexusEmblem(size: Dp = 34.dp, color: Color = NexusColors.Cyan, online: Boolean = true) {
+    Canvas(Modifier.size(size)) {
+        val c = center
+        val r = this.size.minDimension / 2
+        drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.45f), Color.Transparent), center = c, radius = r), radius = r, center = c)
+        drawCircle(color, r * 0.82f, c, style = Stroke(2.dp.toPx()))
+        drawArc(color.copy(alpha = 0.6f), -60f, 120f, false, Offset(c.x - r * 0.62f, c.y - r * 0.62f), androidx.compose.ui.geometry.Size(r * 1.24f, r * 1.24f),
+            style = Stroke(1.5f.dp.toPx(), cap = StrokeCap.Round))
+        drawArc(color.copy(alpha = 0.6f), 120f, 120f, false, Offset(c.x - r * 0.62f, c.y - r * 0.62f), androidx.compose.ui.geometry.Size(r * 1.24f, r * 1.24f),
+            style = Stroke(1.5f.dp.toPx(), cap = StrokeCap.Round))
+        drawCircle(if (online) Color.White else NexusColors.TextMuted, r * 0.28f, c)
+        drawCircle(color.copy(alpha = 0.7f), r * 0.36f, c, style = Stroke(1.dp.toPx()))
+    }
 }

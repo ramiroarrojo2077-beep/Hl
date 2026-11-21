@@ -68,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -261,9 +262,12 @@ private fun EditorTabs(tab: String, onSelect: (String) -> Unit) {
             val active = k == tab
             Text(
                 "[$l]",
-                Modifier.clip(RoundedCornerShape(8.dp)).background(if (active) NexusColors.Cyan.copy(alpha = 0.15f) else Color.Transparent)
-                    .clickable { onSelect(k) }.padding(horizontal = 8.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                Modifier.clip(RoundedCornerShape(6.dp)).background(if (active) NexusColors.Cyan.copy(alpha = 0.12f) else Color.Transparent)
+                    .clickable { onSelect(k) }
+                    .drawBehind { if (active) drawLine(NexusColors.Cyan, androidx.compose.ui.geometry.Offset(6f, size.height - 2f),
+                        androidx.compose.ui.geometry.Offset(size.width - 6f, size.height - 2f), 2.dp.toPx()) }
+                    .padding(horizontal = 8.dp, vertical = 9.dp),
+                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.2.sp),
                 maxLines = 1,
                 color = if (active) NexusColors.Cyan else NexusColors.TextSecondary,
             )
@@ -271,24 +275,46 @@ private fun EditorTabs(tab: String, onSelect: (String) -> Unit) {
     }
 }
 
-/** Escenario central: el personaje sobre su plataforma holográfica. */
+/** Escenario central al estilo NOVA: personaje 3D girable sobre su plataforma, con haces de luz en X. */
 @Composable
 private fun CharacterStage(d: AgentDraft, modifier: Modifier) {
     val accent = parseHex(d.appearance.accent)
-    HudPanel(modifier, accent = accent, contentPadding = 10.dp) {
-        Box(
-            Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
-                .background(Brush.radialGradient(listOf(accent.copy(alpha = 0.16f), NexusColors.Background.copy(alpha = 0.2f)))),
-        ) {
-            AgentFigure(d.appearance, d.status, Modifier.fillMaxSize().padding(top = 26.dp))
-            Column(Modifier.padding(6.dp)) {
-                Text(d.name.ifBlank { "NUEVO AGENTE" }.uppercase(), style = MaterialTheme.typography.headlineMedium, color = NexusColors.TextPrimary)
-                Text(d.role.ifBlank { "Definí su rol" }, style = MaterialTheme.typography.bodySmall, color = accent)
+    HudPanel(modifier, accent = accent, contentPadding = 6.dp) {
+        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)).background(NexusColors.Background.copy(alpha = 0.55f))) {
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                val w = size.width; val h = size.height
+                // retícula
+                val step = 22.dp.toPx()
+                var x = 0f
+                while (x < w) { drawLine(accent.copy(alpha = 0.06f), androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Offset(x, h), 1f); x += step }
+                var y = 0f
+                while (y < h) { drawLine(accent.copy(alpha = 0.06f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(w, y), 1f); y += step }
+                // haces de luz cruzados (X) detrás del personaje
+                for (dir in listOf(1f, -1f)) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(w * 0.5f - dir * w * 0.62f, -h * 0.05f); lineTo(w * 0.5f - dir * w * 0.42f, -h * 0.05f)
+                        lineTo(w * 0.5f + dir * w * 0.62f, h * 1.05f); lineTo(w * 0.5f + dir * w * 0.42f, h * 1.05f); close()
+                    }
+                    drawPath(path, Brush.verticalGradient(listOf(accent.copy(alpha = 0.05f), accent.copy(alpha = 0.22f), accent.copy(alpha = 0.05f))))
+                }
+                drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = 0.22f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(w / 2, h * 0.45f),
+                    radius = w * 0.6f), radius = w * 0.6f, center = androidx.compose.ui.geometry.Offset(w / 2, h * 0.45f))
             }
-            Column(Modifier.align(Alignment.BottomStart).padding(8.dp)) {
-                Text("Razonamiento: ${label(d.reasoningLevel)}", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
-                Text("Estado: ${ai.nexus.app.core.design.statusStyle(d.status).label}", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
+            AgentFigure(d.appearance, d.status, Modifier.fillMaxSize().padding(top = 30.dp, bottom = 6.dp), interactive = true)
+            Column(Modifier.padding(10.dp)) {
+                Text(d.name.ifBlank { "NUEVO AGENTE" }.uppercase(), style = MaterialTheme.typography.headlineMedium.copy(
+                    fontFamily = ai.nexus.app.core.design.Orbitron, letterSpacing = 2.sp,
+                    shadow = androidx.compose.ui.graphics.Shadow(accent, androidx.compose.ui.geometry.Offset.Zero, 16f)), color = NexusColors.TextPrimary)
+                Text(d.role.ifBlank { "Definí su rol" }, style = MaterialTheme.typography.titleSmall, color = accent)
             }
+            Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
+                Text("Razonamiento:", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
+                Text(label(d.reasoningLevel), style = MaterialTheme.typography.titleSmall, color = NexusColors.TextPrimary)
+                Text("Estado:", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary, modifier = Modifier.padding(top = 4.dp))
+                Text(ai.nexus.app.core.design.statusStyle(d.status).label, style = MaterialTheme.typography.titleSmall, color = accent)
+            }
+            Text("⟲ arrastrá para girar", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextMuted,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp))
         }
     }
 }

@@ -47,6 +47,7 @@ data class HomeState(
     val advanced: Boolean = false,
     val projects: List<ProjectDto> = emptyList(),
     val lastTurnVoice: Boolean = false,
+    val dash: ai.nexus.app.data.model.DashboardDto? = null,
     val startNew: Boolean = false,
 ) {
     val recentError get() = error != null && System.currentTimeMillis() - errorAt < 8_000
@@ -112,8 +113,16 @@ class HomeViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
+    private var lastDash = 0L
+
     private fun refreshServerState() {
         viewModelScope.launch { runCatching { c.api.jarvisState() }.onSuccess { s -> update { it.copy(server = s) } } }
+        // Panel de agentes y recursos: como mucho una consulta cada 3 s aunque lleguen muchos eventos.
+        val now = System.currentTimeMillis()
+        if (now - lastDash > 3000) {
+            lastDash = now
+            viewModelScope.launch { runCatching { c.api.dashboard() }.onSuccess { d -> update { it.copy(dash = d) } } }
+        }
     }
 
     private fun refreshPending() {

@@ -35,7 +35,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -195,82 +200,111 @@ fun HomeScreen() {
         pendingConfirmations = s.pending.size + (s.server?.pendingApprovals ?: 0), recentError = s.recentError,
     ))
 
-    Column(Modifier.fillMaxSize().imePadding()) {
-        Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // ZONA B — núcleo con estados reales
-            Spacer(Modifier.height(6.dp))
+    val connected = connection == ai.nexus.app.core.realtime.ConnectionState.Connected
+    val feed = buildFeed(s.context, s.server, s.pending.size)
+    val label = coreLabel(coreState, s)
+    val longPressSession = { if (hasMic()) { voice.startSession(continuous = true); vm.voiceSession(true, true) } else micPermission.launch(Manifest.permission.RECORD_AUDIO) }
+
+    // ZONA B — núcleo holográfico con estados reales (+ voz en curso)
+    val coreBlock: @Composable (Dp) -> Unit = { coreSize ->
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.clickable(onClickLabel = if (v.speaking) "Interrumpir a NEXUS" else "Hablar con NEXUS") { onMic() }) {
-                NexusCoreVisual(coreState, size = 196.dp, audioLevel = v.level, speechPulse = v.speechPulse,
+                NexusCoreVisual(coreState, size = coreSize, audioLevel = v.level, speechPulse = v.speechPulse,
                     specialists = s.server?.collaboratingAgents?.size ?: 0)
             }
-            Text(coreLabel(coreState, s), style = MaterialTheme.typography.labelMedium, color = coreColor(coreState),
-                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            Text(label, style = MaterialTheme.typography.labelLarge, color = coreColor(coreState),
+                modifier = Modifier.offset(y = (-8).dp).semantics { liveRegion = LiveRegionMode.Polite })
             if (v.listening && v.partial.isNotBlank()) {
-                Text("«${v.partial}»", style = MaterialTheme.typography.bodyMedium, color = NexusColors.TextSecondary, textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 4.dp))
+                Text("«${v.partial}»", style = MaterialTheme.typography.bodyLarge, color = NexusColors.TextPrimary, textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp))
             }
             if (v.sessionActive) VoiceSessionBar(v.continuous, v.muted, v.listening, v.turns, prefs.volume.toFloat(),
                 onMute = { voice.setMuted(!v.muted) }, onEnd = { voice.endSession(); vm.voiceSession(false, v.continuous, v.turns) },
                 onVolume = { vol -> c.voicePrefs.value = prefs.copy(volume = vol.toDouble()) })
             v.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = NexusColors.Amber, modifier = Modifier.padding(top = 4.dp)) }
-            Spacer(Modifier.height(12.dp))
-
-            // ZONA C — mensaje del asistente (derivado de datos reales) y conversación reciente
-            AssistantZone(s, v.speakingMessageId, prefs.subtitles, onTrace = { traceFor = it }, onFeedback = vm::feedback)
-
-            s.pending.forEach { a ->
-                ActionCard(a, onConfirm = { if (a.actionKey == "whatsapp.open_chat") waAction = a else vm.confirm(a) }, onCancel = { vm.cancel(a) })
-            }
-            Spacer(Modifier.height(10.dp))
         }
+    }
+    // ZONA C — mensaje contextual, conversación y confirmaciones
+    val assistantBlock: @Composable () -> Unit = {
+        AssistantZone(s, v.speakingMessageId, prefs.subtitles, onTrace = { traceFor = it }, onFeedback = vm::feedback)
+        s.pending.forEach { a ->
+            ActionCard(a, onConfirm = { if (a.actionKey == "whatsapp.open_chat") waAction = a else vm.confirm(a) }, onCancel = { vm.cancel(a) })
+        }
+    }
+    val gap = Modifier.height(12.dp)
 
-        // ZONA E — acciones rápidas configurables
-        val quick = s.quick.filter { it.visible && it.key in QUICK_META }
-        if (quick.isNotEmpty()) {
-            LazyRow(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(quick, key = { it.key }) { q ->
-                    val (label, icon) = QUICK_META.getValue(q.key)
-                    QuickChip(label, icon) { vm.quick(q.key) }
+    BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
+        val screenWidth = maxWidth
+        val wide = screenWidth >= 840.dp
+        Column(Modifier.fillMaxSize()) {
+            if (wide) {
+                // Tablet: tres columnas como el command center de la referencia.
+                SystemHeader(s.server, connected)
+                Row(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(0.28f).verticalScroll(rememberScrollState())) {
+                        CoreOverviewPanel(s.server, s.dash, prefs, label, coreColor = coreColor(coreState)); Spacer(gap)
+                        MissionTimelinePanel(s.dash, navigate)
+                    }
+                    Column(Modifier.weight(0.44f).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                        coreBlock(330.dp); Spacer(gap)
+                        assistantBlock(); Spacer(gap)
+                        ActiveAgentsPanel(s.dash, navigate)
+                    }
+                    Column(Modifier.weight(0.28f).verticalScroll(rememberScrollState())) {
+                        LiveFeedPanel(feed, navigate); Spacer(gap)
+                        QuickCommandsPanel(s.quick, vm::quick, onEdit = { navigate("settings/jarvis") })
+                    }
                 }
-                item { QuickChip("Editar", Icons.Outlined.Edit) { navigate("settings/jarvis") } }
-            }
-        }
-
-        // ZONA D — entrada universal
-        if (attachments.isNotEmpty()) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                attachments.forEach { (id, name) -> Tag("📎 $name", NexusColors.Cyan, Modifier.clickable { attachments.removeAll { it.first == id } }) }
-            }
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box {
-                IconButton(onClick = { attachMenu = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Add, "Adjuntar o abrir", tint = NexusColors.TextSecondary) }
-                DropdownMenu(expanded = attachMenu, onDismissRequest = { attachMenu = false }) {
-                    DropdownMenuItem(text = { Text("Documento") }, onClick = { attachMenu = false; filePicker.launch(arrayOf("*/*")) })
-                    DropdownMenuItem(text = { Text("Imagen") }, onClick = { attachMenu = false; filePicker.launch(arrayOf("image/*")) })
-                    DropdownMenuItem(text = { Text("Consultar un proyecto") }, onClick = { attachMenu = false; navigate("projects") })
-                    DropdownMenuItem(text = { Text("Nueva conversación") }, onClick = { attachMenu = false; vm.newConversation() })
+            } else {
+                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    SystemHeader(s.server, connected)
+                    coreBlock(minOf(screenWidth, 360.dp))
+                    Column(Modifier.padding(horizontal = 14.dp)) {
+                        assistantBlock(); Spacer(gap)
+                        LiveFeedPanel(feed, navigate); Spacer(gap)
+                        QuickCommandsPanel(s.quick, vm::quick, onEdit = { navigate("settings/jarvis") }); Spacer(gap)
+                        CoreOverviewPanel(s.server, s.dash, prefs, label, coreColor = coreColor(coreState)); Spacer(gap)
+                        ActiveAgentsPanel(s.dash, navigate); Spacer(gap)
+                        MissionTimelinePanel(s.dash, navigate); Spacer(gap)
+                    }
                 }
             }
-            OutlinedTextField(
-                value = input, onValueChange = { input = it }, modifier = Modifier.weight(1f),
-                placeholder = { Text("Escribile a NEXUS…", color = NexusColors.TextMuted) }, maxLines = 4,
-                shape = RoundedCornerShape(22.dp),
-                trailingIcon = {
-                    if (input.isNotBlank()) IconButton(onClick = {
-                        vm.send(input, attachments = attachments.map { it.first }); input = ""; attachments.clear()
-                    }) { Icon(Icons.AutoMirrored.Outlined.Send, "Enviar", tint = NexusColors.Accent) }
-                },
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NexusColors.Accent, unfocusedBorderColor = NexusColors.Border,
-                    focusedContainerColor = NexusColors.Surface, unfocusedContainerColor = NexusColors.Surface,
-                    focusedTextColor = NexusColors.TextPrimary, unfocusedTextColor = NexusColors.TextPrimary, cursorColor = NexusColors.Accent),
-            )
-            Spacer(Modifier.width(8.dp))
-            MicButton(listening = v.listening, speaking = v.speaking, onClick = { onMic() },
-                onLongClick = { if (hasMic()) { voice.startSession(continuous = true); vm.voiceSession(true, true) } else micPermission.launch(Manifest.permission.RECORD_AUDIO) })
+
+            // ZONA D — entrada universal: barra de voz destacada + texto + adjuntos
+            TalkBar(v.listening, v.speaking, v.level, onTap = { onMic() },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = if (wide) 160.dp else 14.dp, vertical = 4.dp)
+                    .pointerInput(Unit) { detectTapGestures(onLongPress = { longPressSession() }) })
+            if (attachments.isNotEmpty()) {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    attachments.forEach { (id, name) -> Tag("📎 $name", NexusColors.Cyan, Modifier.clickable { attachments.removeAll { it.first == id } }) }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box {
+                    IconButton(onClick = { attachMenu = true }, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Add, "Adjuntar o abrir", tint = NexusColors.Cyan) }
+                    DropdownMenu(expanded = attachMenu, onDismissRequest = { attachMenu = false }) {
+                        DropdownMenuItem(text = { Text("Documento") }, onClick = { attachMenu = false; filePicker.launch(arrayOf("*/*")) })
+                        DropdownMenuItem(text = { Text("Imagen") }, onClick = { attachMenu = false; filePicker.launch(arrayOf("image/*")) })
+                        DropdownMenuItem(text = { Text("Consultar un proyecto") }, onClick = { attachMenu = false; navigate("projects") })
+                        DropdownMenuItem(text = { Text("Nueva conversación") }, onClick = { attachMenu = false; vm.newConversation() })
+                    }
+                }
+                OutlinedTextField(
+                    value = input, onValueChange = { input = it }, modifier = Modifier.weight(1f),
+                    placeholder = { Text("Escribile a NEXUS…", color = NexusColors.TextMuted) }, maxLines = 4,
+                    shape = RoundedCornerShape(24.dp), textStyle = MaterialTheme.typography.bodyLarge,
+                    trailingIcon = {
+                        if (input.isNotBlank()) IconButton(onClick = {
+                            vm.send(input, attachments = attachments.map { it.first }); input = ""; attachments.clear()
+                        }) { Icon(Icons.AutoMirrored.Outlined.Send, "Enviar", tint = NexusColors.Cyan) }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = NexusColors.Cyan, unfocusedBorderColor = NexusColors.Border,
+                        focusedContainerColor = NexusColors.Surface.copy(alpha = 0.85f), unfocusedContainerColor = NexusColors.Surface.copy(alpha = 0.85f),
+                        focusedTextColor = NexusColors.TextPrimary, unfocusedTextColor = NexusColors.TextPrimary, cursorColor = NexusColors.Cyan),
+                )
+                Spacer(Modifier.width(8.dp))
+                MicButton(listening = v.listening, speaking = v.speaking, onClick = { onMic() }, onLongClick = { longPressSession() })
+            }
         }
     }
 
@@ -347,15 +381,18 @@ private fun MessageLine(m: MessageDto, speaking: Boolean, subtitles: Boolean, ad
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MicButton(listening: Boolean, speaking: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
-    val color = when { listening -> NexusColors.Cyan; speaking -> NexusColors.Amber; else -> NexusColors.Accent }
+    val color = when { listening -> androidx.compose.ui.graphics.Color(0xFF39F5D2); speaking -> NexusColors.Amber; else -> NexusColors.Cyan }
     val label = when { speaking -> "Interrumpir a NEXUS"; listening -> "Terminar de hablar"; else -> "Hablar con NEXUS (mantené para conversación continua)" }
     Box(
-        Modifier.size(58.dp).clip(CircleShape).background(color).combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        Modifier.size(60.dp).clip(CircleShape)
+            .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(color.copy(alpha = 0.55f), color.copy(alpha = 0.18f), NexusColors.Background)))
+            .border(2.dp, color, CircleShape).combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
+        Box(Modifier.size(44.dp).border(1.dp, color.copy(alpha = 0.6f), CircleShape))
         Icon(when { speaking -> Icons.Outlined.Stop; listening -> Icons.Outlined.Hearing; else -> Icons.Outlined.Mic }, null,
-            tint = NexusColors.Background, modifier = Modifier.size(28.dp))
+            tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(26.dp))
     }
 }
 
