@@ -29,6 +29,7 @@ import ai.nexus.app.data.model.VoiceSettings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -234,9 +235,9 @@ fun AgentEditorScreen(agentId: String?, onDone: () -> Unit) {
                         Modifier.fillMaxWidth().background(NexusColors.Background.copy(alpha = 0.95f)).padding(10.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        PrimaryButton("Guardar cambios", save, Modifier.weight(1.3f), loading = s.saving)
-                        GhostButton("Restablecer", vm::reset, Modifier.weight(1f), color = NexusColors.TextSecondary)
-                        GhostButton("Cargar preset", { showPresets = true }, Modifier.weight(1f))
+                        PrimaryButton("Guardar", save, Modifier.weight(1f), loading = s.saving)
+                        GhostButton("Reset", vm::reset, Modifier.weight(0.8f), color = NexusColors.TextSecondary)
+                        GhostButton("Presets", { showPresets = true }, Modifier.weight(0.9f))
                     }
                 }
             }
@@ -253,16 +254,17 @@ private fun tabTitle(tab: String) = when (tab) {
 private fun EditorTabs(tab: String, onSelect: (String) -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).clip(RoundedCornerShape(10.dp))
-            .border(1.dp, NexusColors.Border, RoundedCornerShape(10.dp)).padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+            .border(1.dp, NexusColors.Border, RoundedCornerShape(10.dp)).horizontalScroll(rememberScrollState()).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         listOf("identity" to "IDENTIDAD", "appearance" to "APARIENCIA", "personality" to "PERSONALIDAD", "emotions" to "EMOCIONES", "voice" to "VOZ").forEach { (k, l) ->
             val active = k == tab
             Text(
                 "[$l]",
                 Modifier.clip(RoundedCornerShape(8.dp)).background(if (active) NexusColors.Cyan.copy(alpha = 0.15f) else Color.Transparent)
-                    .clickable { onSelect(k) }.padding(horizontal = 6.dp, vertical = 8.dp),
+                    .clickable { onSelect(k) }.padding(horizontal = 8.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                maxLines = 1,
                 color = if (active) NexusColors.Cyan else NexusColors.TextSecondary,
             )
         }
@@ -285,7 +287,7 @@ private fun CharacterStage(d: AgentDraft, modifier: Modifier) {
             }
             Column(Modifier.align(Alignment.BottomStart).padding(8.dp)) {
                 Text("Razonamiento: ${label(d.reasoningLevel)}", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
-                Text("Estado: ${d.status}", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
+                Text("Estado: ${ai.nexus.app.core.design.statusStyle(d.status).label}", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextSecondary)
             }
         }
     }

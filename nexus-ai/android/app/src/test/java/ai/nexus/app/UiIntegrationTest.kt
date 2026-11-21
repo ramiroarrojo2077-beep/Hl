@@ -7,7 +7,10 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -102,10 +105,21 @@ class UiIntegrationTest {
     @After fun tearDown() = server.shutdown()
 
     private fun waitForText(text: String, timeout: Long = 15_000) {
-        compose.waitUntil(timeout) { compose.onAllNodes(hasText(text, substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        try {
+            compose.waitUntil(timeout) { compose.onAllNodes(hasText(text, substring = true, ignoreCase = true)).fetchSemanticsNodes().isNotEmpty() }
+        } catch (e: Throwable) {
+            runCatching { compose.onRoot().captureRoboImage("build/screenshots/FAIL_${text.filter { it.isLetterOrDigit() }}.png") }
+            println("=== Esperando «$text». Requests: $requests")
+            runCatching { println(compose.onRoot(useUnmergedTree = true).printToString(maxDepth = 6)) }
+            throw e
+        }
     }
 
-    private fun tap(text: String) = compose.onAllNodesWithText(text, substring = false).onFirst().performClick()
+    private fun tap(text: String) {
+        val node = compose.onAllNodesWithText(text, substring = false, ignoreCase = true).onFirst()
+        runCatching { node.performScrollTo() }
+        node.performClick()
+    }
 
     @Test fun navigatesTheRealAppWithBackendData() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -118,10 +132,13 @@ class UiIntegrationTest {
             // Agent Center
             tap("Agents")
             waitForText("Agent Center")
-            waitForText("ORACLE")
+            waitForText("CIPHER")
             compose.onRoot().captureRoboImage("build/screenshots/02_agents.png")
 
-            // Detalle y editor de personaje
+            // Detalle y editor de personaje (NOVA está más abajo en la grilla)
+            compose.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasText("NOVA"))
+            waitForText("Creativo")
+            compose.onRoot().captureRoboImage("build/screenshots/02b_agents_nova.png")
             compose.onAllNodesWithText("NOVA").onFirst().performClick()
             waitForText("Editar personaje")
             compose.onRoot().captureRoboImage("build/screenshots/03_agent_detail.png")
@@ -135,7 +152,7 @@ class UiIntegrationTest {
             tap("[VOZ]")
             waitForText("Tono de voz", 5_000)
             compose.onRoot().captureRoboImage("build/screenshots/06_character_editor_voice.png")
-            tap("Cargar preset")
+            tap("Presets")
             waitForText("Galería de personajes")
             compose.onRoot().captureRoboImage("build/screenshots/07_character_gallery.png")
             tap("CERRAR")
@@ -143,9 +160,10 @@ class UiIntegrationTest {
             // Misiones: lista, detalle y vista de flujo
             tap("Missions")
             waitForText("Mission Center")
+            waitForText("Investigar motores de física")
             compose.onRoot().captureRoboImage("build/screenshots/08_missions.png")
             compose.onAllNodesWithText("Crear app de gestión de videojuegos").onFirst().performClick()
-            waitForText("Prioridad")
+            waitForText("Investigar tecnologías")
             compose.onRoot().captureRoboImage("build/screenshots/09_mission_detail.png")
             tap("Flujo")
             waitForText("Flujo de ejecución")
@@ -204,7 +222,7 @@ class TabletLayoutTest {
 
     @Test fun commandCenterOnTablet() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            compose.waitUntil(15_000) { compose.onAllNodes(hasText("LLM Status", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(15_000) { compose.onAllNodes(hasText("LLM Status", substring = true, ignoreCase = true)).fetchSemanticsNodes().isNotEmpty() }
             compose.waitUntil(15_000) { compose.onAllNodes(hasText("COMMAND CENTER")).fetchSemanticsNodes().isNotEmpty() }
             compose.onRoot().captureRoboImage("build/screenshots/20_dashboard_tablet.png")
         }

@@ -225,7 +225,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
             CircularProgressIndicator(Modifier.size(18.dp), color = NexusColors.Background, strokeWidth = 2.dp)
         } else {
             if (icon != null) { Icon(icon, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)) }
-            Text(text.uppercase(), style = MaterialTheme.typography.labelLarge)
+            Text(text.uppercase(), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -238,10 +238,11 @@ fun GhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
         modifier = modifier.height(42.dp),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, color.copy(alpha = if (enabled) 0.6f else 0.2f)),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = color),
     ) {
         if (icon != null) { Icon(icon, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)) }
-        Text(text.uppercase(), style = MaterialTheme.typography.labelMedium)
+        Text(text.uppercase(), style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

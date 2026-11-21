@@ -309,7 +309,7 @@ fun MissionDetailScreen(id: String) {
                         KeyValueSmall("Tiempo", Time.elapsed(m.startedAt ?: m.createdAt, m.completedAt))
                         KeyValueSmall("Gasto", money(m.spentUsd) + (m.budgetUsd?.let { " / ${money(it)}" } ?: ""))
                         KeyValueSmall("Tokens", "${m.tokensUsed}")
-                        KeyValueSmall("Modo", m.autonomyMode)
+                        KeyValueSmall("Modo", ai.nexus.app.features.dashboard.modeLabel(m.autonomyMode))
                     }
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -29,6 +29,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        // Idempotente: asegura el canal en tiempo real al volver a la app.
+        (application as NexusApplication).container.realtime.start()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute.value = it }
