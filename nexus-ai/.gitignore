@@ -1,0 +1,25 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/storage/
+backend/.env
+.env
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/google-services.json
+android/keystore/
+*.jks
+*.keystore
+
+# Secretos
+secrets/
+*.pem
+service-account*.json
