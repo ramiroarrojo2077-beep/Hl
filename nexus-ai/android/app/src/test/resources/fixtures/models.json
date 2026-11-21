@@ -1,7 +1,7 @@
 [
  {
-  "id": "c93008c1-7a4e-4f4a-ab43-f67335463dcf",
-  "provider_id": "b0e57f74-b52a-4445-83db-b9a8afae41b2",
+  "id": "b8beb2c3-271a-4ce9-a051-97e7a3914d62",
+  "provider_id": "1d34d89c-b4b9-4b79-b54f-c967054667ea",
   "model_name": "claude-test-opus",
   "display_name": "claude-test-opus",
   "capabilities": [

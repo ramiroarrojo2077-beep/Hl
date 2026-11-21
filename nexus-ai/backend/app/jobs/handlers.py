@@ -131,6 +131,30 @@ async def handle_eval_run(session: AsyncSession, job: Job, worker_id: str) -> No
     await run_evaluation(session, uuid.UUID(job.payload["run_id"]))
 
 
+async def handle_jarvis_reply(session: AsyncSession, job: Job, worker_id: str) -> None:
+    from app.jarvis.service import generate_jarvis_reply
+
+    await generate_jarvis_reply(session, uuid.UUID(job.payload["conversation_id"]), uuid.UUID(job.payload["message_id"]))
+
+
+async def handle_jarvis_summarize(session: AsyncSession, job: Job, worker_id: str) -> None:
+    from app.jarvis.service import summarize_conversation
+
+    await summarize_conversation(session, uuid.UUID(job.payload["conversation_id"]))
+
+
+async def handle_automation_run(session: AsyncSession, job: Job, worker_id: str) -> None:
+    from app.automations.service import execute_run
+
+    await execute_run(session, uuid.UUID(job.payload["automation_id"]), job.payload.get("trigger") or {})
+
+
+async def handle_automation_jarvis(session: AsyncSession, job: Job, worker_id: str) -> None:
+    from app.automations.service import run_jarvis_prompt
+
+    await run_jarvis_prompt(session, uuid.UUID(job.payload["automation_id"]), job.payload["prompt"], job.payload.get("trigger") or {})
+
+
 HANDLERS: dict[str, Handler] = {
     "mission.plan": handle_mission_plan,
     "task.run": handle_task_run,
@@ -144,6 +168,10 @@ HANDLERS: dict[str, Handler] = {
     "tool.execute_approved": handle_tool_execute_approved,
     "notification.deliver": handle_notification_deliver,
     "eval.run": handle_eval_run,
+    "jarvis.reply": handle_jarvis_reply,
+    "jarvis.summarize": handle_jarvis_summarize,
+    "automation.run": handle_automation_run,
+    "automation.jarvis": handle_automation_jarvis,
 }
 
 

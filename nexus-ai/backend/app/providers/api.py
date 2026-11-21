@@ -237,3 +237,12 @@ async def get_eval(run_id: uuid.UUID, cu: CurrentUser = Depends(current_user), s
                      "cost_usd": str(r.cost_usd) if r.cost_usd is not None else None, "scores": r.scores,
                      "judge_notes": r.judge_notes, "overall": r.overall} for r in results],
     }
+
+
+@router.get("/quality")
+async def quality_summary(cu: CurrentUser = Depends(current_user), session: AsyncSession = Depends(get_session)) -> dict:
+    """Calidad medida por modelo y tipo de tarea (últimos 30 días): alimenta al router."""
+    from app.providers.quality import CRITERIA, MIN_SAMPLES, WINDOW_DAYS, summary
+
+    return {"criteria": list(CRITERIA), "window_days": WINDOW_DAYS, "min_samples_for_routing": MIN_SAMPLES,
+            "items": await summary(session, cu.id)}

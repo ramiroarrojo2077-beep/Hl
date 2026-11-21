@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -74,6 +75,10 @@ async def tick(session: AsyncSession) -> int:
                 await queue.enqueue(session, "notification.deliver", {"notification_id": str(n.id)}, user_id=job.user_id,
                                     idempotency_key=f"reminder:{job.id}:{scheduled_for.isoformat() if scheduled_for else ''}")
                 job.last_status = "fired"
+                from app.automations.service import emit_event
+
+                await emit_event(session, job.user_id, "reminder.fired", {"title": job.payload.get("title", job.name), "event_id": f"{job.id}:{scheduled_for}"},
+                                 origin_automation_id=uuid.UUID(job.payload["automation_id"]) if job.payload.get("automation_id") else None)
         except Exception as exc:  # noqa: BLE001 - un error en una programación no frena al resto
             logger.exception("Falló la programación %s", job.id)
             job.last_status = f"error: {exc}"[:20]
@@ -85,11 +90,17 @@ async def tick(session: AsyncSession) -> int:
             job.next_run_at = None
             job.is_enabled = False
         fired += 1
+    # NEXUS 2.0: rutinas programadas, acciones vencidas y retención de transcripciones.
+    from app.actions.service import expire_stale
+    from app.automations.service import tick_due
+    from app.voice.service import purge_expired_transcripts
+
+    fired += await tick_due(session)
+    await expire_stale(session)
+    await purge_expired_transcripts(session)
     await queue.commit(session)
     return fired
 
 
 def _uuid(value):
-    import uuid
-
     return uuid.UUID(value) if value else None

@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.api import owned_agent
 from app.api.schemas import MemoryCreate, MemoryHitOut, MemoryOut, MemorySearch, MemoryUpdate
 from app.auth.deps import CurrentUser, current_user
 from app.core.db import get_session
-from app.core.errors import NotFound
+from app.core.errors import NexusError, NotFound
 from app.memory import service
 from app.memory.service import content_hash, store_embeddings
 from app.models import MemoryEmbedding, MemoryItem
@@ -58,6 +58,45 @@ async def list_memory(
     return list((await session.scalars(query)).all())
 
 
+@router.get("/privacy")
+async def privacy(cu: CurrentUser = Depends(current_user), session: AsyncSession = Depends(get_session)) -> dict:
+    """Panel de privacidad: qué categorías hay, cuáles están desactivadas, procedencia y vigencia."""
+    from app.jarvis.service import STALE_DAYS
+    from app.jarvis.settings import MEMORY_CATEGORIES, privacy_view
+    from app.models import UserSettings
+
+    settings = await session.get(UserSettings, cu.id)
+    disabled = privacy_view(settings.privacy_settings if settings else None)["disabled_memory_categories"]
+    by_cat = dict((await session.execute(select(MemoryItem.category, func.count()).where(MemoryItem.user_id == cu.id)
+                                         .group_by(MemoryItem.category))).all())
+    by_source = dict((await session.execute(select(MemoryItem.source, func.count()).where(MemoryItem.user_id == cu.id)
+                                            .group_by(MemoryItem.source))).all())
+    cutoff = datetime.now(UTC) - timedelta(days=STALE_DAYS)
+    stale = await session.scalar(select(func.count()).select_from(MemoryItem).where(
+        MemoryItem.user_id == cu.id, func.coalesce(MemoryItem.last_verified_at, MemoryItem.source_date, MemoryItem.created_at) < cutoff))
+    return {"categories": [{"key": c, "count": by_cat.get(c, 0), "disabled": c in disabled} for c in MEMORY_CATEGORIES],
+            "by_source": by_source, "stale": stale or 0, "stale_after_days": STALE_DAYS,
+            "policy": {"contacts_sent_to_models": False, "audio_stored": False, "used_for_training": False}}
+
+
+@router.post("/bulk-delete")
+async def bulk_delete(category: str | None = None, all_items: bool = False, confirm: bool = False,
+                      cu: CurrentUser = Depends(current_user), session: AsyncSession = Depends(get_session)) -> dict:
+    """Borrado irreversible por categoría o total (requiere confirm=true)."""
+    if not confirm:
+        raise NexusError("El borrado es irreversible: enviá confirm=true")
+    if not category and not all_items:
+        raise NexusError("Indicá una categoría o all_items=true")
+    q = MemoryItem.__table__.delete().where(MemoryItem.user_id == cu.id)
+    if category:
+        q = q.where(MemoryItem.category == category)
+    result = await session.execute(q)
+    await record_audit(session, cu.id, "memory.bulk_deleted", f"Recuerdos borrados ({category or 'todos'})", actor_type="user",
+                       details={"category": category, "deleted": result.rowcount or 0})
+    await session.commit()
+    return {"deleted": result.rowcount or 0}
+
+
 @router.get("/stats")
 async def stats(cu: CurrentUser = Depends(current_user), session: AsyncSession = Depends(get_session)) -> dict:
     return await service.memory_stats(session, cu.id)
@@ -72,6 +111,8 @@ async def create(body: MemoryCreate, cu: CurrentUser = Depends(current_user), se
         project_id=body.project_id, source="user", source_ref=body.source_ref, confidence=body.confidence,
         verification_status="verified", expires_at=body.expires_at,
     )
+    item.category = body.category
+    item.last_verified_at = datetime.now(UTC)
     await record_audit(session, cu.id, "memory.created", "Recuerdo agregado por el usuario", actor_type="user",
                        target_type="memory", target_id=item.id, project_id=body.project_id)
     await session.commit()
@@ -108,6 +149,12 @@ async def update(memory_id: uuid.UUID, body: MemoryUpdate, cu: CurrentUser = Dep
         item.expires_at = body.expires_at
     if body.clear_expiry:
         item.expires_at = None
+    if body.category is not None:
+        item.category = body.category
+    if body.mark_verified or reembed:
+        item.last_verified_at = datetime.now(UTC)
+        if body.mark_verified:
+            item.verification_status = "verified"
     if reembed:
         await session.execute(MemoryEmbedding.__table__.delete().where(MemoryEmbedding.memory_id == item.id))
         await session.flush()

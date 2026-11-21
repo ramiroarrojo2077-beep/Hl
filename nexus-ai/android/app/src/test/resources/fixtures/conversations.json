@@ -1,10 +1,18 @@
 [
  {
-  "id": "58f5d3dc-8dc0-43b2-91a8-970e838b09e0",
+  "id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "project_id": null,
+  "title": "Mandale un mensaje a papá diciendo que llego tarde",
+  "created_at": "2026-11-21T17:55:31.345398Z",
+  "updated_at": "2026-11-21T17:55:31.411655Z"
+ },
+ {
+  "id": "15f25ef1-d43c-4b10-bd11-5444633d933a",
   "agent_id": null,
   "project_id": null,
   "title": "Hola NEXUS, ¿qué podés hacer por mí?",
-  "created_at": "2026-11-21T16:52:42.208314Z",
-  "updated_at": "2026-11-21T16:52:42.220305Z"
+  "created_at": "2026-11-21T17:55:31.251447Z",
+  "updated_at": "2026-11-21T17:55:31.259823Z"
  }
 ]

@@ -1,0 +1,59 @@
+{
+ "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "handled": "control",
+ "control": "stop",
+ "intent": {
+  "category": "conversation",
+  "confidence": 0.99,
+  "rule": "control.stop",
+  "action_key": null,
+  "params": {},
+  "summary": null,
+  "missing": [],
+  "question": null,
+  "control": "stop",
+  "needs_model": false,
+  "specialists": [],
+  "assumptions": [],
+  "extra": {},
+  "route": {
+   "task_type": "chat",
+   "response_style": "breve: 1 o 2 frases, natural y cálido",
+   "max_tokens": 500,
+   "specialists": [],
+   "handler": "control"
+  }
+ },
+ "stages": [
+  {
+   "stage": "input",
+   "status": "done",
+   "ms": 2.82,
+   "mode": "text",
+   "source": "app"
+  },
+  {
+   "stage": "understanding",
+   "status": "done",
+   "ms": 1.15,
+   "pending": false
+  },
+  {
+   "stage": "intent",
+   "status": "done",
+   "ms": 0.03,
+   "category": "conversation",
+   "rule": "control.stop",
+   "confidence": 0.99
+  },
+  {
+   "stage": "routing",
+   "status": "done",
+   "ms": 5.81,
+   "handler": "control"
+  }
+ ],
+ "user_message": null,
+ "reply": null,
+ "action": null
+}

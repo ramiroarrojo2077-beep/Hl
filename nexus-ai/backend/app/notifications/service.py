@@ -28,6 +28,7 @@ EVENT_TYPES = {
     "report_ready": "Informe disponible",
     "budget_reached": "Presupuesto alcanzado",
     "reminder": "Recordatorio",
+    "automation": "Rutina automática",
 }
 
 
@@ -53,6 +54,11 @@ async def notify(
     if deliver_at is None:
         await events.publish(user_id, "notification.created", serialize(notification))
         _schedule_push(notification.id)
+    if event_type in ("approval_requested", "reminder") and not (data or {}).get("automation_id"):
+        from app.automations.service import emit_event
+
+        await emit_event(session, user_id, "approval.requested" if event_type == "approval_requested" else "reminder.fired",
+                         {"title": title[:200], "event_id": str(notification.id)})
     return notification
 
 

@@ -164,6 +164,31 @@ class OpenAIAdapter(ProviderAdapter):
         return [r["embedding"] for r in rows]
 
 
+    async def transcribe(self, model: str, audio: bytes, filename: str, content_type: str, language: str | None) -> str:
+        headers = {k: v for k, v in self._headers().items() if k != "content-type"}
+        data = {"model": model, "response_format": "json"}
+        if language:
+            data["language"] = language.split("-")[0]
+        try:
+            resp = await self.client.post(f"{self.base_url}/audio/transcriptions", headers=headers, data=data,
+                                          files={"file": (filename, audio, content_type)})
+        except httpx.HTTPError as exc:
+            raise error_from_exception(exc, self.label) from exc
+        if resp.status_code >= 400:
+            raise error_from_response(resp, self.label)
+        return str((resp.json() or {}).get("text", "")).strip()
+
+    async def synthesize(self, model: str, text: str, voice: str, speed: float, fmt: str) -> bytes:
+        body = {"model": model, "input": text, "voice": voice, "speed": speed, "response_format": fmt}
+        try:
+            resp = await self.client.post(f"{self.base_url}/audio/speech", headers=self._headers(), json=body)
+        except httpx.HTTPError as exc:
+            raise error_from_exception(exc, self.label) from exc
+        if resp.status_code >= 400:
+            raise error_from_response(resp, self.label)
+        return resp.content
+
+
 class OpenAICompatibleAdapter(OpenAIAdapter):
     kind = "openai_compatible"
     label = "OpenAI-compatible"

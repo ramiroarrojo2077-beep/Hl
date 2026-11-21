@@ -66,12 +66,25 @@ async def activate(session: AsyncSession, user_id: uuid.UUID, reason: str | None
     for a in agents:
         a.status = "paused"
         a.status_detail = "STOP ALL"
+    # NEXUS 2.0: rutinas pausadas, acciones pendientes deshabilitadas, trabajos seguros cancelados.
+    from app.actions.service import cancel_pending_for_stop
+    from app.automations.service import pause_all_for_stop
+    from app.jobs import queue
+
+    automations_paused = await pause_all_for_stop(session, user_id)
+    actions_cancelled = await cancel_pending_for_stop(session, user_id)
+    jobs_cancelled = 0
+    for kind in ("jarvis.reply", "jarvis.summarize", "automation.run", "automation.jarvis", "chat.reply"):
+        jobs_cancelled += await queue.cancel_jobs(session, user_id=user_id, kind=kind)
     summary = {
         "missions_paused": len(missions),
         "tasks_interrupted": len(running_tasks),
         "meetings_stopped": len(meetings),
         "temporary_permissions_revoked": temp.rowcount or 0,
         "approvals_invalidated": approvals.rowcount or 0,
+        "automations_paused": automations_paused,
+        "pending_actions_cancelled": actions_cancelled,
+        "queued_jobs_cancelled": jobs_cancelled,
     }
     await record_audit(session, user_id, "system.emergency_stop", "STOP ALL AGENTS activado", actor_type="user",
                        outcome="info", details=summary)

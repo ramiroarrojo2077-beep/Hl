@@ -90,8 +90,19 @@ class Worker:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Heartbeat falló para %s: %s", job_id, exc)
 
+    async def presence(self) -> None:
+        """Latido del worker en Redis (TTL 45 s): permite mostrar ONLINE/ERROR real en la app."""
+        redis = await get_redis()
+        if redis is None:
+            return
+        try:
+            await redis.set(f"nexus:worker:{self.worker_id}", datetime.now(UTC).isoformat(), ex=45)
+        except Exception:  # noqa: BLE001
+            pass
+
     async def maintenance(self) -> None:
         now = datetime.now(UTC)
+        await self.presence()
         async with session_factory()() as session:
             if now - self._last_recovery > timedelta(seconds=15):
                 await queue.recover_expired(session)
@@ -163,6 +174,12 @@ class Worker:
             async with session_factory()() as session:
                 for job_id in pending_ids:
                     await queue.release(session, job_id, self.worker_id)
+        redis = await get_redis()
+        if redis is not None:
+            try:
+                await redis.delete(f"nexus:worker:{self.worker_id}")
+            except Exception:  # noqa: BLE001
+                pass
 
 
 async def main() -> None:

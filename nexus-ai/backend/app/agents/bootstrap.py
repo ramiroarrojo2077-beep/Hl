@@ -29,6 +29,7 @@ DEFAULT_NOTIFICATION_PREFS = {
     "report_ready": True,
     "budget_reached": True,
     "reminder": True,
+    "automation": True,
 }
 
 

@@ -162,3 +162,5 @@ class Capability(StrEnum):
     LONG_CONTEXT = "long_context"
     EMBEDDING = "embedding"
     WEB_SEARCH = "web_search"
+    STT = "stt"  # transcripción de audio (voz remota opcional)
+    TTS = "tts"  # síntesis de voz (voz remota opcional)

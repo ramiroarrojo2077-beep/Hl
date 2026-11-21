@@ -1,0 +1,16 @@
+{
+ "phone": {
+  "input": "011 15 2345-6789",
+  "status": "ok",
+  "e164": "5491123456789",
+  "display": "+54 9 11 2345-6789",
+  "masked": "+54 9 11 ****-6789",
+  "country": "AR",
+  "is_mobile": true,
+  "assumptions": [],
+  "message": ""
+ },
+ "state": "AWAITING_CONFIRMATION",
+ "link": "https://wa.me/5491123456789?text=Hola",
+ "action": null
+}

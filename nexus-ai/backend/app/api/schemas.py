@@ -340,6 +340,9 @@ class MemoryOut(ORM):
     expires_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    category: str = "general"
+    last_verified_at: datetime | None = None
+    last_used_at: datetime | None = None
 
 
 class MemoryHitOut(BaseModel):
@@ -349,6 +352,7 @@ class MemoryHitOut(BaseModel):
 
 
 class MemoryCreate(BaseModel):
+    category: str = Field(default="general", pattern=r"^(personal|preferences|work|projects|health|contacts|general)$")
     scope: str = Field(pattern=r"^(agent|shared|user|project)$")
     content: str = Field(min_length=3, max_length=20000)
     title: str | None = Field(default=None, max_length=300)
@@ -367,6 +371,8 @@ class MemoryUpdate(BaseModel):
     confidence: float | None = Field(default=None, ge=0, le=1)
     expires_at: datetime | None = None
     clear_expiry: bool = False
+    category: str | None = Field(default=None, pattern=r"^(personal|preferences|work|projects|health|contacts|general)$")
+    mark_verified: bool = False
 
 
 class MemorySearch(BaseModel):
@@ -514,6 +520,10 @@ class SettingsOut(ORM):
     notification_prefs: dict[str, Any]
     appearance: dict[str, Any]
     memory_settings: dict[str, Any]
+    # NEXUS 2.0 (campos agregados: el contrato 1.0 se mantiene)
+    voice_settings: dict[str, Any] = Field(default_factory=dict)
+    jarvis_settings: dict[str, Any] = Field(default_factory=dict)
+    privacy_settings: dict[str, Any] = Field(default_factory=dict)
 
 
 class SettingsUpdate(BaseModel):
@@ -531,6 +541,8 @@ class SettingsUpdate(BaseModel):
     appearance: dict[str, Any] | None = None
     memory_settings: dict[str, Any] | None = None
     display_name: str | None = Field(default=None, min_length=1, max_length=120)
+    jarvis_settings: dict[str, Any] | None = None
+    privacy_settings: dict[str, Any] | None = None
 
 
 class EmergencyStopIn(BaseModel):

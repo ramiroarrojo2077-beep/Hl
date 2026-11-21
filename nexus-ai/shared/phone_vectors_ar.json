@@ -1,0 +1,189 @@
+{
+ "description": "Vectores compartidos backend/Android para PhoneNormalizer (Argentina)",
+ "cases": [
+  {
+   "input": "+54 9 11 2345-6789",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "+5491123456789",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "011 15 2345-6789",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "11 2345 6789",
+   "default_area_code": null,
+   "status": "needs_confirmation",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "15 2345 6789",
+   "default_area_code": null,
+   "status": "needs_area_code",
+   "e164": null,
+   "masked": null,
+   "display": null
+  },
+  {
+   "input": "15 2345 6789",
+   "default_area_code": "11",
+   "status": "needs_confirmation",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "2345-6789",
+   "default_area_code": null,
+   "status": "needs_area_code",
+   "e164": null,
+   "masked": null,
+   "display": null
+  },
+  {
+   "input": "2345-6789",
+   "default_area_code": "011",
+   "status": "needs_confirmation",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "0351 15 123-4567",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5493511234567",
+   "masked": "+54 9 351 ****-4567",
+   "display": "+54 9 351 123-4567"
+  },
+  {
+   "input": "351 15 123 4567",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5493511234567",
+   "masked": "+54 9 351 ****-4567",
+   "display": "+54 9 351 123-4567"
+  },
+  {
+   "input": "+54 351 15 123 4567",
+   "default_area_code": null,
+   "status": "needs_confirmation",
+   "e164": "5493511234567",
+   "masked": "+54 9 351 ****-4567",
+   "display": "+54 9 351 123-4567"
+  },
+  {
+   "input": "+54 11 2345 6789",
+   "default_area_code": null,
+   "status": "needs_confirmation",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "0054 9 11 2345 6789",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "+54 9 0221 456-7890",
+   "default_area_code": null,
+   "status": "needs_confirmation",
+   "e164": "5492214567890",
+   "masked": "+54 9 221 ****-7890",
+   "display": "+54 9 221 456-7890"
+  },
+  {
+   "input": "0221 456 7890",
+   "default_area_code": null,
+   "status": "needs_confirmation",
+   "e164": "5492214567890",
+   "masked": "+54 9 221 ****-7890",
+   "display": "+54 9 221 456-7890"
+  },
+  {
+   "input": "02954 15 12 3456",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5492954123456",
+   "masked": "+54 9 2954 ****-3456",
+   "display": "+54 9 2954 12-3456"
+  },
+  {
+   "input": "+34 612 34 56 78",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "34612345678",
+   "masked": "+*******5678",
+   "display": "+34612345678"
+  },
+  {
+   "input": "+1 (415) 555-0132",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "14155550132",
+   "masked": "+*******0132",
+   "display": "+14155550132"
+  },
+  {
+   "input": "hola",
+   "default_area_code": null,
+   "status": "invalid",
+   "e164": null,
+   "masked": null,
+   "display": null
+  },
+  {
+   "input": "",
+   "default_area_code": null,
+   "status": "invalid",
+   "e164": null,
+   "masked": null,
+   "display": null
+  },
+  {
+   "input": "123",
+   "default_area_code": null,
+   "status": "invalid",
+   "e164": null,
+   "masked": null,
+   "display": null
+  },
+  {
+   "input": "5491123456789",
+   "default_area_code": null,
+   "status": "ok",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  },
+  {
+   "input": "+54 9 11 15 2345 6789",
+   "default_area_code": null,
+   "status": "needs_confirmation",
+   "e164": "5491123456789",
+   "masked": "+54 9 11 ****-6789",
+   "display": "+54 9 11 2345-6789"
+  }
+ ]
+}

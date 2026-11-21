@@ -1,0 +1,731 @@
+[
+ {
+  "key": "whatsapp.open_chat",
+  "name": "Preparar WhatsApp",
+  "description": "Prepara un mensaje y abre WhatsApp con el texto listo (Click to Chat). El envío lo confirma el usuario dentro de WhatsApp.",
+  "category": "communication",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "executor": "device",
+  "params": {
+   "recipient_query": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "phone": {
+    "type": "string",
+    "maxLength": 20
+   },
+   "contact_label": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "text": {
+    "type": "string",
+    "maxLength": 4000
+   },
+   "tone": {
+    "type": "string",
+    "enum": [
+     "original",
+     "informal",
+     "formal",
+     "amistoso",
+     "breve",
+     "profesional",
+     "explicativo"
+    ]
+   }
+  },
+  "required": [],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "DRAFT_CREATED",
+   "CONTACT_RESOLVED",
+   "AWAITING_CONFIRMATION",
+   "READY_TO_OPEN",
+   "WHATSAPP_OPENED",
+   "CANCELLED",
+   "ERROR"
+  ],
+  "notes": "NEXUS nunca informa 'enviado': abrir WhatsApp no es enviar. El número se resuelve en el teléfono."
+ },
+ {
+  "key": "device.dial",
+  "name": "Preparar llamada",
+  "description": "Abre el marcador con el número cargado. La llamada la inicia el usuario.",
+  "category": "communication",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "executor": "device",
+  "params": {
+   "recipient_query": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "phone": {
+    "type": "string",
+    "maxLength": 20
+   },
+   "contact_label": {
+    "type": "string",
+    "maxLength": 120
+   }
+  },
+  "required": [],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "DIALER_OPENED",
+   "CANCELLED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.share_text",
+  "name": "Compartir texto",
+  "description": "Abre el selector de Android para compartir un texto con la app que elija el usuario.",
+  "category": "communication",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "executor": "device",
+  "params": {
+   "text": {
+    "type": "string",
+    "maxLength": 8000
+   },
+   "title": {
+    "type": "string",
+    "maxLength": 120
+   }
+  },
+  "required": [
+   "text"
+  ],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "SHARE_SHEET_OPENED",
+   "CANCELLED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.share_file",
+  "name": "Compartir documento",
+  "description": "El usuario elige un archivo con el selector del sistema y se abre el menú de compartir.",
+  "category": "communication",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "executor": "device",
+  "params": {
+   "title": {
+    "type": "string",
+    "maxLength": 120
+   }
+  },
+  "required": [],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "SHARE_SHEET_OPENED",
+   "CANCELLED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.open_app",
+  "name": "Abrir aplicación",
+  "description": "Abre una aplicación instalada por su nombre (intent de lanzamiento oficial).",
+  "category": "phone_control",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "app": {
+    "type": "string",
+    "maxLength": 80
+   }
+  },
+  "required": [
+   "app"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "APP_OPENED",
+   "APP_NOT_FOUND",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.open_settings",
+  "name": "Abrir configuración",
+  "description": "Abre una pantalla de configuración del sistema. No modifica ajustes protegidos.",
+  "category": "phone_control",
+  "risk": "READ_ONLY",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "panel": {
+    "type": "string",
+    "enum": [
+     "general",
+     "wifi",
+     "bluetooth",
+     "display",
+     "sound",
+     "battery",
+     "location",
+     "apps",
+     "notifications",
+     "data",
+     "airplane",
+     "nfc",
+     "accessibility",
+     "date",
+     "language",
+     "security",
+     "storage"
+    ]
+   }
+  },
+  "required": [
+   "panel"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "SETTINGS_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.navigate",
+  "name": "Preparar navegación",
+  "description": "Abre la app de mapas con la ruta hacia un destino. La navegación la inicia el usuario.",
+  "category": "phone_control",
+  "risk": "READ_ONLY",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "destination": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "mode": {
+    "type": "string",
+    "enum": [
+     "driving",
+     "walking",
+     "transit",
+     "bicycling"
+    ]
+   }
+  },
+  "required": [
+   "destination"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "MAPS_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.map_search",
+  "name": "Buscar en el mapa",
+  "description": "Busca un lugar en la app de mapas.",
+  "category": "phone_control",
+  "risk": "READ_ONLY",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "query": {
+    "type": "string",
+    "maxLength": 200
+   }
+  },
+  "required": [
+   "query"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "MAPS_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.set_alarm",
+  "name": "Programar alarma",
+  "description": "Crea una alarma en la app Reloj (AlarmClock.ACTION_SET_ALARM).",
+  "category": "productivity",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "executor": "device",
+  "params": {
+   "hour": {
+    "type": "integer"
+   },
+   "minute": {
+    "type": "integer"
+   },
+   "label": {
+    "type": "string",
+    "maxLength": 100
+   }
+  },
+  "required": [
+   "hour"
+  ],
+  "android_permissions": [
+   "com.android.alarm.permission.SET_ALARM"
+  ],
+  "always_confirm": false,
+  "result_states": [
+   "ALARM_SET",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.set_timer",
+  "name": "Iniciar temporizador",
+  "description": "Inicia un temporizador en la app Reloj (AlarmClock.ACTION_SET_TIMER).",
+  "category": "productivity",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "executor": "device",
+  "params": {
+   "seconds": {
+    "type": "integer"
+   },
+   "label": {
+    "type": "string",
+    "maxLength": 100
+   }
+  },
+  "required": [
+   "seconds"
+  ],
+  "android_permissions": [
+   "com.android.alarm.permission.SET_ALARM"
+  ],
+  "always_confirm": false,
+  "result_states": [
+   "TIMER_SET",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.calendar_event",
+  "name": "Preparar evento",
+  "description": "Abre el calendario con un evento precargado (CalendarContract). El usuario lo guarda en su calendario.",
+  "category": "organization",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "executor": "device",
+  "params": {
+   "title": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "start": {
+    "type": "string",
+    "maxLength": 40
+   },
+   "end": {
+    "type": "string",
+    "maxLength": 40
+   },
+   "all_day": {
+    "type": "boolean"
+   },
+   "location": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "description": {
+    "type": "string",
+    "maxLength": 2000
+   }
+  },
+  "required": [
+   "title",
+   "start"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "CALENDAR_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.calendar_view",
+  "name": "Consultar agenda",
+  "description": "Abre el calendario del teléfono en una fecha. NEXUS no lee los eventos del calendario.",
+  "category": "organization",
+  "risk": "READ_ONLY",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "date": {
+    "type": "string",
+    "maxLength": 40
+   }
+  },
+  "required": [],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "CALENDAR_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.contact_create",
+  "name": "Crear contacto",
+  "description": "Abre la app de contactos con un contacto precargado para que el usuario lo guarde.",
+  "category": "organization",
+  "risk": "SENSITIVE",
+  "operation": "creación",
+  "executor": "device",
+  "params": {
+   "name": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "phone": {
+    "type": "string",
+    "maxLength": 20
+   }
+  },
+  "required": [
+   "name"
+  ],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "CONTACTS_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "device.open_url",
+  "name": "Abrir enlace",
+  "description": "Abre una dirección https:// en el navegador.",
+  "category": "information",
+  "risk": "READ_ONLY",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "url": {
+    "type": "string",
+    "maxLength": 2000
+   }
+  },
+  "required": [
+   "url"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "BROWSER_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "app.open_screen",
+  "name": "Abrir sección de NEXUS",
+  "description": "Navega a una sección de la app (proyecto, misión, memoria, agenda de automatizaciones...).",
+  "category": "project_management",
+  "risk": "READ_ONLY",
+  "operation": "lectura",
+  "executor": "device",
+  "params": {
+   "screen": {
+    "type": "string",
+    "enum": [
+     "project",
+     "projects",
+     "mission",
+     "missions",
+     "memory",
+     "automations",
+     "approvals",
+     "agents",
+     "meetings",
+     "settings"
+    ]
+   },
+   "entity_id": {
+    "type": "string",
+    "maxLength": 40
+   },
+   "label": {
+    "type": "string",
+    "maxLength": 200
+   }
+  },
+  "required": [
+   "screen"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "SCREEN_OPENED",
+   "ERROR"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "reminder.create",
+  "name": "Crear recordatorio",
+  "description": "Programa un recordatorio: llega como notificación push y dentro de la app.",
+  "category": "productivity",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "executor": "server",
+  "params": {
+   "title": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "body": {
+    "type": "string",
+    "maxLength": 1000
+   },
+   "at": {
+    "type": "string",
+    "maxLength": 40
+   }
+  },
+  "required": [
+   "title",
+   "at"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "COMPLETED",
+   "FAILED"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "memory.remember",
+  "name": "Guardar en memoria",
+  "description": "Guarda un dato personal que el usuario pidió recordar, con su procedencia.",
+  "category": "memory_query",
+  "risk": "SENSITIVE",
+  "operation": "creación",
+  "executor": "server",
+  "params": {
+   "content": {
+    "type": "string",
+    "maxLength": 2000
+   },
+   "category": {
+    "type": "string",
+    "maxLength": 30
+   }
+  },
+  "required": [
+   "content"
+  ],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "COMPLETED",
+   "FAILED"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "memory.forget",
+  "name": "Olvidar recuerdos",
+  "description": "Elimina definitivamente los recuerdos indicados.",
+  "category": "memory_query",
+  "risk": "IRREVERSIBLE",
+  "operation": "irreversible",
+  "executor": "server",
+  "params": {
+   "memory_ids": {
+    "type": "array"
+   },
+   "query": {
+    "type": "string",
+    "maxLength": 300
+   }
+  },
+  "required": [
+   "memory_ids"
+  ],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "COMPLETED",
+   "FAILED"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "mission.create",
+  "name": "Crear misión",
+  "description": "Crea una misión: NEXUS planifica, asigna agentes y ejecuta en segundo plano (consume presupuesto).",
+  "category": "project_management",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "executor": "server",
+  "params": {
+   "title": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "objective": {
+    "type": "string",
+    "maxLength": 4000
+   },
+   "project_id": {
+    "type": "string",
+    "maxLength": 40
+   }
+  },
+  "required": [
+   "objective"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "COMPLETED",
+   "FAILED"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "automation.create",
+  "name": "Crear automatización",
+  "description": "Crea una rutina con disparador, condiciones, acciones y límites. Queda activa al confirmarla.",
+  "category": "automation",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "executor": "server",
+  "params": {
+   "name": {
+    "type": "string",
+    "maxLength": 200
+   },
+   "trigger_type": {
+    "type": "string",
+    "enum": [
+     "schedule",
+     "date",
+     "event"
+    ]
+   },
+   "cron": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "run_at": {
+    "type": "string",
+    "maxLength": 40
+   },
+   "timezone": {
+    "type": "string",
+    "maxLength": 60
+   },
+   "event_type": {
+    "type": "string",
+    "maxLength": 60
+   },
+   "conditions": {
+    "type": "object"
+   },
+   "actions": {
+    "type": "array"
+   },
+   "max_runs_per_day": {
+    "type": "integer"
+   }
+  },
+  "required": [
+   "name",
+   "trigger_type",
+   "actions"
+  ],
+  "android_permissions": [],
+  "always_confirm": false,
+  "result_states": [
+   "COMPLETED",
+   "FAILED"
+  ],
+  "notes": ""
+ },
+ {
+  "key": "whatsapp.business_send",
+  "name": "Enviar por WhatsApp Business",
+  "description": "Envía un mensaje por la API oficial de WhatsApp Business Platform (credenciales solo en el servidor).",
+  "category": "communication",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "executor": "server",
+  "params": {
+   "phone": {
+    "type": "string",
+    "maxLength": 20
+   },
+   "text": {
+    "type": "string",
+    "maxLength": 4096
+   },
+   "template_name": {
+    "type": "string",
+    "maxLength": 120
+   },
+   "template_language": {
+    "type": "string",
+    "maxLength": 12
+   },
+   "template_params": {
+    "type": "array"
+   },
+   "opt_in_confirmed": {
+    "type": "boolean"
+   },
+   "contact_label": {
+    "type": "string",
+    "maxLength": 120
+   }
+  },
+  "required": [
+   "phone"
+  ],
+  "android_permissions": [],
+  "always_confirm": true,
+  "result_states": [
+   "ACCEPTED",
+   "SENT",
+   "DELIVERED",
+   "READ",
+   "FAILED"
+  ],
+  "notes": "Los estados vienen de la API y sus webhooks; nunca se infieren."
+ }
+]

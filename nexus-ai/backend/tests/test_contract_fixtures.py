@@ -37,7 +37,28 @@ async def test_export_api_fixtures(api, fake_llm):
         await s.execute(update(Agent).where(Agent.slug == "nexus").values(status="thinking", status_detail="Coordinando la misión"))
         await s.commit()
 
+    # NEXUS 2.0: JARVIS (acción de WhatsApp pendiente, recordatorio ejecutado, respuesta con modelo), rutinas y voz.
+    tz = "America/Argentina/Buenos_Aires"
+    posts: dict[str, dict] = {}
+    posts["jarvis_message_whatsapp"] = (await api.post("/jarvis/message", {"content": "Mandale un mensaje a papá diciendo que llego tarde", "timezone": tz})).json()
+    posts["jarvis_message_reminder"] = (await api.post("/jarvis/message", {"content": "Recordame mañana a las 9 llamar al médico", "timezone": tz})).json()
+    posts["jarvis_message_open_app"] = (await api.post("/jarvis/message", {"content": "Abrí Spotify", "timezone": tz})).json()
+    posts["jarvis_message_model"] = (await api.post("/jarvis/message", {"content": "¿Cuál es la capital de Australia?", "timezone": tz})).json()
+    await drain()
+    posts["jarvis_message_control"] = (await api.post("/jarvis/message", {"content": "Pará", "timezone": tz})).json()
+    wa = posts["jarvis_message_whatsapp"]["action"]
+    posts["action_confirm_whatsapp"] = (await api.post(f"/actions/{wa['id']}/confirm", {"params": {"text": "Llego tarde, perdón"}})).json()
+    posts["action_report_whatsapp"] = (await api.post(f"/actions/{wa['id']}/report", {"state": "WHATSAPP_OPENED", "result": {"text_chars": 19}})).json()
+    await api.post("/automations", {"name": "Resumen diario", "trigger_type": "schedule", "cron": "0 8 * * *", "timezone": tz,
+                                    "actions": [{"type": "jarvis_prompt", "prompt": "Resumime mis misiones"}]})
+    await api.post("/automations", {"name": "Aviso de misiones", "trigger_type": "event", "event_type": "mission.completed",
+                                    "actions": [{"type": "notify", "title": "Terminó una misión"}]})
+    posts["whatsapp_prepare"] = (await api.post("/integrations/whatsapp/prepare", {"phone": "011 15 2345-6789", "text": "Hola", "register_action": False})).json()
+    posts["intent"] = (await api.post("/jarvis/intent", {"content": "Poné una alarma a las 7", "timezone": tz})).json()
+
     FIXTURES.mkdir(parents=True, exist_ok=True)
+    for name, body in posts.items():
+        (FIXTURES / f"{name}.json").write_text(json.dumps(body, ensure_ascii=False, indent=1), encoding="utf-8")
     agents = (await api.get("/agents")).json()
     nova = next(a for a in agents if a["slug"] == "nova")
     endpoints = {
@@ -71,6 +92,19 @@ async def test_export_api_fixtures(api, fake_llm):
         "schedules": "/schedules",
         "usage_summary": "/usage/summary",
         "memory_stats": "/memory/stats",
+        "jarvis_state": "/jarvis/state",
+        "jarvis_context": f"/jarvis/context?timezone={tz}",
+        "jarvis_settings": "/jarvis/settings",
+        "jarvis_conversation_messages": f"/conversations/{posts['jarvis_message_model']['conversation_id']}/messages",
+        "jarvis_trace": f"/jarvis/messages/{posts['jarvis_message_model']['user_message']['id']}/trace",
+        "actions": "/actions",
+        "actions_catalog": "/actions/catalog",
+        "automations": "/automations",
+        "automation_events": "/automations/events",
+        "voice_settings": "/voice/settings",
+        "whatsapp_status": "/integrations/whatsapp/status",
+        "memory_privacy": "/memory/privacy",
+        "quality": "/quality",
     }
     ids = {"nova": nova["id"], "mission": mission["id"], "meeting": meeting["id"], "project": project["id"], "conversation": conv["id"],
            "second_mission": second["id"]}

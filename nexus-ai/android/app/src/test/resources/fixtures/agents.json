@@ -1,15 +1,15 @@
 [
  {
-  "id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
+  "id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
   "slug": "nexus",
   "name": "NEXUS",
   "role": "CEO / Manager",
   "is_system": true,
   "is_enabled": true,
-  "status": "thinking",
-  "status_detail": "Coordinando la misión",
+  "status": "completed",
+  "status_detail": "Entregó: Investigar motores de física",
   "current_task_id": null,
-  "last_activity_at": "2026-11-21T16:52:42.283563Z",
+  "last_activity_at": "2026-11-21T17:55:31.728568Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -64,20 +64,20 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T16:52:41.263429Z",
+  "created_at": "2026-11-21T17:55:30.244365Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
+  "id": "15824488-87e5-4319-806b-10d6b5863b23",
   "slug": "atlas",
   "name": "ATLAS",
   "role": "Investigador",
   "is_system": true,
   "is_enabled": true,
-  "status": "working",
-  "status_detail": "Investigando motores de física",
-  "current_task_id": "e3a59ee0-33d1-4d59-8e7d-2c1019369833",
-  "last_activity_at": "2026-11-21T16:52:42.036467Z",
+  "status": "completed",
+  "status_detail": "Completó: Investigar tecnologías",
+  "current_task_id": "0c451c6a-b0df-4b1c-8066-1b31d26b26b8",
+  "last_activity_at": "2026-11-21T17:55:31.558328Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -132,20 +132,20 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T16:52:41.263429Z",
+  "created_at": "2026-11-21T17:55:30.244365Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
+  "id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
   "slug": "cipher",
   "name": "CIPHER",
   "role": "Desarrollador",
   "is_system": true,
   "is_enabled": true,
-  "status": "working",
-  "status_detail": "Investigando motores de física",
-  "current_task_id": "f11f43fc-b85a-4e36-b683-5188b26d70f1",
-  "last_activity_at": "2026-11-21T16:52:42.062153Z",
+  "status": "completed",
+  "status_detail": "Completó: Arquitectura",
+  "current_task_id": "eea07a32-44c1-4063-b9c3-7bad37de3151",
+  "last_activity_at": "2026-11-21T17:55:31.614916Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -203,11 +203,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T16:52:41.263429Z",
+  "created_at": "2026-11-21T17:55:30.244365Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "e2231600-0d6d-41f4-9afa-48b46a48bad7",
+  "id": "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
   "slug": "nova",
   "name": "NOVA",
   "role": "Creativo",
@@ -215,8 +215,8 @@
   "is_enabled": true,
   "status": "completed",
   "status_detail": "Completó: Prototipo visual",
-  "current_task_id": "d56da30a-bbfd-43a0-9546-8d03574a284b",
-  "last_activity_at": "2026-11-21T16:52:41.688994Z",
+  "current_task_id": "c4f41c92-b0da-444d-825e-2b0292a41d9d",
+  "last_activity_at": "2026-11-21T17:55:31.549348Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -274,20 +274,20 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T16:52:41.263429Z",
+  "created_at": "2026-11-21T17:55:30.244365Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
+  "id": "eaab7b4e-2777-4799-be3a-1ae61376b944",
   "slug": "oracle",
   "name": "ORACLE",
   "role": "Analista y Auditor",
   "is_system": true,
   "is_enabled": true,
-  "status": "idle",
-  "status_detail": null,
+  "status": "completed",
+  "status_detail": "Revisión entregada",
   "current_task_id": null,
-  "last_activity_at": "2026-11-21T16:52:42.092943Z",
+  "last_activity_at": "2026-11-21T17:55:31.650711Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -342,11 +342,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T16:52:41.263429Z",
+  "created_at": "2026-11-21T17:55:30.244365Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "341cf6e8-e580-45a8-b303-3de592b45ab3",
+  "id": "573106d6-4fcf-434f-942b-ef030846e139",
   "slug": "guardian",
   "name": "GUARDIAN",
   "role": "Seguridad y Control",
@@ -355,7 +355,7 @@
   "status": "completed",
   "status_detail": "Auditoría entregada",
   "current_task_id": null,
-  "last_activity_at": "2026-11-21T16:52:41.866339Z",
+  "last_activity_at": "2026-11-21T17:55:31.692120Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -410,7 +410,7 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T16:52:41.263429Z",
+  "created_at": "2026-11-21T17:55:30.244365Z",
   "primary_model": "auto · claude-test-opus"
  }
 ]

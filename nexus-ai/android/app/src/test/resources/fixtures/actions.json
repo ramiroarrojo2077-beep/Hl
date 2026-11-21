@@ -1,0 +1,84 @@
+[
+ {
+  "id": "83b7e9ee-ba66-4326-b103-4f93db13bc12",
+  "action_key": "device.open_app",
+  "name": "Abrir aplicación",
+  "category": "phone_control",
+  "executor": "device",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "lectura",
+  "params": {
+   "app": "Spotify"
+  },
+  "summary": "Abrir Spotify",
+  "status": "ready",
+  "state_detail": null,
+  "requires_confirmation": false,
+  "result": {},
+  "error": null,
+  "source": "jarvis",
+  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "created_at": "2026-11-21T17:55:31.396081+00:00",
+  "confirmed_at": "2026-11-21T17:55:31.403786+00:00",
+  "completed_at": null,
+  "expires_at": "2026-11-21T18:05:31.403786+00:00"
+ },
+ {
+  "id": "c5b53703-4824-4811-bfdd-c090b3850db7",
+  "action_key": "reminder.create",
+  "name": "Crear recordatorio",
+  "category": "productivity",
+  "executor": "server",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "creación",
+  "params": {
+   "at": "2026-11-22T09:00:00-03:00",
+   "title": "Llamar al médico"
+  },
+  "summary": "Recordatorio: «Llamar al médico» el mañana a las 09:00",
+  "status": "completed",
+  "state_detail": "REMINDER_SCHEDULED",
+  "requires_confirmation": false,
+  "result": {
+   "at": "2026-11-22T09:00:00-03:00",
+   "state": "REMINDER_SCHEDULED",
+   "verified": true,
+   "scheduled_job_id": "49ddf933-e625-4233-8dd7-2d4cd4aaa403"
+  },
+  "error": null,
+  "source": "jarvis",
+  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "created_at": "2026-11-21T17:55:31.373283+00:00",
+  "confirmed_at": "2026-11-21T17:55:31.382709+00:00",
+  "completed_at": "2026-11-21T17:55:31.388153+00:00",
+  "expires_at": null
+ },
+ {
+  "id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+  "action_key": "whatsapp.open_chat",
+  "name": "Preparar WhatsApp",
+  "category": "communication",
+  "executor": "device",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "params": {
+   "text": "Llego tarde, perdón",
+   "recipient_query": "papá"
+  },
+  "summary": "WhatsApp para papá: «Llego tarde»",
+  "status": "completed",
+  "state_detail": "WHATSAPP_OPENED",
+  "requires_confirmation": true,
+  "result": {
+   "text_chars": 19,
+   "edited_before_confirm": true
+  },
+  "error": null,
+  "source": "jarvis",
+  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "created_at": "2026-11-21T17:55:31.345398+00:00",
+  "confirmed_at": "2026-11-21T17:55:31.767488+00:00",
+  "completed_at": "2026-11-21T17:55:31.774942+00:00",
+  "expires_at": "2026-11-21T18:05:31.767488+00:00"
+ }
+]

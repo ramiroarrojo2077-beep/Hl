@@ -161,6 +161,14 @@ async def search(
     if not query:
         return []
     base = _access_filter(user_id, agent_id, project_id, for_agent)
+    if for_agent:
+        from app.models import UserSettings
+
+        settings = await session.get(UserSettings, user_id)
+        disabled = list(((settings.privacy_settings or {}) if settings else {}).get("disabled_memory_categories") or [])
+        if disabled:
+            # Categorías desactivadas por el usuario: no llegan a ningún agente ni modelo.
+            base.append(MemoryItem.category.not_in(disabled))
     if scopes:
         base.append(MemoryItem.scope.in_(scopes))
     if kinds:

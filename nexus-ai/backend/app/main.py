@@ -12,7 +12,13 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 
+from app.actions.api import router as actions_router
 from app.agents.api import router as agents_router
+from app.automations.api import router as automations_router
+from app.integrations.whatsapp.api import router as whatsapp_router
+from app.jarvis.api import router as jarvis_router
+from app.monitoring.diagnostics import router as diagnostics_router
+from app.voice.api import router as voice_router
 from app.api.ws import router as ws_router
 from app.auth.api import router as auth_router
 from app.chat.api import router as chat_router
@@ -32,7 +38,7 @@ from app.providers.registry import close_http_client
 from app.settings.api import router as settings_router
 from app.tools.registry import sync_tool_definitions
 
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 
 
 @asynccontextmanager
@@ -78,7 +84,8 @@ def create_app() -> FastAPI:
 
     v1 = APIRouter(prefix="/api/v1")
     for r in (auth_router, agents_router, missions_router, meetings_router, memory_router, providers_router,
-              monitoring_router, settings_router, projects_router, chat_router, ws_router):
+              monitoring_router, settings_router, projects_router, chat_router, ws_router,
+              jarvis_router, actions_router, automations_router, whatsapp_router, voice_router, diagnostics_router):
         v1.include_router(r)
     app.include_router(v1)
 

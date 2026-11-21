@@ -35,8 +35,12 @@ from app.core.errors import NexusError, NotFound
 from app.jobs import queue
 from app.jobs.scheduler import next_run, validate_cron
 from app.models import (
+    ActionRequest,
     Agent,
     AgentMessage,
+    Automation,
+    AutomationRun,
+    ModelQualityScore,
     AuditLog,
     Conversation,
     DeviceToken,
@@ -93,6 +97,14 @@ async def update_settings(body: SettingsUpdate, cu: CurrentUser = Depends(curren
         settings.memory_settings = {**settings.memory_settings, **body.memory_settings}
     if body.display_name:
         cu.user.display_name = body.display_name
+    if body.jarvis_settings is not None:
+        from app.jarvis.settings import merge_jarvis
+
+        settings.jarvis_settings = merge_jarvis(settings.jarvis_settings, body.jarvis_settings)
+    if body.privacy_settings is not None:
+        from app.jarvis.settings import merge_privacy
+
+        settings.privacy_settings = merge_privacy(settings.privacy_settings, body.privacy_settings)
     await record_audit(session, cu.id, "settings.updated", "Ajustes actualizados", actor_type="user",
                        details={"fields": sorted(k for k in data if not k.startswith("clear_") or data[k])})
     await session.commit()
@@ -172,7 +184,7 @@ async def export_data(cu: CurrentUser = Depends(current_user), session: AsyncSes
         out = []
         for r in (await session.scalars(q)).all():
             out.append({a.key: getattr(r, a.key) for a in sa_inspect(model).column_attrs
-                        if a.key not in ("password_hash", "api_key_encrypted", "config_encrypted", "search_vector")})
+                        if a.key not in ("password_hash", "api_key_encrypted", "config_encrypted", "search_vector", "to_encrypted")})
         return out
 
     await record_audit(session, uid, "data.exported", "Exportación de datos", actor_type="user")
@@ -191,6 +203,10 @@ async def export_data(cu: CurrentUser = Depends(current_user), session: AsyncSes
         "tool_executions": await rows(ToolExecution, ToolExecution.user_id == uid, order=ToolExecution.created_at),
         "usage": await rows(UsageRecord, UsageRecord.user_id == uid, order=UsageRecord.created_at),
         "audit": await rows(AuditLog, AuditLog.user_id == uid, order=AuditLog.created_at),
+        "actions": await rows(ActionRequest, ActionRequest.user_id == uid, order=ActionRequest.created_at),
+        "automations": await rows(Automation, Automation.user_id == uid, order=Automation.created_at),
+        "automation_runs": await rows(AutomationRun, AutomationRun.user_id == uid, order=AutomationRun.created_at),
+        "quality_scores": await rows(ModelQualityScore, ModelQualityScore.user_id == uid, order=ModelQualityScore.created_at),
     }
 
 

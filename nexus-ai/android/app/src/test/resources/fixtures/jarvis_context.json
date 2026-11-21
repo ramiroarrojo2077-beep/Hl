@@ -1,0 +1,84 @@
+{
+ "headline": "Buenas tardes, Ana.",
+ "message": "Buenas tardes, Ana. Terminé 2 misiones desde tu última visita.",
+ "lines": [
+  "Terminé 2 misiones desde tu última visita."
+ ],
+ "timezone": "America/Argentina/Buenos_Aires",
+ "local_time": "2026-11-21T14:55:32.343182-03:00",
+ "counts": {
+  "pending_actions": 0,
+  "pending_approvals": 0,
+  "missions_running": 0,
+  "missions_blocked": 0,
+  "missions_finished_since_last_visit": 2,
+  "reminders_today": 0,
+  "unread_notifications": 3,
+  "active_automations": 2
+ },
+ "finished_missions": [
+  {
+   "id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "title": "Investigar motores de física"
+  },
+  {
+   "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+   "title": "Crear app de gestión de videojuegos"
+  }
+ ],
+ "reminders_today": [],
+ "last_seen_at": null,
+ "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "jarvis_settings": {
+  "confirm_local_actions": false,
+  "quick_actions": [
+   {
+    "key": "whatsapp",
+    "visible": true
+   },
+   {
+    "key": "reminder",
+    "visible": true
+   },
+   {
+    "key": "research",
+    "visible": true
+   },
+   {
+    "key": "project",
+    "visible": true
+   },
+   {
+    "key": "agenda",
+    "visible": true
+   },
+   {
+    "key": "document",
+    "visible": true
+   },
+   {
+    "key": "memory",
+    "visible": true
+   },
+   {
+    "key": "mission",
+    "visible": true
+   }
+  ],
+  "proactive": {
+   "level": "normal",
+   "quiet_hours": {
+    "start": "23:00",
+    "end": "08:00"
+   },
+   "categories": [
+    "missions",
+    "approvals",
+    "reminders"
+   ],
+   "max_per_day": 10
+  },
+  "advanced_view": false,
+  "timezone": "America/Argentina/Buenos_Aires"
+ }
+}

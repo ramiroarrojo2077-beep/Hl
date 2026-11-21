@@ -1,6 +1,6 @@
 [
  {
-  "id": "b0e57f74-b52a-4445-83db-b9a8afae41b2",
+  "id": "1d34d89c-b4b9-4b79-b54f-c967054667ea",
   "kind": "anthropic",
   "name": "Anthropic",
   "base_url": "https://fake-anthropic.test",
@@ -11,6 +11,6 @@
   "last_error": null,
   "known_limits": {},
   "max_concurrency": 4,
-  "created_at": "2026-11-21T16:52:41.403418Z"
+  "created_at": "2026-11-21T17:55:30.415775Z"
  }
 ]

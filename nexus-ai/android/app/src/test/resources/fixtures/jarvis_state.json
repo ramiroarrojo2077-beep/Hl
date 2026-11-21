@@ -1,0 +1,15 @@
+{
+ "state": "executing",
+ "system_state": "EXECUTING",
+ "emergency_stop": false,
+ "workers_online": null,
+ "pending_actions": 0,
+ "pending_approvals": 0,
+ "running_tasks": 0,
+ "queued_jobs": 0,
+ "collaborating_agents": [],
+ "active_agents": [],
+ "nexus_status": "completed",
+ "nexus_detail": "Entregó: Investigar motores de física",
+ "measured_at": "2026-11-21T17:55:32.337698+00:00"
+}

@@ -154,6 +154,12 @@ class ProviderAdapter(abc.ABC):
     async def embed(self, model: str, texts: list[str], dimensions: int) -> list[list[float]]:
         raise ProviderCallError(f"{self.label} no implementa embeddings", retryable=False)
 
+    async def transcribe(self, model: str, audio: bytes, filename: str, content_type: str, language: str | None) -> str:
+        raise ProviderCallError(f"{self.label}: no soporta transcripción de audio", retryable=False)
+
+    async def synthesize(self, model: str, text: str, voice: str, speed: float, fmt: str) -> bytes:
+        raise ProviderCallError(f"{self.label}: no soporta síntesis de voz", retryable=False)
+
     async def _post(self, url: str, *, headers: dict[str, str], json_body: dict[str, Any], timeout: float | None = None) -> dict[str, Any]:
         try:
             resp = await self.client.post(url, headers=headers, json=json_body, timeout=timeout)

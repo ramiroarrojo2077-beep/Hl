@@ -1,0 +1,28 @@
+{
+ "language": "es-AR",
+ "voice_name": null,
+ "speech_rate": 1.0,
+ "pitch": 1.0,
+ "volume": 1.0,
+ "mode": "push_to_talk",
+ "auto_speak": true,
+ "barge_in": true,
+ "wake_word_enabled": false,
+ "wake_word": "nexus",
+ "wake_word_consent_at": null,
+ "processing": "local",
+ "save_transcripts": true,
+ "transcript_retention_days": 30,
+ "store_audio": false,
+ "subtitles": true,
+ "remote": {
+  "stt": {
+   "available": false,
+   "model": null
+  },
+  "tts": {
+   "available": false,
+   "model": null
+  }
+ }
+}

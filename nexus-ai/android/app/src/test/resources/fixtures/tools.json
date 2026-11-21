@@ -1,5 +1,57 @@
 [
  {
+  "key": "actions.propose",
+  "name": "Proponer acción",
+  "description": "Propone una acción del registro de NEXUS (teléfono, WhatsApp, agenda, recordatorios, memoria, misiones, rutinas). La app pide confirmación cuando el riesgo lo exige. Acciones: whatsapp.open_chat: Preparar WhatsApp (params recipient_query, phone, contact_label, text, tone); device.dial: Preparar llamada (params recipient_query, phone, contact_label); device.share_text: Compartir texto (params text, title); device.share_file: Compartir documento (params title); device.open_app: Abrir aplicación (params app); device.open_settings: Abrir configuración (params panel); device.navigate: Preparar navegación (params destination, mode); device.map_search: Buscar en el mapa (params query); device.set_alarm: Programar alarma (params hour, minute, label); device.set_timer: Iniciar temporizador (params seconds, label); device.calendar_event: Preparar evento (params title, start, end, all_day, location, description); device.calendar_view: Consultar agenda (params date); device.contact_create: Crear contacto (params name, phone); device.open_url: Abrir enlace (params url); app.open_screen: Abrir sección de NEXUS (params screen, entity_id, label); reminder.create: Crear recordatorio (params title, body, at); memory.remember: Guardar en memoria (params content, category); memory.forget: Olvidar recuerdos (params memory_ids, query); mission.create: Crear misión (params title, objective, project_id); automation.create: Crear automatización (params name, trigger_type, cron, run_at, timezone, event_type, conditions, actions, max_runs_per_day); whatsapp.business_send: Enviar por WhatsApp Business (params phone, text, template_name, template_language, template_params, opt_in_confirmed, contact_label)",
+  "category": "acciones",
+  "operation_class": "creation",
+  "parameters_schema": {
+   "type": "object",
+   "required": [
+    "action_key",
+    "params",
+    "summary"
+   ],
+   "properties": {
+    "params": {
+     "type": "object"
+    },
+    "summary": {
+     "type": "string",
+     "maxLength": 500
+    },
+    "action_key": {
+     "enum": [
+      "app.open_screen",
+      "automation.create",
+      "device.calendar_event",
+      "device.calendar_view",
+      "device.contact_create",
+      "device.dial",
+      "device.map_search",
+      "device.navigate",
+      "device.open_app",
+      "device.open_settings",
+      "device.open_url",
+      "device.set_alarm",
+      "device.set_timer",
+      "device.share_file",
+      "device.share_text",
+      "memory.forget",
+      "memory.remember",
+      "mission.create",
+      "reminder.create",
+      "whatsapp.business_send",
+      "whatsapp.open_chat"
+     ],
+     "type": "string"
+    }
+   }
+  },
+  "requires_plugin": null,
+  "is_enabled": true
+ },
+ {
   "key": "webhook.send",
   "name": "Enviar mensaje por webhook",
   "description": "Envía un mensaje al webhook externo configurado por el usuario (Slack, Discord, n8n...).",

@@ -1,1 +1,21 @@
-[]
+[
+ {
+  "id": "49ddf933-e625-4233-8dd7-2d4cd4aaa403",
+  "kind": "reminder",
+  "name": "Llamar al médico",
+  "cron": null,
+  "run_once_at": "2026-11-22T12:00:00Z",
+  "timezone": "UTC",
+  "payload": {
+   "body": "",
+   "title": "Llamar al médico",
+   "action_id": "c5b53703-4824-4811-bfdd-c090b3850db7"
+  },
+  "is_enabled": true,
+  "next_run_at": "2026-11-22T12:00:00Z",
+  "last_run_at": null,
+  "last_status": null,
+  "run_count": 0,
+  "created_at": "2026-11-21T17:55:31.373283Z"
+ }
+]

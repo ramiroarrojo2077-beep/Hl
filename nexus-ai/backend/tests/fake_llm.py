@@ -49,6 +49,8 @@ class FakeAnthropic:
         self.task_tools: dict[str, list[tuple[str, dict[str, Any]]]] = {}
         self.meeting_continue = False
         self.chat_tool: tuple[str, dict[str, Any]] | None = None
+        self.jarvis_tool: tuple[str, dict[str, Any]] | None = None
+        self.jarvis_text = "Canberra es la capital de Australia."
         self.custom: Callable[[dict[str, Any]], dict[str, Any] | None] | None = None
         # Devuelve un status HTTP de error para inyectar fallas selectivas (o None).
         self.fail_when: Callable[[dict[str, Any]], int | None] | None = None
@@ -124,6 +126,19 @@ class FakeAnthropic:
                 if name in tool_names:
                     return {"tool": (name, args)}
             return {"text": f"Resultado de {key}: entregable completo y verificable."}
+        if "NEXUS como asistente personal" in system:
+            if self.jarvis_tool and not last_is_tool_result and self.jarvis_tool[0] in tool_names:
+                return {"tool": self.jarvis_tool}
+            if last_is_tool_result:
+                return {"text": "Te lo dejé preparado: " + _text_of(last["content"])[:160]}
+            return {"text": self.jarvis_text}
+        if "redactor de mensajes de NEXUS" in system:
+            original = first.split("<<<", 1)[-1].split(">>>", 1)[0].strip()
+            return {"text": f"Hola, {original[:1].lower()}{original[1:]} Saludos."}
+        if "Resumí conversaciones" in system:
+            return {"text": "El usuario conversó con NEXUS sobre varios temas."}
+        if "Rutina automática" in system:
+            return {"text": "Resumen de la rutina: no hay misiones en curso."}
         if "Contexto del chat" in system:
             if self.chat_tool and not last_is_tool_result and self.chat_tool[0] in tool_names:
                 return {"tool": self.chat_tool}

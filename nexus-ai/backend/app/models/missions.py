@@ -20,6 +20,7 @@ class Mission(Base, Timestamps):
     project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
     scheduled_job_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("scheduled_jobs.id", ondelete="SET NULL"))
     source_meeting_id: Mapped[uuid.UUID | None]
+    automation_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("automations.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     objective: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)

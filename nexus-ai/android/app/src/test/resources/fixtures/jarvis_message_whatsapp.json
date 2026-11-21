@@ -1,0 +1,243 @@
+{
+ "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "handled": "action",
+ "intent": {
+  "category": "communication",
+  "confidence": 0.93,
+  "rule": "whatsapp",
+  "action_key": "whatsapp.open_chat",
+  "params": {
+   "text": "Llego tarde",
+   "recipient_query": "papá"
+  },
+  "summary": "WhatsApp para papá: «Llego tarde»",
+  "missing": [],
+  "question": null,
+  "control": null,
+  "needs_model": false,
+  "specialists": [],
+  "assumptions": [],
+  "extra": {
+   "indirect_speech": true
+  },
+  "route": {
+   "task_type": "writing",
+   "response_style": "breve; nunca digas que un mensaje se envió si solo se preparó",
+   "max_tokens": 800,
+   "specialists": [],
+   "handler": "action"
+  }
+ },
+ "stages": [
+  {
+   "stage": "input",
+   "status": "done",
+   "ms": 11.73,
+   "mode": "text",
+   "source": "app"
+  },
+  {
+   "stage": "understanding",
+   "status": "done",
+   "ms": 1.69,
+   "pending": false
+  },
+  {
+   "stage": "intent",
+   "status": "done",
+   "ms": 0.69,
+   "category": "communication",
+   "rule": "whatsapp",
+   "confidence": 0.93
+  },
+  {
+   "stage": "routing",
+   "status": "done",
+   "ms": 1.01,
+   "handler": "action",
+   "specialists": []
+  },
+  {
+   "stage": "permissions",
+   "status": "awaiting_confirmation",
+   "ms": 4.4,
+   "requires_confirmation": true
+  },
+  {
+   "stage": "execution",
+   "status": "awaiting_confirmation",
+   "ms": 0.0,
+   "executor": "device"
+  },
+  {
+   "stage": "response",
+   "status": "done",
+   "ms": 0.01,
+   "kind": "template"
+  }
+ ],
+ "user_message": {
+  "id": "e7e9633e-2f66-450a-bda3-b7f2531bfd55",
+  "channel": "chat",
+  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "sender_type": "user",
+  "sender_agent_id": null,
+  "message_type": "message",
+  "content": "Mandale un mensaje a papá diciendo que llego tarde",
+  "meta": {
+   "input_mode": "text",
+   "attachments": [],
+   "source": "app",
+   "intent": {
+    "category": "communication",
+    "rule": "whatsapp",
+    "confidence": 0.93
+   },
+   "pipeline": [
+    {
+     "stage": "input",
+     "status": "done",
+     "ms": 11.73,
+     "mode": "text",
+     "source": "app"
+    },
+    {
+     "stage": "understanding",
+     "status": "done",
+     "ms": 1.69,
+     "pending": false
+    },
+    {
+     "stage": "intent",
+     "status": "done",
+     "ms": 0.69,
+     "category": "communication",
+     "rule": "whatsapp",
+     "confidence": 0.93
+    },
+    {
+     "stage": "routing",
+     "status": "done",
+     "ms": 1.01,
+     "handler": "action",
+     "specialists": []
+    },
+    {
+     "stage": "permissions",
+     "status": "awaiting_confirmation",
+     "ms": 4.4,
+     "requires_confirmation": true
+    },
+    {
+     "stage": "execution",
+     "status": "awaiting_confirmation",
+     "ms": 0.0,
+     "executor": "device"
+    },
+    {
+     "stage": "response",
+     "status": "done",
+     "ms": 0.01,
+     "kind": "template"
+    }
+   ]
+  },
+  "model_used": null,
+  "created_at": "2026-11-21T17:55:31.345398+00:00"
+ },
+ "reply": {
+  "id": "a267b1ea-f193-4253-9a09-32c76af79db3",
+  "channel": "chat",
+  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "sender_type": "agent",
+  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "message_type": "message",
+  "content": "Te preparé el WhatsApp para papá. Revisá el destinatario y el texto; cuando confirmes abro WhatsApp con el mensaje listo. El envío lo hacés vos desde WhatsApp.",
+  "meta": {
+   "reply_to": "e7e9633e-2f66-450a-bda3-b7f2531bfd55",
+   "category": "communication",
+   "kind": "action_proposal",
+   "action_id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+   "pipeline": [
+    {
+     "stage": "input",
+     "status": "done",
+     "ms": 11.73,
+     "mode": "text",
+     "source": "app"
+    },
+    {
+     "stage": "understanding",
+     "status": "done",
+     "ms": 1.69,
+     "pending": false
+    },
+    {
+     "stage": "intent",
+     "status": "done",
+     "ms": 0.69,
+     "category": "communication",
+     "rule": "whatsapp",
+     "confidence": 0.93
+    },
+    {
+     "stage": "routing",
+     "status": "done",
+     "ms": 1.01,
+     "handler": "action",
+     "specialists": []
+    },
+    {
+     "stage": "permissions",
+     "status": "awaiting_confirmation",
+     "ms": 4.4,
+     "requires_confirmation": true
+    },
+    {
+     "stage": "execution",
+     "status": "awaiting_confirmation",
+     "ms": 0.0,
+     "executor": "device"
+    },
+    {
+     "stage": "response",
+     "status": "done",
+     "ms": 0.01,
+     "kind": "template"
+    }
+   ]
+  },
+  "model_used": null,
+  "created_at": "2026-11-21T17:55:31.345398+00:00"
+ },
+ "action": {
+  "id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+  "action_key": "whatsapp.open_chat",
+  "name": "Preparar WhatsApp",
+  "category": "communication",
+  "executor": "device",
+  "risk": "EXTERNAL_COMMUNICATION",
+  "operation": "comunicación",
+  "params": {
+   "text": "Llego tarde",
+   "recipient_query": "papá"
+  },
+  "summary": "WhatsApp para papá: «Llego tarde»",
+  "status": "awaiting_confirmation",
+  "state_detail": "AWAITING_CONFIRMATION",
+  "requires_confirmation": true,
+  "result": {},
+  "error": null,
+  "source": "jarvis",
+  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "created_at": "2026-11-21T17:55:31.345398+00:00",
+  "confirmed_at": null,
+  "completed_at": null,
+  "expires_at": "2026-11-21T18:25:31.361912+00:00",
+  "device_params": {
+   "text": "Llego tarde",
+   "recipient_query": "papá"
+  }
+ },
+ "control": null
+}

@@ -1,0 +1,25 @@
+{
+ "events": {
+  "mission.completed": "Una misión terminó",
+  "mission.failed": "Una misión falló",
+  "mission.blocked": "Una misión quedó bloqueada",
+  "mission.status_changed": "Una misión cambió de estado",
+  "approval.requested": "Hay una aprobación pendiente",
+  "action.completed": "Se completó una acción",
+  "reminder.fired": "Se disparó un recordatorio",
+  "whatsapp.business.inbound": "Llegó un mensaje a WhatsApp Business",
+  "user.manual": "El usuario la ejecuta manualmente"
+ },
+ "action_types": [
+  "action",
+  "jarvis_prompt",
+  "mission",
+  "notify",
+  "reminder"
+ ],
+ "limits": {
+  "max_actions": 5,
+  "user_hourly_cap": 30,
+  "min_schedule_minutes": 15
+ }
+}

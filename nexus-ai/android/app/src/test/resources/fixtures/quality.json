@@ -1,0 +1,43 @@
+{
+ "criteria": [
+  "precision",
+  "completeness",
+  "instruction_following",
+  "consistency",
+  "verifiability",
+  "format",
+  "errors"
+ ],
+ "window_days": 30,
+ "min_samples_for_routing": 3,
+ "items": [
+  {
+   "model": "anthropic:claude-test-opus",
+   "task_type": "code",
+   "source": "review",
+   "average": 8.4,
+   "samples": 2
+  },
+  {
+   "model": "anthropic:claude-test-opus",
+   "task_type": "design",
+   "source": "review",
+   "average": 8.4,
+   "samples": 2
+  },
+  {
+   "model": "anthropic:claude-test-opus",
+   "task_type": "general",
+   "source": "deterministic",
+   "average": 10.0,
+   "samples": 1
+  },
+  {
+   "model": "anthropic:claude-test-opus",
+   "task_type": "research",
+   "source": "review",
+   "average": 8.4,
+   "samples": 2
+  }
+ ]
+}

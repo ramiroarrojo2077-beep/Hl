@@ -1,0 +1,238 @@
+{
+ "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "handled": "action",
+ "intent": {
+  "category": "phone_control",
+  "confidence": 0.88,
+  "rule": "open_app",
+  "action_key": "device.open_app",
+  "params": {
+   "app": "Spotify"
+  },
+  "summary": "Abrir Spotify",
+  "missing": [],
+  "question": null,
+  "control": null,
+  "needs_model": false,
+  "specialists": [],
+  "assumptions": [],
+  "extra": {},
+  "route": {
+   "task_type": "simple",
+   "response_style": "muy breve: qué acción preparaste",
+   "max_tokens": 400,
+   "specialists": [],
+   "handler": "action"
+  }
+ },
+ "stages": [
+  {
+   "stage": "input",
+   "status": "done",
+   "ms": 2.76,
+   "mode": "text",
+   "source": "app"
+  },
+  {
+   "stage": "understanding",
+   "status": "done",
+   "ms": 0.99,
+   "pending": false
+  },
+  {
+   "stage": "intent",
+   "status": "done",
+   "ms": 0.18,
+   "category": "phone_control",
+   "rule": "open_app",
+   "confidence": 0.88
+  },
+  {
+   "stage": "routing",
+   "status": "done",
+   "ms": 0.97,
+   "handler": "action",
+   "specialists": []
+  },
+  {
+   "stage": "permissions",
+   "status": "ready",
+   "ms": 3.33,
+   "requires_confirmation": false
+  },
+  {
+   "stage": "execution",
+   "status": "ready",
+   "ms": 0.0,
+   "executor": "device"
+  },
+  {
+   "stage": "response",
+   "status": "done",
+   "ms": 0.01,
+   "kind": "template"
+  }
+ ],
+ "user_message": {
+  "id": "1377f25a-e768-4ef6-b970-847316063caf",
+  "channel": "chat",
+  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "sender_type": "user",
+  "sender_agent_id": null,
+  "message_type": "message",
+  "content": "Abrí Spotify",
+  "meta": {
+   "input_mode": "text",
+   "attachments": [],
+   "source": "app",
+   "intent": {
+    "category": "phone_control",
+    "rule": "open_app",
+    "confidence": 0.88
+   },
+   "pipeline": [
+    {
+     "stage": "input",
+     "status": "done",
+     "ms": 2.76,
+     "mode": "text",
+     "source": "app"
+    },
+    {
+     "stage": "understanding",
+     "status": "done",
+     "ms": 0.99,
+     "pending": false
+    },
+    {
+     "stage": "intent",
+     "status": "done",
+     "ms": 0.18,
+     "category": "phone_control",
+     "rule": "open_app",
+     "confidence": 0.88
+    },
+    {
+     "stage": "routing",
+     "status": "done",
+     "ms": 0.97,
+     "handler": "action",
+     "specialists": []
+    },
+    {
+     "stage": "permissions",
+     "status": "ready",
+     "ms": 3.33,
+     "requires_confirmation": false
+    },
+    {
+     "stage": "execution",
+     "status": "ready",
+     "ms": 0.0,
+     "executor": "device"
+    },
+    {
+     "stage": "response",
+     "status": "done",
+     "ms": 0.01,
+     "kind": "template"
+    }
+   ]
+  },
+  "model_used": null,
+  "created_at": "2026-11-21T17:55:31.396081+00:00"
+ },
+ "reply": {
+  "id": "e0bb446e-2a08-4df2-b0ce-f345b7d61d67",
+  "channel": "chat",
+  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "sender_type": "agent",
+  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "message_type": "message",
+  "content": "Abriendo Spotify.",
+  "meta": {
+   "reply_to": "1377f25a-e768-4ef6-b970-847316063caf",
+   "category": "phone_control",
+   "kind": "action_proposal",
+   "action_id": "83b7e9ee-ba66-4326-b103-4f93db13bc12",
+   "pipeline": [
+    {
+     "stage": "input",
+     "status": "done",
+     "ms": 2.76,
+     "mode": "text",
+     "source": "app"
+    },
+    {
+     "stage": "understanding",
+     "status": "done",
+     "ms": 0.99,
+     "pending": false
+    },
+    {
+     "stage": "intent",
+     "status": "done",
+     "ms": 0.18,
+     "category": "phone_control",
+     "rule": "open_app",
+     "confidence": 0.88
+    },
+    {
+     "stage": "routing",
+     "status": "done",
+     "ms": 0.97,
+     "handler": "action",
+     "specialists": []
+    },
+    {
+     "stage": "permissions",
+     "status": "ready",
+     "ms": 3.33,
+     "requires_confirmation": false
+    },
+    {
+     "stage": "execution",
+     "status": "ready",
+     "ms": 0.0,
+     "executor": "device"
+    },
+    {
+     "stage": "response",
+     "status": "done",
+     "ms": 0.01,
+     "kind": "template"
+    }
+   ]
+  },
+  "model_used": null,
+  "created_at": "2026-11-21T17:55:31.396081+00:00"
+ },
+ "action": {
+  "id": "83b7e9ee-ba66-4326-b103-4f93db13bc12",
+  "action_key": "device.open_app",
+  "name": "Abrir aplicación",
+  "category": "phone_control",
+  "executor": "device",
+  "risk": "LOCAL_REVERSIBLE",
+  "operation": "lectura",
+  "params": {
+   "app": "Spotify"
+  },
+  "summary": "Abrir Spotify",
+  "status": "ready",
+  "state_detail": null,
+  "requires_confirmation": false,
+  "result": {},
+  "error": null,
+  "source": "jarvis",
+  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "created_at": "2026-11-21T17:55:31.396081+00:00",
+  "confirmed_at": "2026-11-21T17:55:31.403786+00:00",
+  "completed_at": null,
+  "expires_at": "2026-11-21T18:05:31.403786+00:00",
+  "device_params": {
+   "app": "Spotify"
+  }
+ },
+ "control": null
+}

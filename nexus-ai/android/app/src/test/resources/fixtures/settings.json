@@ -11,6 +11,7 @@
  "language": "es",
  "notification_prefs": {
   "reminder": true,
+  "automation": true,
   "report_ready": true,
   "budget_reached": true,
   "important_error": true,
@@ -21,5 +22,11 @@
   "approval_requested": true
  },
  "appearance": {},
- "memory_settings": {}
+ "memory_settings": {},
+ "voice_settings": {},
+ "jarvis_settings": {
+  "timezone": "America/Argentina/Buenos_Aires",
+  "permissions_v2": true
+ },
+ "privacy_settings": {}
 }

@@ -101,6 +101,9 @@ async def route(
         for am in (await session.scalars(select(AgentModel).where(AgentModel.agent_id == agent_id))).all():
             assigned[am.model_id] = am.priority
 
+    from app.providers.quality import MIN_SAMPLES, model_adjustments
+
+    measured = await model_adjustments(session, user_id, task_type)
     costs = [c for c in (_cost_index(m) for m, _ in usable) if c is not None]
     max_cost = max(costs) if costs else None
 
@@ -143,6 +146,11 @@ async def route(
         if provider.status == "error":
             score -= 20
             reasons.append("proveedor con errores recientes")
+        if model.id in measured and measured[model.id][1] >= MIN_SAMPLES:
+            avg, n = measured[model.id]
+            # Calidad medida en tareas reales de este tipo (no longitud): ajusta ±8 puntos.
+            score += max(-8.0, min(8.0, (avg - 7.0) * 2))
+            reasons.append(f"calidad medida {avg:.1f}/10 en {n} tareas de tipo {task_type}")
         candidates.append(Candidate(model=model, provider=provider, score=score, reasons=reasons, below_quality=below))
 
     candidates.sort(key=lambda c: c.score, reverse=True)

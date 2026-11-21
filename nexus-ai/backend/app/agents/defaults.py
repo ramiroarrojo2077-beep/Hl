@@ -52,7 +52,7 @@ Principios:
     tools=[
         "memory.search", "memory.propose", "agents.list", "agents.ask", "missions.create", "missions.list",
         "missions.status", "meetings.request", "documents.read", "project.list_files", "drafts.create",
-        "notifications.notify_user", "reminders.create", "web.fetch",
+        "notifications.notify_user", "reminders.create", "web.fetch", "web.search", "actions.propose",
     ],
 )
 

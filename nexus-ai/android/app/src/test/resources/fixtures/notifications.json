@@ -1,26 +1,38 @@
 [
  {
-  "id": "cc2a226e-619a-46fa-8af6-1ff56872a2fb",
+  "id": "9303afb5-ce8e-4cff-a587-760f664cbfc3",
+  "event_type": "mission_completed",
+  "title": "Misión completada: Investigar motores de física",
+  "body": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
+  "data": {
+   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b"
+  },
+  "read_at": null,
+  "push_status": "not_sent",
+  "created_at": "2026-11-21T17:55:31.709472Z"
+ },
+ {
+  "id": "bc1ea84e-c1d5-4f90-bb27-768310182943",
   "event_type": "meeting_finished",
   "title": "Reunión finalizada: Arquitectura del simulador",
   "body": "Se acordó un enfoque modular.",
   "data": {
-   "meeting_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2"
+   "meeting_id": "1414cf7a-be36-4c6b-a6c6-82eb5faed1a6"
   },
   "read_at": null,
   "push_status": "not_sent",
-  "created_at": "2026-11-21T16:52:42.139750Z"
+  "created_at": "2026-11-21T17:55:31.209927Z"
  },
  {
-  "id": "0d5143b4-256f-41b8-aa3f-bcae98788119",
+  "id": "e07eb558-0dcd-40bb-bbf3-3515ce94a2e7",
   "event_type": "mission_completed",
   "title": "Misión completada: Crear app de gestión de videojuegos",
   "body": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "data": {
-   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4"
+   "mission_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b"
   },
   "read_at": null,
   "push_status": "not_sent",
-  "created_at": "2026-11-21T16:52:41.887771Z"
+  "created_at": "2026-11-21T17:55:30.963987Z"
  }
 ]

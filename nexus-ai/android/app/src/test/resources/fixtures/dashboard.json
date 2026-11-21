@@ -6,15 +6,15 @@
  "autonomy_mode": "supervised",
  "agents": {
   "total": 6,
-  "active": 3,
+  "active": 0,
   "items": [
    {
-    "id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
+    "id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
     "slug": "nexus",
     "name": "NEXUS",
     "role": "CEO / Manager",
-    "status": "thinking",
-    "status_detail": "Coordinando la misión",
+    "status": "completed",
+    "status_detail": "Entregó: Investigar motores de física",
     "color": "#00D9FF",
     "appearance": {
      "body": "a",
@@ -27,15 +27,15 @@
      "hair_color": "#C9D6E8",
      "outfit_color": "#16324A"
     },
-    "last_activity_at": "2026-11-21T16:52:42.283563Z"
+    "last_activity_at": "2026-11-21T17:55:31.728568Z"
    },
    {
-    "id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
+    "id": "15824488-87e5-4319-806b-10d6b5863b23",
     "slug": "atlas",
     "name": "ATLAS",
     "role": "Investigador",
-    "status": "working",
-    "status_detail": "Investigando motores de física",
+    "status": "completed",
+    "status_detail": "Completó: Investigar tecnologías",
     "color": "#38D99B",
     "appearance": {
      "body": "b",
@@ -48,15 +48,15 @@
      "hair_color": "#3B2A20",
      "outfit_color": "#1E3B32"
     },
-    "last_activity_at": "2026-11-21T16:52:42.036467Z"
+    "last_activity_at": "2026-11-21T17:55:31.558328Z"
    },
    {
-    "id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
+    "id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
     "slug": "cipher",
     "name": "CIPHER",
     "role": "Desarrollador",
-    "status": "working",
-    "status_detail": "Investigando motores de física",
+    "status": "completed",
+    "status_detail": "Completó: Arquitectura",
     "color": "#8A5CFF",
     "appearance": {
      "body": "a",
@@ -69,10 +69,10 @@
      "hair_color": "#8A5CFF",
      "outfit_color": "#221A3D"
     },
-    "last_activity_at": "2026-11-21T16:52:42.062153Z"
+    "last_activity_at": "2026-11-21T17:55:31.614916Z"
    },
    {
-    "id": "e2231600-0d6d-41f4-9afa-48b46a48bad7",
+    "id": "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
     "slug": "nova",
     "name": "NOVA",
     "role": "Creativo",
@@ -90,15 +90,15 @@
      "hair_color": "#5FB6D9",
      "outfit_color": "#1A2230"
     },
-    "last_activity_at": "2026-11-21T16:52:41.688994Z"
+    "last_activity_at": "2026-11-21T17:55:31.549348Z"
    },
    {
-    "id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
+    "id": "eaab7b4e-2777-4799-be3a-1ae61376b944",
     "slug": "oracle",
     "name": "ORACLE",
     "role": "Analista y Auditor",
-    "status": "idle",
-    "status_detail": null,
+    "status": "completed",
+    "status_detail": "Revisión entregada",
     "color": "#FFC24B",
     "appearance": {
      "body": "a",
@@ -111,10 +111,10 @@
      "hair_color": "#E9E4D8",
      "outfit_color": "#2E2614"
     },
-    "last_activity_at": "2026-11-21T16:52:42.092943Z"
+    "last_activity_at": "2026-11-21T17:55:31.650711Z"
    },
    {
-    "id": "341cf6e8-e580-45a8-b303-3de592b45ab3",
+    "id": "573106d6-4fcf-434f-942b-ef030846e139",
     "slug": "guardian",
     "name": "GUARDIAN",
     "role": "Seguridad y Control",
@@ -132,37 +132,36 @@
      "hair_color": "#2A2F3A",
      "outfit_color": "#2B1518"
     },
-    "last_activity_at": "2026-11-21T16:52:41.866339Z"
+    "last_activity_at": "2026-11-21T17:55:31.692120Z"
    }
   ]
  },
  "missions": {
-  "running": 1,
+  "running": 0,
   "pending": 0,
-  "completed": 1,
+  "completed": 2,
   "failed": 0,
   "by_status": {
-   "completed": 1,
-   "planning": 1
+   "completed": 2
   }
  },
  "tasks": {
-  "completed_today": 3,
-  "completed_total": 3
+  "completed_today": 6,
+  "completed_total": 6
  },
  "meetings_active": 0,
  "pending_approvals": 0,
- "unread_notifications": 2,
+ "unread_notifications": 3,
  "memories": 1,
  "usage": {
-  "tokens_today": 22500,
-  "cost_today_usd": "0.202500",
-  "calls_today": 15,
-  "cost_month_usd": "0.202500"
+  "tokens_today": 36000,
+  "cost_today_usd": "0.324000",
+  "calls_today": 24,
+  "cost_month_usd": "0.324000"
  },
  "providers": [
   {
-   "id": "b0e57f74-b52a-4445-83db-b9a8afae41b2",
+   "id": "1d34d89c-b4b9-4b79-b54f-c967054667ea",
    "kind": "anthropic",
    "name": "Anthropic",
    "status": "ok",
@@ -172,90 +171,110 @@
  ],
  "timeline": [
   {
-   "id": "4b57a3ec-6c68-4436-b38a-d46c47e7f5ef",
+   "id": "6ded005f-c742-4234-9867-8f45365fff4b",
    "title": "Investigar motores de física",
-   "status": "planning",
-   "updated_at": "2026-11-21T16:52:42.304221Z",
-   "created_at": "2026-11-21T16:52:42.298738Z"
+   "status": "completed",
+   "updated_at": "2026-11-21T17:55:31.725950Z",
+   "created_at": "2026-11-21T17:55:31.321459Z"
   },
   {
-   "id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
+   "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
    "title": "Crear app de gestión de videojuegos",
    "status": "completed",
-   "updated_at": "2026-11-21T16:52:41.913519Z",
-   "created_at": "2026-11-21T16:52:41.453665Z"
+   "updated_at": "2026-11-21T17:55:30.998638Z",
+   "created_at": "2026-11-21T17:55:30.504465Z"
   }
  ],
  "recent_activity": [
   {
-   "id": "c1cf5048-fb3c-4970-a3b2-8793fff32576",
+   "id": "9bfce50f-55bb-4f35-b708-b991264d2358",
    "actor_type": "user",
    "agent_id": null,
-   "action": "mission.created",
-   "target_type": "mission",
-   "target_id": "4b57a3ec-6c68-4436-b38a-d46c47e7f5ef",
-   "mission_id": "4b57a3ec-6c68-4436-b38a-d46c47e7f5ef",
-   "project_id": null,
-   "outcome": "success",
-   "summary": "El usuario creó la misión «Investigar motores de física»",
-   "details": {},
-   "model_used": null,
-   "tokens": null,
-   "cost_usd": null,
-   "created_at": "2026-11-21T16:52:42.298738Z"
-  },
-  {
-   "id": "5f516cf5-7120-4d24-9b87-20c3f9ee4b17",
-   "actor_type": "agent",
-   "agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
-   "action": "meeting.completed",
-   "target_type": "meeting",
-   "target_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
+   "action": "automation.created",
+   "target_type": "automation",
+   "target_id": "bf5426b9-ebd9-4f3e-85b2-239e676d6f3b",
    "mission_id": null,
    "project_id": null,
    "outcome": "success",
-   "summary": "Reunión finalizada: «Arquitectura del simulador»",
-   "details": {},
-   "model_used": "anthropic:claude-test-opus",
-   "tokens": 9000,
-   "cost_usd": "0.081000",
-   "created_at": "2026-11-21T16:52:42.139750Z"
-  },
-  {
-   "id": "8342e5a3-1573-4fed-867a-edd0ad580043",
-   "actor_type": "user",
-   "agent_id": null,
-   "action": "meeting.created",
-   "target_type": "meeting",
-   "target_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
-   "mission_id": null,
-   "project_id": null,
-   "outcome": "success",
-   "summary": "Reunión convocada: «Arquitectura del simulador»",
+   "summary": "Automatización creada: Aviso de misiones",
    "details": {
-    "type": "technical",
-    "participants": [
-     "atlas",
-     "cipher",
-     "oracle"
-    ]
+    "status": "active",
+    "trigger": "event"
    },
    "model_used": null,
    "tokens": null,
    "cost_usd": null,
-   "created_at": "2026-11-21T16:52:41.930375Z"
+   "created_at": "2026-11-21T17:55:31.802848Z"
   },
   {
-   "id": "ac8fa7ee-c3e9-4d16-a8e0-46d44397c829",
+   "id": "2c300143-64f0-4b47-9875-0ac732965159",
+   "actor_type": "user",
+   "agent_id": null,
+   "action": "automation.created",
+   "target_type": "automation",
+   "target_id": "6319323d-f97f-4eeb-a9db-3368ba724947",
+   "mission_id": null,
+   "project_id": null,
+   "outcome": "success",
+   "summary": "Automatización creada: Resumen diario",
+   "details": {
+    "status": "active",
+    "trigger": "schedule"
+   },
+   "model_used": null,
+   "tokens": null,
+   "cost_usd": null,
+   "created_at": "2026-11-21T17:55:31.791851Z"
+  },
+  {
+   "id": "fa48110d-7e6d-4ab3-a828-a535c14a0fe1",
+   "actor_type": "user",
+   "agent_id": null,
+   "action": "action.reported",
+   "target_type": "action",
+   "target_id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+   "mission_id": null,
+   "project_id": null,
+   "outcome": "success",
+   "summary": "Preparar WhatsApp: WHATSAPP_OPENED",
+   "details": {
+    "state": "WHATSAPP_OPENED"
+   },
+   "model_used": null,
+   "tokens": null,
+   "cost_usd": null,
+   "created_at": "2026-11-21T17:55:31.772965Z"
+  },
+  {
+   "id": "24dd8ddd-7972-4ef4-98e3-ed77084fe0e9",
+   "actor_type": "user",
+   "agent_id": null,
+   "action": "action.confirmed",
+   "target_type": "action",
+   "target_id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+   "mission_id": null,
+   "project_id": null,
+   "outcome": "success",
+   "summary": "Acción confirmada: Preparar WhatsApp",
+   "details": {
+    "key": "whatsapp.open_chat"
+   },
+   "model_used": null,
+   "tokens": null,
+   "cost_usd": null,
+   "created_at": "2026-11-21T17:55:31.761910Z"
+  },
+  {
+   "id": "f8d251f4-346c-47bb-a492-4af37d3d21ed",
    "actor_type": "agent",
-   "agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
+   "agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
    "action": "mission.completed",
    "target_type": null,
    "target_id": null,
-   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
-   "project_id": "9ebf471c-a052-43f5-a9ba-e822e4fbacca",
+   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "project_id": null,
    "outcome": "success",
-   "summary": "Misión completada: «Crear app de gestión de videojuegos»",
+   "summary": "Misión completada: «Investigar motores de física»",
    "details": {
     "learnings": 1,
     "spent_usd": "0.094500"
@@ -263,86 +282,62 @@
    "model_used": "anthropic:claude-test-opus",
    "tokens": 1500,
    "cost_usd": "0.013500",
-   "created_at": "2026-11-21T16:52:41.887771Z"
+   "created_at": "2026-11-21T17:55:31.709472Z"
   },
   {
-   "id": "d3044b54-e262-4f1e-aece-24940911444e",
+   "id": "992aed90-7ee7-44f7-9b76-e71301c65feb",
    "actor_type": "agent",
-   "agent_id": "341cf6e8-e580-45a8-b303-3de592b45ab3",
+   "agent_id": "573106d6-4fcf-434f-942b-ef030846e139",
    "action": "mission.security_review",
    "target_type": null,
    "target_id": null,
-   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
+   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
    "project_id": null,
    "outcome": "info",
-   "summary": "GUARDIAN auditó «Crear app de gestión de videojuegos»: ok",
+   "summary": "GUARDIAN auditó «Investigar motores de física»: ok",
    "details": {
     "blocked": 0
    },
    "model_used": "anthropic:claude-test-opus",
    "tokens": 1500,
    "cost_usd": "0.013500",
-   "created_at": "2026-11-21T16:52:41.849075Z"
+   "created_at": "2026-11-21T17:55:31.674970Z"
   },
   {
-   "id": "bd91607d-e8af-45ce-836d-0fec0d850f98",
+   "id": "fb04ae03-8d62-47ee-906b-28f846bfc9b7",
    "actor_type": "agent",
-   "agent_id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
+   "agent_id": "eaab7b4e-2777-4799-be3a-1ae61376b944",
    "action": "mission.reviewed",
    "target_type": null,
    "target_id": null,
-   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
+   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
    "project_id": null,
    "outcome": "success",
-   "summary": "ORACLE revisó «Crear app de gestión de videojuegos»: approve",
+   "summary": "ORACLE revisó «Investigar motores de física»: approve",
    "details": {
     "score": 8
    },
    "model_used": "anthropic:claude-test-opus",
    "tokens": 1500,
    "cost_usd": "0.013500",
-   "created_at": "2026-11-21T16:52:41.805755Z"
+   "created_at": "2026-11-21T17:55:31.635928Z"
   },
   {
-   "id": "d12e6aac-c853-4a9b-8fc2-629d20478241",
+   "id": "44885537-bba9-4a60-8e3f-1e3d804d370a",
    "actor_type": "agent",
-   "agent_id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
+   "agent_id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
    "action": "task.completed",
    "target_type": "task",
-   "target_id": "f11f43fc-b85a-4e36-b683-5188b26d70f1",
-   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
-   "project_id": "9ebf471c-a052-43f5-a9ba-e822e4fbacca",
+   "target_id": "eea07a32-44c1-4063-b9c3-7bad37de3151",
+   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "project_id": null,
    "outcome": "success",
    "summary": "CIPHER completó «Arquitectura»",
    "details": {},
    "model_used": "anthropic:claude-test-opus",
    "tokens": 3000,
    "cost_usd": "0.027000",
-   "created_at": "2026-11-21T16:52:41.763389Z"
-  },
-  {
-   "id": "ee4cf779-9243-49c3-b19c-eb3053fc0961",
-   "actor_type": "agent",
-   "agent_id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
-   "action": "tool.executed",
-   "target_type": "tool_execution",
-   "target_id": "70fc0460-8342-44a2-951d-4567d616a48f",
-   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
-   "project_id": "9ebf471c-a052-43f5-a9ba-e822e4fbacca",
-   "outcome": "success",
-   "summary": "CIPHER ejecutó drafts.create",
-   "details": {
-    "tool": "drafts.create",
-    "arguments": {
-     "title": "Arquitectura",
-     "content": "# Arquitectura\nCapas: API, dominio, datos"
-    },
-    "duration_ms": 9
-   },
-   "model_used": null,
-   "tokens": null,
-   "cost_usd": null,
-   "created_at": "2026-11-21T16:52:41.719945Z"
+   "created_at": "2026-11-21T17:55:31.604495Z"
   }
  ],
  "alerts": []

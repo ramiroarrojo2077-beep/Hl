@@ -1,0 +1,27 @@
+{
+ "category": "productivity",
+ "confidence": 0.93,
+ "rule": "alarm",
+ "action_key": "device.set_alarm",
+ "params": {
+  "hour": 7,
+  "minute": 0
+ },
+ "summary": "Alarma a las 07:00 (mañana)",
+ "missing": [],
+ "question": null,
+ "control": null,
+ "needs_model": false,
+ "specialists": [],
+ "assumptions": [
+  "Como esa hora ya pasó hoy, lo puse para mañana."
+ ],
+ "extra": {},
+ "route": {
+  "task_type": "writing",
+  "response_style": "concreta y lista para usar",
+  "max_tokens": 2500,
+  "specialists": [],
+  "handler": "action"
+ }
+}

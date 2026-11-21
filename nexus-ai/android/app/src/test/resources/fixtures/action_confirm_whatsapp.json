@@ -1,0 +1,31 @@
+{
+ "id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+ "action_key": "whatsapp.open_chat",
+ "name": "Preparar WhatsApp",
+ "category": "communication",
+ "executor": "device",
+ "risk": "EXTERNAL_COMMUNICATION",
+ "operation": "comunicación",
+ "params": {
+  "text": "Llego tarde, perdón",
+  "recipient_query": "papá"
+ },
+ "summary": "WhatsApp para papá: «Llego tarde»",
+ "status": "ready",
+ "state_detail": "READY_TO_OPEN",
+ "requires_confirmation": true,
+ "result": {
+  "edited_before_confirm": true
+ },
+ "error": null,
+ "source": "jarvis",
+ "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "created_at": "2026-11-21T17:55:31.345398+00:00",
+ "confirmed_at": "2026-11-21T17:55:31.767488+00:00",
+ "completed_at": null,
+ "expires_at": "2026-11-21T18:05:31.767488+00:00",
+ "device_params": {
+  "text": "Llego tarde, perdón",
+  "recipient_query": "papá"
+ }
+}

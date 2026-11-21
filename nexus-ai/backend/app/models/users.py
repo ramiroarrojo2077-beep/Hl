@@ -59,6 +59,11 @@ class UserSettings(Base, Timestamps):
     notification_prefs: Mapped[dict[str, Any]] = mapped_column(default=dict, nullable=False)
     appearance: Mapped[dict[str, Any]] = mapped_column(default=dict, nullable=False)
     memory_settings: Mapped[dict[str, Any]] = mapped_column(default=dict, nullable=False)
+    # NEXUS 2.0
+    voice_settings: Mapped[dict[str, Any]] = mapped_column(default=dict, server_default="{}", nullable=False)
+    jarvis_settings: Mapped[dict[str, Any]] = mapped_column(default=dict, server_default="{}", nullable=False)
+    privacy_settings: Mapped[dict[str, Any]] = mapped_column(default=dict, server_default="{}", nullable=False)
+    last_seen_at: Mapped[datetime | None]
 
 
 class DeviceToken(Base, CreatedAt):

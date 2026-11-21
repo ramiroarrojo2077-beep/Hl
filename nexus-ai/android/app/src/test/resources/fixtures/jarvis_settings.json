@@ -1,0 +1,59 @@
+{
+ "jarvis": {
+  "confirm_local_actions": false,
+  "quick_actions": [
+   {
+    "key": "whatsapp",
+    "visible": true
+   },
+   {
+    "key": "reminder",
+    "visible": true
+   },
+   {
+    "key": "research",
+    "visible": true
+   },
+   {
+    "key": "project",
+    "visible": true
+   },
+   {
+    "key": "agenda",
+    "visible": true
+   },
+   {
+    "key": "document",
+    "visible": true
+   },
+   {
+    "key": "memory",
+    "visible": true
+   },
+   {
+    "key": "mission",
+    "visible": true
+   }
+  ],
+  "proactive": {
+   "level": "normal",
+   "quiet_hours": {
+    "start": "23:00",
+    "end": "08:00"
+   },
+   "categories": [
+    "missions",
+    "approvals",
+    "reminders"
+   ],
+   "max_per_day": 10
+  },
+  "advanced_view": false,
+  "timezone": "America/Argentina/Buenos_Aires"
+ },
+ "privacy": {
+  "disabled_memory_categories": [],
+  "crash_reports_consent": false,
+  "share_contacts_with_models": false
+ }
+}

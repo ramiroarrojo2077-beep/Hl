@@ -523,3 +523,7 @@ register(ToolDef(
     }, ["topic", "objective"]),
     handler=_meetings_request, side_effects=True,
 ))
+
+
+# NEXUS 2.0: herramientas de JARVIS CORE (Action Registry).
+from app.jarvis import tools as _jarvis_tools  # noqa: E402,F401

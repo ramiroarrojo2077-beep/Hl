@@ -69,8 +69,16 @@ async def set_mission_status(session: AsyncSession, mission: Mission, status: st
     await events.publish(
         mission.user_id, "mission.updated",
         {"id": str(mission.id), "status": status, "reason": reason, "title": mission.title,
-         "spent_usd": str(mission.spent_usd), "tokens_used": mission.tokens_used},
+         "spent_usd": str(mission.spent_usd), "tokens_used": mission.tokens_used,
+         "entity": {"type": "mission", "id": str(mission.id)}},
     )
+    from app.automations.service import emit_event
+
+    data = {"mission_id": str(mission.id), "title": mission.title, "status": status, "event_id": f"{mission.id}:{status}"}
+    await emit_event(session, mission.user_id, "mission.status_changed", data, origin_automation_id=mission.automation_id)
+    specific = {MissionStatus.COMPLETED: "mission.completed", MissionStatus.FAILED: "mission.failed", MissionStatus.BLOCKED: "mission.blocked"}.get(status)
+    if specific:
+        await emit_event(session, mission.user_id, specific, data, origin_automation_id=mission.automation_id)
 
 
 async def agent_by_slug(session: AsyncSession, user_id: uuid.UUID, slug: str) -> Agent | None:
@@ -524,6 +532,14 @@ async def review_mission(session: AsyncSession, mission: Mission) -> None:
                        actor_type="agent", agent_id=oracle.id, mission_id=mission.id, model_used=result.model_label,
                        tokens=result.tokens, cost_usd=result.cost_usd, details={"score": review.get("score")})
     await set_agent_status(session, oracle, "completed", "Revisión entregada")
+    if not review.get("parse_error"):
+        from app.providers.quality import criteria_from_review, record as record_quality
+
+        for t in await mission_tasks(session, mission.id):
+            if t.status == TaskStatus.COMPLETED and t.model_used:
+                await record_quality(session, mission.user_id, model_label=t.model_used, task_type=t.task_type, source="review",
+                                     criteria=criteria_from_review(review), notes=str(review.get("summary", ""))[:500],
+                                     mission_id=mission.id, task_id=t.id)
 
     issues = [i for i in review.get("issues") or [] if isinstance(i, dict) and i.get("severity") in ("medium", "high")]
     if review.get("verdict") == "revise" and issues and mission.review_round < get_settings().max_review_rounds:

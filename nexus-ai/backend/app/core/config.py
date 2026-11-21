@@ -62,6 +62,15 @@ class Settings(BaseSettings):
     # Notificaciones push (Firebase Cloud Messaging HTTP v1)
     fcm_service_account_file: str | None = None
 
+    # WhatsApp Business Platform (API oficial de Meta). Credenciales SOLO en el servidor.
+    whatsapp_business_token: str | None = None
+    whatsapp_phone_number_id: str | None = None
+    whatsapp_app_secret: str | None = None  # valida la firma X-Hub-Signature-256 de los webhooks
+    whatsapp_verify_token: str | None = None  # verificación del webhook (hub.verify_token)
+    whatsapp_graph_base_url: str = "https://graph.facebook.com"
+    whatsapp_graph_version: str = "v21.0"  # configurable: Meta versiona la Graph API
+    whatsapp_business_owner_email: str | None = None  # usuario de NEXUS dueño de la cuenta Business
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:

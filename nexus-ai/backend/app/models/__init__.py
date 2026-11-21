@@ -3,6 +3,7 @@
 from app.models.agents import Agent, AgentInstruction, AgentModel, AgentPermission, AgentProfile
 from app.models.base import Base
 from app.models.collab import AgentMessage, Conversation, Meeting, MeetingParticipant
+from app.models.jarvis import ActionRequest, Automation, AutomationRun, BusinessMessage, CrashReport, ModelQualityScore
 from app.models.memory import MemoryEmbedding, MemoryItem
 from app.models.missions import ApprovalRequest, Mission, MissionTask, TaskAttempt, TaskDependency
 from app.models.ops import (
@@ -23,6 +24,11 @@ from app.models.providers import AIModel, AIProvider
 from app.models.users import DeviceToken, RefreshToken, User, UserSettings
 
 __all__ = [
+    "ActionRequest",
+    "Automation",
+    "AutomationRun",
+    "BusinessMessage",
+    "CrashReport",
     "AIModel",
     "AIProvider",
     "Agent",
@@ -45,6 +51,7 @@ __all__ = [
     "MissionTask",
     "ModelEvalResult",
     "ModelEvalRun",
+    "ModelQualityScore",
     "Notification",
     "Plugin",
     "PluginPermission",

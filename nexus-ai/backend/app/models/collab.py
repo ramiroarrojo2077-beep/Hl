@@ -22,6 +22,10 @@ class Conversation(Base, Timestamps):
     agent_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("agents.id", ondelete="SET NULL"))
     project_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("projects.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200), default="Conversación", nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), default="chat", server_default="chat", nullable=False)  # chat | jarvis
+    # Memoria conversacional: resumen de los mensajes anteriores a summary_until.
+    summary: Mapped[str | None] = mapped_column(Text)
+    summary_until: Mapped[datetime | None]
 
 
 class AgentMessage(Base, CreatedAt):

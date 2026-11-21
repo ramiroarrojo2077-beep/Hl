@@ -1,0 +1,49 @@
+{
+ "categories": [
+  {
+   "key": "personal",
+   "count": 0,
+   "disabled": false
+  },
+  {
+   "key": "preferences",
+   "count": 0,
+   "disabled": false
+  },
+  {
+   "key": "work",
+   "count": 0,
+   "disabled": false
+  },
+  {
+   "key": "projects",
+   "count": 0,
+   "disabled": false
+  },
+  {
+   "key": "health",
+   "count": 0,
+   "disabled": false
+  },
+  {
+   "key": "contacts",
+   "count": 0,
+   "disabled": false
+  },
+  {
+   "key": "general",
+   "count": 1,
+   "disabled": false
+  }
+ ],
+ "by_source": {
+  "mission": 1
+ },
+ "stale": 0,
+ "stale_after_days": 180,
+ "policy": {
+  "contacts_sent_to_models": false,
+  "audio_stored": false,
+  "used_for_training": false
+ }
+}

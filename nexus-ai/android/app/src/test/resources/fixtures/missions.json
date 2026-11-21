@@ -1,30 +1,36 @@
 [
  {
-  "id": "4b57a3ec-6c68-4436-b38a-d46c47e7f5ef",
+  "id": "6ded005f-c742-4234-9867-8f45365fff4b",
   "project_id": null,
   "title": "Investigar motores de física",
   "objective": "Comparar motores de física para el simulador",
   "description": null,
-  "status": "planning",
-  "status_reason": "NEXUS analiza el objetivo",
+  "status": "completed",
+  "status_reason": "Completada. 1 aprendizajes archivados.",
   "priority": 3,
   "autonomy_mode": "supervised",
   "budget_usd": null,
-  "spent_usd": "0.000000",
-  "tokens_used": 0,
-  "result": null,
+  "spent_usd": "0.094500",
+  "tokens_used": 10500,
+  "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "error": null,
-  "started_at": null,
-  "completed_at": null,
-  "created_at": "2026-11-21T16:52:42.298738Z",
-  "updated_at": "2026-11-21T16:52:42.304221Z",
-  "progress": 0.0,
-  "task_counts": {},
-  "agent_ids": []
+  "started_at": "2026-11-21T17:55:31.489956Z",
+  "completed_at": "2026-11-21T17:55:31.725817Z",
+  "created_at": "2026-11-21T17:55:31.321459Z",
+  "updated_at": "2026-11-21T17:55:31.725950Z",
+  "progress": 1.0,
+  "task_counts": {
+   "completed": 3
+  },
+  "agent_ids": [
+   "15824488-87e5-4319-806b-10d6b5863b23",
+   "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
+   "a93da80b-69d1-4b5c-889c-507c6f662ff4"
+  ]
  },
  {
-  "id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
-  "project_id": "9ebf471c-a052-43f5-a9ba-e822e4fbacca",
+  "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "project_id": "6b287030-56c6-4f88-885b-dc3c34e000f2",
   "title": "Crear app de gestión de videojuegos",
   "objective": "Diseñar y prototipar una app para gestionar una colección de videojuegos",
   "description": null,
@@ -37,18 +43,18 @@
   "tokens_used": 10500,
   "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "error": null,
-  "started_at": "2026-11-21T16:52:41.574990Z",
-  "completed_at": "2026-11-21T16:52:41.913011Z",
-  "created_at": "2026-11-21T16:52:41.453665Z",
-  "updated_at": "2026-11-21T16:52:41.913519Z",
+  "started_at": "2026-11-21T17:55:30.642380Z",
+  "completed_at": "2026-11-21T17:55:30.997960Z",
+  "created_at": "2026-11-21T17:55:30.504465Z",
+  "updated_at": "2026-11-21T17:55:30.998638Z",
   "progress": 1.0,
   "task_counts": {
    "completed": 3
   },
   "agent_ids": [
-   "91e01e7f-d293-4dce-9f5e-93e6ab115186",
-   "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
-   "e2231600-0d6d-41f4-9afa-48b46a48bad7"
+   "15824488-87e5-4319-806b-10d6b5863b23",
+   "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
+   "a93da80b-69d1-4b5c-889c-507c6f662ff4"
   ]
  }
 ]

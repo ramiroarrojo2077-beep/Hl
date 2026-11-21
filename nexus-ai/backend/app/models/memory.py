@@ -40,6 +40,10 @@ class MemoryItem(Base, Timestamps):
     confidence: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
     verification_status: Mapped[str] = mapped_column(String(20), default="unverified", nullable=False)
     expires_at: Mapped[datetime | None]
+    # NEXUS 2.0: categoría de privacidad (desactivable) y última verificación (vigencia).
+    category: Mapped[str] = mapped_column(String(30), default="general", server_default="general", nullable=False)
+    last_verified_at: Mapped[datetime | None]
+    last_used_at: Mapped[datetime | None]
     meta: Mapped[dict[str, Any]] = mapped_column("metadata", default=dict, nullable=False)
     search_vector: Mapped[Any] = mapped_column(
         TSVECTOR,
