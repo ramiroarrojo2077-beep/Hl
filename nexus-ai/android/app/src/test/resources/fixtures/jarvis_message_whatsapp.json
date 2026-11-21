@@ -1,5 +1,5 @@
 {
- "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
  "handled": "action",
  "intent": {
   "category": "communication",
@@ -32,20 +32,20 @@
   {
    "stage": "input",
    "status": "done",
-   "ms": 11.73,
+   "ms": 12.23,
    "mode": "text",
    "source": "app"
   },
   {
    "stage": "understanding",
    "status": "done",
-   "ms": 1.69,
+   "ms": 1.74,
    "pending": false
   },
   {
    "stage": "intent",
    "status": "done",
-   "ms": 0.69,
+   "ms": 0.08,
    "category": "communication",
    "rule": "whatsapp",
    "confidence": 0.93
@@ -53,14 +53,14 @@
   {
    "stage": "routing",
    "status": "done",
-   "ms": 1.01,
+   "ms": 0.95,
    "handler": "action",
    "specialists": []
   },
   {
    "stage": "permissions",
    "status": "awaiting_confirmation",
-   "ms": 4.4,
+   "ms": 4.29,
    "requires_confirmation": true
   },
   {
@@ -77,9 +77,9 @@
   }
  ],
  "user_message": {
-  "id": "e7e9633e-2f66-450a-bda3-b7f2531bfd55",
+  "id": "89db070e-4032-4aca-970e-6cf7f86f33cd",
   "channel": "chat",
-  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
   "sender_type": "user",
   "sender_agent_id": null,
   "message_type": "message",
@@ -97,20 +97,20 @@
     {
      "stage": "input",
      "status": "done",
-     "ms": 11.73,
+     "ms": 12.23,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 1.69,
+     "ms": 1.74,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.69,
+     "ms": 0.08,
      "category": "communication",
      "rule": "whatsapp",
      "confidence": 0.93
@@ -118,14 +118,14 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 1.01,
+     "ms": 0.95,
      "handler": "action",
      "specialists": []
     },
     {
      "stage": "permissions",
      "status": "awaiting_confirmation",
-     "ms": 4.4,
+     "ms": 4.29,
      "requires_confirmation": true
     },
     {
@@ -143,39 +143,39 @@
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T17:55:31.345398+00:00"
+  "created_at": "2026-11-21T18:30:59.095170+00:00"
  },
  "reply": {
-  "id": "a267b1ea-f193-4253-9a09-32c76af79db3",
+  "id": "2bff3bff-44fb-429b-947c-62751f68a477",
   "channel": "chat",
-  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
   "sender_type": "agent",
-  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
   "message_type": "message",
   "content": "Te preparé el WhatsApp para papá. Revisá el destinatario y el texto; cuando confirmes abro WhatsApp con el mensaje listo. El envío lo hacés vos desde WhatsApp.",
   "meta": {
-   "reply_to": "e7e9633e-2f66-450a-bda3-b7f2531bfd55",
+   "reply_to": "89db070e-4032-4aca-970e-6cf7f86f33cd",
    "category": "communication",
    "kind": "action_proposal",
-   "action_id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+   "action_id": "836d5132-a72c-44fc-b159-dccd6239d06e",
    "pipeline": [
     {
      "stage": "input",
      "status": "done",
-     "ms": 11.73,
+     "ms": 12.23,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 1.69,
+     "ms": 1.74,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.69,
+     "ms": 0.08,
      "category": "communication",
      "rule": "whatsapp",
      "confidence": 0.93
@@ -183,14 +183,14 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 1.01,
+     "ms": 0.95,
      "handler": "action",
      "specialists": []
     },
     {
      "stage": "permissions",
      "status": "awaiting_confirmation",
-     "ms": 4.4,
+     "ms": 4.29,
      "requires_confirmation": true
     },
     {
@@ -208,10 +208,10 @@
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T17:55:31.345398+00:00"
+  "created_at": "2026-11-21T18:30:59.095170+00:00"
  },
  "action": {
-  "id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+  "id": "836d5132-a72c-44fc-b159-dccd6239d06e",
   "action_key": "whatsapp.open_chat",
   "name": "Preparar WhatsApp",
   "category": "communication",
@@ -229,11 +229,11 @@
   "result": {},
   "error": null,
   "source": "jarvis",
-  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
-  "created_at": "2026-11-21T17:55:31.345398+00:00",
+  "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "created_at": "2026-11-21T18:30:59.095170+00:00",
   "confirmed_at": null,
   "completed_at": null,
-  "expires_at": "2026-11-21T18:25:31.361912+00:00",
+  "expires_at": "2026-11-21T19:00:59.111593+00:00",
   "device_params": {
    "text": "Llego tarde",
    "recipient_query": "papá"

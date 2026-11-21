@@ -1,8 +1,8 @@
 [
  {
-  "id": "f6667d7b-536a-4ff0-bf4a-0866279541c6",
+  "id": "4c1d2ccd-781d-4645-8f24-c3e184e1fd65",
   "channel": "chat",
-  "channel_id": "15f25ef1-d43c-4b10-bd11-5444633d933a",
+  "channel_id": "e3db52cc-7d32-43d2-9d4a-d6d864b781fd",
   "sender_type": "user",
   "sender_agent_id": null,
   "recipient_agent_id": null,
@@ -13,27 +13,27 @@
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T17:55:31.259823Z"
+  "created_at": "2026-11-21T18:30:59.011149Z"
  },
  {
-  "id": "67383496-2eb9-41b0-818c-b6b366fd64ec",
+  "id": "adb599ee-bbc1-4744-bc61-0e9deb702603",
   "channel": "chat",
-  "channel_id": "15f25ef1-d43c-4b10-bd11-5444633d933a",
+  "channel_id": "e3db52cc-7d32-43d2-9d4a-d6d864b781fd",
   "sender_type": "agent",
-  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
   "recipient_agent_id": null,
   "message_type": "message",
   "content": "Hola, soy NEXUS. ¿En qué trabajamos hoy?",
   "meta": {
    "tokens": 1500,
    "cost_usd": "0.0135",
-   "reply_to": "f6667d7b-536a-4ff0-bf4a-0866279541c6",
-   "stream_id": "f37aea8a85e54adab001320f2bd4d114",
+   "reply_to": "4c1d2ccd-781d-4645-8f24-c3e184e1fd65",
+   "stream_id": "3f4c73d850e84b85ae7c877b5891779a",
    "tools_used": [],
    "consulted_agents": []
   },
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:31.292695Z"
+  "created_at": "2026-11-21T18:30:59.045119Z"
  }
 ]

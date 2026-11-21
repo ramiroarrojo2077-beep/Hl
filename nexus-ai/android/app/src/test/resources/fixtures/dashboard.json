@@ -9,7 +9,7 @@
   "active": 0,
   "items": [
    {
-    "id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+    "id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
     "slug": "nexus",
     "name": "NEXUS",
     "role": "CEO / Manager",
@@ -27,10 +27,10 @@
      "hair_color": "#C9D6E8",
      "outfit_color": "#16324A"
     },
-    "last_activity_at": "2026-11-21T17:55:31.728568Z"
+    "last_activity_at": "2026-11-21T18:30:59.524119Z"
    },
    {
-    "id": "15824488-87e5-4319-806b-10d6b5863b23",
+    "id": "3f6d0ad8-3fea-4a1d-8b2a-25b8ce34643a",
     "slug": "atlas",
     "name": "ATLAS",
     "role": "Investigador",
@@ -48,10 +48,10 @@
      "hair_color": "#3B2A20",
      "outfit_color": "#1E3B32"
     },
-    "last_activity_at": "2026-11-21T17:55:31.558328Z"
+    "last_activity_at": "2026-11-21T18:30:59.311571Z"
    },
    {
-    "id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
+    "id": "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
     "slug": "cipher",
     "name": "CIPHER",
     "role": "Desarrollador",
@@ -69,10 +69,10 @@
      "hair_color": "#8A5CFF",
      "outfit_color": "#221A3D"
     },
-    "last_activity_at": "2026-11-21T17:55:31.614916Z"
+    "last_activity_at": "2026-11-21T18:30:59.372959Z"
    },
    {
-    "id": "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
+    "id": "1527cc43-1d91-45bb-8531-9eae5b80e732",
     "slug": "nova",
     "name": "NOVA",
     "role": "Creativo",
@@ -90,10 +90,10 @@
      "hair_color": "#5FB6D9",
      "outfit_color": "#1A2230"
     },
-    "last_activity_at": "2026-11-21T17:55:31.549348Z"
+    "last_activity_at": "2026-11-21T18:30:59.303182Z"
    },
    {
-    "id": "eaab7b4e-2777-4799-be3a-1ae61376b944",
+    "id": "ca05c76b-ffbf-4e38-a004-92edd0d4b911",
     "slug": "oracle",
     "name": "ORACLE",
     "role": "Analista y Auditor",
@@ -111,10 +111,10 @@
      "hair_color": "#E9E4D8",
      "outfit_color": "#2E2614"
     },
-    "last_activity_at": "2026-11-21T17:55:31.650711Z"
+    "last_activity_at": "2026-11-21T18:30:59.417436Z"
    },
    {
-    "id": "573106d6-4fcf-434f-942b-ef030846e139",
+    "id": "1e79576e-3228-45bd-b95f-098879a603fa",
     "slug": "guardian",
     "name": "GUARDIAN",
     "role": "Seguridad y Control",
@@ -132,7 +132,7 @@
      "hair_color": "#2A2F3A",
      "outfit_color": "#2B1518"
     },
-    "last_activity_at": "2026-11-21T17:55:31.692120Z"
+    "last_activity_at": "2026-11-21T18:30:59.481196Z"
    }
   ]
  },
@@ -161,7 +161,7 @@
  },
  "providers": [
   {
-   "id": "1d34d89c-b4b9-4b79-b54f-c967054667ea",
+   "id": "1d9583ba-d106-4636-aee0-7d91b7cee80f",
    "kind": "anthropic",
    "name": "Anthropic",
    "status": "ok",
@@ -171,28 +171,28 @@
  ],
  "timeline": [
   {
-   "id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "id": "e66314b3-1966-4287-b2c4-d520ac10133e",
    "title": "Investigar motores de física",
    "status": "completed",
-   "updated_at": "2026-11-21T17:55:31.725950Z",
-   "created_at": "2026-11-21T17:55:31.321459Z"
+   "updated_at": "2026-11-21T18:30:59.520810Z",
+   "created_at": "2026-11-21T18:30:59.077243Z"
   },
   {
-   "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+   "id": "552977ba-88ad-494e-8e73-4e315079f452",
    "title": "Crear app de gestión de videojuegos",
    "status": "completed",
-   "updated_at": "2026-11-21T17:55:30.998638Z",
-   "created_at": "2026-11-21T17:55:30.504465Z"
+   "updated_at": "2026-11-21T18:30:58.710937Z",
+   "created_at": "2026-11-21T18:30:58.217893Z"
   }
  ],
  "recent_activity": [
   {
-   "id": "9bfce50f-55bb-4f35-b708-b991264d2358",
+   "id": "62b5d4a6-c6b6-43b9-8deb-f1c2592cb65b",
    "actor_type": "user",
    "agent_id": null,
    "action": "automation.created",
    "target_type": "automation",
-   "target_id": "bf5426b9-ebd9-4f3e-85b2-239e676d6f3b",
+   "target_id": "ffc77f35-af6c-4e2c-b110-30ddee317d8d",
    "mission_id": null,
    "project_id": null,
    "outcome": "success",
@@ -204,15 +204,15 @@
    "model_used": null,
    "tokens": null,
    "cost_usd": null,
-   "created_at": "2026-11-21T17:55:31.802848Z"
+   "created_at": "2026-11-21T18:30:59.593511Z"
   },
   {
-   "id": "2c300143-64f0-4b47-9875-0ac732965159",
+   "id": "a76a9ff6-68e6-4055-932f-65a40e248e63",
    "actor_type": "user",
    "agent_id": null,
    "action": "automation.created",
    "target_type": "automation",
-   "target_id": "6319323d-f97f-4eeb-a9db-3368ba724947",
+   "target_id": "62be62a7-012f-4c5d-a735-79f48aacf43a",
    "mission_id": null,
    "project_id": null,
    "outcome": "success",
@@ -224,15 +224,15 @@
    "model_used": null,
    "tokens": null,
    "cost_usd": null,
-   "created_at": "2026-11-21T17:55:31.791851Z"
+   "created_at": "2026-11-21T18:30:59.582105Z"
   },
   {
-   "id": "fa48110d-7e6d-4ab3-a828-a535c14a0fe1",
+   "id": "67d78b4e-5a6c-4f3e-b1cf-457476575af4",
    "actor_type": "user",
    "agent_id": null,
    "action": "action.reported",
    "target_type": "action",
-   "target_id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+   "target_id": "836d5132-a72c-44fc-b159-dccd6239d06e",
    "mission_id": null,
    "project_id": null,
    "outcome": "success",
@@ -243,15 +243,15 @@
    "model_used": null,
    "tokens": null,
    "cost_usd": null,
-   "created_at": "2026-11-21T17:55:31.772965Z"
+   "created_at": "2026-11-21T18:30:59.561689Z"
   },
   {
-   "id": "24dd8ddd-7972-4ef4-98e3-ed77084fe0e9",
+   "id": "9a63bd2d-7050-43c3-a7b6-7a0e6e63b93a",
    "actor_type": "user",
    "agent_id": null,
    "action": "action.confirmed",
    "target_type": "action",
-   "target_id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+   "target_id": "836d5132-a72c-44fc-b159-dccd6239d06e",
    "mission_id": null,
    "project_id": null,
    "outcome": "success",
@@ -262,16 +262,16 @@
    "model_used": null,
    "tokens": null,
    "cost_usd": null,
-   "created_at": "2026-11-21T17:55:31.761910Z"
+   "created_at": "2026-11-21T18:30:59.550870Z"
   },
   {
-   "id": "f8d251f4-346c-47bb-a492-4af37d3d21ed",
+   "id": "a439234f-fa0d-4bd9-a2bd-2d63797b357b",
    "actor_type": "agent",
-   "agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+   "agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
    "action": "mission.completed",
    "target_type": null,
    "target_id": null,
-   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "mission_id": "e66314b3-1966-4287-b2c4-d520ac10133e",
    "project_id": null,
    "outcome": "success",
    "summary": "Misión completada: «Investigar motores de física»",
@@ -282,16 +282,16 @@
    "model_used": "anthropic:claude-test-opus",
    "tokens": 1500,
    "cost_usd": "0.013500",
-   "created_at": "2026-11-21T17:55:31.709472Z"
+   "created_at": "2026-11-21T18:30:59.500886Z"
   },
   {
-   "id": "992aed90-7ee7-44f7-9b76-e71301c65feb",
+   "id": "28da2ea5-8c63-47f5-8c89-f35cd97a4b85",
    "actor_type": "agent",
-   "agent_id": "573106d6-4fcf-434f-942b-ef030846e139",
+   "agent_id": "1e79576e-3228-45bd-b95f-098879a603fa",
    "action": "mission.security_review",
    "target_type": null,
    "target_id": null,
-   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "mission_id": "e66314b3-1966-4287-b2c4-d520ac10133e",
    "project_id": null,
    "outcome": "info",
    "summary": "GUARDIAN auditó «Investigar motores de física»: ok",
@@ -301,16 +301,16 @@
    "model_used": "anthropic:claude-test-opus",
    "tokens": 1500,
    "cost_usd": "0.013500",
-   "created_at": "2026-11-21T17:55:31.674970Z"
+   "created_at": "2026-11-21T18:30:59.464726Z"
   },
   {
-   "id": "fb04ae03-8d62-47ee-906b-28f846bfc9b7",
+   "id": "29844b9f-e470-4d4d-8d7c-e8263d8df6dd",
    "actor_type": "agent",
-   "agent_id": "eaab7b4e-2777-4799-be3a-1ae61376b944",
+   "agent_id": "ca05c76b-ffbf-4e38-a004-92edd0d4b911",
    "action": "mission.reviewed",
    "target_type": null,
    "target_id": null,
-   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "mission_id": "e66314b3-1966-4287-b2c4-d520ac10133e",
    "project_id": null,
    "outcome": "success",
    "summary": "ORACLE revisó «Investigar motores de física»: approve",
@@ -320,16 +320,16 @@
    "model_used": "anthropic:claude-test-opus",
    "tokens": 1500,
    "cost_usd": "0.013500",
-   "created_at": "2026-11-21T17:55:31.635928Z"
+   "created_at": "2026-11-21T18:30:59.399814Z"
   },
   {
-   "id": "44885537-bba9-4a60-8e3f-1e3d804d370a",
+   "id": "67a8b2c1-c2ee-4fca-8fc2-d3a95e8b69ed",
    "actor_type": "agent",
-   "agent_id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
+   "agent_id": "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
    "action": "task.completed",
    "target_type": "task",
-   "target_id": "eea07a32-44c1-4063-b9c3-7bad37de3151",
-   "mission_id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "target_id": "ca0a1d1d-20d5-4a0b-9b4d-7a697ea6b037",
+   "mission_id": "e66314b3-1966-4287-b2c4-d520ac10133e",
    "project_id": null,
    "outcome": "success",
    "summary": "CIPHER completó «Arquitectura»",
@@ -337,7 +337,7 @@
    "model_used": "anthropic:claude-test-opus",
    "tokens": 3000,
    "cost_usd": "0.027000",
-   "created_at": "2026-11-21T17:55:31.604495Z"
+   "created_at": "2026-11-21T18:30:59.359112Z"
   }
  ],
  "alerts": []

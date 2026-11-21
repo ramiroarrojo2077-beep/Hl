@@ -1,5 +1,5 @@
 {
- "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
  "handled": "action",
  "intent": {
   "category": "productivity",
@@ -10,7 +10,7 @@
    "title": "Llamar al médico",
    "at": "2026-11-22T09:00:00-03:00"
   },
-  "summary": "Recordatorio: «Llamar al médico» el mañana a las 09:00",
+  "summary": "Recordatorio: «Llamar al médico» mañana a las 09:00",
   "missing": [],
   "question": null,
   "control": null,
@@ -30,20 +30,20 @@
   {
    "stage": "input",
    "status": "done",
-   "ms": 3.05,
+   "ms": 2.81,
    "mode": "text",
    "source": "app"
   },
   {
    "stage": "understanding",
    "status": "done",
-   "ms": 1.2,
+   "ms": 1.28,
    "pending": false
   },
   {
    "stage": "intent",
    "status": "done",
-   "ms": 0.64,
+   "ms": 0.18,
    "category": "productivity",
    "rule": "reminder",
    "confidence": 0.94
@@ -51,14 +51,14 @@
   {
    "stage": "routing",
    "status": "done",
-   "ms": 0.95,
+   "ms": 0.86,
    "handler": "action",
    "specialists": []
   },
   {
    "stage": "permissions",
    "status": "completed",
-   "ms": 10.01,
+   "ms": 8.74,
    "requires_confirmation": false
   },
   {
@@ -81,9 +81,9 @@
   }
  ],
  "user_message": {
-  "id": "5e87543d-0e93-458d-9159-1281d45d9859",
+  "id": "8dfdbb2e-3247-468e-850e-d587ff6e1ac6",
   "channel": "chat",
-  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
   "sender_type": "user",
   "sender_agent_id": null,
   "message_type": "message",
@@ -101,20 +101,20 @@
     {
      "stage": "input",
      "status": "done",
-     "ms": 3.05,
+     "ms": 2.81,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 1.2,
+     "ms": 1.28,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.64,
+     "ms": 0.18,
      "category": "productivity",
      "rule": "reminder",
      "confidence": 0.94
@@ -122,14 +122,14 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 0.95,
+     "ms": 0.86,
      "handler": "action",
      "specialists": []
     },
     {
      "stage": "permissions",
      "status": "completed",
-     "ms": 10.01,
+     "ms": 8.74,
      "requires_confirmation": false
     },
     {
@@ -153,39 +153,39 @@
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T17:55:31.373283+00:00"
+  "created_at": "2026-11-21T18:30:59.122915+00:00"
  },
  "reply": {
-  "id": "8fb84ce0-9d7e-448a-8cd8-3109dde61ae2",
+  "id": "dda447ac-394b-488a-8ddf-9869144706cd",
   "channel": "chat",
-  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
   "sender_type": "agent",
-  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
   "message_type": "message",
   "content": "Listo, te lo recuerdo mañana a las 09:00: «Llamar al médico».",
   "meta": {
-   "reply_to": "5e87543d-0e93-458d-9159-1281d45d9859",
+   "reply_to": "8dfdbb2e-3247-468e-850e-d587ff6e1ac6",
    "category": "productivity",
    "kind": "action_proposal",
-   "action_id": "c5b53703-4824-4811-bfdd-c090b3850db7",
+   "action_id": "53dd5ec2-f736-4d17-b6ae-fb904291d022",
    "pipeline": [
     {
      "stage": "input",
      "status": "done",
-     "ms": 3.05,
+     "ms": 2.81,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 1.2,
+     "ms": 1.28,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.64,
+     "ms": 0.18,
      "category": "productivity",
      "rule": "reminder",
      "confidence": 0.94
@@ -193,14 +193,14 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 0.95,
+     "ms": 0.86,
      "handler": "action",
      "specialists": []
     },
     {
      "stage": "permissions",
      "status": "completed",
-     "ms": 10.01,
+     "ms": 8.74,
      "requires_confirmation": false
     },
     {
@@ -224,10 +224,10 @@
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T17:55:31.373283+00:00"
+  "created_at": "2026-11-21T18:30:59.122915+00:00"
  },
  "action": {
-  "id": "c5b53703-4824-4811-bfdd-c090b3850db7",
+  "id": "53dd5ec2-f736-4d17-b6ae-fb904291d022",
   "action_key": "reminder.create",
   "name": "Crear recordatorio",
   "category": "productivity",
@@ -238,22 +238,22 @@
    "title": "Llamar al médico",
    "at": "2026-11-22T09:00:00-03:00"
   },
-  "summary": "Recordatorio: «Llamar al médico» el mañana a las 09:00",
+  "summary": "Recordatorio: «Llamar al médico» mañana a las 09:00",
   "status": "completed",
   "state_detail": "REMINDER_SCHEDULED",
   "requires_confirmation": false,
   "result": {
    "verified": true,
    "state": "REMINDER_SCHEDULED",
-   "scheduled_job_id": "49ddf933-e625-4233-8dd7-2d4cd4aaa403",
+   "scheduled_job_id": "8e78161a-256b-49a1-bfa4-32f2d07842d7",
    "at": "2026-11-22T09:00:00-03:00"
   },
   "error": null,
   "source": "jarvis",
-  "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
-  "created_at": "2026-11-21T17:55:31.373283+00:00",
-  "confirmed_at": "2026-11-21T17:55:31.382709+00:00",
-  "completed_at": "2026-11-21T17:55:31.388153+00:00",
+  "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "created_at": "2026-11-21T18:30:59.122915+00:00",
+  "confirmed_at": "2026-11-21T18:30:59.132238+00:00",
+  "completed_at": "2026-11-21T18:30:59.136643+00:00",
   "expires_at": null,
   "device_params": {
    "title": "Llamar al médico",

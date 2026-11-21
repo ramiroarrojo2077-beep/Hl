@@ -132,4 +132,57 @@ class NexusApi(val client: ApiClient) {
     suspend fun createSchedule(body: ScheduleCreate): ScheduleDto = client.post("/schedules", body)
     suspend fun updateSchedule(id: String, body: SchedulePatch): ScheduleDto = client.patch("/schedules/$id", body)
     suspend fun deleteSchedule(id: String) = client.delete("/schedules/$id")
+
+    // ------------------------------------------------------------ NEXUS 2.0
+    // JARVIS CORE
+    suspend fun jarvisMessage(body: JarvisMessageBody): JarvisResponse = client.post("/jarvis/message", body)
+    suspend fun jarvisState(): JarvisStateDto = client.get("/jarvis/state")
+    suspend fun jarvisContext(timezone: String?): JarvisContextDto = client.get("/jarvis/context", mapOf("timezone" to timezone))
+    suspend fun jarvisSettings(): JarvisSettingsDto = client.get("/jarvis/settings")
+    suspend fun jarvisTrace(messageId: String): JarvisTraceDto = client.get("/jarvis/messages/$messageId/trace")
+    suspend fun jarvisFeedback(messageId: String, rating: Int) { client.raw("POST", "/jarvis/messages/$messageId/feedback",
+        client.json.encodeToString(FeedbackBody.serializer(), FeedbackBody(rating))) }
+    suspend fun voiceSession(body: VoiceSessionBody): JsonObject = client.post("/jarvis/voice/session", body)
+    suspend fun deleteJarvisHistory(): JsonObject =
+        client.json.decodeFromString(client.raw("DELETE", "/jarvis/history", query = mapOf("confirm" to "true")))
+    suspend fun updateSettingsV2(body: SettingsV2Patch): SettingsDto = client.patch("/settings", body)
+
+    // Action Registry
+    suspend fun actions(status: String? = null): List<ActionDto> = client.get("/actions", mapOf("status" to status))
+    suspend fun action(id: String): ActionDto = client.get("/actions/$id")
+    suspend fun actionCatalog(): List<ActionCatalogItem> = client.get("/actions/catalog")
+    suspend fun executeAction(body: ActionExecuteBody): ActionDto = client.post("/actions/execute", body)
+    suspend fun confirmAction(id: String, params: JsonObject? = null): ActionDto = client.post("/actions/$id/confirm", ActionConfirmBody(params))
+    suspend fun cancelAction(id: String, reason: String? = null): ActionDto = client.post("/actions/$id/cancel", ActionCancelBody(reason))
+    suspend fun reportAction(id: String, state: String, result: JsonObject = JsonObject(emptyMap())): ActionDto =
+        client.post("/actions/$id/report", ActionReportBody(state, result))
+
+    // Automatizaciones
+    suspend fun automations(): List<AutomationDto> = client.get("/automations")
+    suspend fun automationEvents(): AutomationEventsDto = client.get("/automations/events")
+    suspend fun createAutomation(body: AutomationCreate): AutomationDto = client.post("/automations", body)
+    suspend fun automationAction(id: String, action: String): AutomationDto = client.postEmpty("/automations/$id/$action")
+    suspend fun runAutomation(id: String): JsonObject = client.postEmpty("/automations/$id/run")
+    suspend fun automationRuns(id: String): List<AutomationRunDto> = client.get("/automations/$id/runs")
+    suspend fun deleteAutomation(id: String) = client.delete("/automations/$id")
+
+    // Voz
+    suspend fun voicePrefs(): VoicePrefs = client.get("/voice/settings")
+    suspend fun updateVoicePrefs(body: VoicePrefsPatch): VoicePrefs = client.patch("/voice/settings", body)
+    suspend fun transcribe(fileName: String, mime: String, bytes: ByteArray, language: String?): TranscriptionDto {
+        val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", fileName, bytes.toRequestBody(mime.toMediaTypeOrNull()))
+        if (language != null) builder.addFormDataPart("language", language)
+        return client.json.decodeFromString(client.raw("POST", "/voice/transcriptions", requestBody = builder.build()))
+    }
+
+    // WhatsApp
+    suspend fun whatsappStatus(): WhatsAppStatusDto = client.get("/integrations/whatsapp/status")
+    suspend fun whatsappDraft(body: DraftBody): DraftDto = client.post("/integrations/whatsapp/draft", body)
+
+    // Memoria: privacidad
+    suspend fun memoryPrivacy(): MemoryPrivacyDto = client.get("/memory/privacy")
+
+    // Diagnóstico (solo con consentimiento)
+    suspend fun reportCrash(body: CrashBody): JsonObject = client.post("/diagnostics/crash", body)
 }

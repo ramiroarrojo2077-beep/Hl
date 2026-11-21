@@ -11,7 +11,14 @@ import ai.nexus.app.core.session.SessionStore
 import ai.nexus.app.data.api.NexusApi
 import ai.nexus.app.data.cache.CacheDb
 import ai.nexus.app.data.cache.CachedResponse
+import ai.nexus.app.data.model.VoicePrefs
+import ai.nexus.app.voice.AndroidRecognizer
+import ai.nexus.app.voice.AndroidSpeaker
+import ai.nexus.app.voice.RemoteRecognizer
 import ai.nexus.app.voice.TtsManager
+import ai.nexus.app.voice.VoiceEngine
+import ai.nexus.app.whatsapp.ContactBook
+import kotlinx.coroutines.flow.MutableStateFlow
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,8 +29,11 @@ import kotlinx.serialization.KSerializer
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
+/** Frase reconocida por voz (con datos de interrupción si cortó una respuesta). */
+data class Utterance(val text: String, val interruptedMessageId: String?, val spokenChars: Int?)
+
 /** Inyección de dependencias manual: un único grafo para toda la app. */
-class AppContainer(context: Context, crypto: SecretBox = CryptoBox()) {
+class AppContainer(context: Context, private val crypto: SecretBox = CryptoBox()) {
     val appContext: Context = context.applicationContext
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val session = SessionStore(appContext, scope, crypto)
@@ -70,6 +80,33 @@ class AppContainer(context: Context, crypto: SecretBox = CryptoBox()) {
     )
 
     val tts by lazy { TtsManager(appContext) }
+
+    // ------------------------------------------------------------ NEXUS 2.0
+    /** Contactos que el usuario eligió guardar en NEXUS (cifrados, solo en el teléfono). */
+    val contacts by lazy { ContactBook(appContext, crypto) }
+
+    /** Señal de la palabra de activación (servicio en primer plano → app). */
+    val wakeSignals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Preferencias de voz vigentes (se sincronizan con /voice/settings). */
+    val voicePrefs = MutableStateFlow(VoicePrefs())
+
+    /** Respuestas habladas y reconocimiento; se crea en el hilo principal la primera vez que se usa. */
+    private var _voice: VoiceEngine? = null
+    private val utterances = MutableSharedFlow<Utterance>(extraBufferCapacity = 4)
+    val voiceUtterances: SharedFlow<Utterance> = utterances
+    private val androidRecognizer by lazy { AndroidRecognizer(appContext) }
+
+    fun voice(): VoiceEngine = _voice ?: VoiceEngine(
+        recognizer = {
+            val p = voicePrefs.value
+            if (p.processing == "remote" && p.remote.stt.available) RemoteRecognizer(appContext, api, scope) else androidRecognizer
+        },
+        speaker = AndroidSpeaker(appContext),
+        onUtterance = { text, interrupted, chars -> utterances.tryEmit(Utterance(text, interrupted, chars)) },
+    ).also { it.prefs = voicePrefs.value; _voice = it }
+
+    fun onDeviceRecognition(): Boolean = androidRecognizer.onDeviceAvailable()
 
     /** Lee de la caché local (para mostrar algo de inmediato o sin conexión). */
     suspend fun <T> cached(key: String, serializer: KSerializer<T>): T? = try {

@@ -20,7 +20,11 @@ import ai.nexus.app.features.approvals.ApprovalsScreen
 import ai.nexus.app.features.approvals.NotificationsScreen
 import ai.nexus.app.features.auth.LoginScreen
 import ai.nexus.app.features.chat.ChatScreen
+import ai.nexus.app.features.actions.ActionsScreen
 import ai.nexus.app.features.dashboard.DashboardScreen
+import ai.nexus.app.features.home.HomeScreen
+import ai.nexus.app.features.more.IntegrationsScreen
+import ai.nexus.app.features.more.MoreScreen
 import ai.nexus.app.features.meetings.CreateMeetingScreen
 import ai.nexus.app.features.meetings.MeetingDetailScreen
 import ai.nexus.app.features.meetings.MeetingsScreen
@@ -60,6 +64,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.Hub
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Folder
@@ -121,22 +130,26 @@ import kotlinx.coroutines.launch
 
 data class NavItem(val route: String, val label: String, val icon: ImageVector)
 
+/** NEXUS 2.0: la experiencia cotidiana (asistente, chat, acciones) separada de las herramientas técnicas (Más). */
 val PRIMARY_NAV = listOf(
-    NavItem("home", "Home", Icons.Outlined.Dashboard),
-    NavItem("agents", "Agents", Icons.Outlined.Psychology),
-    NavItem("missions", "Missions", Icons.Outlined.RocketLaunch),
+    NavItem("home", "Home", Icons.Outlined.Hub),
     NavItem("chat", "Chat", Icons.Outlined.Chat),
+    NavItem("actions", "Acciones", Icons.Outlined.TaskAlt),
+    NavItem("more", "Más", Icons.Outlined.Apps),
 )
 
 val ALL_SECTIONS = listOf(
-    NavItem("home", "Home", Icons.Outlined.Dashboard),
+    NavItem("home", "Home", Icons.Outlined.Hub),
+    NavItem("chat", "Chat con NEXUS", Icons.Outlined.Chat),
+    NavItem("actions", "Acciones y rutinas", Icons.Outlined.TaskAlt),
+    NavItem("command", "Command Center", Icons.Outlined.Dashboard),
     NavItem("agents", "Agents", Icons.Outlined.Psychology),
     NavItem("missions", "Missions", Icons.Outlined.RocketLaunch),
     NavItem("meetings", "Meetings", Icons.Outlined.Groups),
     NavItem("memory", "Memory", Icons.Outlined.Memory),
     NavItem("activity", "Activity", Icons.Outlined.History),
     NavItem("projects", "Projects", Icons.Outlined.Folder),
-    NavItem("chat", "Chat con NEXUS", Icons.Outlined.Chat),
+    NavItem("integrations", "Integraciones", Icons.Outlined.Extension),
     NavItem("approvals", "Aprobaciones", Icons.Outlined.PanTool),
     NavItem("notifications", "Notificaciones", Icons.Outlined.Notifications),
     NavItem("settings", "Settings", Icons.Outlined.Settings),
@@ -178,8 +191,8 @@ class ShellViewModel(private val c: AppContainer) : ViewModel() {
                     val r = c.api.clearEmergencyStop(resume = true)
                     onResult("STOP ALL desactivado. Misiones reanudadas: ${r["missions_resumed"] ?: 0}")
                 } else {
-                    c.api.emergencyStop("Activado desde la app")
-                    onResult("STOP ALL activado: todos los agentes se detuvieron")
+                    val r = c.api.emergencyStop("Activado desde la app")
+                    onResult("STOP ALL activado: agentes detenidos, ${r["automations_paused"] ?: 0} rutinas pausadas, ${r["pending_actions_cancelled"] ?: 0} acciones canceladas")
                 }
                 refresh()
             } catch (e: Exception) {
@@ -224,13 +237,20 @@ private fun Shell(initialRoute: String?, onRouteConsumed: () -> Unit) {
         if (initialRoute != null) { nav.navigate(initialRoute); onRouteConsumed() }
     }
     val navigate: (String) -> Unit = { route -> nav.navigate(route) { launchSingleTop = true } }
-    fun goTop(route: String) = nav.navigate(route) { popUpTo("home") { saveState = true }; launchSingleTop = true; restoreState = true }
+    fun goTop(route: String) {
+        if (tabOf(current) == route && current != route) {
+            // Tocar de nuevo la pestaña activa vuelve a su pantalla principal.
+            nav.navigate(route) { popUpTo(route) { inclusive = true }; launchSingleTop = true }
+        } else {
+            nav.navigate(route) { popUpTo("home") { saveState = true }; launchSingleTop = true; restoreState = true }
+        }
+    }
 
     if (confirmStop) {
         ConfirmDialog(
             title = if (shellState.emergency) "Reanudar agentes" else "STOP ALL AGENTS",
-            message = if (shellState.emergency) "Se desactiva la detención de emergencia y se reanudan las misiones pausadas por ella."
-            else "Se detienen todos los agentes: no arrancan tareas nuevas, las que están en curso se interrumpen en su siguiente punto seguro, se invalidan permisos temporales y aprobaciones pendientes. Los registros se conservan.",
+            message = if (shellState.emergency) "Se desactiva la detención de emergencia y se reanudan las misiones pausadas por ella. Las rutinas pausadas se reanudan a mano desde Acciones."
+            else "Se detienen todos los agentes y workers: no arrancan tareas nuevas, las que están en curso se interrumpen en su siguiente punto seguro, se cancelan los trabajos en cola, se pausan las rutinas, se deshabilitan las acciones pendientes (incluidas las externas) y se revocan permisos temporales. Los registros se conservan.",
             confirm = if (shellState.emergency) "Reanudar" else "Detener todo",
             danger = !shellState.emergency,
             onConfirm = { shell.toggleEmergency { msg -> scope.launch { snackbar.showSnackbar(msg) } } },
@@ -259,7 +279,7 @@ private fun Shell(initialRoute: String?, onRouteConsumed: () -> Unit) {
                             TopBar(
                                 connection = connection, state = shellState, showMenu = !wide,
                                 onMenu = { scope.launch { drawer.open() } }, onBell = { navigate("notifications") },
-                                onApprovals = { navigate("approvals") }, onStop = { confirmStop = true },
+                                onApprovals = { navigate("approvals") }, onStop = { confirmStop = true }, onProfile = { navigate("settings") },
                             )
                         },
                         bottomBar = { if (!wide) BottomNav(current) { goTop(it) } },
@@ -275,7 +295,11 @@ private fun Shell(initialRoute: String?, onRouteConsumed: () -> Unit) {
 @Composable
 private fun NexusNavHost(nav: NavHostController) {
     NavHost(nav, startDestination = "home") {
-        composable("home") { DashboardScreen() }
+        composable("home") { HomeScreen() }
+        composable("command") { DashboardScreen() }
+        composable("actions") { ActionsScreen() }
+        composable("more") { MoreScreen() }
+        composable("integrations") { IntegrationsScreen() }
         composable("agents") { AgentsScreen() }
         composable("agent/new") { AgentEditorScreen(agentId = null, onDone = { nav.popBackStack() }) }
         composable("agent/{id}") { AgentDetailScreen(it.arguments?.getString("id")!!) }
@@ -303,7 +327,7 @@ private fun NexusNavHost(nav: NavHostController) {
 @Composable
 private fun TopBar(
     connection: ConnectionState, state: ShellState, showMenu: Boolean,
-    onMenu: () -> Unit, onBell: () -> Unit, onApprovals: () -> Unit, onStop: () -> Unit,
+    onMenu: () -> Unit, onBell: () -> Unit, onApprovals: () -> Unit, onStop: () -> Unit, onProfile: () -> Unit = {},
 ) {
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp),
@@ -311,7 +335,7 @@ private fun TopBar(
     ) {
         if (showMenu) IconButton(onClick = onMenu) { Icon(Icons.Outlined.Menu, "Menú", tint = NexusColors.TextPrimary) }
         Column(Modifier.weight(1f).padding(start = if (showMenu) 0.dp else 8.dp)) {
-            Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 5.sp, fontWeight = FontWeight.Light), color = NexusColors.Cyan)
+            Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 5.sp, fontWeight = FontWeight.Light), color = NexusColors.Accent)
             ConnectionIndicator(connection, state.emergency)
         }
         if (state.approvals > 0) {
@@ -321,6 +345,7 @@ private fun TopBar(
                 }
             }
         }
+        IconButton(onClick = onProfile) { Icon(Icons.Outlined.Person, "Perfil y ajustes", tint = NexusColors.TextSecondary) }
         IconButton(onClick = onBell) {
             BadgedBox(badge = { if (state.unread > 0) Badge(containerColor = NexusColors.Cyan, contentColor = NexusColors.Background) { Text("${state.unread.coerceAtMost(99)}") } }) {
                 Icon(Icons.Outlined.Notifications, "Notificaciones", tint = NexusColors.TextPrimary)
@@ -359,30 +384,30 @@ fun ConnectionIndicator(connection: ConnectionState, emergency: Boolean) {
     }
 }
 
+/** Pestaña principal a la que pertenece una ruta. */
+fun tabOf(route: String): String = when {
+    route == "home" -> "home"
+    route.startsWith("chat") -> "chat"
+    route == "actions" -> "actions"
+    else -> "more"
+}
+
 @Composable
 private fun BottomNav(current: String, onSelect: (String) -> Unit) {
-    NavigationBar(containerColor = NexusColors.Background.copy(alpha = 0.96f), tonalElevation = 0.dp) {
+    NavigationBar(containerColor = NexusColors.BackgroundAlt.copy(alpha = 0.98f), tonalElevation = 0.dp) {
         PRIMARY_NAV.forEach { item ->
-            val selected = current == item.route || current.startsWith(item.route.removeSuffix("s"))
+            val selected = tabOf(current) == item.route
             NavigationBarItem(
                 selected = selected,
                 onClick = { onSelect(item.route) },
                 icon = { Icon(item.icon, item.label) },
                 label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = NexusColors.Cyan, selectedTextColor = NexusColors.Cyan, indicatorColor = NexusColors.Cyan.copy(alpha = 0.12f),
+                    selectedIconColor = NexusColors.Accent, selectedTextColor = NexusColors.Accent, indicatorColor = NexusColors.Accent.copy(alpha = 0.14f),
                     unselectedIconColor = NexusColors.TextSecondary, unselectedTextColor = NexusColors.TextSecondary,
                 ),
             )
         }
-        NavigationBarItem(
-            selected = current in setOf("meetings", "memory", "activity", "projects", "settings"),
-            onClick = { onSelect("meetings") },
-            icon = { Icon(Icons.Outlined.Groups, "Meetings") },
-            label = { Text("Meetings", style = MaterialTheme.typography.labelSmall) },
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = NexusColors.Cyan, selectedTextColor = NexusColors.Cyan,
-                indicatorColor = NexusColors.Cyan.copy(alpha = 0.12f), unselectedIconColor = NexusColors.TextSecondary, unselectedTextColor = NexusColors.TextSecondary),
-        )
     }
 }
 
@@ -396,7 +421,7 @@ private fun SideNav(current: String, state: ShellState, modifier: Modifier, onSe
             Spacer(Modifier.width(10.dp))
             Column {
                 Text("NEXUS", style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 5.sp), color = NexusColors.TextPrimary)
-                Text("COMMAND CENTER", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = NexusColors.Cyan)
+                Text("ASISTENTE PERSONAL", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = NexusColors.Accent)
             }
         }
         Spacer(Modifier.height(10.dp))

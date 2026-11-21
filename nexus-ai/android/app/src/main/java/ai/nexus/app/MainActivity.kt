@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingRoute.value = intent?.getStringExtra(EXTRA_ROUTE)
+        handleVoiceIntent(intent)
         if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent {
             NexusRoot(initialRoute = pendingRoute.value, onRouteConsumed = { pendingRoute.value = null })
@@ -38,5 +39,14 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute.value = it }
+        handleVoiceIntent(intent)
+    }
+
+    /** Notificación de la palabra de activación: el usuario tocó para hablar (acción explícita). */
+    private fun handleVoiceIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(ai.nexus.app.voice.WakeWordService.EXTRA_START_VOICE, false) == true) {
+            pendingRoute.value = "home"
+            (application as NexusApplication).container.wakeSignals.tryEmit(Unit)
+        }
     }
 }

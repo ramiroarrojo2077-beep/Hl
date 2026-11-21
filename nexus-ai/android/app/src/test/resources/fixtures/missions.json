@@ -1,6 +1,6 @@
 [
  {
-  "id": "6ded005f-c742-4234-9867-8f45365fff4b",
+  "id": "e66314b3-1966-4287-b2c4-d520ac10133e",
   "project_id": null,
   "title": "Investigar motores de física",
   "objective": "Comparar motores de física para el simulador",
@@ -14,23 +14,23 @@
   "tokens_used": 10500,
   "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "error": null,
-  "started_at": "2026-11-21T17:55:31.489956Z",
-  "completed_at": "2026-11-21T17:55:31.725817Z",
-  "created_at": "2026-11-21T17:55:31.321459Z",
-  "updated_at": "2026-11-21T17:55:31.725950Z",
+  "started_at": "2026-11-21T18:30:59.240520Z",
+  "completed_at": "2026-11-21T18:30:59.520661Z",
+  "created_at": "2026-11-21T18:30:59.077243Z",
+  "updated_at": "2026-11-21T18:30:59.520810Z",
   "progress": 1.0,
   "task_counts": {
    "completed": 3
   },
   "agent_ids": [
-   "15824488-87e5-4319-806b-10d6b5863b23",
-   "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
-   "a93da80b-69d1-4b5c-889c-507c6f662ff4"
+   "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
+   "1527cc43-1d91-45bb-8531-9eae5b80e732",
+   "3f6d0ad8-3fea-4a1d-8b2a-25b8ce34643a"
   ]
  },
  {
-  "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
-  "project_id": "6b287030-56c6-4f88-885b-dc3c34e000f2",
+  "id": "552977ba-88ad-494e-8e73-4e315079f452",
+  "project_id": "6c4b83af-a09a-4375-80ca-7bcb05617ab2",
   "title": "Crear app de gestión de videojuegos",
   "objective": "Diseñar y prototipar una app para gestionar una colección de videojuegos",
   "description": null,
@@ -43,18 +43,18 @@
   "tokens_used": 10500,
   "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "error": null,
-  "started_at": "2026-11-21T17:55:30.642380Z",
-  "completed_at": "2026-11-21T17:55:30.997960Z",
-  "created_at": "2026-11-21T17:55:30.504465Z",
-  "updated_at": "2026-11-21T17:55:30.998638Z",
+  "started_at": "2026-11-21T18:30:58.353616Z",
+  "completed_at": "2026-11-21T18:30:58.710272Z",
+  "created_at": "2026-11-21T18:30:58.217893Z",
+  "updated_at": "2026-11-21T18:30:58.710937Z",
   "progress": 1.0,
   "task_counts": {
    "completed": 3
   },
   "agent_ids": [
-   "15824488-87e5-4319-806b-10d6b5863b23",
-   "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
-   "a93da80b-69d1-4b5c-889c-507c6f662ff4"
+   "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
+   "1527cc43-1d91-45bb-8531-9eae5b80e732",
+   "3f6d0ad8-3fea-4a1d-8b2a-25b8ce34643a"
   ]
  }
 ]

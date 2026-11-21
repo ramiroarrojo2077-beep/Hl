@@ -1,5 +1,5 @@
 {
- "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
  "handled": "model",
  "intent": {
   "category": "information",
@@ -27,20 +27,20 @@
   {
    "stage": "input",
    "status": "done",
-   "ms": 2.84,
+   "ms": 2.93,
    "mode": "text",
    "source": "app"
   },
   {
    "stage": "understanding",
    "status": "done",
-   "ms": 0.88,
+   "ms": 1.03,
    "pending": false
   },
   {
    "stage": "intent",
    "status": "done",
-   "ms": 0.35,
+   "ms": 0.09,
    "category": "information",
    "rule": "model.information",
    "confidence": 0.65
@@ -48,21 +48,21 @@
   {
    "stage": "routing",
    "status": "done",
-   "ms": 0.88,
+   "ms": 0.92,
    "handler": "model",
    "specialists": []
   },
   {
    "stage": "execution",
    "status": "queued",
-   "ms": 1.35,
+   "ms": 1.39,
    "kind": "model"
   }
  ],
  "user_message": {
-  "id": "14e4fe81-19b0-447a-bab5-066604af3457",
+  "id": "4b10ac00-6fd2-46f6-9330-67557d97dbb1",
   "channel": "chat",
-  "channel_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
   "sender_type": "user",
   "sender_agent_id": null,
   "message_type": "message",
@@ -87,20 +87,20 @@
     {
      "stage": "input",
      "status": "done",
-     "ms": 2.84,
+     "ms": 2.93,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 0.88,
+     "ms": 1.03,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.35,
+     "ms": 0.09,
      "category": "information",
      "rule": "model.information",
      "confidence": 0.65
@@ -108,20 +108,20 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 0.88,
+     "ms": 0.92,
      "handler": "model",
      "specialists": []
     },
     {
      "stage": "execution",
      "status": "queued",
-     "ms": 1.35,
+     "ms": 1.39,
      "kind": "model"
     }
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T17:55:31.411655+00:00"
+  "created_at": "2026-11-21T18:30:59.160614+00:00"
  },
  "reply": null,
  "action": null,

@@ -5,7 +5,7 @@
   "Terminé 2 misiones desde tu última visita."
  ],
  "timezone": "America/Argentina/Buenos_Aires",
- "local_time": "2026-11-21T14:55:32.343182-03:00",
+ "local_time": "2026-11-21T15:31:00.142523-03:00",
  "counts": {
   "pending_actions": 0,
   "pending_approvals": 0,
@@ -18,17 +18,17 @@
  },
  "finished_missions": [
   {
-   "id": "6ded005f-c742-4234-9867-8f45365fff4b",
+   "id": "e66314b3-1966-4287-b2c4-d520ac10133e",
    "title": "Investigar motores de física"
   },
   {
-   "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+   "id": "552977ba-88ad-494e-8e73-4e315079f452",
    "title": "Crear app de gestión de videojuegos"
   }
  ],
  "reminders_today": [],
  "last_seen_at": null,
- "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
+ "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
  "jarvis_settings": {
   "confirm_local_actions": false,
   "quick_actions": [

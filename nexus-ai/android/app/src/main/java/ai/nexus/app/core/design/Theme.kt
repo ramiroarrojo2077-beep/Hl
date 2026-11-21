@@ -12,21 +12,23 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/** Paleta NEXUS 2.0: superficies sobrias, un acento verde y texto de alto contraste (WCAG AA sobre las superficies). */
 object NexusColors {
-    val Background = Color(0xFF080A10)
-    val BackgroundAlt = Color(0xFF111522)
-    val Surface = Color(0xFF171D2B)
-    val SurfaceHigh = Color(0xFF1E2638)
-    val Cyan = Color(0xFF00D9FF)
-    val Violet = Color(0xFF8A5CFF)
-    val Green = Color(0xFF38D99B)
+    val Background = Color(0xFF0B0F18)
+    val BackgroundAlt = Color(0xFF111622)
+    val Surface = Color(0xFF171E2C)
+    val SurfaceHigh = Color(0xFF1F2738)
+    val Accent = Color(0xFF39D9A1)
+    val Cyan = Color(0xFF3FD0F0)
+    val Violet = Color(0xFF8A7CFF)
+    val Green = Color(0xFF39D9A1)
     val Amber = Color(0xFFFFC24B)
-    val Red = Color(0xFFFF5C5C)
+    val Red = Color(0xFFFF6464)
     val Pink = Color(0xFFFF6FB5)
-    val TextPrimary = Color(0xFFF4F6FC)
-    val TextSecondary = Color(0xFF8993A8)
-    val TextMuted = Color(0xFF5B647A)
-    val Border = Color(0x3300D9FF)
+    val TextPrimary = Color(0xFFF5F7FC)
+    val TextSecondary = Color(0xFF939EB2)
+    val TextMuted = Color(0xFF6B758A)
+    val Border = Color(0x2E939EB2)
 }
 
 /** Preferencias visuales que afectan a toda la app (las animaciones nunca son requisito funcional). */
@@ -35,9 +37,9 @@ data class VisualPrefs(val animations: Boolean = true, val glow: Boolean = true)
 val LocalVisualPrefs = staticCompositionLocalOf { VisualPrefs() }
 
 private val NexusScheme = darkColorScheme(
-    primary = NexusColors.Cyan,
+    primary = NexusColors.Accent,
     onPrimary = NexusColors.Background,
-    secondary = NexusColors.Violet,
+    secondary = NexusColors.Cyan,
     onSecondary = NexusColors.TextPrimary,
     tertiary = NexusColors.Green,
     background = NexusColors.Background,

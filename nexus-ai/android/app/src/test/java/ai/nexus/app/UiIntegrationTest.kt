@@ -73,6 +73,8 @@ class UiIntegrationTest {
             "/api/v1/projects/[^/]+/files" to "project_files", "/api/v1/projects/[^/]+" to "project_detail",
             "/api/v1/conversations" to "conversations", "/api/v1/conversations/[^/]+/messages" to "conversation_messages",
             "/api/v1/schedules" to "schedules", "/api/v1/usage/summary" to "usage_summary", "/api/v1/memory/stats" to "memory_stats",
+            "/api/v1/jarvis/context" to "jarvis_context", "/api/v1/jarvis/state" to "jarvis_state", "/api/v1/voice/settings" to "voice_settings",
+            "/api/v1/jarvis/settings" to "jarvis_settings",
         ).map { (pattern, name) -> Regex("^$pattern$") to name }
     }
 
@@ -121,8 +123,19 @@ class UiIntegrationTest {
         node.performClick()
     }
 
+    /** La pestaña «Más» restaura su última pantalla; un segundo toque vuelve a la grilla. */
+    private fun openMore() {
+        tap("Más")
+        tap("Más")
+        waitForText("Command Center")
+    }
+
     @Test fun navigatesTheRealAppWithBackendData() {
         ActivityScenario.launch(MainActivity::class.java).use {
+            // NEXUS 2.0: el Home es el asistente; el dashboard 1.0 sigue como Command Center en «Más».
+            waitForText("Buenas tardes, Ana.")
+            tap("Más")
+            tap("Command Center")
             // Dashboard con datos reales del backend
             waitForText("AI Core Overview")
             waitForText("Ana")
@@ -130,7 +143,8 @@ class UiIntegrationTest {
             waitForText("Crear app de gestión de videojuegos")
 
             // Agent Center
-            tap("Agents")
+            openMore()
+            tap("Agentes")
             waitForText("Agent Center")
             waitForText("CIPHER")
             compose.onRoot().captureRoboImage("build/screenshots/02_agents.png")
@@ -158,7 +172,8 @@ class UiIntegrationTest {
             tap("CERRAR")
 
             // Misiones: lista, detalle y vista de flujo
-            tap("Missions")
+            openMore()
+            tap("Misiones")
             waitForText("Mission Center")
             waitForText("Investigar motores de física")
             compose.onRoot().captureRoboImage("build/screenshots/08_missions.png")
@@ -177,7 +192,8 @@ class UiIntegrationTest {
             compose.onRoot().captureRoboImage("build/screenshots/11_chat.png")
 
             // Reuniones
-            tap("Meetings")
+            openMore()
+            tap("Reuniones")
             waitForText("Arquitectura del simulador")
             compose.onAllNodesWithText("Arquitectura del simulador").onFirst().performClick()
             waitForText("Conclusiones")
@@ -205,6 +221,8 @@ class TabletLayoutTest {
                 val name = when {
                     path == "/api/v1/dashboard" -> "dashboard"
                     path == "/api/v1/system/status" -> "system_status"
+                    path == "/api/v1/jarvis/context" -> "jarvis_context"
+                    path == "/api/v1/jarvis/state" -> "jarvis_state"
                     else -> return MockResponse().setBody("[]")
                 }
                 return MockResponse().setBody(fixture(name))
@@ -222,8 +240,11 @@ class TabletLayoutTest {
 
     @Test fun commandCenterOnTablet() {
         ActivityScenario.launch(MainActivity::class.java).use {
+            // En tablet la navegación lateral muestra Home, Chat, Acciones y las herramientas avanzadas.
+            compose.waitUntil(15_000) { compose.onAllNodes(hasText("Buenas tardes, Ana.")).fetchSemanticsNodes().isNotEmpty() }
+            compose.onRoot().captureRoboImage("build/screenshots/v2_20_home_tablet.png")
+            compose.onAllNodesWithText("Command Center").onFirst().performClick()
             compose.waitUntil(15_000) { compose.onAllNodes(hasText("LLM Status", substring = true, ignoreCase = true)).fetchSemanticsNodes().isNotEmpty() }
-            compose.waitUntil(15_000) { compose.onAllNodes(hasText("COMMAND CENTER")).fetchSemanticsNodes().isNotEmpty() }
             compose.onRoot().captureRoboImage("build/screenshots/20_dashboard_tablet.png")
         }
     }

@@ -93,6 +93,9 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
 val SECTIONS = listOf(
+    "voice" to "Voz",
+    "jarvis" to "Asistente (JARVIS)",
+    "privacy" to "Privacidad",
     "profile" to "Perfil y sesiones",
     "providers" to "Proveedores de IA",
     "models" to "Modelos",
@@ -162,6 +165,9 @@ fun SettingsSectionScreen(section: String) {
         Text(SECTIONS.firstOrNull { it.first == section }?.second ?: "Ajustes", style = MaterialTheme.typography.headlineSmall, color = NexusColors.TextPrimary)
         Spacer(Modifier.height(10.dp))
         when (section) {
+            "voice" -> VoiceSection(vm, toast)
+            "jarvis" -> JarvisSection(vm, toast)
+            "privacy" -> PrivacySection(vm, toast)
             "profile" -> ProfileSection(vm, toast)
             "providers" -> ProvidersSection(vm, toast)
             "models" -> ModelsSection(vm, toast)

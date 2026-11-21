@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -216,10 +217,10 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
-        modifier = modifier.height(46.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = NexusColors.Cyan, contentColor = NexusColors.Background,
-            disabledContainerColor = NexusColors.Cyan.copy(alpha = 0.25f)),
+        colors = ButtonDefaults.buttonColors(containerColor = NexusColors.Accent, contentColor = NexusColors.Background,
+            disabledContainerColor = NexusColors.Accent.copy(alpha = 0.25f)),
     ) {
         if (loading) {
             CircularProgressIndicator(Modifier.size(18.dp), color = NexusColors.Background, strokeWidth = 2.dp)
@@ -235,7 +236,7 @@ fun GhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.height(42.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, color.copy(alpha = if (enabled) 0.6f else 0.2f)),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),

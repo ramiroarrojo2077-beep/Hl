@@ -23,7 +23,7 @@ import okhttp3.WebSocketListener
 import kotlin.math.min
 import kotlin.random.Random
 
-data class RealtimeEvent(val type: String, val data: JsonObject, val ts: String?) {
+data class RealtimeEvent(val type: String, val data: JsonObject, val ts: String?, val id: String? = null) {
     fun str(key: String): String? = (data[key] as? JsonPrimitive)?.contentOrNull
 }
 
@@ -35,6 +35,18 @@ sealed interface ConnectionState {
     data object Unauthorized : ConnectionState
 }
 
+/** Ventana de ids ya entregados: tras una reconexión ningún evento se procesa dos veces. */
+class EventDeduplicator(private val capacity: Int = 512) {
+    private val seen = LinkedHashSet<String>()
+
+    @Synchronized fun firstTime(id: String?): Boolean {
+        if (id == null) return true
+        if (!seen.add(id)) return false
+        if (seen.size > capacity) seen.remove(seen.first())
+        return true
+    }
+}
+
 /** Calcula la espera de reconexión: exponencial con tope y jitter. */
 fun backoffSeconds(attempt: Int, random: Random = Random.Default): Int {
     val base = min(30, 1 shl min(attempt, 5))
@@ -44,7 +56,8 @@ fun backoffSeconds(attempt: Int, random: Random = Random.Default): Int {
 fun parseEvent(text: String): RealtimeEvent? = try {
     val obj = NexusJson.parseToJsonElement(text).jsonObject
     val type = obj["type"]?.jsonPrimitive?.contentOrNull
-    if (type == null) null else RealtimeEvent(type, (obj["data"] as? JsonObject) ?: JsonObject(emptyMap()), obj["ts"]?.jsonPrimitive?.contentOrNull)
+    if (type == null) null else RealtimeEvent(type, (obj["data"] as? JsonObject) ?: JsonObject(emptyMap()), obj["ts"]?.jsonPrimitive?.contentOrNull,
+        obj["id"]?.jsonPrimitive?.contentOrNull)
 } catch (_: Exception) {
     null
 }
@@ -60,6 +73,8 @@ class RealtimeClient(
     private val accessToken: suspend () -> String?,
     private val refreshAccess: suspend () -> Boolean,
 ) {
+    private val dedupe = EventDeduplicator()
+
     private val _events = MutableSharedFlow<RealtimeEvent>(extraBufferCapacity = 256)
     val events: SharedFlow<RealtimeEvent> = _events
     private val _state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
@@ -108,7 +123,7 @@ class RealtimeClient(
                     when (obj["type"]?.jsonPrimitive?.contentOrNull) {
                         "ready" -> { attempt = 0; _state.value = ConnectionState.Connected }
                         "pong" -> Unit
-                        else -> parseEvent(text)?.let { _events.tryEmit(it) }
+                        else -> parseEvent(text)?.let { if (dedupe.firstTime(it.id)) _events.tryEmit(it) }
                     }
                 }
 

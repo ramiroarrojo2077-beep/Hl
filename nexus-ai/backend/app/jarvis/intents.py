@@ -348,7 +348,7 @@ def _reminder_from(rest_o: str, ctx: ClassifyContext, rule: str) -> Intent:
         return Intent("productivity", 0.9, rule, question="¿Qué querés que te recuerde?", missing=["title"],
                       extra={"pending": {"kind": "reminder_title", "at": w.dt.isoformat()}})
     return Intent("productivity", 0.94, rule, action_key="reminder.create", params={"title": title[:200], "at": w.dt.isoformat()},
-                  summary=f"Recordatorio: «{title[:80]}» el {_human_dt(w.dt, ctx.now)}", assumptions=w.assumptions)
+                  summary=f"Recordatorio: «{title[:80]}» {_human_dt(w.dt, ctx.now)}", assumptions=w.assumptions)
 
 
 def _reminder(original: str, norm: str, ctx: ClassifyContext) -> Intent | None:
@@ -372,7 +372,7 @@ def _trim_preps(s: str) -> str:
 
 def _human_dt(dt: datetime, now: datetime) -> str:
     days = (dt.date() - now.date()).days
-    day = "hoy" if days == 0 else "mañana" if days == 1 else "pasado mañana" if days == 2 else dt.strftime("%d/%m/%Y")
+    day = "hoy" if days == 0 else "mañana" if days == 1 else "pasado mañana" if days == 2 else dt.strftime("el %d/%m/%Y")
     return f"{day} a las {dt:%H:%M}"
 
 
@@ -660,7 +660,7 @@ def _fill_pending(original: str, norm: str, ctx: ClassifyContext) -> Intent | No
             if not title:
                 return None
             return Intent("productivity", 0.9, "reminder.filled", action_key="reminder.create",
-                          params={"title": title, "at": w.dt.isoformat()}, summary=f"Recordatorio: «{title[:80]}» el {_human_dt(w.dt, ctx.now)}",
+                          params={"title": title, "at": w.dt.isoformat()}, summary=f"Recordatorio: «{title[:80]}» {_human_dt(w.dt, ctx.now)}",
                           assumptions=w.assumptions)
         if kind == "alarm" and w.dt:
             return Intent("productivity", 0.9, "alarm.filled", action_key="device.set_alarm", params={"hour": w.dt.hour, "minute": w.dt.minute},
@@ -681,7 +681,7 @@ def _fill_pending(original: str, norm: str, ctx: ClassifyContext) -> Intent | No
         title = _cap(original)
         at = datetime.fromisoformat(p["at"])
         return Intent("productivity", 0.9, "reminder.filled", action_key="reminder.create", params={"title": title, "at": p["at"]},
-                      summary=f"Recordatorio: «{title[:80]}» el {_human_dt(at, ctx.now)}")
+                      summary=f"Recordatorio: «{title[:80]}» {_human_dt(at, ctx.now)}")
     if kind == "timer":
         secs, _ = parse_duration_seconds(norm)
         if secs:

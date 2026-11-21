@@ -26,6 +26,7 @@ open class NexusApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         container = createContainer()
+        CrashReporter.install(this)
         NotificationHelper.createChannel(this)
         PushSetup.init(this)
 
@@ -46,6 +47,7 @@ open class NexusApplication : Application(), Configuration.Provider {
         container.scope.launch {
             container.session.session.map { it?.userId }.distinctUntilChanged().collect { userId ->
                 if (userId != null) {
+                    CrashReporter.flush(container)
                     PushSetup.registerToken(this@NexusApplication)
                     PushSetup.scheduleSync(this@NexusApplication)
                     if (isInForeground) container.realtime.restart()

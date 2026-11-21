@@ -1,6 +1,6 @@
 {
- "id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
- "project_id": "6b287030-56c6-4f88-885b-dc3c34e000f2",
+ "id": "552977ba-88ad-494e-8e73-4e315079f452",
+ "project_id": "6c4b83af-a09a-4375-80ca-7bcb05617ab2",
  "title": "Crear app de gestión de videojuegos",
  "objective": "Diseñar y prototipar una app para gestionar una colección de videojuegos",
  "description": null,
@@ -13,18 +13,18 @@
  "tokens_used": 10500,
  "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
  "error": null,
- "started_at": "2026-11-21T17:55:30.642380Z",
- "completed_at": "2026-11-21T17:55:30.997960Z",
- "created_at": "2026-11-21T17:55:30.504465Z",
- "updated_at": "2026-11-21T17:55:30.998638Z",
+ "started_at": "2026-11-21T18:30:58.353616Z",
+ "completed_at": "2026-11-21T18:30:58.710272Z",
+ "created_at": "2026-11-21T18:30:58.217893Z",
+ "updated_at": "2026-11-21T18:30:58.710937Z",
  "progress": 1.0,
  "task_counts": {
   "completed": 3
  },
  "agent_ids": [
-  "15824488-87e5-4319-806b-10d6b5863b23",
-  "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
-  "a93da80b-69d1-4b5c-889c-507c6f662ff4"
+  "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
+  "1527cc43-1d91-45bb-8531-9eae5b80e732",
+  "3f6d0ad8-3fea-4a1d-8b2a-25b8ce34643a"
  ],
  "plan": {
   "model": "anthropic:claude-test-opus",
@@ -100,13 +100,13 @@
  },
  "tasks": [
   {
-   "id": "c916211f-46a2-4cb4-a55a-13f35160baab",
-   "mission_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+   "id": "646bd08c-27e7-47b6-bf4d-e7591525bc10",
+   "mission_id": "552977ba-88ad-494e-8e73-4e315079f452",
    "key": "t1",
    "title": "Investigar tecnologías",
    "description": "Comparar stacks",
    "task_type": "research",
-   "agent_id": "15824488-87e5-4319-806b-10d6b5863b23",
+   "agent_id": "3f6d0ad8-3fea-4a1d-8b2a-25b8ce34643a",
    "status": "completed",
    "priority": 3,
    "requires_approval": false,
@@ -119,22 +119,22 @@
    "model_used": "anthropic:claude-test-opus",
    "actual_cost_usd": "0.013500",
    "tokens_used": 1500,
-   "started_at": "2026-11-21T17:55:30.689858Z",
-   "completed_at": "2026-11-21T17:55:30.750278Z",
-   "duration_ms": 43,
-   "created_at": "2026-11-21T17:55:30.581567Z",
+   "started_at": "2026-11-21T18:30:58.394225Z",
+   "completed_at": "2026-11-21T18:30:58.459591Z",
+   "duration_ms": 46,
+   "created_at": "2026-11-21T18:30:58.294126Z",
    "depends_on": [],
    "citations": [],
    "drafts": []
   },
   {
-   "id": "7ea2b8c3-1733-4048-a613-cc626191f044",
-   "mission_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+   "id": "c75c539c-9358-4090-84b1-80339a20c99b",
+   "mission_id": "552977ba-88ad-494e-8e73-4e315079f452",
    "key": "t2",
    "title": "Prototipo visual",
    "description": "Proponer UI",
    "task_type": "design",
-   "agent_id": "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
+   "agent_id": "1527cc43-1d91-45bb-8531-9eae5b80e732",
    "status": "completed",
    "priority": 3,
    "requires_approval": false,
@@ -147,22 +147,22 @@
    "model_used": "anthropic:claude-test-opus",
    "actual_cost_usd": "0.013500",
    "tokens_used": 1500,
-   "started_at": "2026-11-21T17:55:30.673771Z",
-   "completed_at": "2026-11-21T17:55:30.715575Z",
-   "duration_ms": 22,
-   "created_at": "2026-11-21T17:55:30.581567Z",
+   "started_at": "2026-11-21T18:30:58.383969Z",
+   "completed_at": "2026-11-21T18:30:58.423723Z",
+   "duration_ms": 25,
+   "created_at": "2026-11-21T18:30:58.294126Z",
    "depends_on": [],
    "citations": [],
    "drafts": []
   },
   {
-   "id": "ae1463ed-feb6-4098-9188-e56f095a216c",
-   "mission_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+   "id": "d9a46de6-80f5-4b7d-850b-c165261dc4de",
+   "mission_id": "552977ba-88ad-494e-8e73-4e315079f452",
    "key": "t3",
    "title": "Arquitectura",
    "description": "Diseñar arquitectura",
    "task_type": "code",
-   "agent_id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
+   "agent_id": "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
    "status": "completed",
    "priority": 3,
    "requires_approval": false,
@@ -175,13 +175,13 @@
    "model_used": "anthropic:claude-test-opus",
    "actual_cost_usd": "0.027000",
    "tokens_used": 3000,
-   "started_at": "2026-11-21T17:55:30.777504Z",
-   "completed_at": "2026-11-21T17:55:30.842271Z",
-   "duration_ms": 57,
-   "created_at": "2026-11-21T17:55:30.581567Z",
+   "started_at": "2026-11-21T18:30:58.485532Z",
+   "completed_at": "2026-11-21T18:30:58.546828Z",
+   "duration_ms": 54,
+   "created_at": "2026-11-21T18:30:58.294126Z",
    "depends_on": [
-    "7ea2b8c3-1733-4048-a613-cc626191f044",
-    "c916211f-46a2-4cb4-a55a-13f35160baab"
+    "c75c539c-9358-4090-84b1-80339a20c99b",
+    "646bd08c-27e7-47b6-bf4d-e7591525bc10"
    ],
    "citations": [],
    "drafts": [
@@ -190,7 +190,7 @@
      "title": "Arquitectura",
      "format": "md",
      "content": "# Arquitectura\nCapas: API, dominio, datos",
-     "created_at": "2026-11-21T17:55:30.811346+00:00"
+     "created_at": "2026-11-21T18:30:58.519067+00:00"
     }
    ]
   }

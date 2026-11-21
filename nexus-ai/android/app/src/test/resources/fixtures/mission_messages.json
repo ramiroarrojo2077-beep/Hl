@@ -1,100 +1,100 @@
 [
  {
-  "id": "560f2db2-6cca-431e-b3ad-bda089138a02",
+  "id": "09474bbe-50b6-4113-b226-613a8e1b489d",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
   "recipient_agent_id": null,
   "message_type": "plan",
   "content": "Plan: Investigar y diseñar en paralelo; luego arquitectura.\n\nAnálisis: El usuario quiere una app de gestión de videojuegos.\n\nTareas: t1 Investigar tecnologías → atlas; t2 Prototipo visual → nova; t3 Arquitectura → cipher",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.581567Z"
+  "created_at": "2026-11-21T18:30:58.294126Z"
  },
  {
-  "id": "9d3d2789-c1b2-4311-8f42-5344e82e0f1e",
+  "id": "9f9e0d42-0f23-49e1-84a4-577fe111db9e",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "7294e8c0-f72f-410a-b041-7d97ccbff9a7",
+  "sender_agent_id": "1527cc43-1d91-45bb-8531-9eae5b80e732",
   "recipient_agent_id": null,
   "message_type": "result",
   "content": "[t2] Prototipo visual\n\nResultado de t2: entregable completo y verificable.",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.689611Z"
+  "created_at": "2026-11-21T18:30:58.396340Z"
  },
  {
-  "id": "b7a715ac-0627-4df3-b599-54ef80cefab1",
+  "id": "b20d5862-9b66-418d-b501-49ffd9b7e183",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "15824488-87e5-4319-806b-10d6b5863b23",
+  "sender_agent_id": "3f6d0ad8-3fea-4a1d-8b2a-25b8ce34643a",
   "recipient_agent_id": null,
   "message_type": "result",
   "content": "[t1] Investigar tecnologías\n\nResultado de t1: entregable completo y verificable.",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.702426Z"
+  "created_at": "2026-11-21T18:30:58.408347Z"
  },
  {
-  "id": "fe95d855-a076-447a-8dd8-59266204a38a",
+  "id": "6b0d67a4-2700-4381-b2ee-fa87f0033234",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "a93da80b-69d1-4b5c-889c-507c6f662ff4",
+  "sender_agent_id": "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
   "recipient_agent_id": null,
   "message_type": "result",
   "content": "[t3] Arquitectura\n\nResultado de t3: entregable completo y verificable.",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.831708Z"
+  "created_at": "2026-11-21T18:30:58.538275Z"
  },
  {
-  "id": "8f2cf9ae-ac5e-4004-800d-2bc9722d9713",
+  "id": "a8dc9313-ba9c-45bf-b96b-3d640739a70b",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "eaab7b4e-2777-4799-be3a-1ae61376b944",
+  "sender_agent_id": "ca05c76b-ffbf-4e38-a004-92edd0d4b911",
   "recipient_agent_id": null,
   "message_type": "review",
   "content": "Revisión (ronda 1): approve · puntaje 8\nCumple el objetivo",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.875278Z"
+  "created_at": "2026-11-21T18:30:58.575804Z"
  },
  {
-  "id": "05cd3377-9d51-4c0c-9583-65ff80e88bf4",
+  "id": "e1d7a31a-2f27-46a7-a46c-4a55b1e1c17f",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "573106d6-4fcf-434f-942b-ef030846e139",
+  "sender_agent_id": "1e79576e-3228-45bd-b95f-098879a603fa",
   "recipient_agent_id": null,
   "message_type": "security",
   "content": "Auditoría de seguridad: ok. Sin hallazgos",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.925097Z"
+  "created_at": "2026-11-21T18:30:58.629618Z"
  },
  {
-  "id": "df2d7225-e175-4086-ab1d-a4645918ec68",
+  "id": "a499b24f-6992-4869-854d-29766ecf2ba1",
   "channel": "mission",
-  "channel_id": "47e6684a-a398-4cc6-9880-f8b12dd9692b",
+  "channel_id": "552977ba-88ad-494e-8e73-4e315079f452",
   "sender_type": "agent",
-  "sender_agent_id": "4dbb1f6d-86fe-42f9-834e-760622d56b14",
+  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
   "recipient_agent_id": null,
   "message_type": "summary",
   "content": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "meta": {},
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T17:55:30.963987Z"
+  "created_at": "2026-11-21T18:30:58.675560Z"
  }
 ]

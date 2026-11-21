@@ -1,5 +1,5 @@
 {
- "id": "f4e27d08-9967-4511-bf5f-28ae910a804c",
+ "id": "836d5132-a72c-44fc-b159-dccd6239d06e",
  "action_key": "whatsapp.open_chat",
  "name": "Preparar WhatsApp",
  "category": "communication",
@@ -20,9 +20,9 @@
  },
  "error": null,
  "source": "jarvis",
- "conversation_id": "e97d3ccc-1de2-4ad2-9742-7d384ce3007e",
- "created_at": "2026-11-21T17:55:31.345398+00:00",
- "confirmed_at": "2026-11-21T17:55:31.767488+00:00",
- "completed_at": "2026-11-21T17:55:31.774942+00:00",
- "expires_at": "2026-11-21T18:05:31.767488+00:00"
+ "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+ "created_at": "2026-11-21T18:30:59.095170+00:00",
+ "confirmed_at": "2026-11-21T18:30:59.556623+00:00",
+ "completed_at": "2026-11-21T18:30:59.563816+00:00",
+ "expires_at": "2026-11-21T18:40:59.556623+00:00"
 }
