@@ -43,3 +43,13 @@ Las búsquedas repetidas (mismo producto y país) se guardan en memoria 6 horas 
 ## Aclaración
 
 Los resultados son estimaciones hechas con fuentes públicas, no cotizaciones formales. Antes de comprar o importar, confirmá con el proveedor y con un despachante de aduana.
+
+## Juego: Asfalto Hostil
+
+`juego/index.html` es un juego aparte: carreras de karts con combate en una zona de guerra (3 vueltas, 8 pilotos, rifle montado, cajas de suministros y rachas de bajas). Es un solo archivo HTML con Three.js; abrilo directo en el navegador, no necesita el servidor.
+
+- Conducir: `W A S D` o flechas · Derrapar: `Shift`/`Espacio` (soltá para el turbo)
+- Disparar: clic o `J` (el rifle apunta solo al que tenés adelante) · Equipo: `E` · Racha: `Q`
+- Mirar y disparar hacia atrás: `C` · Recargar: `R` · Pausa: `P` · Sonido: `M`
+- Rachas sin morir: 3 bajas → Radar, 5 → Bombardeo, 7 → Dron artillado
+- En el celular aparecen controles táctiles y el kart acelera solo.
