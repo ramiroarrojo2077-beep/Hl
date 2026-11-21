@@ -24,3 +24,4 @@ secrets/
 *.pem
 service-account*.json
 keystore.properties
+dist/

@@ -1,6 +1,6 @@
 [
  {
-  "id": "fc1aa87f-1a3b-418c-97da-b7cc73042895",
+  "id": "4b57a3ec-6c68-4436-b38a-d46c47e7f5ef",
   "project_id": null,
   "title": "Investigar motores de física",
   "objective": "Comparar motores de física para el simulador",
@@ -16,15 +16,15 @@
   "error": null,
   "started_at": null,
   "completed_at": null,
-  "created_at": "2026-11-21T13:51:27.857630Z",
-  "updated_at": "2026-11-21T13:51:27.862777Z",
+  "created_at": "2026-11-21T16:52:42.298738Z",
+  "updated_at": "2026-11-21T16:52:42.304221Z",
   "progress": 0.0,
   "task_counts": {},
   "agent_ids": []
  },
  {
-  "id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
-  "project_id": "500abc3e-e0f1-46d8-a412-61503bde27da",
+  "id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
+  "project_id": "9ebf471c-a052-43f5-a9ba-e822e4fbacca",
   "title": "Crear app de gestión de videojuegos",
   "objective": "Diseñar y prototipar una app para gestionar una colección de videojuegos",
   "description": null,
@@ -37,18 +37,18 @@
   "tokens_used": 10500,
   "result": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "error": null,
-  "started_at": "2026-11-21T13:51:27.352694Z",
-  "completed_at": "2026-11-21T13:51:27.617488Z",
-  "created_at": "2026-11-21T13:51:27.256316Z",
-  "updated_at": "2026-11-21T13:51:27.617831Z",
+  "started_at": "2026-11-21T16:52:41.574990Z",
+  "completed_at": "2026-11-21T16:52:41.913011Z",
+  "created_at": "2026-11-21T16:52:41.453665Z",
+  "updated_at": "2026-11-21T16:52:41.913519Z",
   "progress": 1.0,
   "task_counts": {
    "completed": 3
   },
   "agent_ids": [
-   "a12e91e2-006e-4f3c-8800-66afa98cef69",
-   "e8ad4fb8-ca84-406b-b828-658fb2003b50",
-   "fe45dcee-9b32-4d14-87f6-ce80d31b651b"
+   "91e01e7f-d293-4dce-9f5e-93e6ab115186",
+   "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
+   "e2231600-0d6d-41f4-9afa-48b46a48bad7"
   ]
  }
 ]

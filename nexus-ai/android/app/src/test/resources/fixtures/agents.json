@@ -1,6 +1,6 @@
 [
  {
-  "id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+  "id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
   "slug": "nexus",
   "name": "NEXUS",
   "role": "CEO / Manager",
@@ -9,7 +9,7 @@
   "status": "thinking",
   "status_detail": "Coordinando la misión",
   "current_task_id": null,
-  "last_activity_at": "2026-11-21T13:51:27.849279Z",
+  "last_activity_at": "2026-11-21T16:52:42.283563Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -64,11 +64,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T13:51:27.053873Z",
+  "created_at": "2026-11-21T16:52:41.263429Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+  "id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
   "slug": "atlas",
   "name": "ATLAS",
   "role": "Investigador",
@@ -76,8 +76,8 @@
   "is_enabled": true,
   "status": "working",
   "status_detail": "Investigando motores de física",
-  "current_task_id": "2ac2b0a1-d9d4-44b2-b887-04933add2c02",
-  "last_activity_at": "2026-11-21T13:51:27.707722Z",
+  "current_task_id": "e3a59ee0-33d1-4d59-8e7d-2c1019369833",
+  "last_activity_at": "2026-11-21T16:52:42.036467Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -132,11 +132,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T13:51:27.053873Z",
+  "created_at": "2026-11-21T16:52:41.263429Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+  "id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
   "slug": "cipher",
   "name": "CIPHER",
   "role": "Desarrollador",
@@ -144,8 +144,8 @@
   "is_enabled": true,
   "status": "working",
   "status_detail": "Investigando motores de física",
-  "current_task_id": "899dcdb0-8e21-40ce-99eb-762377f4f044",
-  "last_activity_at": "2026-11-21T13:51:27.726581Z",
+  "current_task_id": "f11f43fc-b85a-4e36-b683-5188b26d70f1",
+  "last_activity_at": "2026-11-21T16:52:42.062153Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -203,11 +203,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T13:51:27.053873Z",
+  "created_at": "2026-11-21T16:52:41.263429Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "a12e91e2-006e-4f3c-8800-66afa98cef69",
+  "id": "e2231600-0d6d-41f4-9afa-48b46a48bad7",
   "slug": "nova",
   "name": "NOVA",
   "role": "Creativo",
@@ -215,8 +215,8 @@
   "is_enabled": true,
   "status": "completed",
   "status_detail": "Completó: Prototipo visual",
-  "current_task_id": "f891f0b5-020f-4759-9777-f47aae879bc9",
-  "last_activity_at": "2026-11-21T13:51:27.444786Z",
+  "current_task_id": "d56da30a-bbfd-43a0-9546-8d03574a284b",
+  "last_activity_at": "2026-11-21T16:52:41.688994Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -274,11 +274,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T13:51:27.053873Z",
+  "created_at": "2026-11-21T16:52:41.263429Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "be0266a8-4748-4fa3-9eb4-92dadd209f81",
+  "id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
   "slug": "oracle",
   "name": "ORACLE",
   "role": "Analista y Auditor",
@@ -287,7 +287,7 @@
   "status": "idle",
   "status_detail": null,
   "current_task_id": null,
-  "last_activity_at": "2026-11-21T13:51:27.745373Z",
+  "last_activity_at": "2026-11-21T16:52:42.092943Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -342,11 +342,11 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T13:51:27.053873Z",
+  "created_at": "2026-11-21T16:52:41.263429Z",
   "primary_model": "auto · claude-test-opus"
  },
  {
-  "id": "e8f13048-52f8-410c-b098-74b607e27d2f",
+  "id": "341cf6e8-e580-45a8-b303-3de592b45ab3",
   "slug": "guardian",
   "name": "GUARDIAN",
   "role": "Seguridad y Control",
@@ -355,7 +355,7 @@
   "status": "completed",
   "status_detail": "Auditoría entregada",
   "current_task_id": null,
-  "last_activity_at": "2026-11-21T13:51:27.581744Z",
+  "last_activity_at": "2026-11-21T16:52:41.866339Z",
   "autonomy_level": "supervised",
   "memory_enabled": true,
   "participates_in_meetings": true,
@@ -410,7 +410,7 @@
     "enabled": true
    }
   },
-  "created_at": "2026-11-21T13:51:27.053873Z",
+  "created_at": "2026-11-21T16:52:41.263429Z",
   "primary_model": "auto · claude-test-opus"
  }
 ]

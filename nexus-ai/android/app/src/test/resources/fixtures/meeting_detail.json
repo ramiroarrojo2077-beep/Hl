@@ -1,5 +1,5 @@
 {
- "id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+ "id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
  "project_id": null,
  "mission_id": null,
  "meeting_type": "technical",
@@ -14,33 +14,33 @@
  "current_round": 1,
  "stop_reason": "El moderador dio por cumplido el objetivo",
  "summary": "Se acordó un enfoque modular.",
- "started_at": "2026-11-21T13:51:27.661193Z",
- "ended_at": "2026-11-21T13:51:27.786865Z",
- "created_at": "2026-11-21T13:51:27.632384Z",
+ "started_at": "2026-11-21T16:52:41.968039Z",
+ "ended_at": "2026-11-21T16:52:42.177181Z",
+ "created_at": "2026-11-21T16:52:41.930375Z",
  "participants": [
   {
-   "agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+   "agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
    "role": "moderator",
    "turns_taken": 1,
    "name": "NEXUS",
    "slug": "nexus"
   },
   {
-   "agent_id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+   "agent_id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
    "role": "participant",
    "turns_taken": 1,
    "name": "ATLAS",
    "slug": "atlas"
   },
   {
-   "agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+   "agent_id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
    "role": "participant",
    "turns_taken": 1,
    "name": "CIPHER",
    "slug": "cipher"
   },
   {
-   "agent_id": "be0266a8-4748-4fa3-9eb4-92dadd209f81",
+   "agent_id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
    "role": "participant",
    "turns_taken": 1,
    "name": "ORACLE",
@@ -75,74 +75,74 @@
  },
  "messages": [
   {
-   "id": "a78ac4f6-3d70-4e8d-b889-dabe63f0fc9c",
+   "id": "4d4b55f3-1b89-4cb8-85a0-df3382d68dca",
    "channel": "meeting",
-   "channel_id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+   "channel_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
    "sender_type": "agent",
-   "sender_agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+   "sender_agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
    "recipient_agent_id": null,
    "message_type": "proposal",
    "content": "[PROPUESTA] Desde mi especialidad propongo un enfoque modular y verificable.",
    "meta": {},
    "model_used": "anthropic:claude-test-opus",
    "turn": 1,
-   "created_at": "2026-11-21T13:51:27.672341Z"
+   "created_at": "2026-11-21T16:52:41.982647Z"
   },
   {
-   "id": "ac03dd83-5e32-428e-8d80-7b1ae259ba93",
+   "id": "a7d4d7a2-1ac1-42c9-9f8c-4be125551ce3",
    "channel": "meeting",
-   "channel_id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+   "channel_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
    "sender_type": "agent",
-   "sender_agent_id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+   "sender_agent_id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
    "recipient_agent_id": null,
    "message_type": "proposal",
    "content": "[PROPUESTA] Desde mi especialidad propongo un enfoque modular y verificable.",
    "meta": {},
    "model_used": "anthropic:claude-test-opus",
    "turn": 1,
-   "created_at": "2026-11-21T13:51:27.695494Z"
+   "created_at": "2026-11-21T16:52:42.020464Z"
   },
   {
-   "id": "ca26635a-1789-4655-9494-468d123bebbf",
+   "id": "8e9c22a7-5055-4fcc-ba60-a662ee8f3ad4",
    "channel": "meeting",
-   "channel_id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+   "channel_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
    "sender_type": "agent",
-   "sender_agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+   "sender_agent_id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
    "recipient_agent_id": null,
    "message_type": "proposal",
    "content": "[PROPUESTA] Desde mi especialidad propongo un enfoque modular y verificable.",
    "meta": {},
    "model_used": "anthropic:claude-test-opus",
    "turn": 1,
-   "created_at": "2026-11-21T13:51:27.714472Z"
+   "created_at": "2026-11-21T16:52:42.046065Z"
   },
   {
-   "id": "9723da56-86c1-4bb2-9f1c-81631dcb8451",
+   "id": "0dec0637-835a-4cda-af63-4ef5534421f3",
    "channel": "meeting",
-   "channel_id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+   "channel_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
    "sender_type": "agent",
-   "sender_agent_id": "be0266a8-4748-4fa3-9eb4-92dadd209f81",
+   "sender_agent_id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
    "recipient_agent_id": null,
    "message_type": "proposal",
    "content": "[PROPUESTA] Desde mi especialidad propongo un enfoque modular y verificable.",
    "meta": {},
    "model_used": "anthropic:claude-test-opus",
    "turn": 1,
-   "created_at": "2026-11-21T13:51:27.733752Z"
+   "created_at": "2026-11-21T16:52:42.075653Z"
   },
   {
-   "id": "79bcc549-88c1-4f3f-a23c-b2d7811044bf",
+   "id": "11d17e31-a1ee-4595-9993-5573bf5a5330",
    "channel": "meeting",
-   "channel_id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+   "channel_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
    "sender_type": "agent",
-   "sender_agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+   "sender_agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
    "recipient_agent_id": null,
    "message_type": "summary",
    "content": "Se acordó un enfoque modular.",
    "meta": {},
    "model_used": "anthropic:claude-test-opus",
    "turn": 1,
-   "created_at": "2026-11-21T13:51:27.771764Z"
+   "created_at": "2026-11-21T16:52:42.139750Z"
   }
  ]
 }

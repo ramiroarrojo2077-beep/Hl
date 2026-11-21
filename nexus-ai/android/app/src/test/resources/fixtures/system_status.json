@@ -1,20 +1,20 @@
 {
  "server": {
   "cpu_percent": 0.0,
-  "memory_percent": 14.3,
-  "disk_percent": 5.0,
+  "memory_percent": 6.5,
+  "disk_percent": 5.4,
   "load_avg": [
-   0.74609375,
-   2.3349609375,
-   1.52490234375
+   0.388671875,
+   0.50927734375,
+   0.29052734375
   ],
-  "measured_at": "2026-11-21T13:51:28.136453+00:00"
+  "measured_at": "2026-11-21T16:52:42.593567+00:00"
  },
  "queue": {
   "queued": 1,
   "running": 0,
   "busy_worker_hosts": [],
-  "last_worker_activity": "2026-11-21T13:51:27.850293Z"
+  "last_worker_activity": "2026-11-21T16:52:42.285226Z"
  },
  "push_configured": false
 }

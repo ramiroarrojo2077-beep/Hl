@@ -1,5 +1,5 @@
 {
- "since": "2026-10-22T13:51:28.311233Z",
+ "since": "2026-10-22T16:52:42.842975Z",
  "totals": {
   "tokens_in": 18000,
   "tokens_out": 4500,
@@ -23,23 +23,7 @@
  ],
  "by_agent": [
   {
-   "agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
-   "tokens_in": 7200,
-   "tokens_out": 1800,
-   "cost_usd": "0.081000",
-   "calls": 6,
-   "agent_name": "NEXUS"
-  },
-  {
-   "agent_id": "a12e91e2-006e-4f3c-8800-66afa98cef69",
-   "tokens_in": 1200,
-   "tokens_out": 300,
-   "cost_usd": "0.013500",
-   "calls": 1,
-   "agent_name": "NOVA"
-  },
-  {
-   "agent_id": "be0266a8-4748-4fa3-9eb4-92dadd209f81",
+   "agent_id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
    "tokens_in": 2400,
    "tokens_out": 600,
    "cost_usd": "0.027000",
@@ -47,15 +31,7 @@
    "agent_name": "ORACLE"
   },
   {
-   "agent_id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
-   "tokens_in": 2400,
-   "tokens_out": 600,
-   "cost_usd": "0.027000",
-   "calls": 2,
-   "agent_name": "ATLAS"
-  },
-  {
-   "agent_id": "e8f13048-52f8-410c-b098-74b607e27d2f",
+   "agent_id": "341cf6e8-e580-45a8-b303-3de592b45ab3",
    "tokens_in": 1200,
    "tokens_out": 300,
    "cost_usd": "0.013500",
@@ -63,17 +39,41 @@
    "agent_name": "GUARDIAN"
   },
   {
-   "agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+   "agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
+   "tokens_in": 7200,
+   "tokens_out": 1800,
+   "cost_usd": "0.081000",
+   "calls": 6,
+   "agent_name": "NEXUS"
+  },
+  {
+   "agent_id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
+   "tokens_in": 2400,
+   "tokens_out": 600,
+   "cost_usd": "0.027000",
+   "calls": 2,
+   "agent_name": "ATLAS"
+  },
+  {
+   "agent_id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
    "tokens_in": 3600,
    "tokens_out": 900,
    "cost_usd": "0.040500",
    "calls": 3,
    "agent_name": "CIPHER"
+  },
+  {
+   "agent_id": "e2231600-0d6d-41f4-9afa-48b46a48bad7",
+   "tokens_in": 1200,
+   "tokens_out": 300,
+   "cost_usd": "0.013500",
+   "calls": 1,
+   "agent_name": "NOVA"
   }
  ],
  "by_mission": [
   {
-   "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb",
+   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4",
    "tokens_in": 9600,
    "tokens_out": 2400,
    "cost_usd": "0.108000",

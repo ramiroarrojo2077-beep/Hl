@@ -1,26 +1,26 @@
 [
  {
-  "id": "837b15d9-bf74-4f58-aff2-39bf847b6015",
+  "id": "cc2a226e-619a-46fa-8af6-1ff56872a2fb",
   "event_type": "meeting_finished",
   "title": "Reunión finalizada: Arquitectura del simulador",
   "body": "Se acordó un enfoque modular.",
   "data": {
-   "meeting_id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd"
+   "meeting_id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2"
   },
   "read_at": null,
   "push_status": "not_sent",
-  "created_at": "2026-11-21T13:51:27.771764Z"
+  "created_at": "2026-11-21T16:52:42.139750Z"
  },
  {
-  "id": "beb8206f-8988-47c8-b553-34fd3c1bc881",
+  "id": "0d5143b4-256f-41b8-aa3f-bcae98788119",
   "event_type": "mission_completed",
   "title": "Misión completada: Crear app de gestión de videojuegos",
   "body": "# Informe final\n\nResumen ejecutivo: misión cumplida con los entregables del equipo.",
   "data": {
-   "mission_id": "c2c052bc-bfff-41e4-b41c-a8f923b5ebdb"
+   "mission_id": "bc7e80ca-adac-4054-8fb8-3d6cd77ed8f4"
   },
   "read_at": null,
   "push_status": "not_sent",
-  "created_at": "2026-11-21T13:51:27.596454Z"
+  "created_at": "2026-11-21T16:52:41.887771Z"
  }
 ]

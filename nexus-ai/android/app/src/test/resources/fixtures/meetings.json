@@ -1,6 +1,6 @@
 [
  {
-  "id": "6d98d551-86cc-4d00-967c-4b5e462cd6fd",
+  "id": "d2e00529-4fd3-4019-bdd9-fe99a444dea2",
   "project_id": null,
   "mission_id": null,
   "meeting_type": "technical",
@@ -15,33 +15,33 @@
   "current_round": 1,
   "stop_reason": "El moderador dio por cumplido el objetivo",
   "summary": "Se acordó un enfoque modular.",
-  "started_at": "2026-11-21T13:51:27.661193Z",
-  "ended_at": "2026-11-21T13:51:27.786865Z",
-  "created_at": "2026-11-21T13:51:27.632384Z",
+  "started_at": "2026-11-21T16:52:41.968039Z",
+  "ended_at": "2026-11-21T16:52:42.177181Z",
+  "created_at": "2026-11-21T16:52:41.930375Z",
   "participants": [
    {
-    "agent_id": "3c5af7e7-842f-4534-81af-93abfeeb69cd",
+    "agent_id": "8db4c9c1-cc10-4e74-9b0c-818d9a96a3ba",
     "role": "moderator",
     "turns_taken": 1,
     "name": "NEXUS",
     "slug": "nexus"
    },
    {
-    "agent_id": "e8ad4fb8-ca84-406b-b828-658fb2003b50",
+    "agent_id": "91e01e7f-d293-4dce-9f5e-93e6ab115186",
     "role": "participant",
     "turns_taken": 1,
     "name": "ATLAS",
     "slug": "atlas"
    },
    {
-    "agent_id": "fe45dcee-9b32-4d14-87f6-ce80d31b651b",
+    "agent_id": "9fe00d99-a5ee-4531-abdb-7e6d905d569b",
     "role": "participant",
     "turns_taken": 1,
     "name": "CIPHER",
     "slug": "cipher"
    },
    {
-    "agent_id": "be0266a8-4748-4fa3-9eb4-92dadd209f81",
+    "agent_id": "2cb230d1-2fab-481f-9a04-6edd4a04d731",
     "role": "participant",
     "turns_taken": 1,
     "name": "ORACLE",

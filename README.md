@@ -43,3 +43,9 @@ Las búsquedas repetidas (mismo producto y país) se guardan en memoria 6 horas 
 ## Aclaración
 
 Los resultados son estimaciones hechas con fuentes públicas, no cotizaciones formales. Antes de comprar o importar, confirmá con el proveedor y con un despachante de aduana.
+
+---
+
+## NEXUS AI
+
+Este repositorio también contiene **NEXUS AI**, una plataforma multiagente (backend + app Android) en [`nexus-ai/`](nexus-ai/README.md).

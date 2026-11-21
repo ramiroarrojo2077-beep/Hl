@@ -1,0 +1,10 @@
+# Caddy obtiene y renueva el certificado TLS automáticamente (Let's Encrypt).
+{$NEXUS_DOMAIN} {
+	encode gzip
+	# /metrics solo dentro de la red interna (Prometheus).
+	@metrics path /metrics
+	respond @metrics 404
+	reverse_proxy api:8000 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

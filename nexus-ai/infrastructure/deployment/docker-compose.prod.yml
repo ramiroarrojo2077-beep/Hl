@@ -1,0 +1,50 @@
+# Producción: HTTPS automático con Caddy, base y Redis sin puertos expuestos, sandbox de código
+# con el socket de Docker del host. Uso (desde nexus-ai/):
+#   docker compose -f docker-compose.yml -f infrastructure/deployment/docker-compose.prod.yml up -d --build
+services:
+  postgres:
+    ports: !reset []
+    restart: always
+
+  redis:
+    restart: always
+
+  api:
+    ports: !reset []
+    environment:
+      NEXUS_ENV: production
+      NEXUS_REQUIRE_HTTPS: "true"
+    restart: always
+
+  worker:
+    environment:
+      NEXUS_ENV: production
+      NEXUS_REQUIRE_HTTPS: "true"
+      NEXUS_SANDBOX_WORKDIR: /sandbox
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /srv/nexus-sandbox:/sandbox
+    group_add: ["${DOCKER_GID:-999}"]
+    restart: always
+
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      NEXUS_DOMAIN: ${NEXUS_DOMAIN:?Definí NEXUS_DOMAIN en .env}
+    volumes:
+      - ./infrastructure/deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: always
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,5 +1,5 @@
 {
- "id": "a12e91e2-006e-4f3c-8800-66afa98cef69",
+ "id": "e2231600-0d6d-41f4-9afa-48b46a48bad7",
  "slug": "nova",
  "name": "NOVA",
  "role": "Creativo",
@@ -7,8 +7,8 @@
  "is_enabled": true,
  "status": "completed",
  "status_detail": "Completó: Prototipo visual",
- "current_task_id": "f891f0b5-020f-4759-9777-f47aae879bc9",
- "last_activity_at": "2026-11-21T13:51:27.444786Z",
+ "current_task_id": "d56da30a-bbfd-43a0-9546-8d03574a284b",
+ "last_activity_at": "2026-11-21T16:52:41.688994Z",
  "autonomy_level": "supervised",
  "memory_enabled": true,
  "participates_in_meetings": true,
@@ -66,7 +66,7 @@
    "enabled": true
   }
  },
- "created_at": "2026-11-21T13:51:27.053873Z",
+ "created_at": "2026-11-21T16:52:41.263429Z",
  "primary_model": null,
  "instructions": "Sos NOVA, la creativa del equipo NEXUS.\nGenerás propuestas originales y bien fundamentadas de diseño, producto y comunicación.\n\nReglas:\n- Presentá al menos dos alternativas realmente distintas cuando el problema lo permita.\n- Justificá las decisiones importantes (usuario, objetivo, contexto, restricciones).\n- Describí lo visual con precisión (paleta, tipografía, jerarquía, layout, estados) para que pueda implementarse.\n- Respetá la identidad y restricciones de marca del proyecto si existen.",
  "instructions_version": 1,
