@@ -154,19 +154,33 @@ private fun DrawScope.drawFigure(a: Appearance, c: FigureColors, status: String,
         val legBottom = 178f
         for (side in listOf(-1f, 1f)) {
             val x = cx + side * 7.5f
+            // Pierna con muslo, rodilla y tobillo (curvas suaves).
             val leg = Path().apply {
-                moveTo(x - 5.5f, legTop); lineTo(x + 5.5f, legTop); lineTo(x + 4f, legBottom); lineTo(x - 4f, legBottom); close()
+                moveTo(x - 6.2f, legTop)
+                lineTo(x + 6.2f, legTop)
+                quadraticTo(x + 6.4f, 128f, x + 4.9f, 144f)
+                quadraticTo(x + 4.6f, 160f, x + 3.9f, legBottom)
+                lineTo(x - 3.9f, legBottom)
+                quadraticTo(x - 4.6f, 160f, x - 4.9f, 144f)
+                quadraticTo(x - 6.4f, 128f, x - 6.2f, legTop)
+                close()
             }.scaled(u)
-            drawPath(leg, Brush.verticalGradient(listOf(outfitDark, c.outfit.darker(0.55f)), startY = legTop * u, endY = legBottom * u))
+            drawPath(leg, accent.copy(alpha = 0.10f), style = Stroke(3.2f * u))
+            drawPath(leg, Brush.horizontalGradient(listOf(c.outfit.lighter(0.06f), outfitDark, c.outfit.darker(0.5f)),
+                startX = (x - 6f) * u, endX = (x + 6f) * u))
             drawPath(leg, accent.copy(alpha = 0.35f), style = outline)
+            drawLine(c.outfit.lighter(0.22f).copy(alpha = 0.5f), p(x - side * 2.2f, 114f), p(x - side * 1.8f, 170f), 0.6f * u)
+            drawArc(accent.copy(alpha = 0.35f), 200f, 140f, false, p(x - 3.5f, 141f), Size(7f * u, 4f * u), style = Stroke(0.6f * u))
             if (a.outfit == "armor") {
                 drawRoundRect(accent.copy(alpha = 0.5f), p(x - 4.5f, 140f), Size(9f * u, 6f * u), androidx.compose.ui.geometry.CornerRadius(2f * u))
             }
             val boot = Path().apply {
-                moveTo(x - 4.6f, legBottom - 6f); lineTo(x + 4.6f, legBottom - 6f); lineTo(x + 5.5f, 186f); lineTo(x - 5f, 186f); close()
+                moveTo(x - 4.6f, legBottom - 8f); lineTo(x + 4.6f, legBottom - 8f); lineTo(x + 5f, 182f)
+                quadraticTo(x + side * 7.5f + 1f, 183f, x + side * 7f, 187f); lineTo(x - side * 5f, 187f); lineTo(x - 5f, 182f); close()
             }.scaled(u)
-            drawPath(boot, Color(0xFF0D1018))
-            drawLine(accent.copy(alpha = 0.8f), p(x - 5f, 186f), p(x + 5.5f, 186f), 1.1f * u)
+            drawPath(boot, Brush.verticalGradient(listOf(Color(0xFF1A1F2B), Color(0xFF07090E)), startY = (legBottom - 8f) * u, endY = 187f * u))
+            drawLine(accent.copy(alpha = 0.6f), p(x - 4.6f, legBottom - 8f), p(x + 4.6f, legBottom - 8f), 0.8f * u)
+            drawLine(accent.copy(alpha = 0.85f), p(x - 5f, 187f), p(x + side * 7f, 187f), 1.1f * u)
         }
 
         // ---- torso según vestimenta
@@ -233,33 +247,67 @@ private fun DrawScope.drawFigure(a: Appearance, c: FigureColors, status: String,
 
         // ---- brazos y manos
         for (side in listOf(-1f, 1f)) {
-            val sx = cx + side * (shoulder - 2f)
-            val ex = cx + side * (shoulder + 3.5f)
-            val hx = cx + side * (shoulder + 1.5f)
+            val sx = cx + side * (shoulder - 2.5f)
+            val ex = cx + side * (shoulder + 3.8f)
+            val hx = cx + side * (shoulder + 2f)
             val swing = if (animate && isActiveStatus(status)) sin(phase * 2 + side) * 1.5f else 0f
             val arm = Path().apply {
-                moveTo(sx - 3.8f, torsoTop + 3); lineTo(sx + 3.8f, torsoTop + 3)
-                lineTo(ex + 3.2f, 90f); lineTo(hx + 2.8f + swing, 122f); lineTo(hx - 2.8f + swing, 122f); lineTo(ex - 3.2f, 90f); close()
+                moveTo(sx - 4.6f, torsoTop + 2)
+                quadraticTo(sx + side * 3f, torsoTop - 2.5f, sx + 4.6f, torsoTop + 2) // hombro redondeado
+                quadraticTo(ex + 4.4f, 70f, ex + 3.6f, 90f)
+                quadraticTo(hx + 3.6f + swing, 106f, hx + 3f + swing, 118f)
+                lineTo(hx - 3f + swing, 118f)
+                quadraticTo(hx - 3.4f + swing, 106f, ex - 3.4f, 90f)
+                quadraticTo(ex - 4.2f, 70f, sx - 4.6f, torsoTop + 2)
+                close()
             }.scaled(u)
-            drawPath(arm, Brush.verticalGradient(listOf(c.outfit.lighter(0.08f), outfitDark), startY = torsoTop * u, endY = 122f * u))
-            drawPath(arm, accent.copy(alpha = 0.35f), style = outline)
-            drawCircle(c.skin, 3.6f * u, p(hx + swing, 125f))
-            if (a.outfit == "armor" || a.outfit == "jacket") drawLine(accent.copy(alpha = 0.7f), p(hx - 3 + swing, 116f), p(hx + 3 + swing, 116f), 1f * u)
+            drawPath(arm, accent.copy(alpha = 0.10f), style = Stroke(3f * u))
+            drawPath(arm, Brush.horizontalGradient(listOf(c.outfit.lighter(0.1f), outfitDark), startX = (ex - 4f) * u, endX = (ex + 4f) * u))
+            drawPath(arm, accent.copy(alpha = 0.38f), style = outline)
+            drawArc(accent.copy(alpha = 0.3f), 200f, 140f, false, p(ex - 3.5f, 88f), Size(7f * u, 4f * u), style = Stroke(0.6f * u))
+            // guante / mano
+            val gloved = a.outfit == "armor" || a.outfit == "jacket"
+            drawRoundRect(if (gloved) Color(0xFF12161F) else c.skin, p(hx - 3.2f + swing, 117f), Size(6.4f * u, 8.4f * u),
+                androidx.compose.ui.geometry.CornerRadius(3f * u))
+            if (gloved) drawLine(accent.copy(alpha = 0.8f), p(hx - 3.2f + swing, 118.5f), p(hx + 3.2f + swing, 118.5f), 0.9f * u)
         }
 
         // ---- cuello y cabeza
-        val headY = 31f + breathe * 0.4f
-        drawRect(c.skin.darker(0.85f), p(cx - 3.6f, 42f), Size(7.2f * u, 9f * u))
-        drawOval(c.skin, p(cx - 10.5f, headY - 13f), Size(21f * u, 25.5f * u))
-        drawOval(Brush.radialGradient(listOf(Color.Transparent, c.skin.darker(0.75f).copy(alpha = 0.35f)), center = p(cx, headY), radius = 13f * u),
-            p(cx - 10.5f, headY - 13f), Size(21f * u, 25.5f * u))
-        // ojos
+        val headY = 30.5f + breathe * 0.4f
+        drawPath(Path().apply {
+            moveTo(cx - 3.8f, 41f); lineTo(cx + 3.8f, 41f); lineTo(cx + 4.3f, 51f); lineTo(cx - 4.3f, 51f); close()
+        }.scaled(u), Brush.verticalGradient(listOf(c.skin.darker(0.72f), c.skin.darker(0.88f)), startY = 41f * u, endY = 51f * u))
+        // orejas
+        for (side in listOf(-1f, 1f)) drawOval(c.skin.darker(0.9f), p(cx + side * 11f - 1.6f, headY - 1.5f), Size(3.2f * u, 5.2f * u))
+        // rostro: óvalo con mentón
+        val face = Path().apply {
+            moveTo(cx, headY - 13.5f)
+            cubicTo(cx + 8f, headY - 13.5f, cx + 11.6f, headY - 7f, cx + 11.2f, headY + 1f)
+            cubicTo(cx + 10.6f, headY + 8f, cx + 5f, headY + 12.8f, cx, headY + 13.2f)
+            cubicTo(cx - 5f, headY + 12.8f, cx - 10.6f, headY + 8f, cx - 11.2f, headY + 1f)
+            cubicTo(cx - 11.6f, headY - 7f, cx - 8f, headY - 13.5f, cx, headY - 13.5f)
+            close()
+        }.scaled(u)
+        drawPath(face, accent.copy(alpha = 0.14f), style = Stroke(3f * u))
+        drawPath(face, Brush.radialGradient(listOf(c.skin.lighter(0.08f), c.skin, c.skin.darker(0.82f)), center = p(cx - 2f, headY - 3f), radius = 15f * u))
+        // mejillas
+        for (side in listOf(-1f, 1f)) drawCircle(Color(0x33FF6F91), 2.2f * u, p(cx + side * 6.2f, headY + 4.6f))
+        // ojos: esclera, iris, pupila y brillo
         for (side in listOf(-1f, 1f)) {
-            drawOval(Color.White.copy(alpha = 0.9f), p(cx + side * 4.2f - 2.2f, headY - 0.6f), Size(4.4f * u, 2.6f * u))
-            drawCircle(c.eyes, 1.25f * u, p(cx + side * 4.2f, headY + 0.7f))
-            drawCircle(c.eyes.copy(alpha = 0.35f), 2.2f * u, p(cx + side * 4.2f, headY + 0.7f))
+            val ex = cx + side * 4.6f
+            val ey = headY + 0.6f
+            drawOval(Color.White.copy(alpha = 0.95f), p(ex - 2.6f, ey - 1.6f), Size(5.2f * u, 3.4f * u))
+            drawCircle(c.eyes.copy(alpha = 0.35f), 2.4f * u, p(ex, ey + 0.1f))
+            drawCircle(c.eyes, 1.55f * u, p(ex, ey + 0.1f))
+            drawCircle(Color(0xFF0A0C12), 0.75f * u, p(ex, ey + 0.1f))
+            drawCircle(Color.White, 0.45f * u, p(ex - 0.6f, ey - 0.6f))
+            drawArc(c.skin.darker(0.45f), 200f, 140f, false, p(ex - 2.8f, ey - 2.2f), Size(5.6f * u, 3.4f * u), style = Stroke(0.55f * u))
+            // ceja
+            drawLine(c.hair.darker(0.85f), p(ex - side * 2.6f, ey - 3.6f), p(ex + side * 2.4f, ey - 4.2f), 0.9f * u, cap = StrokeCap.Round)
         }
-        drawArc(c.skin.darker(0.55f), 20f, 140f, false, p(cx - 2.6f, headY + 4.5f), Size(5.2f * u, 2.6f * u), style = Stroke(0.7f * u, cap = StrokeCap.Round))
+        // nariz y labios
+        drawLine(c.skin.darker(0.7f), p(cx + 0.3f, headY + 2.2f), p(cx - 0.6f, headY + 5.2f), 0.6f * u, cap = StrokeCap.Round)
+        drawArc(Color(0xFFB0626B), 20f, 140f, false, p(cx - 2.4f, headY + 6.6f), Size(4.8f * u, 2.2f * u), style = Stroke(0.9f * u, cap = StrokeCap.Round))
 
         // ---- pelo frontal / casco
         when (a.hair) {
@@ -288,6 +336,9 @@ private fun DrawScope.drawFigure(a: Appearance, c: FigureColors, status: String,
                     quadraticTo(cx - 8f, headY - 8f, cx - 11.5f, headY + 2f); close()
                 }.scaled(u)
                 drawPath(cap, Brush.verticalGradient(listOf(c.hair.lighter(0.25f), c.hair), startY = (headY - 16) * u, endY = (headY + 2) * u))
+                // brillo del pelo
+                drawArc(c.hair.lighter(0.55f).copy(alpha = 0.55f), 205f, 70f, false, p(cx - 9f, headY - 14f), Size(14f * u, 10f * u),
+                    style = Stroke(1.1f * u, cap = StrokeCap.Round))
                 if (a.hair == "asymmetric") {
                     drawPath(Path().apply {
                         moveTo(cx + 4f, headY - 10f); quadraticTo(cx - 9f, headY - 6f, cx - 12.5f, headY + 12f)
