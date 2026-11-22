@@ -248,7 +248,7 @@ class LocalBackendTest {
         assertEquals(true, detail.review["approved"]?.jsonPrimitive?.content?.toBoolean())
         // la segunda tarea recibió el resultado de la primera
         assertTrue(prompts.any { "Insumos de tareas previas" in it && "Entrega de la tarea lista." in it })
-        assertTrue(api.notifications().any { it.eventType == "mission_completed" })
+        waitFor { api.notifications().any { it.eventType == "mission_completed" } }
 
         val agents = api.agents()
         val meeting = api.createMeeting(MeetingCreate("Lanzamiento", "Definir el plan", "brainstorm",
