@@ -135,7 +135,7 @@ private fun AgentCard(agent: AgentDto, onOpen: () -> Unit, onChat: () -> Unit, o
                 Modifier.width(110.dp).height(190.dp).clip(RoundedCornerShape(12.dp))
                     .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.10f), NexusColors.Background.copy(alpha = 0.6f)))),
             ) {
-                AgentFigure(agent.profile.appearance, agent.status, Modifier.fillMaxSize())
+                AgentFigure(agent.profile.appearance, agent.status, Modifier.fillMaxSize(), animated = false)
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

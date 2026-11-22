@@ -5,11 +5,35 @@ objetivos, los planifican como grafos de tareas, trabajan en paralelo en el serv
 teléfono esté cerrado), se revisan entre ellos, conservan memoria y reportan al usuario. La app
 Android es el centro de control.
 
-| Dashboard (tablet) | Editor de personaje | Galería de personajes |
-|---|---|---|
-| ![](docs/screenshots/20_dashboard_tablet.png) | ![](docs/screenshots/05_character_editor_personality.png) | ![](docs/screenshots/07_character_gallery.png) |
+| Home 2.0 | WhatsApp con vista previa | Personajes 3D | Command center (tablet) |
+|---|---|---|---|
+| ![](docs/screenshots/v2_01_home.png) | ![](docs/screenshots/v2_03_whatsapp_preview.png) | ![](docs/screenshots/v2_11_characters_3d.png) | ![](docs/screenshots/v2_20_home_tablet.png) |
 
 > Las capturas son renders reales de la app (Robolectric) contra respuestas reales exportadas del backend.
+
+## Novedades de la 2.0 — JARVIS EVOLUTION
+
+- **JARVIS CORE**: NEXUS entiende pedidos en español rioplatense, distingue acciones directas («poneme una alarma a
+  las 7», «abrí Spotify») de preguntas o tareas que necesitan un modelo, pide lo que falta, responde con el largo
+  justo y muestra su estado real (escuchando, pensando, ejecutando, esperando confirmación…). Cada respuesta tiene
+  su traza de etapas.
+- **Voz**:
+  - reconocimiento y voz en el teléfono;
+  - interrumpir a NEXUS mientras habla (barge-in);
+  - conversación continua;
+  - palabra de activación local opcional, con consentimiento y notificación visible.
+- **WhatsApp**: «mandale a papá que llego tarde» → contacto (sin subir tu agenda) → número normalizado → vista
+  previa obligatoria → se abre WhatsApp con el texto. NEXUS nunca dice que lo envió: el envío lo confirmás vos. Opcional:
+  WhatsApp Business Platform oficial.
+- **Control del teléfono** con intents oficiales y un registro de acciones con clases de riesgo: lo externo, sensible
+  o irreversible siempre pide confirmación, y el resultado lo informa el teléfono (no se supone).
+- **Rutinas** programadas, por fecha o por evento, con límites y sin bucles; **STOP ALL** también las detiene.
+- **Memoria con privacidad** por categorías y **calidad medida** de cada modelo, que alimenta al router.
+- **Interfaz**: estética holográfica de command center (cian sobre azul profundo) y personajes en 3D real (malla
+  iluminada, se gira con el dedo).
+
+Guías 2.0: [permisos de Android](docs/setup/PERMISSIONS.md) · [WhatsApp](docs/setup/WHATSAPP.md) ·
+[auditoría de partida](docs/AUDIT_2.0.md) · [rendimiento](docs/PERFORMANCE_2.0.md)
 
 ## Qué incluye
 
@@ -49,7 +73,7 @@ cd nexus-ai
 docker compose up --build                # API en http://localhost:8000 (docs en /docs)
 ```
 
-App: instalá `NEXUS-AI-debug.apk` (permite HTTP local) o la release (exige HTTPS), creá tu cuenta con la URL
+App: instalá `NEXUS-AI-2.0.0-debug.apk` (permite HTTP local) o la release (exige HTTPS), creá tu cuenta con la URL
 del servidor y configurá un proveedor en **Ajustes › Proveedores de IA**. Sin proveedor configurado los
 agentes no trabajan: la app lo muestra explícitamente en lugar de simular respuestas.
 

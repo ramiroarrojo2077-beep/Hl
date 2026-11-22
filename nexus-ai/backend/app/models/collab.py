@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, CreatedAt, Timestamps, uuid_pk
@@ -40,6 +40,9 @@ class AgentMessage(Base, CreatedAt):
         Index("ix_agent_messages_user", "user_id"),
     )
 
+    # clock_timestamp(): hora real de cada INSERT. Con now() el mensaje del usuario y la respuesta guardados en la
+    # misma transacción compartían marca de tiempo y el historial podía mostrarlos en orden invertido.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.clock_timestamp(), nullable=False)
     id: Mapped[uuid.UUID] = uuid_pk()
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     channel: Mapped[str] = mapped_column(String(20), nullable=False)

@@ -1,18 +1,18 @@
 [
  {
-  "id": "8bfd61d2-4136-435c-aac0-18bb249c6a1f",
-  "project_id": "6c4b83af-a09a-4375-80ca-7bcb05617ab2",
+  "id": "822688cf-6b5a-4bc3-abc9-277d1572627d",
+  "project_id": "43dc2f80-c26a-41db-a82f-ac9dba752544",
   "path": "drafts/arquitectura.md",
   "version": 1,
   "is_latest": true,
   "content_type": "text/markdown",
   "size_bytes": 41,
   "sha256": "2126026c0a45b8d80871c4c76df45876eb4c0c4ec6bfbde4fcf07c40f67b342b",
-  "created_by_agent_id": "0d4c0cb8-edcd-4b8e-8f7b-61ec9cb49d46",
-  "mission_id": "552977ba-88ad-494e-8e73-4e315079f452",
+  "created_by_agent_id": "1da400b8-a6af-40de-99fa-44d85c07ecc9",
+  "mission_id": "86338dee-d698-45d8-a87e-b63798e48878",
   "change_note": "Borrador generado por agente",
   "indexed": false,
   "index_error": null,
-  "created_at": "2026-11-21T18:30:58.490558Z"
+  "created_at": "2026-11-22T00:09:13.477970Z"
  }
 ]

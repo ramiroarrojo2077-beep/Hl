@@ -39,6 +39,19 @@ class Characters3DTest {
     @get:Rule val compose = createComposeRule()
     private val agents = NexusJson.decodeFromString(ListSerializer(AgentDto.serializer()), fixture("agents"))
 
+    @Test fun renderCostIsMeasured() {
+        val mesh = Character3D.build(agents.first().profile.appearance)
+        val bmp = android.graphics.Bitmap.createBitmap(540, 960, android.graphics.Bitmap.Config.ARGB_8888)
+        val r = ai.nexus.app.core.three.Renderer3D()
+        repeat(5) { r.render(mesh, bmp, ai.nexus.app.core.three.Camera(yaw = it * 0.1f, distance = 4.3f, targetY = 0.93f, fov = 1.9f)) }
+        val n = 30
+        val t0 = System.nanoTime()
+        repeat(n) { r.render(mesh, bmp, ai.nexus.app.core.three.Camera(yaw = it * 0.05f, distance = 4.3f, targetY = 0.93f, fov = 1.9f)) }
+        val ms = (System.nanoTime() - t0) / 1e6 / n
+        println("RENDER3D triangles=${mesh.triangles} vertices=${mesh.vCount} bitmap=540x960 avg_ms=${"%.2f".format(ms)}")
+        assertTrue("render de referencia en JVM < 60 ms", ms < 60)
+    }
+
     @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
     @Test fun teamRendersAs3DCharacters() {
         agents.forEach { a ->

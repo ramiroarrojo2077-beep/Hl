@@ -19,8 +19,8 @@ habilitarlo**. Las capacidades y la calidad se sugieren por nombre y se revisan 
 ## Modelos
 
 Para cada modelo: capacidades (`chat`, `tools`, `reasoning`, `code`, `vision`, `long_context`, `embedding`,
-`web_search`), calidad 1-5, ventana de contexto, precio por millón de tokens de entrada/salida, predeterminado y
-predeterminado para embeddings.
+`web_search`, y desde la 2.0 `stt` y `tts` para voz en el servidor), calidad 1-5, ventana de contexto, precio por
+millón de tokens de entrada/salida, predeterminado y predeterminado para embeddings.
 
 - **Router**: filtra por capacidades obligatorias (p. ej. `tools` si el agente usa herramientas) y contexto suficiente,
   exige una calidad mínima según el tipo de tarea (investigación/código/análisis/seguridad: 4; redacción/diseño: 3;
@@ -31,6 +31,19 @@ predeterminado para embeddings.
 - **Asignación por agente**: Agente › Modelos (el primero es el principal).
 - **Comparación** (Ajustes › Comparación de modelos): mismos casos sobre varios modelos; mide latencia, tokens, costo y
   errores, y un juez a ciegas puntúa calidad, precisión y cumplimiento de instrucciones sin premiar la longitud.
+- **Calidad medida (2.0)**: se puntúa cada modelo por tipo de tarea en siete criterios (0-10): precisión,
+  completitud, cumplimiento de instrucciones, coherencia, verificabilidad, formato y errores. Nunca se premia la
+  longitud. Fuentes reales:
+  - comprobaciones objetivas de cada ejecución (respuesta vacía, errores de herramientas, JSON inválido, citas en
+    investigación);
+  - la revisión de ORACLE en las misiones;
+  - tu 👍/👎;
+  - el comparador de modelos.
+
+  Con 3 o más muestras en los últimos 30 días, el router suma o resta hasta 8 puntos al ranking del modelo para ese
+  tipo de tarea, y lo deja anotado en el motivo de la elección. Consulta: `GET /api/v1/quality`.
+- **Voz en el servidor (opcional)**: un modelo con capacidad `stt` habilita «Transcripción: Servidor NEXUS» y uno con
+  `tts` la síntesis remota. Sin ellos la app usa el reconocimiento y la voz del teléfono, y lo indica.
 
 ## Presupuestos
 

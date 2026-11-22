@@ -18,9 +18,31 @@ Códigos usados: 400 validación de dominio, 401 sesión, 402 presupuesto, 403 p
 
 Eventos: `agent.status`, `agent.updated`, `mission.updated`, `task.updated`, `message.created`, `chat.delta` (streaming), `meeting.updated`, `activity.created`, `notification.created`, `approval.created`, `system.emergency_stop`.
 
+Eventos 2.0: `jarvis.state` (estado real del asistente: `idle`, `listening`, `thinking`, `executing`, `waiting_confirmation`, `collaborating`, `error`, con `entity` cuando aplica), `voice.state`, `action.updated` (ciclo de vida de una acción), `automation.updated`, `automation.run`, `whatsapp.business.status` (estados recibidos por webhook firmado). Cada evento tiene `id` único: la app descarta los repetidos tras una reconexión.
+
+
+## Módulos 2.0 (resumen)
+
+- **JARVIS** (`/jarvis/*`): `POST /jarvis/message` recibe `{text, conversation_id?, source: "text"|"voice"}` y
+  recorre las etapas del pipeline (entrada → intención → contexto → memoria → plan → herramientas/modelo →
+  verificación → respuesta → acción → aprendizaje); cada etapa queda en la traza
+  (`GET /jarvis/messages/{id}/trace`). `POST /jarvis/intent` clasifica sin ejecutar nada. `DELETE /jarvis/history`
+  exige `?confirm=true`.
+- **Acciones** (`/actions/*`): catálogo con clase de riesgo (`READ_ONLY`, `LOCAL_REVERSIBLE`,
+  `EXTERNAL_COMMUNICATION`, `SENSITIVE`, `IRREVERSIBLE`). Las de comunicación externa, sensibles e irreversibles
+  quedan en `awaiting_confirmation` hasta `POST /actions/{id}/confirm`. Las acciones del teléfono las ejecuta la app
+  y su resultado real llega por `POST /actions/{id}/report`; las del servidor se verifican releyendo el estado.
+- **Rutinas** (`/automations/*`): disparadores `schedule` (cron, mínimo 15 min), `date` y `event`; límites por
+  día, totales, enfriamiento y tope horario; una rutina no puede dispararse con eventos que ella misma generó.
+- **WhatsApp** (`/integrations/whatsapp/*`): ver [docs/setup/WHATSAPP.md](../setup/WHATSAPP.md). `normalize` y
+  `prepare` nunca envían nada; el webhook de Business valida `X-Hub-Signature-256`.
+- **Voz** (`/voice/*`): ajustes por usuario; `transcriptions` y `synthesis` solo funcionan con un modelo con
+  capacidad `stt`/`tts` configurado (si no, `400 no_stt_model` / `no_tts_model`; la app usa entonces el reconocimiento y la voz del teléfono).
+- **Calidad** (`GET /quality`): puntajes medidos por modelo y tipo de tarea que usa el router.
+- **Privacidad** (`GET /memory/privacy`): categorías de memoria, conteos y estado de cada una.
+- **Diagnóstico** (`/diagnostics/crash`): reportes de fallos solo con consentimiento; se filtran datos personales.
+
 ## Endpoints
-
-
 ### auth
 
 | Método | Ruta | Descripción |
@@ -84,6 +106,8 @@ Eventos: `agent.status`, `agent.updated`, `mission.updated`, `task.updated`, `me
 |---|---|---|
 | GET | `/memory` | List Memory |
 | POST | `/memory` | Create |
+| POST | `/memory/bulk-delete` | Bulk Delete |
+| GET | `/memory/privacy` | Privacy |
 | POST | `/memory/search` | Search |
 | GET | `/memory/stats` | Stats |
 | DELETE | `/memory/{memory_id}` | Delete |
@@ -106,6 +130,7 @@ Eventos: `agent.status`, `agent.updated`, `mission.updated`, `task.updated`, `me
 | DELETE | `/providers/{provider_id}` | Delete Provider |
 | PATCH | `/providers/{provider_id}` | Update Provider |
 | POST | `/providers/{provider_id}/test` | Test Provider |
+| GET | `/quality` | Quality Summary |
 
 ### activity
 
@@ -164,4 +189,74 @@ Eventos: `agent.status`, `agent.updated`, `mission.updated`, `task.updated`, `me
 | GET | `/conversations/{conversation_id}/messages` | Messages |
 | POST | `/conversations/{conversation_id}/messages` | Send |
 
-Total: 93 operaciones. Además: `GET /health`, `GET /ready`, `GET /metrics`.
+### jarvis
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/jarvis/context` | Context |
+| DELETE | `/jarvis/history` | Delete History |
+| POST | `/jarvis/intent` | Intent |
+| POST | `/jarvis/message` | Message |
+| POST | `/jarvis/messages/{message_id}/feedback` | Feedback |
+| GET | `/jarvis/messages/{message_id}/trace` | Trace |
+| GET | `/jarvis/settings` | Get Jarvis Settings |
+| GET | `/jarvis/state` | State |
+| POST | `/jarvis/voice/session` | Voice Session |
+
+### actions
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/actions` | List Actions |
+| GET | `/actions/catalog` | Catalog |
+| POST | `/actions/execute` | Execute |
+| GET | `/actions/{action_id}` | Get Action |
+| POST | `/actions/{action_id}/cancel` | Cancel |
+| POST | `/actions/{action_id}/confirm` | Confirm |
+| POST | `/actions/{action_id}/report` | Report |
+
+### automations
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/automations` | List Automations |
+| POST | `/automations` | Create |
+| GET | `/automations/events` | Event Catalog |
+| DELETE | `/automations/{automation_id}` | Delete |
+| GET | `/automations/{automation_id}` | Get One |
+| PATCH | `/automations/{automation_id}` | Update |
+| POST | `/automations/{automation_id}/pause` | Pause |
+| POST | `/automations/{automation_id}/resume` | Resume |
+| POST | `/automations/{automation_id}/run` | Run Now |
+| GET | `/automations/{automation_id}/runs` | Runs |
+
+### whatsapp
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/integrations/whatsapp/business/status` | Business Status |
+| GET | `/integrations/whatsapp/business/webhook` | Webhook Verify |
+| POST | `/integrations/whatsapp/business/webhook` | Webhook Receive |
+| POST | `/integrations/whatsapp/contact/resolve` | Resolve Contact |
+| POST | `/integrations/whatsapp/draft` | Draft |
+| POST | `/integrations/whatsapp/normalize` | Normalize Number |
+| POST | `/integrations/whatsapp/prepare` | Prepare |
+| GET | `/integrations/whatsapp/status` | Wa Status |
+
+### voice
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/voice/settings` | Get Settings  |
+| PATCH | `/voice/settings` | Patch Settings |
+| POST | `/voice/synthesis` | Synthesis |
+| POST | `/voice/transcriptions` | Transcriptions |
+
+### diagnostics
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/diagnostics/crash` | List Crashes |
+| POST | `/diagnostics/crash` | Report Crash |
+
+Total: 136 operaciones. Además: `GET /health`, `GET /ready`, `GET /metrics`.

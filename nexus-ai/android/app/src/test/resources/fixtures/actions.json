@@ -1,6 +1,6 @@
 [
  {
-  "id": "aee76ff3-3afd-4da2-91a9-16bc54aaea57",
+  "id": "02749bb5-26c6-49ae-be13-6992d74af7f2",
   "action_key": "device.open_app",
   "name": "Abrir aplicación",
   "category": "phone_control",
@@ -17,14 +17,14 @@
   "result": {},
   "error": null,
   "source": "jarvis",
-  "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
-  "created_at": "2026-11-21T18:30:59.144603+00:00",
-  "confirmed_at": "2026-11-21T18:30:59.152725+00:00",
+  "conversation_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
+  "created_at": "2026-11-22T00:09:14.159057+00:00",
+  "confirmed_at": "2026-11-22T00:09:14.167716+00:00",
   "completed_at": null,
-  "expires_at": "2026-11-21T18:40:59.152725+00:00"
+  "expires_at": "2026-11-22T00:19:14.167716+00:00"
  },
  {
-  "id": "53dd5ec2-f736-4d17-b6ae-fb904291d022",
+  "id": "6148caf6-fe98-49a5-a355-4d0061703107",
   "action_key": "reminder.create",
   "name": "Crear recordatorio",
   "category": "productivity",
@@ -43,18 +43,18 @@
    "at": "2026-11-22T09:00:00-03:00",
    "state": "REMINDER_SCHEDULED",
    "verified": true,
-   "scheduled_job_id": "8e78161a-256b-49a1-bfa4-32f2d07842d7"
+   "scheduled_job_id": "e6c71313-f09c-47bf-b9b9-10ea16c4588c"
   },
   "error": null,
   "source": "jarvis",
-  "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
-  "created_at": "2026-11-21T18:30:59.122915+00:00",
-  "confirmed_at": "2026-11-21T18:30:59.132238+00:00",
-  "completed_at": "2026-11-21T18:30:59.136643+00:00",
+  "conversation_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
+  "created_at": "2026-11-22T00:09:14.131722+00:00",
+  "confirmed_at": "2026-11-22T00:09:14.143088+00:00",
+  "completed_at": "2026-11-22T00:09:14.149186+00:00",
   "expires_at": null
  },
  {
-  "id": "836d5132-a72c-44fc-b159-dccd6239d06e",
+  "id": "5af380ce-10ef-49dd-a2a4-fa5c8e6c771c",
   "action_key": "whatsapp.open_chat",
   "name": "Preparar WhatsApp",
   "category": "communication",
@@ -75,10 +75,10 @@
   },
   "error": null,
   "source": "jarvis",
-  "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
-  "created_at": "2026-11-21T18:30:59.095170+00:00",
-  "confirmed_at": "2026-11-21T18:30:59.556623+00:00",
-  "completed_at": "2026-11-21T18:30:59.563816+00:00",
-  "expires_at": "2026-11-21T18:40:59.556623+00:00"
+  "conversation_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
+  "created_at": "2026-11-22T00:09:14.103529+00:00",
+  "confirmed_at": "2026-11-22T00:09:14.669976+00:00",
+  "completed_at": "2026-11-22T00:09:14.682460+00:00",
+  "expires_at": "2026-11-22T00:19:14.669976+00:00"
  }
 ]

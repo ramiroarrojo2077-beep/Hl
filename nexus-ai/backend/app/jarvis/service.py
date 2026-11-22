@@ -25,7 +25,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.runtime import AgentInterrupted, record_message, run_agent, set_agent_status
@@ -660,7 +660,11 @@ async def jarvis_state(session: AsyncSession, user_id: uuid.UUID) -> dict[str, A
         ActionRequest.user_id == user_id, ActionRequest.status == "awaiting_confirmation", ActionRequest.expires_at > datetime.now(UTC)))
     pending_approvals = await session.scalar(select(func.count()).select_from(ApprovalRequest).where(ApprovalRequest.user_id == user_id, ApprovalRequest.status == "pending"))
     running_tasks = await session.scalar(select(func.count()).select_from(MissionTask).where(MissionTask.user_id == user_id, MissionTask.status == "running"))
-    executing_actions = await session.scalar(select(func.count()).select_from(ActionRequest).where(ActionRequest.user_id == user_id, ActionRequest.status.in_(["ready", "executing"])))
+    # Una acción del teléfono «ready» que venció (la app nunca reportó) no cuenta como ejecución en curso.
+    executing_actions = await session.scalar(select(func.count()).select_from(ActionRequest).where(
+        ActionRequest.user_id == user_id,
+        or_(ActionRequest.status == "executing",
+            and_(ActionRequest.status == "ready", or_(ActionRequest.expires_at.is_(None), ActionRequest.expires_at > datetime.now(UTC))))))
     collaborating = [a.slug for a in agents if a.slug != "nexus" and a.status == "collaborating"]
     working = [a.slug for a in agents if a.status in ("working", "thinking")]
     emergency = bool(settings and settings.emergency_stop)

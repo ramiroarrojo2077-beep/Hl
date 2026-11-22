@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,13 +79,17 @@ fun AgentFigure(
     showPlatform: Boolean = true,
     interactive: Boolean = false,
     baseYaw: Float = -0.35f,
+    animated: Boolean = true,
 ) {
-    val animate = LocalVisualPrefs.current.animations
+    val animate = LocalVisualPrefs.current.animations && animated
     val mesh = remember(appearance) { Character3D.mesh(appearance) }
     val target = remember { RenderTarget() }
     var dragYaw by remember { mutableFloatStateOf(0f) }
+    // Animación limitada a ~24 cuadros/s: el render 3D es por software y así se cuida la batería.
     val t = if (animate && !bustOnly) {
-        rememberInfiniteTransition(label = "figure3d").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "t").value
+        val raw = rememberInfiniteTransition(label = "figure3d").animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "t")
+        val frame by remember(raw) { derivedStateOf { (raw.value * 216).toInt() } }
+        frame / 216f
     } else 0.25f
     val accent = parseHex(appearance.accent, NexusColors.Cyan)
     val sColor = statusColor(status)

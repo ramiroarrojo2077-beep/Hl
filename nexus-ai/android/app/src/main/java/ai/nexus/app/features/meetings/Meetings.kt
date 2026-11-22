@@ -263,7 +263,7 @@ fun MeetingDetailScreen(id: String) {
                     m.participants.forEach { p ->
                         val agent = b.agents[p.agentId]
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (agent != null) AgentFigure(agent.profile.appearance, agent.status, Modifier.size(64.dp, 100.dp))
+                            if (agent != null) AgentFigure(agent.profile.appearance, agent.status, Modifier.size(64.dp, 100.dp), animated = false)
                             Text(p.name, style = MaterialTheme.typography.labelSmall, color = if (p.role == "moderator") NexusColors.Cyan else NexusColors.TextPrimary)
                             Text("${p.turnsTaken} interv.", style = MaterialTheme.typography.labelSmall, color = NexusColors.TextMuted)
                         }

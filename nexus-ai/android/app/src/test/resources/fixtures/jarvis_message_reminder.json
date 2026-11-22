@@ -1,5 +1,5 @@
 {
- "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+ "conversation_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
  "handled": "action",
  "intent": {
   "category": "productivity",
@@ -30,20 +30,20 @@
   {
    "stage": "input",
    "status": "done",
-   "ms": 2.81,
+   "ms": 3.74,
    "mode": "text",
    "source": "app"
   },
   {
    "stage": "understanding",
    "status": "done",
-   "ms": 1.28,
+   "ms": 1.43,
    "pending": false
   },
   {
    "stage": "intent",
    "status": "done",
-   "ms": 0.18,
+   "ms": 0.68,
    "category": "productivity",
    "rule": "reminder",
    "confidence": 0.94
@@ -51,20 +51,20 @@
   {
    "stage": "routing",
    "status": "done",
-   "ms": 0.86,
+   "ms": 1.12,
    "handler": "action",
    "specialists": []
   },
   {
    "stage": "permissions",
    "status": "completed",
-   "ms": 8.74,
+   "ms": 11.69,
    "requires_confirmation": false
   },
   {
    "stage": "execution",
    "status": "completed",
-   "ms": 0.0,
+   "ms": 0.01,
    "executor": "server"
   },
   {
@@ -76,14 +76,14 @@
   {
    "stage": "response",
    "status": "done",
-   "ms": 0.03,
+   "ms": 0.04,
    "kind": "template"
   }
  ],
  "user_message": {
-  "id": "8dfdbb2e-3247-468e-850e-d587ff6e1ac6",
+  "id": "2cc33f91-988b-4e86-b48e-cfb128c2bd97",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "user",
   "sender_agent_id": null,
   "message_type": "message",
@@ -101,20 +101,20 @@
     {
      "stage": "input",
      "status": "done",
-     "ms": 2.81,
+     "ms": 3.74,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 1.28,
+     "ms": 1.43,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.18,
+     "ms": 0.68,
      "category": "productivity",
      "rule": "reminder",
      "confidence": 0.94
@@ -122,20 +122,20 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 0.86,
+     "ms": 1.12,
      "handler": "action",
      "specialists": []
     },
     {
      "stage": "permissions",
      "status": "completed",
-     "ms": 8.74,
+     "ms": 11.69,
      "requires_confirmation": false
     },
     {
      "stage": "execution",
      "status": "completed",
-     "ms": 0.0,
+     "ms": 0.01,
      "executor": "server"
     },
     {
@@ -147,45 +147,45 @@
     {
      "stage": "response",
      "status": "done",
-     "ms": 0.03,
+     "ms": 0.04,
      "kind": "template"
     }
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T18:30:59.122915+00:00"
+  "created_at": "2026-11-22T00:09:14.139553+00:00"
  },
  "reply": {
-  "id": "dda447ac-394b-488a-8ddf-9869144706cd",
+  "id": "a4762f9c-0198-462f-a9ab-9094699bc167",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "agent",
-  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
+  "sender_agent_id": "8ed2d2f9-6dfa-4e54-9c3d-2ad35f9f5c9f",
   "message_type": "message",
   "content": "Listo, te lo recuerdo mañana a las 09:00: «Llamar al médico».",
   "meta": {
-   "reply_to": "8dfdbb2e-3247-468e-850e-d587ff6e1ac6",
+   "reply_to": "2cc33f91-988b-4e86-b48e-cfb128c2bd97",
    "category": "productivity",
    "kind": "action_proposal",
-   "action_id": "53dd5ec2-f736-4d17-b6ae-fb904291d022",
+   "action_id": "6148caf6-fe98-49a5-a355-4d0061703107",
    "pipeline": [
     {
      "stage": "input",
      "status": "done",
-     "ms": 2.81,
+     "ms": 3.74,
      "mode": "text",
      "source": "app"
     },
     {
      "stage": "understanding",
      "status": "done",
-     "ms": 1.28,
+     "ms": 1.43,
      "pending": false
     },
     {
      "stage": "intent",
      "status": "done",
-     "ms": 0.18,
+     "ms": 0.68,
      "category": "productivity",
      "rule": "reminder",
      "confidence": 0.94
@@ -193,20 +193,20 @@
     {
      "stage": "routing",
      "status": "done",
-     "ms": 0.86,
+     "ms": 1.12,
      "handler": "action",
      "specialists": []
     },
     {
      "stage": "permissions",
      "status": "completed",
-     "ms": 8.74,
+     "ms": 11.69,
      "requires_confirmation": false
     },
     {
      "stage": "execution",
      "status": "completed",
-     "ms": 0.0,
+     "ms": 0.01,
      "executor": "server"
     },
     {
@@ -218,16 +218,16 @@
     {
      "stage": "response",
      "status": "done",
-     "ms": 0.03,
+     "ms": 0.04,
      "kind": "template"
     }
    ]
   },
   "model_used": null,
-  "created_at": "2026-11-21T18:30:59.122915+00:00"
+  "created_at": "2026-11-22T00:09:14.152361+00:00"
  },
  "action": {
-  "id": "53dd5ec2-f736-4d17-b6ae-fb904291d022",
+  "id": "6148caf6-fe98-49a5-a355-4d0061703107",
   "action_key": "reminder.create",
   "name": "Crear recordatorio",
   "category": "productivity",
@@ -245,15 +245,15 @@
   "result": {
    "verified": true,
    "state": "REMINDER_SCHEDULED",
-   "scheduled_job_id": "8e78161a-256b-49a1-bfa4-32f2d07842d7",
+   "scheduled_job_id": "e6c71313-f09c-47bf-b9b9-10ea16c4588c",
    "at": "2026-11-22T09:00:00-03:00"
   },
   "error": null,
   "source": "jarvis",
-  "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
-  "created_at": "2026-11-21T18:30:59.122915+00:00",
-  "confirmed_at": "2026-11-21T18:30:59.132238+00:00",
-  "completed_at": "2026-11-21T18:30:59.136643+00:00",
+  "conversation_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
+  "created_at": "2026-11-22T00:09:14.131722+00:00",
+  "confirmed_at": "2026-11-22T00:09:14.143088+00:00",
+  "completed_at": "2026-11-22T00:09:14.149186+00:00",
   "expires_at": null,
   "device_params": {
    "title": "Llamar al médico",

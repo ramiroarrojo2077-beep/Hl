@@ -1,5 +1,5 @@
 {
- "conversation_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+ "conversation_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
  "handled": "control",
  "control": "stop",
  "intent": {
@@ -28,20 +28,20 @@
   {
    "stage": "input",
    "status": "done",
-   "ms": 3.4,
+   "ms": 3.79,
    "mode": "text",
    "source": "app"
   },
   {
    "stage": "understanding",
    "status": "done",
-   "ms": 0.97,
+   "ms": 1.35,
    "pending": false
   },
   {
    "stage": "intent",
    "status": "done",
-   "ms": 0.03,
+   "ms": 0.04,
    "category": "conversation",
    "rule": "control.stop",
    "confidence": 0.99
@@ -49,7 +49,7 @@
   {
    "stage": "routing",
    "status": "done",
-   "ms": 5.74,
+   "ms": 9.61,
    "handler": "control"
   }
  ],

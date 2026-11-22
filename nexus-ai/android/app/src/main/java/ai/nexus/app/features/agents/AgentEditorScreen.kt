@@ -500,7 +500,7 @@ private fun OptionPreviews(options: List<String>, selected: String, preview: (St
                     .border(1.dp, if (active) NexusColors.Cyan else Color(0x22FFFFFF), RoundedCornerShape(10.dp)).clickable { onSelect(opt) }.padding(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                AgentFigure(preview(opt), status, Modifier.size(width = 64.dp, height = if (bust) 64.dp else 96.dp), bustOnly = bust, showPlatform = false)
+                AgentFigure(preview(opt), status, Modifier.size(width = 64.dp, height = if (bust) 64.dp else 96.dp), bustOnly = bust, showPlatform = false, animated = false)
                 Text(label(opt), style = MaterialTheme.typography.labelSmall, color = if (active) NexusColors.Cyan else NexusColors.TextSecondary, textAlign = TextAlign.Center)
             }
         }
@@ -529,7 +529,7 @@ private fun PresetGallery(catalog: PersonaCatalog, status: String, onPick: (Appe
                                 .clickable { onPick(appearance) }.padding(6.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            AgentFigure(appearance, status, Modifier.size(84.dp, 130.dp))
+                            AgentFigure(appearance, status, Modifier.size(84.dp, 130.dp), animated = false)
                             Text(name.uppercase(), style = MaterialTheme.typography.labelSmall, color = parseHex(appearance.accent))
                         }
                     }

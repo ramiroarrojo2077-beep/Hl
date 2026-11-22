@@ -18,6 +18,12 @@ docker compose up --build
 Servicios: `postgres` (pgvector), `redis`, `migrate` (aplica Alembic y termina), `api` (puerto 8000, documentación
 interactiva en `/docs`) y `worker`. Escalar workers: `docker compose up --scale worker=3`.
 
+### Actualizar desde NEXUS AI 1.0
+
+La 2.0 agrega las migraciones `0004` (JARVIS CORE: acciones, rutinas, voz, WhatsApp Business, puntajes de calidad,
+reportes de fallos, categorías de memoria) y `0005` (orden estable de los mensajes). El servicio `migrate` las aplica
+solo; sin Docker: `cd backend && .venv/bin/alembic upgrade head`. No borran datos: todo lo nuevo es aditivo.
+
 ## Desarrollo sin Docker
 
 ```bash
@@ -125,3 +131,9 @@ cambiar desde la pantalla de inicio de sesión y en Ajustes › Conexión).
 | `NEXUS_MEMORY_TOP_K` | 6 | recuerdos por ejecución |
 | `NEXUS_SANDBOX_*` | enabled, 60 s, 512 MB | sandbox de código |
 | `NEXUS_FCM_SERVICE_ACCOUNT_FILE` | — | push FCM |
+| `NEXUS_WHATSAPP_BUSINESS_TOKEN`, `NEXUS_WHATSAPP_PHONE_NUMBER_ID` | — | WhatsApp Business Platform (opcional, ver [WHATSAPP.md](WHATSAPP.md)) |
+| `NEXUS_WHATSAPP_APP_SECRET`, `NEXUS_WHATSAPP_VERIFY_TOKEN` | — | firma y verificación del webhook de Business |
+| `NEXUS_WHATSAPP_BUSINESS_OWNER_EMAIL` | — | usuario de NEXUS titular de la cuenta Business |
+| `NEXUS_WHATSAPP_GRAPH_VERSION` | v21.0 | versión de la Graph API de Meta |
+
+Permisos de la app y qué hace NEXUS con cada uno: [PERMISSIONS.md](PERMISSIONS.md).

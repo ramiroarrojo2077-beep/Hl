@@ -1,6 +1,7 @@
 package ai.nexus.app.navigation
 
 import ai.nexus.app.AppContainer
+import ai.nexus.app.core.design.HudSnackbarHost
 import ai.nexus.app.core.design.ConfirmDialog
 import ai.nexus.app.core.design.HudBackground
 import ai.nexus.app.core.design.NexusColors
@@ -94,7 +95,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
@@ -274,7 +274,6 @@ private fun Shell(initialRoute: String?, onRouteConsumed: () -> Unit) {
                     if (wide) SideNav(current, shellState, Modifier.width(250.dp).fillMaxHeight()) { goTop(it) }
                     Scaffold(
                         containerColor = Color.Transparent,
-                        snackbarHost = { SnackbarHost(snackbar) },
                         topBar = {
                             TopBar(
                                 connection = connection, state = shellState, showMenu = !wide,
@@ -284,7 +283,10 @@ private fun Shell(initialRoute: String?, onRouteConsumed: () -> Unit) {
                         },
                         bottomBar = { if (!wide) BottomNav(current) { goTop(it) } },
                     ) { padding ->
-                        Box(Modifier.padding(padding)) { NexusNavHost(nav) }
+                        Box(Modifier.padding(padding)) {
+                            NexusNavHost(nav)
+                            HudSnackbarHost(snackbar, Modifier.align(Alignment.TopCenter))
+                        }
                     }
                 }
             }

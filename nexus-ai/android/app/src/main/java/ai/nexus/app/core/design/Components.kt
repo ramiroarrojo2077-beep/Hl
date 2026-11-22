@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.AlertDialog
@@ -489,5 +490,33 @@ fun NexusEmblem(size: Dp = 34.dp, color: Color = NexusColors.Cyan, online: Boole
             style = Stroke(1.5f.dp.toPx(), cap = StrokeCap.Round))
         drawCircle(if (online) Color.White else NexusColors.TextMuted, r * 0.28f, c)
         drawCircle(color.copy(alpha = 0.7f), r * 0.36f, c, style = Stroke(1.dp.toPx()))
+    }
+}
+
+/**
+ * Avisos breves con el estilo HUD. Se muestran arriba (debajo de la barra superior) para no tapar
+ * nunca la entrada de texto, el micrófono ni la navegación inferior.
+ */
+@Composable
+fun HudSnackbarHost(state: androidx.compose.material3.SnackbarHostState, modifier: Modifier = Modifier) {
+    androidx.compose.material3.SnackbarHost(state, modifier) { data ->
+        Row(
+            Modifier.padding(horizontal = 14.dp, vertical = 8.dp).fillMaxWidth()
+                .clip(PanelShape)
+                .background(Brush.verticalGradient(listOf(NexusColors.SurfaceHigh, NexusColors.Surface)))
+                .border(1.dp, NexusColors.Cyan.copy(alpha = 0.7f), PanelShape)
+                .padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(NexusColors.Cyan))
+            Spacer(Modifier.width(10.dp))
+            Text(data.visuals.message, style = MaterialTheme.typography.bodyMedium, color = NexusColors.TextPrimary, modifier = Modifier.weight(1f))
+            data.visuals.actionLabel?.let { label ->
+                TextButton(onClick = { data.performAction() }) { Text(label.uppercase(), color = NexusColors.Cyan, style = MaterialTheme.typography.labelLarge) }
+            }
+            androidx.compose.material3.IconButton(onClick = { data.dismiss() }, modifier = Modifier.size(44.dp)) {
+                Icon(androidx.compose.material.icons.Icons.Outlined.Close, "Cerrar aviso", tint = NexusColors.TextSecondary, modifier = Modifier.size(18.dp))
+            }
+        }
     }
 }

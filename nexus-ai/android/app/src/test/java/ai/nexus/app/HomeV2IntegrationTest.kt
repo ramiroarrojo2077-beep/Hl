@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -66,6 +68,19 @@ class HomeV2IntegrationTest {
     private lateinit var server: MockWebServer
     private val requests = CopyOnWriteArrayList<String>()
     private val bodies = CopyOnWriteArrayList<Pair<String, String>>()
+    @Volatile private var socket: WebSocket? = null
+
+    /** Como el backend real: la respuesta del modelo llega por streaming (chat.delta) y luego message.created. */
+    private fun streamModelReply(conv: String, text: String) = Thread {
+        Thread.sleep(150)
+        val ws = socket ?: return@Thread
+        text.chunked(12).forEachIndexed { i, part ->
+            ws.send(JSONObject().put("id", "delta-${java.util.UUID.randomUUID()}").put("type", "chat.delta").put("ts", "2026-11-22T00:00:00Z")
+                .put("data", JSONObject().put("conversation_id", conv).put("delta", part)).toString())
+        }
+        ws.send(JSONObject().put("id", "created-${java.util.UUID.randomUUID()}").put("type", "message.created").put("ts", "2026-11-22T00:00:01Z")
+            .put("data", JSONObject().put("channel", "chat").put("channel_id", conv).put("sender_type", "agent")).toString())
+    }.start()
     private val jarvisConv = JSONObject(fixture("jarvis_context")).getString("conversation_id")
     private val waAction = JSONObject(fixture("jarvis_message_whatsapp")).getJSONObject("action")
 
@@ -90,7 +105,7 @@ class HomeV2IntegrationTest {
                 if (body.isNotEmpty()) bodies += path to body
                 if (path == "/api/v1/ws") return MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
                     override fun onMessage(webSocket: WebSocket, text: String) {
-                        if (text.contains("\"auth\"")) webSocket.send("""{"type":"ready","user_id":"u"}""")
+                        if (text.contains("\"auth\"")) { socket = webSocket; webSocket.send("""{"type":"ready","user_id":"u"}""") }
                     }
                     override fun onOpen(webSocket: WebSocket, response: Response) = Unit
                 })
@@ -101,7 +116,7 @@ class HomeV2IntegrationTest {
                         body.contains("Recordame") -> "jarvis_message_reminder"
                         body.contains("Spotify") -> "jarvis_message_open_app"
                         body.contains("Pará") -> "jarvis_message_control"
-                        else -> "jarvis_message_model"
+                        else -> { streamModelReply(jarvisConv, "Canberra es la capital de Australia."); "jarvis_message_model" }
                     }
                     request.method == "POST" && path == "/api/v1/actions/execute" ->
                         return json(JSONObject(waAction.toString()).put("id", "11111111-2222-3333-4444-555555555555").put("status", "awaiting_confirmation").toString())
@@ -179,7 +194,7 @@ class HomeV2IntegrationTest {
     @Test fun homeWhatsappActionsMoreAndVoiceSettings() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             // Home 2.0: zonas A-E con datos reales (mensaje contextual derivado del backend)
-            waitForText("Buenas tardes, Ana.")
+            waitForText(homeHeadline)
             waitForText("Enviar WhatsApp")
             waitForText("Recordatorio")
             compose.onAllNodes(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription, listOf("Núcleo de NEXUS")))
@@ -267,14 +282,26 @@ class HomeV2IntegrationTest {
 
     @Test fun directActionOpensAppAndModelReplyShows() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            waitForText("Buenas tardes, Ana.")
+            waitForText(homeHeadline)
             say("Abrí Spotify")
             waitForRequest("/report")
             // Spotify no está instalado en el entorno de prueba: se informa APP_NOT_FOUND, no un éxito inventado.
             assertTrue(bodies.first { it.first.endsWith("/report") }.second.contains("APP_NOT_FOUND"))
             waitForText("No encontré una app instalada llamada «Spotify»")
+            val reloadsBefore = requests.count { it == "GET /api/v1/conversations/$jarvisConv/messages" }
             say("¿Cuál es la capital de Australia?")
+            // La pregunta tiene que llegar al servidor (el aviso anterior no puede tapar el botón Enviar).
+            compose.waitUntil(10_000) { compose.onAllNodes(isRoot()).fetchSemanticsNodes()
+                bodies.any { it.first == "/api/v1/jarvis/message" && it.second.contains("Australia") } }
+            // La respuesta llega por streaming y al terminar se recarga la conversación.
+            compose.waitUntil(10_000) { compose.onAllNodes(isRoot()).fetchSemanticsNodes()
+                requests.count { it == "GET /api/v1/conversations/$jarvisConv/messages" } > reloadsBefore }
             waitForText("Canberra es la capital de Australia.")
+            // Tras enviar, el campo queda vacío y la respuesta nueva se ve en pantalla (no solo existe en el árbol).
+            val field = compose.onAllNodes(hasSetTextAction()).onFirst().fetchSemanticsNode()
+            assertEquals("", field.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.EditableText) { null }?.text.orEmpty())
+            compose.waitForIdle()
+            compose.onAllNodes(hasText("Canberra es la capital de Australia.")).onLast().assertIsDisplayed()
             shot("v2_09_home_conversation")
         }
     }

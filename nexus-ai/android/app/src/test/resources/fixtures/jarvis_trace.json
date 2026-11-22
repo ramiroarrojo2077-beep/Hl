@@ -1,5 +1,5 @@
 {
- "message_id": "4b10ac00-6fd2-46f6-9330-67557d97dbb1",
+ "message_id": "107e3234-d47f-4e72-9759-78f336b5f53d",
  "intent": {
   "rule": "model.information",
   "category": "information",
@@ -14,20 +14,20 @@
  },
  "pipeline": [
   {
-   "ms": 2.93,
+   "ms": 2.61,
    "mode": "text",
    "stage": "input",
    "source": "app",
    "status": "done"
   },
   {
-   "ms": 1.03,
+   "ms": 0.85,
    "stage": "understanding",
    "status": "done",
    "pending": false
   },
   {
-   "ms": 0.09,
+   "ms": 0.35,
    "rule": "model.information",
    "stage": "intent",
    "status": "done",
@@ -35,21 +35,21 @@
    "confidence": 0.65
   },
   {
-   "ms": 0.92,
+   "ms": 0.94,
    "stage": "routing",
    "status": "done",
    "handler": "model",
    "specialists": []
   },
   {
-   "ms": 1.39,
+   "ms": 1.38,
    "kind": "model",
    "stage": "execution",
    "status": "queued"
   }
  ],
  "reply": {
-  "id": "4f35ef45-895a-44cb-9967-e1cd714475a0",
+  "id": "cdf6728d-7fac-411d-a0b9-b033e5621d95",
   "model": "anthropic:claude-test-opus",
   "tools_used": [],
   "consulted_agents": [],

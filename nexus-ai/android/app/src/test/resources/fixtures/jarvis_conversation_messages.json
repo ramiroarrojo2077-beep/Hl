@@ -1,8 +1,8 @@
 [
  {
-  "id": "89db070e-4032-4aca-970e-6cf7f86f33cd",
+  "id": "327d0ed2-56e7-4782-a746-d1a7bf740ffa",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "user",
   "sender_agent_id": null,
   "recipient_agent_id": null,
@@ -17,20 +17,20 @@
    "source": "app",
    "pipeline": [
     {
-     "ms": 12.23,
+     "ms": 10.23,
      "mode": "text",
      "stage": "input",
      "source": "app",
      "status": "done"
     },
     {
-     "ms": 1.74,
+     "ms": 1.62,
      "stage": "understanding",
      "status": "done",
      "pending": false
     },
     {
-     "ms": 0.08,
+     "ms": 0.64,
      "rule": "whatsapp",
      "stage": "intent",
      "status": "done",
@@ -38,20 +38,20 @@
      "confidence": 0.93
     },
     {
-     "ms": 0.95,
+     "ms": 1.04,
      "stage": "routing",
      "status": "done",
      "handler": "action",
      "specialists": []
     },
     {
-     "ms": 4.29,
+     "ms": 5.52,
      "stage": "permissions",
      "status": "awaiting_confirmation",
      "requires_confirmation": true
     },
     {
-     "ms": 0.0,
+     "ms": 0.01,
      "stage": "execution",
      "status": "awaiting_confirmation",
      "executor": "device"
@@ -68,14 +68,14 @@
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.095170Z"
+  "created_at": "2026-11-22T00:09:14.117911Z"
  },
  {
-  "id": "2bff3bff-44fb-429b-947c-62751f68a477",
+  "id": "da49f450-6f30-454d-8f35-8a2e19d4f1fb",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "agent",
-  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
+  "sender_agent_id": "8ed2d2f9-6dfa-4e54-9c3d-2ad35f9f5c9f",
   "recipient_agent_id": null,
   "message_type": "message",
   "content": "Te preparé el WhatsApp para papá. Revisá el destinatario y el texto; cuando confirmes abro WhatsApp con el mensaje listo. El envío lo hacés vos desde WhatsApp.",
@@ -84,20 +84,20 @@
    "category": "communication",
    "pipeline": [
     {
-     "ms": 12.23,
+     "ms": 10.23,
      "mode": "text",
      "stage": "input",
      "source": "app",
      "status": "done"
     },
     {
-     "ms": 1.74,
+     "ms": 1.62,
      "stage": "understanding",
      "status": "done",
      "pending": false
     },
     {
-     "ms": 0.08,
+     "ms": 0.64,
      "rule": "whatsapp",
      "stage": "intent",
      "status": "done",
@@ -105,20 +105,20 @@
      "confidence": 0.93
     },
     {
-     "ms": 0.95,
+     "ms": 1.04,
      "stage": "routing",
      "status": "done",
      "handler": "action",
      "specialists": []
     },
     {
-     "ms": 4.29,
+     "ms": 5.52,
      "stage": "permissions",
      "status": "awaiting_confirmation",
      "requires_confirmation": true
     },
     {
-     "ms": 0.0,
+     "ms": 0.01,
      "stage": "execution",
      "status": "awaiting_confirmation",
      "executor": "device"
@@ -130,90 +130,17 @@
      "status": "done"
     }
    ],
-   "reply_to": "89db070e-4032-4aca-970e-6cf7f86f33cd",
-   "action_id": "836d5132-a72c-44fc-b159-dccd6239d06e"
+   "reply_to": "327d0ed2-56e7-4782-a746-d1a7bf740ffa",
+   "action_id": "5af380ce-10ef-49dd-a2a4-fa5c8e6c771c"
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.095170Z"
+  "created_at": "2026-11-22T00:09:14.124517Z"
  },
  {
-  "id": "dda447ac-394b-488a-8ddf-9869144706cd",
+  "id": "2cc33f91-988b-4e86-b48e-cfb128c2bd97",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
-  "sender_type": "agent",
-  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
-  "recipient_agent_id": null,
-  "message_type": "message",
-  "content": "Listo, te lo recuerdo mañana a las 09:00: «Llamar al médico».",
-  "meta": {
-   "kind": "action_proposal",
-   "category": "productivity",
-   "pipeline": [
-    {
-     "ms": 2.81,
-     "mode": "text",
-     "stage": "input",
-     "source": "app",
-     "status": "done"
-    },
-    {
-     "ms": 1.28,
-     "stage": "understanding",
-     "status": "done",
-     "pending": false
-    },
-    {
-     "ms": 0.18,
-     "rule": "reminder",
-     "stage": "intent",
-     "status": "done",
-     "category": "productivity",
-     "confidence": 0.94
-    },
-    {
-     "ms": 0.86,
-     "stage": "routing",
-     "status": "done",
-     "handler": "action",
-     "specialists": []
-    },
-    {
-     "ms": 8.74,
-     "stage": "permissions",
-     "status": "completed",
-     "requires_confirmation": false
-    },
-    {
-     "ms": 0.0,
-     "stage": "execution",
-     "status": "completed",
-     "executor": "server"
-    },
-    {
-     "ms": 0.0,
-     "stage": "verification",
-     "status": "done",
-     "verified": true
-    },
-    {
-     "ms": 0.03,
-     "kind": "template",
-     "stage": "response",
-     "status": "done"
-    }
-   ],
-   "reply_to": "8dfdbb2e-3247-468e-850e-d587ff6e1ac6",
-   "action_id": "53dd5ec2-f736-4d17-b6ae-fb904291d022"
-  },
-  "model_used": null,
-  "turn": null,
-  "created_at": "2026-11-21T18:30:59.122915Z"
- },
- {
-  "id": "8dfdbb2e-3247-468e-850e-d587ff6e1ac6",
-  "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "user",
   "sender_agent_id": null,
   "recipient_agent_id": null,
@@ -228,20 +155,20 @@
    "source": "app",
    "pipeline": [
     {
-     "ms": 2.81,
+     "ms": 3.74,
      "mode": "text",
      "stage": "input",
      "source": "app",
      "status": "done"
     },
     {
-     "ms": 1.28,
+     "ms": 1.43,
      "stage": "understanding",
      "status": "done",
      "pending": false
     },
     {
-     "ms": 0.18,
+     "ms": 0.68,
      "rule": "reminder",
      "stage": "intent",
      "status": "done",
@@ -249,20 +176,20 @@
      "confidence": 0.94
     },
     {
-     "ms": 0.86,
+     "ms": 1.12,
      "stage": "routing",
      "status": "done",
      "handler": "action",
      "specialists": []
     },
     {
-     "ms": 8.74,
+     "ms": 11.69,
      "stage": "permissions",
      "status": "completed",
      "requires_confirmation": false
     },
     {
-     "ms": 0.0,
+     "ms": 0.01,
      "stage": "execution",
      "status": "completed",
      "executor": "server"
@@ -274,7 +201,7 @@
      "verified": true
     },
     {
-     "ms": 0.03,
+     "ms": 0.04,
      "kind": "template",
      "stage": "response",
      "status": "done"
@@ -285,79 +212,85 @@
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.122915Z"
+  "created_at": "2026-11-22T00:09:14.139553Z"
  },
  {
-  "id": "d2ecd397-2784-45f9-a41d-c3468d6241b9",
+  "id": "a4762f9c-0198-462f-a9ab-9094699bc167",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "agent",
-  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
+  "sender_agent_id": "8ed2d2f9-6dfa-4e54-9c3d-2ad35f9f5c9f",
   "recipient_agent_id": null,
   "message_type": "message",
-  "content": "Abriendo Spotify.",
+  "content": "Listo, te lo recuerdo mañana a las 09:00: «Llamar al médico».",
   "meta": {
    "kind": "action_proposal",
-   "category": "phone_control",
+   "category": "productivity",
    "pipeline": [
     {
-     "ms": 3.16,
+     "ms": 3.74,
      "mode": "text",
      "stage": "input",
      "source": "app",
      "status": "done"
     },
     {
-     "ms": 0.83,
+     "ms": 1.43,
      "stage": "understanding",
      "status": "done",
      "pending": false
     },
     {
-     "ms": 0.09,
-     "rule": "open_app",
+     "ms": 0.68,
+     "rule": "reminder",
      "stage": "intent",
      "status": "done",
-     "category": "phone_control",
-     "confidence": 0.88
+     "category": "productivity",
+     "confidence": 0.94
     },
     {
-     "ms": 0.9,
+     "ms": 1.12,
      "stage": "routing",
      "status": "done",
      "handler": "action",
      "specialists": []
     },
     {
-     "ms": 3.67,
+     "ms": 11.69,
      "stage": "permissions",
-     "status": "ready",
+     "status": "completed",
      "requires_confirmation": false
     },
     {
-     "ms": 0.0,
+     "ms": 0.01,
      "stage": "execution",
-     "status": "ready",
-     "executor": "device"
+     "status": "completed",
+     "executor": "server"
     },
     {
-     "ms": 0.01,
+     "ms": 0.0,
+     "stage": "verification",
+     "status": "done",
+     "verified": true
+    },
+    {
+     "ms": 0.04,
      "kind": "template",
      "stage": "response",
      "status": "done"
     }
    ],
-   "reply_to": "3aebe938-f63b-4892-9969-cd4fd6021dae",
-   "action_id": "aee76ff3-3afd-4da2-91a9-16bc54aaea57"
+   "reply_to": "2cc33f91-988b-4e86-b48e-cfb128c2bd97",
+   "action_id": "6148caf6-fe98-49a5-a355-4d0061703107"
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.144603Z"
+  "created_at": "2026-11-22T00:09:14.152361Z"
  },
  {
-  "id": "3aebe938-f63b-4892-9969-cd4fd6021dae",
+  "id": "13a13a9f-4550-48e1-9a25-64a15dca74d6",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "user",
   "sender_agent_id": null,
   "recipient_agent_id": null,
@@ -372,20 +305,20 @@
    "source": "app",
    "pipeline": [
     {
-     "ms": 3.16,
+     "ms": 3.12,
      "mode": "text",
      "stage": "input",
      "source": "app",
      "status": "done"
     },
     {
-     "ms": 0.83,
+     "ms": 0.86,
      "stage": "understanding",
      "status": "done",
      "pending": false
     },
     {
-     "ms": 0.09,
+     "ms": 0.23,
      "rule": "open_app",
      "stage": "intent",
      "status": "done",
@@ -393,14 +326,14 @@
      "confidence": 0.88
     },
     {
-     "ms": 0.9,
+     "ms": 1.02,
      "stage": "routing",
      "status": "done",
      "handler": "action",
      "specialists": []
     },
     {
-     "ms": 3.67,
+     "ms": 4.0,
      "stage": "permissions",
      "status": "ready",
      "requires_confirmation": false
@@ -423,12 +356,79 @@
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.144603Z"
+  "created_at": "2026-11-22T00:09:14.165274Z"
  },
  {
-  "id": "4b10ac00-6fd2-46f6-9330-67557d97dbb1",
+  "id": "4dd374ea-02de-43f0-9ab0-6bb65d6a9661",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
+  "sender_type": "agent",
+  "sender_agent_id": "8ed2d2f9-6dfa-4e54-9c3d-2ad35f9f5c9f",
+  "recipient_agent_id": null,
+  "message_type": "message",
+  "content": "Abriendo Spotify.",
+  "meta": {
+   "kind": "action_proposal",
+   "category": "phone_control",
+   "pipeline": [
+    {
+     "ms": 3.12,
+     "mode": "text",
+     "stage": "input",
+     "source": "app",
+     "status": "done"
+    },
+    {
+     "ms": 0.86,
+     "stage": "understanding",
+     "status": "done",
+     "pending": false
+    },
+    {
+     "ms": 0.23,
+     "rule": "open_app",
+     "stage": "intent",
+     "status": "done",
+     "category": "phone_control",
+     "confidence": 0.88
+    },
+    {
+     "ms": 1.02,
+     "stage": "routing",
+     "status": "done",
+     "handler": "action",
+     "specialists": []
+    },
+    {
+     "ms": 4.0,
+     "stage": "permissions",
+     "status": "ready",
+     "requires_confirmation": false
+    },
+    {
+     "ms": 0.0,
+     "stage": "execution",
+     "status": "ready",
+     "executor": "device"
+    },
+    {
+     "ms": 0.01,
+     "kind": "template",
+     "stage": "response",
+     "status": "done"
+    }
+   ],
+   "reply_to": "13a13a9f-4550-48e1-9a25-64a15dca74d6",
+   "action_id": "02749bb5-26c6-49ae-be13-6992d74af7f2"
+  },
+  "model_used": null,
+  "turn": null,
+  "created_at": "2026-11-22T00:09:14.170184Z"
+ },
+ {
+  "id": "107e3234-d47f-4e72-9759-78f336b5f53d",
+  "channel": "chat",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "user",
   "sender_agent_id": null,
   "recipient_agent_id": null,
@@ -450,20 +450,20 @@
    "source": "app",
    "pipeline": [
     {
-     "ms": 2.93,
+     "ms": 2.61,
      "mode": "text",
      "stage": "input",
      "source": "app",
      "status": "done"
     },
     {
-     "ms": 1.03,
+     "ms": 0.85,
      "stage": "understanding",
      "status": "done",
      "pending": false
     },
     {
-     "ms": 0.09,
+     "ms": 0.35,
      "rule": "model.information",
      "stage": "intent",
      "status": "done",
@@ -471,14 +471,14 @@
      "confidence": 0.65
     },
     {
-     "ms": 0.92,
+     "ms": 0.94,
      "stage": "routing",
      "status": "done",
      "handler": "model",
      "specialists": []
     },
     {
-     "ms": 1.39,
+     "ms": 1.38,
      "kind": "model",
      "stage": "execution",
      "status": "queued"
@@ -489,14 +489,14 @@
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.160614Z"
+  "created_at": "2026-11-22T00:09:14.181344Z"
  },
  {
-  "id": "4f35ef45-895a-44cb-9967-e1cd714475a0",
+  "id": "cdf6728d-7fac-411d-a0b9-b033e5621d95",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "agent",
-  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
+  "sender_agent_id": "8ed2d2f9-6dfa-4e54-9c3d-2ad35f9f5c9f",
   "recipient_agent_id": null,
   "message_type": "message",
   "content": "Canberra es la capital de Australia.",
@@ -507,9 +507,9 @@
    "tokens": 1500,
    "category": "information",
    "cost_usd": "0.0135",
-   "reply_to": "4b10ac00-6fd2-46f6-9330-67557d97dbb1",
+   "reply_to": "107e3234-d47f-4e72-9759-78f336b5f53d",
    "citations": [],
-   "stream_id": "6685e62d877c401b92de288edb731ea6",
+   "stream_id": "96e277866b9d451f884640556c44a135",
    "tools_used": [],
    "tool_errors": 0,
    "consulted_agents": [],
@@ -518,24 +518,24 @@
   },
   "model_used": "anthropic:claude-test-opus",
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.196678Z"
+  "created_at": "2026-11-22T00:09:14.271688Z"
  },
  {
-  "id": "ea7ea90a-0af8-4b04-818b-48f5e2a9603a",
+  "id": "3a804d75-da83-414f-91d2-7e8f3eae0a94",
   "channel": "chat",
-  "channel_id": "d836f807-d2eb-4d4e-b183-954c3ecc7418",
+  "channel_id": "3a24f4c8-5076-4ff7-96e4-a17709bef5b6",
   "sender_type": "agent",
-  "sender_agent_id": "2e54da1a-fe1d-4ab5-9ce3-da59a2adfabc",
+  "sender_agent_id": "8ed2d2f9-6dfa-4e54-9c3d-2ad35f9f5c9f",
   "recipient_agent_id": null,
   "message_type": "action_result",
   "content": "Abrí WhatsApp con el mensaje para papá. Todavía no está enviado: el envío lo confirmás vos en WhatsApp.",
   "meta": {
    "kind": "action_result",
    "state": "WHATSAPP_OPENED",
-   "action_id": "836d5132-a72c-44fc-b159-dccd6239d06e"
+   "action_id": "5af380ce-10ef-49dd-a2a4-fa5c8e6c771c"
   },
   "model_used": null,
   "turn": null,
-  "created_at": "2026-11-21T18:30:59.561689Z"
+  "created_at": "2026-11-22T00:09:14.687644Z"
  }
 ]

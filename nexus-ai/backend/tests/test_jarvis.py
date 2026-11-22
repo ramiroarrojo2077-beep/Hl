@@ -271,3 +271,31 @@ async def test_history_delete_requires_confirmation(api):
     assert r.json()["messages_deleted"] == 2
     async with session_factory()() as s:
         assert await s.scalar(select(AgentMessage.id)) is None
+
+
+async def test_history_keeps_question_before_answer(api):
+    """El mensaje del usuario y la respuesta se guardan en la misma transacción: igual deben quedar ordenados."""
+    prompts = ["Recordame mañana a las 9 llamar al médico", "Abrí Spotify", "Abrí la configuración de bluetooth",
+               "Recordame el viernes a las 18 comprar pan"]
+    conv = None
+    for p in prompts:
+        conv = (await jarvis(api, p))["conversation_id"]
+    msgs = (await api.get(f"/conversations/{conv}/messages")).json()
+    assert [m["sender_type"] for m in msgs] == ["user", "agent"] * len(prompts)
+    assert [m["content"] for m in msgs[::2]] == prompts
+    stamps = [m["created_at"] for m in msgs]
+    assert len(set(stamps)) == len(stamps), "sin empates de marca de tiempo"
+
+
+async def test_state_ignores_device_action_that_expired_unreported(api):
+    out = await jarvis(api, "Abrí Spotify")  # acción del teléfono: queda «ready» hasta que la app reporte
+    assert out["action"]["status"] == "ready"
+    assert (await api.get("/jarvis/state")).json()["state"] == "executing"
+    async with session_factory()() as s:
+        from app.models import ActionRequest
+
+        a = await s.get(ActionRequest, __import__("uuid").UUID(out["action"]["id"]))
+        a.expires_at = datetime.now(UTC) - timedelta(seconds=1)  # la app nunca reportó y venció
+        await s.commit()
+    state = (await api.get("/jarvis/state")).json()
+    assert state["state"] == "idle" and state["system_state"] in ("IDLE", "ERROR")

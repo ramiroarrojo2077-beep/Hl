@@ -1,13 +1,13 @@
 [
  {
-  "id": "6c4b83af-a09a-4375-80ca-7bcb05617ab2",
+  "id": "43dc2f80-c26a-41db-a82f-ac9dba752544",
   "name": "APEX F1",
   "description": "Juego de carreras",
   "objective": "Simulador de F1 con telemetría",
   "status": "active",
   "documentation": "",
-  "created_at": "2026-11-21T18:30:58.199084Z",
-  "updated_at": "2026-11-21T18:30:58.199084Z",
+  "created_at": "2026-11-22T00:09:12.946647Z",
+  "updated_at": "2026-11-22T00:09:12.946647Z",
   "agents": [],
   "counts": {
    "missions": 1,

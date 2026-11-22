@@ -91,3 +91,10 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+-----------------------------------------------------------
+Nota de NEXUS AI: los archivos rajdhani_*.ttf incluidos en la app son un subconjunto
+generado con fontTools (pyftsubset) a partir de los originales: conservan todos los
+glifos latinos, de puntuación y símbolos, y se quitó solo el bloque devanagari (que la
+app no usa), para reducir el tamaño del APK. Se distribuyen bajo la misma licencia
+SIL Open Font License 1.1; la fuente no declara nombres reservados.

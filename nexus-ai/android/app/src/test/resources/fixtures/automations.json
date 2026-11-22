@@ -1,6 +1,6 @@
 [
  {
-  "id": "ffc77f35-af6c-4e2c-b110-30ddee317d8d",
+  "id": "17aeaf23-b9ad-4a87-bfbb-f72b48d9a115",
   "name": "Aviso de misiones",
   "description": "",
   "trigger_type": "event",
@@ -25,10 +25,10 @@
   "last_status": null,
   "run_count": 0,
   "created_by": "user",
-  "created_at": "2026-11-21T18:30:59.593511+00:00"
+  "created_at": "2026-11-22T00:09:14.721196+00:00"
  },
  {
-  "id": "62be62a7-012f-4c5d-a735-79f48aacf43a",
+  "id": "3b73ef77-0d23-4ed4-9c9b-f134d1adbc38",
   "name": "Resumen diario",
   "description": "",
   "trigger_type": "schedule",
@@ -53,6 +53,6 @@
   "last_status": null,
   "run_count": 0,
   "created_by": "user",
-  "created_at": "2026-11-21T18:30:59.582105+00:00"
+  "created_at": "2026-11-22T00:09:14.707810+00:00"
  }
 ]

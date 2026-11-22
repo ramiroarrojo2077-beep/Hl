@@ -47,6 +47,9 @@ class TestNexusApp : NexusApplication() {
 fun fixture(name: String): String =
     requireNotNull(UiIntegrationTest::class.java.getResource("/fixtures/$name.json")) { "falta fixture $name" }.readText()
 
+/** Saludo real exportado por el backend (depende de la hora en que se generaron las fixtures). */
+val homeHeadline: String get() = org.json.JSONObject(fixture("jarvis_context")).getString("headline")
+
 /**
  * Prueba de UI de punta a punta: la app real (actividad, navegación, ViewModels, cliente HTTP y
  * WebSocket) contra un servidor que sirve respuestas reales exportadas del backend.
@@ -133,7 +136,7 @@ class UiIntegrationTest {
     @Test fun navigatesTheRealAppWithBackendData() {
         ActivityScenario.launch(MainActivity::class.java).use {
             // NEXUS 2.0: el Home es el asistente; el dashboard 1.0 sigue como Command Center en «Más».
-            waitForText("Buenas tardes, Ana.")
+            waitForText(homeHeadline)
             tap("Más")
             tap("Command Center")
             // Dashboard con datos reales del backend
@@ -241,7 +244,7 @@ class TabletLayoutTest {
     @Test fun commandCenterOnTablet() {
         ActivityScenario.launch(MainActivity::class.java).use {
             // En tablet la navegación lateral muestra Home, Chat, Acciones y las herramientas avanzadas.
-            compose.waitUntil(15_000) { compose.onAllNodes(hasText("Buenas tardes, Ana.")).fetchSemanticsNodes().isNotEmpty() }
+            compose.waitUntil(15_000) { compose.onAllNodes(hasText(homeHeadline)).fetchSemanticsNodes().isNotEmpty() }
             compose.onRoot().captureRoboImage("build/screenshots/v2_20_home_tablet.png")
             compose.onAllNodesWithText("Command Center").onFirst().performClick()
             compose.waitUntil(15_000) { compose.onAllNodes(hasText("LLM Status", substring = true, ignoreCase = true)).fetchSemanticsNodes().isNotEmpty() }

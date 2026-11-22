@@ -102,19 +102,20 @@ def validate_arguments(tool: ToolDef, args: dict[str, Any]) -> str | None:
 
 
 async def sync_tool_definitions(session: AsyncSession) -> None:
-    """Sincroniza el catálogo en base con el registro en código."""
+    """Sincroniza el catálogo en base con el registro en código.
+
+    Upsert atómico (INSERT ... ON CONFLICT DO UPDATE): varios procesos de la API y workers
+    pueden arrancar a la vez sin chocar por la clave única. `is_enabled` (decisión del
+    administrador) no se pisa.
+    """
+    from sqlalchemy.dialects.postgresql import insert
+
     from app.tools import builtin  # noqa: F401  registra las herramientas
 
-    existing = {t.key: t for t in (await session.scalars(select(ToolDefinition))).all()}
     for tool in TOOLS.values():
-        row = existing.get(tool.key)
-        if row is None:
-            row = ToolDefinition(key=tool.key)
-            session.add(row)
-        row.name = tool.name
-        row.description = tool.description
-        row.category = tool.category
-        row.operation_class = tool.operation_class
-        row.parameters_schema = tool.parameters
-        row.requires_plugin = tool.requires_plugin
-        row.limits = tool.limits
+        values = {"key": tool.key, "name": tool.name, "description": tool.description, "category": tool.category,
+                  "operation_class": str(tool.operation_class), "parameters_schema": tool.parameters,
+                  "requires_plugin": tool.requires_plugin, "limits": tool.limits}
+        stmt = insert(ToolDefinition).values(id=uuid.uuid4(), is_enabled=True, **values)
+        stmt = stmt.on_conflict_do_update(index_elements=["key"], set_={k: v for k, v in values.items() if k != "key"})
+        await session.execute(stmt)

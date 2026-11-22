@@ -87,6 +87,13 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -132,6 +139,7 @@ fun Context.findActivity(): Activity? {
     return null
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen() {
     val vm = nexusViewModel { HomeViewModel(it) }
@@ -224,18 +232,42 @@ fun HomeScreen() {
             v.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = NexusColors.Amber, modifier = Modifier.padding(top = 4.dp)) }
         }
     }
+    // Posiciones medidas (en la ventana) del final de la conversación y del área visible con scroll.
+    val phoneScroll = rememberScrollState()
+    val centerScroll = rememberScrollState()
+    var convEndY by remember { mutableFloatStateOf(0f) }
+    var viewportBottomY by remember { mutableFloatStateOf(0f) }
     // ZONA C — mensaje contextual, conversación y confirmaciones
     val assistantBlock: @Composable () -> Unit = {
         AssistantZone(s, v.speakingMessageId, prefs.subtitles, onTrace = { traceFor = it }, onFeedback = vm::feedback)
-        s.pending.forEach { a ->
+        // Ancla de seguimiento: fin de la conversación + la confirmación más reciente (no toda la pila).
+        val anchor = Modifier.height(1.dp).onGloballyPositioned { convEndY = it.positionInWindow().y }
+        if (s.pending.isEmpty()) Spacer(anchor)
+        s.pending.forEachIndexed { i, a ->
             ActionCard(a, onConfirm = { if (a.actionKey == "whatsapp.open_chat") waAction = a else vm.confirm(a) }, onCancel = { vm.cancel(a) })
+            if (i == 0) Spacer(anchor)
         }
     }
     val gap = Modifier.height(12.dp)
 
+    // Al abrir se ve el núcleo; cuando conversás, la vista sigue al último mensaje (y a las confirmaciones)
+    // para que la respuesta nunca quede fuera de pantalla detrás de la barra de voz.
+    val density = LocalDensity.current.density
+    var follow by remember { mutableStateOf(false) }
+    var wideLayout by remember { mutableStateOf(false) }
+    LaunchedEffect(s.messages.lastOrNull()?.id, s.streaming.length / 40, s.sending, s.awaitingReply, v.listening, s.pending.size) {
+        if (s.sending || s.awaitingReply || v.listening) follow = true
+        if (!follow) return@LaunchedEffect
+        withFrameNanos { }  // esperar a que el contenido nuevo esté medido
+        val scroll = if (wideLayout) centerScroll else phoneScroll
+        val hidden = convEndY + 12 * density - viewportBottomY
+        if (hidden > 0f) scroll.animateScrollTo((scroll.value + hidden).toInt())
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize().imePadding()) {
         val screenWidth = maxWidth
         val wide = screenWidth >= 840.dp
+        SideEffect { wideLayout = wide }
         Column(Modifier.fillMaxSize()) {
             if (wide) {
                 // Tablet: tres columnas como el command center de la referencia.
@@ -245,7 +277,7 @@ fun HomeScreen() {
                         CoreOverviewPanel(s.server, s.dash, prefs, label, coreColor = coreColor(coreState)); Spacer(gap)
                         MissionTimelinePanel(s.dash, navigate)
                     }
-                    Column(Modifier.weight(0.44f).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.weight(0.44f).onGloballyPositioned { viewportBottomY = it.boundsInWindow().bottom }.verticalScroll(centerScroll), horizontalAlignment = Alignment.CenterHorizontally) {
                         coreBlock(330.dp); Spacer(gap)
                         assistantBlock(); Spacer(gap)
                         ActiveAgentsPanel(s.dash, navigate)
@@ -256,7 +288,7 @@ fun HomeScreen() {
                     }
                 }
             } else {
-                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                Column(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { viewportBottomY = it.boundsInWindow().bottom }.verticalScroll(phoneScroll)) {
                     SystemHeader(s.server, connected)
                     coreBlock(minOf(screenWidth, 360.dp))
                     Column(Modifier.padding(horizontal = 14.dp)) {
