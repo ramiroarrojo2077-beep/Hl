@@ -51,6 +51,7 @@ data class LoginState(
     val loading: Boolean = false,
     val error: String? = null,
     val serverCheck: String? = null,
+    val localError: String? = null,
 )
 
 class LoginViewModel(private val c: AppContainer) : ViewModel() {
@@ -65,11 +66,14 @@ class LoginViewModel(private val c: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
             try {
+                // Base de datos y semilla en un hilo de fondo (en el principal puede trabarse en teléfonos lentos).
+                val user = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.localBackend.ensureUser(name) }
                 c.session.setServerUrl(LOCAL_URL)
-                val user = c.localBackend.ensureUser(name)
                 c.session.saveLogin(LOCAL_URL, "local", "local", user.id, user.email, user.name)
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(loading = false, error = e.userMessage())
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) { // incluye errores graves de Android, que antes cerraban la app sin avisar
+                _state.value = _state.value.copy(loading = false, localError = "No pude iniciar en este teléfono: ${e.javaClass.simpleName}: ${e.message?.take(160)}")
             }
         }
     }
@@ -118,6 +122,7 @@ fun LoginScreen() {
                 Spacer(Modifier.height(8.dp))
                 NexusTextField(s.name, { v -> vm.update { it.copy(name = v) } }, "¿Cómo te llamás?")
                 Spacer(Modifier.height(10.dp))
+                s.localError?.let { Text(it, color = NexusColors.Red, style = MaterialTheme.typography.bodySmall); Spacer(Modifier.height(6.dp)) }
                 PrimaryButton("Empezar en este teléfono", vm::useLocal, Modifier.fillMaxWidth().testTag("use_local"), loading = s.loading)
             }
             Spacer(Modifier.height(12.dp))
