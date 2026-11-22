@@ -149,6 +149,18 @@ object ActionExecutor {
             if (installed) send.setPackage(pkg)
             (if (installed) send else Intent.createChooser(send, p.str("title") ?: "Compartir")) to "SHARE_SHEET_OPENED"
         }
+        "device.share_video" -> {
+            val file = java.io.File(p.str("path") ?: "")
+            val cache = java.io.File(context.cacheDir, "videos")
+            if (!file.exists() || file.canonicalFile.parentFile != cache.canonicalFile) null to "ERROR" else {
+                val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", file)
+                val send = Intent(Intent.ACTION_SEND).setType("video/mp4").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val pkg = when (p.str("target")) { "whatsapp" -> "com.whatsapp"; "whatsapp_business" -> "com.whatsapp.w4b"; "instagram" -> "com.instagram.android"; else -> null }
+                val installed = pkg != null && runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
+                if (installed) send.setPackage(pkg)
+                (if (installed) send else Intent.createChooser(send, p.str("title") ?: "Compartir video").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)) to "SHARE_SHEET_OPENED"
+            }
+        }
         "device.open_settings" -> settingsIntent(p.str("panel") ?: "general", context.packageName) to "SETTINGS_OPENED"
         "device.navigate" -> {
             val mode = when (p.str("mode")) { "walking" -> "walking"; "bicycling" -> "bicycling"; "transit" -> "transit"; else -> "driving" }

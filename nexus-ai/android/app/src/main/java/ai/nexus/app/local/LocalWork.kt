@@ -403,7 +403,7 @@ private fun LocalBackend.failMission(id: String, error: String) {
     agents().filter { it.d.status != "idle" && it.d.status != "paused" }.forEach { setAgentStatus(it.d.id, "idle") }
 }
 
-private fun extractJson(text: String): JsonObject? {
+internal fun extractJson(text: String): JsonObject? {
     val start = text.indexOf('{'); val end = text.lastIndexOf('}')
     if (start < 0 || end <= start) return null
     return runCatching { NexusJson.parseToJsonElement(text.substring(start, end + 1)).jsonObject }.getOrNull()

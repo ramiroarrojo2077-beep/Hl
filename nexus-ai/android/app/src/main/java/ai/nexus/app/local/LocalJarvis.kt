@@ -4,6 +4,7 @@ import ai.nexus.app.core.network.NexusJson
 import ai.nexus.app.data.model.*
 import ai.nexus.app.whatsapp.PhoneNormalizer
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -419,6 +420,17 @@ internal fun LocalBackend.processMessage(b: JarvisMessageBody): JarvisResponse {
     var deviceParams: JsonObject? = null
     when {
         intent.control == "cancel_pending" -> { replyText = "Listo, lo dejo."; add("response") }
+        intent.rule == "video" && intent.actionKey == null && intent.question == null -> {
+            replyText = if (!modelsAvailable()) "Para armar el video necesito un modelo de IA que escriba el guion (Más → Ajustes → Proveedores de IA; Gemini y Groq son gratis)."
+            else {
+                val topic = intent.params["topic"] as String
+                val job = scope.launch { createVideo(conv.c.id, topic) }
+                running["video:${userMsg.id}"] = job
+                job.invokeOnCompletion { running.remove("video:${userMsg.id}") }
+                "Dale, estoy armando el video «${topic.take(60)}». Tarda más o menos lo que dura el video; cuando esté te lo dejo listo para mandar."
+            }
+            add("response")
+        }
         handler == "clarification" -> { replyText = intent.question; (intent.extra["pending"] as? Map<*, *>)?.let { replyMeta["pending"] = toJsonElement(it) }; add("response") }
         handler == "memory_lookup" -> {
             add("context")
@@ -791,4 +803,46 @@ internal fun LocalBackend.clearEmergencyStop(resume: Boolean): JsonObject {
     if (resume) store.all(C.MISSIONS, MissionRec.serializer()).filter { it.m.status == "paused" && it.m.statusReason == "STOP ALL" }.forEach { resumeMission(it.m.id); resumed++ }
     emit("system.emergency_stop", buildJsonObject { put("active", false) })
     return buildJsonObject { put("emergency_stop", false); put("missions_resumed", resumed) }
+}
+
+
+private val VIDEO_SYSTEM = """Sos NOVA, directora de arte de NEXUS. Escribís guiones de videos 2D animados verticales (9:16) que se dibujan con código.
+Devolvé SOLO un JSON con esta forma, sin explicaciones:
+{"background":"#0A1A2E","scenes":[{"duration":3,"background":"#0A1A2E","elements":[
+ {"type":"text","text":"...","x":0.5,"y":0.4,"size":0.08,"color":"#FFFFFF","bold":true,"anim":"slide_up","delay":0.2,"dur":0.8},
+ {"type":"rect","x":0.5,"y":0.7,"w":0.6,"h":0.01,"color":"#1ED6FF","radius":0.005,"anim":"grow_x","delay":0.5,"dur":0.6},
+ {"type":"circle","x":0.5,"y":0.2,"r":0.08,"color":"#FF5FB0","anim":"pulse"}]}]}
+Reglas: x, y, w, h, r y size son proporciones (0 a 1) del ancho/alto; el texto se dibuja con su línea base en y (usá y entre 0.15 y 0.85).
+Animaciones: fade, slide_up, slide_down, slide_left, slide_right, zoom, grow_x, pulse, bounce, typewriter, none.
+Entre 3 y 8 escenas de 2 a 5 segundos (máximo 40 s en total). Textos cortos y legibles (size entre 0.05 y 0.11), buen contraste, paleta coherente.
+Primera escena: gancho. Última: cierre o llamado a la acción. No inventes datos que el usuario no dio."""
+
+/** Escribe el guion con el modelo, lo dibuja y exporta a MP4, y deja el envío listo (con confirmación). */
+internal suspend fun LocalBackend.createVideo(convId: String, topic: String) {
+    val nexus = nexus()
+    val nova = agentBySlug("nova") ?: nexus
+    setAgentStatus(nova.d.id, "working", "Armando un video")
+    publishState("executing", convId, stage = "execution", detail = "video")
+    try {
+        val (r, model) = complete(VIDEO_SYSTEM, listOf(ChatMsg("user", "Tema y mensaje del video: $topic")), 3500, "video", nova)
+        val script = VideoStudio.parse(extractJson(r.text) ?: throw bad("El modelo no devolvió un guion válido; probá de nuevo."))
+        val dir = java.io.File(context.cacheDir, "videos").apply { mkdirs() }
+        dir.listFiles()?.sortedBy { it.lastModified() }?.dropLast(5)?.forEach { it.delete() } // no acumular videos viejos
+        val file = java.io.File(dir, "nexus_${System.currentTimeMillis()}.mp4")
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val job = coroutineContext[kotlinx.coroutines.Job]
+            VideoStudio.render(script, file, shouldStop = { settings().settings.emergencyStop || job?.isActive == false })
+        }
+        val a = propose("device.share_video", buildJsonObject { put("path", file.absolutePath); put("title", topic.take(60)); put("target", "any") },
+            "Compartir video: ${topic.take(80)}", "jarvis", convId)
+        recordMessage("chat", convId, "Listo el video «${topic.take(60)}» (${script.scenes.size} escenas, ${script.totalSeconds.toInt()} s). " +
+            "Confirmá para abrir el menú de compartir y mandarlo por WhatsApp, Instagram o donde quieras.", "agent", nova.d.id, model = model,
+            meta = buildJsonObject { put("kind", "action_proposal"); put("action_id", a.a.id); put("video", file.name) })
+        notify("video", "Tu video está listo", topic.take(80), mapOf("route" to "home"))
+    } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) {
+        recordMessage("chat", convId, "No pude armar el video: ${e.message ?: e.javaClass.simpleName}", "system", messageType = "error")
+    } finally {
+        setAgentStatus(nova.d.id, "idle")
+        publishState("idle", convId, stage = "response")
+    }
 }

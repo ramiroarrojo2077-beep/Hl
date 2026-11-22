@@ -389,7 +389,7 @@ fun classify(text: String, ctx: ClassifyContext): Intent {
     if (CONTROL_RESUME.lookingAt(n) != null) return Intent("conversation", 0.99, "control.resume", control = "resume")
     if (CONTROL_REPEAT.lookingAt(n) != null) return Intent("conversation", 0.95, "control.repeat", control = "repeat")
     if (ctx.pending != null) fillPending(original, norm, ctx)?.let { return it }
-    val rules: List<(String, String, ClassifyContext) -> Intent?> = listOf(::whatsapp, ::call, ::alarm, ::timer, ::reminder, ::event, ::agenda,
+    val rules: List<(String, String, ClassifyContext) -> Intent?> = listOf(::video, ::whatsapp, ::call, ::alarm, ::timer, ::reminder, ::event, ::agenda,
         ::contactCreate, ::settings, ::navigation, ::map, ::openUrl, ::openProject, ::openScreen, ::share, ::memorySave, ::memoryQuery,
         ::memoryForget, ::mission, ::automation, ::openApp)
     for (r in rules) r(original, norm, ctx)?.let { return it }
@@ -438,6 +438,17 @@ private fun whatsapp(original0: String, norm0: String, ctx: ClassifyContext): In
     val txt = params["text"] as String
     val summary = "WhatsApp para $who" + if (txt.isNotEmpty()) ": «${txt.take(80)}»" else " (sin texto todavía)"
     return Intent("communication", 0.93, "whatsapp", actionKey = "whatsapp.open_chat", params = params, summary = summary)
+}
+
+private val VIDEO_RE = rx("""^(?:hace(?:me)?|cre(?:a|ame)|arm(?:a|ame)|anim(?:a|ame)|gener(?:a|ame)|prepar(?:a|ame)|quiero)\s+(?:un\s+|una\s+)?(?:video|animacion|reel|historia animada)\b(?<rest>.*)$""")
+
+/** «Hacé un video de…»: NEXUS escribe el guion de escenas y la app lo dibuja y exporta a MP4. */
+private fun video(original: String, norm: String, ctx: ClassifyContext): Intent? {
+    val m = VIDEO_RE.lookingAt(norm) ?: return null
+    val topic = seg(original, m, "rest").trim(' ', '.', ':').replace(Regex("""^(?:de|sobre|para|que\s+diga|con)\s+""", RegexOption.IGNORE_CASE), "")
+    if (topic.length < 3) return Intent("productivity", 0.85, "video", question = "¿Sobre qué querés el video? Contame el tema y el mensaje.", missing = listOf("topic"),
+        extra = mutableMapOf("pending" to mapOf("kind" to "video")))
+    return Intent("productivity", 0.9, "video", params = mutableMapOf("topic" to cap(topic)), summary = "Video: ${topic.take(80)}", specialists = listOf("nova"))
 }
 
 private fun call(original: String, norm: String, ctx: ClassifyContext): Intent? {
@@ -761,6 +772,8 @@ private fun fillPending(original: String, norm: String, ctx: ClassifyContext): I
         if (secs != null && secs > 0) return Intent("productivity", 0.9, "timer.filled", actionKey = "device.set_timer", params = mutableMapOf("seconds" to secs),
             summary = if (secs >= 60) "Temporizador de ${secs / 60} min" else "Temporizador de $secs s")
     }
+    if (kind == "video" && original.trim().length >= 3)
+        return Intent("productivity", 0.9, "video", params = mutableMapOf("topic" to cap(original)), summary = "Video: ${original.trim().take(80)}", specialists = listOf("nova"))
     if (kind == "mission" && original.trim().length >= 5) {
         val objective = cap(original)
         return Intent("project_management", 0.9, "mission.filled", actionKey = "mission.create",

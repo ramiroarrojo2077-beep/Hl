@@ -1309,6 +1309,45 @@
     "FAILED"
    ],
    "notes": ""
+  },
+  {
+   "key": "device.share_video",
+   "name": "Compartir video",
+   "description": "Abre WhatsApp, Instagram u otra app con el video generado. Elegís el chat y tocás Enviar.",
+   "category": "communication",
+   "risk": "EXTERNAL_COMMUNICATION",
+   "operation": "comunicación",
+   "executor": "device",
+   "params": {
+    "path": {
+     "type": "string",
+     "maxLength": 300
+    },
+    "title": {
+     "type": "string",
+     "maxLength": 120
+    },
+    "target": {
+     "type": "string",
+     "enum": [
+      "any",
+      "whatsapp",
+      "whatsapp_business",
+      "instagram"
+     ]
+    }
+   },
+   "required": [
+    "path"
+   ],
+   "android_permissions": [],
+   "always_confirm": true,
+   "result_states": [
+    "SHARE_SHEET_OPENED",
+    "CANCELLED",
+    "ERROR"
+   ],
+   "notes": ""
   }
  ],
  "provider_kinds": [
