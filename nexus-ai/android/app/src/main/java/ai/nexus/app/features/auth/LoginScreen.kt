@@ -3,6 +3,8 @@ package ai.nexus.app.features.auth
 import ai.nexus.app.AppContainer
 import ai.nexus.app.core.avatar.NexusCore
 import ai.nexus.app.core.design.GhostButton
+import ai.nexus.app.local.LOCAL_URL
+import androidx.compose.ui.platform.testTag
 import ai.nexus.app.core.design.HudPanel
 import ai.nexus.app.core.design.NexusColors
 import ai.nexus.app.core.design.NexusTextField
@@ -57,6 +59,21 @@ class LoginViewModel(private val c: AppContainer) : ViewModel() {
 
     fun update(f: (LoginState) -> LoginState) { _state.value = f(_state.value).copy(error = null) }
 
+    /** Modo local: todo corre en el teléfono, sin servidor ni cuenta. */
+    fun useLocal() {
+        val name = _state.value.name.trim().ifBlank { "Usuario" }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null)
+            try {
+                c.session.setServerUrl(LOCAL_URL)
+                val user = c.localBackend.ensureUser(name)
+                c.session.saveLogin(LOCAL_URL, "local", "local", user.id, user.email, user.name)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(loading = false, error = e.userMessage())
+            }
+        }
+    }
+
     fun checkServer() {
         val url = _state.value.server.trim()
         viewModelScope.launch {
@@ -95,6 +112,17 @@ fun LoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             NexusCore(activeAgents = 0, emergency = false, connected = true, subtitle = "Multi-Agent AI System", modifier = Modifier.fillMaxWidth().height(260.dp))
+            HudPanel(Modifier.fillMaxWidth(), title = "Usar en este teléfono") {
+                Text("Sin servidor y sin cuenta: tus datos quedan en el teléfono. Para conversar con NEXUS después cargás una clave de un " +
+                    "proveedor de IA (Google Gemini y Groq tienen plan gratis).", style = MaterialTheme.typography.bodySmall, color = NexusColors.TextSecondary)
+                Spacer(Modifier.height(8.dp))
+                NexusTextField(s.name, { v -> vm.update { it.copy(name = v) } }, "¿Cómo te llamás?")
+                Spacer(Modifier.height(10.dp))
+                PrimaryButton("Empezar en este teléfono", vm::useLocal, Modifier.fillMaxWidth().testTag("use_local"), loading = s.loading)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("O conectate a tu propio servidor NEXUS", style = MaterialTheme.typography.labelLarge, color = NexusColors.TextMuted)
+            Spacer(Modifier.height(8.dp))
             HudPanel(Modifier.fillMaxWidth(), title = if (s.register) "Crear cuenta" else "Acceso al centro de control") {
                 NexusTextField(s.server, { v -> vm.update { it.copy(server = v, serverCheck = null) } }, "Servidor NEXUS", keyboardType = KeyboardType.Uri,
                     supporting = s.serverCheck ?: "URL de tu backend (HTTPS en producción)")
@@ -119,7 +147,7 @@ fun LoginScreen() {
                 GhostButton(if (s.register) "Ya tengo cuenta" else "Crear una cuenta nueva", { vm.update { it.copy(register = !it.register) } }, Modifier.fillMaxWidth())
             }
             Spacer(Modifier.height(12.dp))
-            Text("Las claves de los proveedores de IA se configuran en el servidor y nunca se guardan en el teléfono.",
+            Text("Con servidor, las claves de IA quedan en el servidor. En el modo local se guardan cifradas en este teléfono (Android Keystore).",
                 style = MaterialTheme.typography.bodySmall, color = NexusColors.TextMuted, textAlign = TextAlign.Center)
         }
     }

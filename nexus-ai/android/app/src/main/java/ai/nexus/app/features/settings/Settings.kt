@@ -194,7 +194,7 @@ private fun ProfileSection(vm: SettingsViewModel, toast: (String?) -> Unit) {
     val session by vm.c.session.session.collectAsState()
     var name by remember(session) { mutableStateOf(session?.displayName.orEmpty()) }
     var confirmLogout by remember { mutableStateOf(false) }
-    if (confirmLogout) ConfirmDialog("Cerrar sesión", "Los agentes siguen trabajando en el servidor aunque cierres sesión.", "Cerrar sesión", {
+    if (confirmLogout) ConfirmDialog("Cerrar sesión", "Con servidor, los agentes siguen trabajando aunque cierres sesión. En modo local, tus datos quedan guardados en este teléfono.", "Cerrar sesión", {
         vm.run(toast) { runCatching { vm.c.api.logout() }; vm.c.session.clear(); vm.c.cacheDb.cache().clear() }
     }, { confirmLogout = false })
     HudPanel(Modifier.fillMaxWidth(), title = "Perfil") {
@@ -241,18 +241,23 @@ private fun ProvidersSection(vm: SettingsViewModel, toast: (String?) -> Unit) {
         vm.run(toast) { providers = vm.c.api.providers(); kinds = vm.c.api.providerKinds(); models = vm.c.api.models() }
     }
     LaunchedEffect(Unit) { reload() }
-    var kind by remember { mutableStateOf("anthropic") }
+    var kind by remember { mutableStateOf("") }
+    var local by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { local = vm.c.isLocalMode() }
+    LaunchedEffect(kinds) { if (kinds.isNotEmpty() && kinds.none { it.kind == kind }) kind = kinds.first().kind }
     var name by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
     var key by remember { mutableStateOf("") }
     HudPanel(Modifier.fillMaxWidth(), title = "Agregar proveedor") {
-        Text("Las claves se envían cifradas al servidor y se guardan cifradas allí. Nunca quedan en el teléfono ni se muestran de nuevo.",
+        Text(if (local) "Modo local: la clave se guarda cifrada en este teléfono (Android Keystore) y NEXUS llama directo al proveedor. " +
+            "No se muestra de nuevo. Claves gratis: Google AI Studio (aistudio.google.com → Get API key) o Groq (console.groq.com → API Keys)."
+            else "Las claves se envían cifradas al servidor y se guardan cifradas allí. Nunca quedan en el teléfono ni se muestran de nuevo.",
             style = MaterialTheme.typography.bodySmall, color = NexusColors.TextSecondary)
         SectionLabel("Tipo")
         SelectChips(kinds.map { it.kind to it.label }, kind, { kind = it })
         val selected = kinds.firstOrNull { it.kind == kind }
         Spacer(Modifier.height(6.dp))
-        NexusTextField(name, { name = it }, "Nombre (p. ej. Anthropic personal)")
+        NexusTextField(name, { name = it }, "Nombre (opcional)")
         Spacer(Modifier.height(6.dp))
         NexusTextField(url, { url = it }, "URL base (opcional)", supporting = selected?.defaultBaseUrl?.let { "Por defecto: $it" })
         Spacer(Modifier.height(6.dp))

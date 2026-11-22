@@ -11,6 +11,16 @@ Android es el centro de control.
 
 > Las capturas son renders reales de la app (Robolectric) contra respuestas reales exportadas del backend.
 
+## Sin servidor: modo local (2.1)
+
+NEXUS puede correr **entero en el teléfono**, gratis: instalá el APK, tocá **Empezar en este teléfono** y cargá una clave
+gratuita de Google Gemini o Groq. El equipo de agentes, misiones, reuniones, memoria, rutinas, recordatorios y todas
+las acciones del teléfono funcionan sin backend. Guía: [docs/setup/LOCAL_MODE.md](docs/setup/LOCAL_MODE.md).
+
+| Inicio sin servidor | Conversación en modo local | Proveedores gratuitos |
+|---|---|---|
+| ![](docs/screenshots/v3_01_local_login.png) | ![](docs/screenshots/v3_03_local_conversation.png) | ![](docs/screenshots/v3_04_local_providers.png) |
+
 ## Novedades de la 2.0 — JARVIS EVOLUTION
 
 - **JARVIS CORE**: NEXUS entiende pedidos en español rioplatense, distingue acciones directas («poneme una alarma a
@@ -73,7 +83,7 @@ cd nexus-ai
 docker compose up --build                # API en http://localhost:8000 (docs en /docs)
 ```
 
-App: instalá `NEXUS-AI-2.0.0-debug.apk` (permite HTTP local) o la release (exige HTTPS), creá tu cuenta con la URL
+Con servidor propio (opcional): instalá `NEXUS-AI-2.1.0-debug.apk` (permite HTTP local) o la release (exige HTTPS), creá tu cuenta con la URL
 del servidor y configurá un proveedor en **Ajustes › Proveedores de IA**. Sin proveedor configurado los
 agentes no trabajan: la app lo muestra explícitamente en lugar de simular respuestas.
 

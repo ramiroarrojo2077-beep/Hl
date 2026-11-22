@@ -12,6 +12,19 @@ import ai.nexus.app.data.api.NexusApi
 import ai.nexus.app.data.cache.CacheDb
 import ai.nexus.app.data.cache.CachedResponse
 import ai.nexus.app.data.model.VoicePrefs
+import ai.nexus.app.local.LocalBackend
+import ai.nexus.app.local.LocalInterceptor
+import ai.nexus.app.local.LocalLlm
+import ai.nexus.app.local.LocalScheduler
+import ai.nexus.app.local.LocalStore
+import ai.nexus.app.local.isLocalUrl
+import ai.nexus.app.local.recover
+import ai.nexus.app.local.tick
+import ai.nexus.app.push.NotificationHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import ai.nexus.app.voice.AndroidRecognizer
 import ai.nexus.app.voice.AndroidSpeaker
 import ai.nexus.app.voice.RemoteRecognizer
@@ -42,6 +55,7 @@ class AppContainer(context: Context, private val crypto: SecretBox = CryptoBox()
     val sessionExpired: SharedFlow<Unit> = _sessionExpired
 
     val http: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(LocalInterceptor { localBackend })
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
@@ -69,6 +83,7 @@ class AppContainer(context: Context, private val crypto: SecretBox = CryptoBox()
         scope = scope,
         baseUrl = { session.serverUrl() },
         accessToken = { session.current()?.accessToken },
+        localEvents = { if (isLocalUrl(session.serverUrl())) localBackend.events else null },
         refreshAccess = {
             try {
                 api.settings() // cualquier llamada autenticada fuerza la renovación del token
@@ -80,6 +95,43 @@ class AppContainer(context: Context, private val crypto: SecretBox = CryptoBox()
     )
 
     val tts by lazy { TtsManager(appContext) }
+
+    // ------------------------------------------------------------ modo local (sin servidor)
+    /** Cliente para hablar directo con los proveedores de IA (respuestas largas con streaming). */
+    private val llmHttp: OkHttpClient by lazy {
+        OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS).readTimeout(180, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS).build()
+    }
+
+    /** Backend completo dentro del teléfono: datos en SQLite local y modelos llamados directo con la clave del usuario. */
+    val localBackend: LocalBackend by lazy {
+        LocalBackend(appContext, LocalStore(appContext), LocalLlm(llmHttp), crypto, scope).also { b ->
+            b.notifier = { n ->
+                val foreground = (appContext as? NexusApplication)?.isInForeground == true
+                if (n.eventType == "reminder" || !foreground) {
+                    NotificationHelper.show(appContext, n)
+                    scope.launch { session.setLastNotificationSeen(n.createdAt) }
+                }
+            }
+            b.scheduleWake = { delay -> LocalScheduler.wakeIn(appContext, delay) }
+        }
+    }
+
+    private var localTicker: Job? = null
+
+    /** Arranca el trabajo del modo local: retoma misiones, programa la revisión periódica y un reloj mientras la app está abierta. */
+    fun startLocalRuntime() {
+        scope.launch {
+            if (!isLocalUrl(session.serverUrl())) return@launch
+            runCatching { localBackend.recover() }
+            realtime.start() // en modo local los eventos salen del propio teléfono: no hay red que cuidar
+            LocalScheduler.periodic(appContext)
+            if (localTicker?.isActive != true) localTicker = scope.launch {
+                while (isActive) { delay(20_000); if (isLocalUrl(session.serverUrl())) runCatching { localBackend.tick() } }
+            }
+        }
+    }
+
+    suspend fun isLocalMode(): Boolean = isLocalUrl(session.serverUrl())
 
     // ------------------------------------------------------------ NEXUS 2.0
     /** Contactos que el usuario eligió guardar en NEXUS (cifrados, solo en el teléfono). */

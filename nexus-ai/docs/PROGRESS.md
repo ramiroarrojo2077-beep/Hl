@@ -2,6 +2,46 @@
 
 Rama: `ccr-3bafa18c-wee3mx`
 
+# NEXUS 2.1 — Modo local (sin servidor)
+
+Fecha: 22/11/2026. A pedido del usuario (sin presupuesto para un servidor), la app incluye un backend completo que
+corre en el teléfono. Guía: [setup/LOCAL_MODE.md](setup/LOCAL_MODE.md).
+
+**Cómo está hecho**
+- La app sigue usando la misma API v1. En modo local, un interceptor de OkHttp atiende esas llamadas dentro del
+  teléfono (`android/app/src/main/java/ai/nexus/app/local/`), así que las pantallas no cambiaron.
+- Los datos se guardan en SQLite local.
+- Los modelos de IA se llaman directo desde el teléfono con streaming. Proveedores soportados: Gemini, Groq,
+  OpenRouter, OpenAI, Anthropic, compatibles con OpenAI y Ollama en la red local. Hay respaldo automático entre modelos.
+- Los eventos en tiempo real salen del propio teléfono, sin WebSocket.
+- Se portaron desde el backend el clasificador de intenciones, el intérprete de fechas, el Action Registry, las
+  respuestas de JARVIS, el orquestador de misiones, las reuniones, las rutinas con límites y anti-bucle, la memoria y
+  STOP ALL.
+- Los datos fijos se exportan del backend Python a `assets/local/seed.json`: agentes, personalidades, catálogo de
+  acciones y eventos.
+
+**Verificación**
+
+| Prueba | Resultado |
+|---|---|
+| Equivalencia del clasificador Kotlin con el de Python (45 frases y respuestas pendientes; vectores generados por el backend en `shared/intent_vectors.json`) | ✅ idéntico |
+| Backend local de punta a punta con la API real de la app (equipo, recordatorio verificado, WhatsApp con número cifrado y «todavía no está enviado», sin modelo lo dice, STOP ALL) | ✅ |
+| Respuesta de modelo con streaming real (SSE), tokens, traza, colaboración real de ATLAS | ✅ (proveedor emulado con MockWebServer) |
+| Misión completa (plan → 2 tareas con dependencia → revisión de ORACLE → consolidación), reunión con acta, chat con CIPHER | ✅ |
+| Rutina diaria (cron, confirmación obligatoria, ejecución con límites) y recordatorio que se dispara una sola vez | ✅ |
+| Protocolos de Gemini y Anthropic (SSE, roles, encabezados, razonamiento oculto, error 429 transitorio) | ✅ |
+| UI real sin servidor: «Empezar en este teléfono» → Home en «MODO LOCAL» → recordatorio → aviso de falta de modelo → pantalla de proveedores gratuitos | ✅ con capturas |
+| Suite completa de la app | **35/35** |
+
+**Pendiente / no verificado**
+- No se probó con claves reales de Gemini o Groq: no hay claves en este entorno. Los adaptadores se probaron con
+  servidores que reproducen el formato exacto de cada API.
+- No se probó en un teléfono físico. En particular falta verificar el trabajo en segundo plano con la app cerrada: los
+  recordatorios dependen de WorkManager y Android puede demorarlos con ahorro de batería.
+- En modo local no hay búsqueda web, sandbox de código, WhatsApp Business ni comparador de modelos (requieren servidor).
+
+---
+
 # NEXUS 2.0 — JARVIS EVOLUTION
 
 Fecha: 22/11/2026. Base: NEXUS AI 1.0 (`e783d48`), auditada y ampliada sin reconstruir

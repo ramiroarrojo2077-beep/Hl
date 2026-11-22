@@ -47,6 +47,7 @@ open class NexusApplication : Application(), Configuration.Provider {
         container.scope.launch {
             container.session.session.map { it?.userId }.distinctUntilChanged().collect { userId ->
                 if (userId != null) {
+                    container.startLocalRuntime()
                     CrashReporter.flush(container)
                     PushSetup.registerToken(this@NexusApplication)
                     PushSetup.scheduleSync(this@NexusApplication)

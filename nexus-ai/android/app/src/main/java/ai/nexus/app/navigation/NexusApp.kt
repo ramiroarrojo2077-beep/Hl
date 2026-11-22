@@ -374,8 +374,11 @@ private fun TopBar(
 
 @Composable
 fun ConnectionIndicator(connection: ConnectionState, emergency: Boolean) {
+    val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as? ai.nexus.app.NexusApplication
+    val local = app?.container?.session?.prefs?.collectAsState()?.value?.serverUrl?.let { ai.nexus.app.local.isLocalUrl(it) } == true
     val (label, color) = when {
         emergency -> "AGENTES DETENIDOS" to NexusColors.Red
+        local -> "MODO LOCAL" to NexusColors.Green
         connection == ConnectionState.Connected -> "EN LÍNEA" to NexusColors.Green
         connection is ConnectionState.Reconnecting -> "RECONECTANDO (${connection.inSeconds}s)" to NexusColors.Amber
         connection == ConnectionState.Connecting -> "CONECTANDO…" to NexusColors.Amber

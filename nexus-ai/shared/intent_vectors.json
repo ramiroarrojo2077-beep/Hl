@@ -1,0 +1,626 @@
+{
+ "now": "2026-11-22T15:30:00-03:00",
+ "timezone": "America/Argentina/Buenos_Aires",
+ "cases": [
+  {
+   "text": "Recordame mañana a las 9 llamar al médico",
+   "category": "productivity",
+   "rule": "reminder",
+   "action_key": "reminder.create",
+   "params": {
+    "title": "Llamar al médico",
+    "at": "2026-11-23T09:00:00-03:00"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Mandale un mensaje a papá diciendo que llego tarde",
+   "category": "communication",
+   "rule": "whatsapp",
+   "action_key": "whatsapp.open_chat",
+   "params": {
+    "text": "Llego tarde",
+    "recipient_query": "papá"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Decile a Juan que ya salgo",
+   "category": "communication",
+   "rule": "whatsapp",
+   "action_key": "whatsapp.open_chat",
+   "params": {
+    "text": "Ya salgo",
+    "recipient_query": "Juan"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Mandale un WhatsApp a mamá en tono formal que mañana no voy",
+   "category": "communication",
+   "rule": "whatsapp",
+   "action_key": "whatsapp.open_chat",
+   "params": {
+    "text": "Mañana no voy",
+    "tone": "formal",
+    "recipient_query": "mamá"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Abrí Spotify",
+   "category": "phone_control",
+   "rule": "open_app",
+   "action_key": "device.open_app",
+   "params": {
+    "app": "Spotify"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Abrí la configuración de bluetooth",
+   "category": "phone_control",
+   "rule": "settings",
+   "action_key": "device.open_settings",
+   "params": {
+    "panel": "bluetooth"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Prendé el wifi",
+   "category": "phone_control",
+   "rule": "settings",
+   "action_key": "device.open_settings",
+   "params": {
+    "panel": "wifi"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Poneme una alarma a las 7",
+   "category": "productivity",
+   "rule": "alarm",
+   "action_key": "device.set_alarm",
+   "params": {
+    "hour": 7,
+    "minute": 0
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Poneme una alarma a las 7 de la tarde",
+   "category": "productivity",
+   "rule": "alarm",
+   "action_key": "device.set_alarm",
+   "params": {
+    "hour": 19,
+    "minute": 0
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Despertame a las 6 y media",
+   "category": "productivity",
+   "rule": "alarm",
+   "action_key": "device.set_alarm",
+   "params": {
+    "hour": 6,
+    "minute": 30
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Poné un temporizador de 10 minutos",
+   "category": "productivity",
+   "rule": "timer",
+   "action_key": "device.set_timer",
+   "params": {
+    "seconds": 600
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Temporizador de media hora",
+   "category": "productivity",
+   "rule": "timer",
+   "action_key": "device.set_timer",
+   "params": {
+    "seconds": 1800
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Pará",
+   "category": "conversation",
+   "rule": "control.stop",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": "stop",
+   "specialists": [],
+   "handler": "control"
+  },
+  {
+   "text": "Seguí",
+   "category": "conversation",
+   "rule": "control.resume",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": "resume",
+   "specialists": [],
+   "handler": "control"
+  },
+  {
+   "text": "Repetilo",
+   "category": "conversation",
+   "rule": "control.repeat",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": "repeat",
+   "specialists": [],
+   "handler": "control"
+  },
+  {
+   "text": "¿Cuál es la capital de Australia?",
+   "category": "information",
+   "rule": "model.information",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "model"
+  },
+  {
+   "text": "Hola nexus, ¿cómo andás?",
+   "category": "conversation",
+   "rule": "model.conversation",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "model"
+  },
+  {
+   "text": "Investigá precios de notebooks",
+   "category": "research",
+   "rule": "model.research",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [
+    "atlas"
+   ],
+   "handler": "model"
+  },
+  {
+   "text": "Escribime un mail para mi jefe",
+   "category": "productivity",
+   "rule": "model.productivity",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [
+    "nova"
+   ],
+   "handler": "model"
+  },
+  {
+   "text": "todos los días a las 8 recordame tomar agua",
+   "category": "automation",
+   "rule": "automation.schedule",
+   "action_key": "automation.create",
+   "params": {
+    "name": "Recordame tomar agua",
+    "trigger_type": "schedule",
+    "cron": "0 8 * * *",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "actions": [
+     {
+      "type": "notify",
+      "title": "Tomar agua",
+      "body": "Recordatorio de tu rutina."
+     }
+    ]
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Avisame cuando termine una misión",
+   "category": "automation",
+   "rule": "automation.event",
+   "action_key": "automation.create",
+   "params": {
+    "name": "Aviso cuando termine una misión",
+    "trigger_type": "event",
+    "event_type": "mission.completed",
+    "actions": [
+     {
+      "type": "notify",
+      "title": "Aviso: termine una misión",
+      "body": "Se cumplió la condición de tu rutina."
+     }
+    ],
+    "max_runs_per_day": 20
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Acordate de que soy alérgico a la penicilina",
+   "category": "memory_query",
+   "rule": "memory.save",
+   "action_key": "memory.remember",
+   "params": {
+    "content": "Soy alérgico a la penicilina",
+    "category": "health"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "¿Qué sabés de mí?",
+   "category": "memory_query",
+   "rule": "memory.query",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "memory_lookup"
+  },
+  {
+   "text": "Olvidate de la penicilina",
+   "category": "memory_query",
+   "rule": "memory.forget",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "memory_forget"
+  },
+  {
+   "text": "Creá una misión para comparar celulares de gama media",
+   "category": "project_management",
+   "rule": "mission",
+   "action_key": "mission.create",
+   "params": {
+    "objective": "Comparar celulares de gama media",
+    "title": "Comparar celulares de gama media"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Agendá una reunión el viernes a las 15 con el equipo",
+   "category": "organization",
+   "rule": "event",
+   "action_key": "device.calendar_event",
+   "params": {
+    "title": "Reunión con el equipo",
+    "start": "2026-11-27T15:00:00-03:00",
+    "end": "2026-11-27T16:00:00-03:00"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "¿Qué tengo mañana en la agenda?",
+   "category": "organization",
+   "rule": "agenda",
+   "action_key": "device.calendar_view",
+   "params": {
+    "date": "2026-11-23"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Cómo llego a Plaza de Mayo caminando",
+   "category": "phone_control",
+   "rule": "navigate",
+   "action_key": "device.navigate",
+   "params": {
+    "destination": "Plaza de Mayo",
+    "mode": "walking"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Buscá farmacias en el mapa",
+   "category": "phone_control",
+   "rule": "map_search",
+   "action_key": "device.map_search",
+   "params": {
+    "query": "farmacias"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Llamá a mi hermana",
+   "category": "communication",
+   "rule": "call",
+   "action_key": "device.dial",
+   "params": {
+    "recipient_query": "hermana"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Llamá al 11 2345 6789",
+   "category": "communication",
+   "rule": "call",
+   "action_key": "device.dial",
+   "params": {
+    "phone": "1123456789"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Recordame llamar a Pedro",
+   "category": "productivity",
+   "rule": "reminder",
+   "action_key": null,
+   "params": {},
+   "question": "¿Cuándo te lo recuerdo?",
+   "control": null,
+   "specialists": [],
+   "handler": "clarification"
+  },
+  {
+   "text": "Recordame el viernes comprar pan",
+   "category": "productivity",
+   "rule": "reminder",
+   "action_key": null,
+   "params": {},
+   "question": "¿A qué hora te lo recuerdo?",
+   "control": null,
+   "specialists": [],
+   "handler": "clarification"
+  },
+  {
+   "text": "Recordame en 20 minutos sacar la ropa",
+   "category": "productivity",
+   "rule": "reminder",
+   "action_key": "reminder.create",
+   "params": {
+    "title": "Sacar la ropa",
+    "at": "2026-11-22T15:50:00-03:00"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Abrí https://example.com",
+   "category": "information",
+   "rule": "open_url",
+   "action_key": "device.open_url",
+   "params": {
+    "url": "https://example.com"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Compartí tu última respuesta",
+   "category": "communication",
+   "rule": "share_last",
+   "action_key": "device.share_text",
+   "params": {
+    "text": "Respuesta anterior de NEXUS"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Agendá el número 1123456789 como Lucía",
+   "category": "organization",
+   "rule": "contact_create",
+   "action_key": "device.contact_create",
+   "params": {
+    "name": "Lucía",
+    "phone": "1123456789"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Ayudame a organizar la semana",
+   "category": "organization",
+   "rule": "model.organization",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "model"
+  },
+  {
+   "text": "Tengo un bug en mi script de python",
+   "category": "programming",
+   "rule": "model.programming",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": null,
+   "specialists": [
+    "cipher"
+   ],
+   "handler": "model"
+  },
+  {
+   "text": "Recordame el 25 de diciembre a la noche saludar a la abuela",
+   "category": "productivity",
+   "rule": "reminder",
+   "action_key": "reminder.create",
+   "params": {
+    "title": "Saludar a la abuela",
+    "at": "2026-12-25T21:00:00-03:00"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Abrí mis rutinas",
+   "category": "project_management",
+   "rule": "open_screen",
+   "action_key": "app.open_screen",
+   "params": {
+    "screen": "automations"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "Cada lunes a las 9 revisá mis misiones pendientes",
+   "category": "automation",
+   "rule": "automation.schedule",
+   "action_key": "automation.create",
+   "params": {
+    "name": "Revisá mis misiones pendientes",
+    "trigger_type": "schedule",
+    "cron": "0 9 * * 1",
+    "timezone": "America/Argentina/Buenos_Aires",
+    "actions": [
+     {
+      "type": "jarvis_prompt",
+      "prompt": "Revisá mis misiones pendientes"
+     }
+    ]
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "a las 10",
+   "pending": {
+    "kind": "reminder",
+    "title": "Llamar a Pedro",
+    "day": null
+   },
+   "category": "productivity",
+   "rule": "reminder.filled",
+   "action_key": "reminder.create",
+   "params": {
+    "title": "Llamar a Pedro",
+    "at": "2026-11-22T22:00:00-03:00"
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "de 5 minutos",
+   "pending": {
+    "kind": "timer"
+   },
+   "category": "productivity",
+   "rule": "timer.filled",
+   "action_key": "device.set_timer",
+   "params": {
+    "seconds": 300
+   },
+   "question": null,
+   "control": null,
+   "specialists": [],
+   "handler": "action"
+  },
+  {
+   "text": "no, dejalo",
+   "pending": {
+    "kind": "alarm"
+   },
+   "category": "conversation",
+   "rule": "pending.cancel",
+   "action_key": null,
+   "params": {},
+   "question": null,
+   "control": "cancel_pending",
+   "specialists": [],
+   "handler": "control"
+  }
+ ]
+}

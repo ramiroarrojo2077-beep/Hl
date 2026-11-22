@@ -47,3 +47,8 @@ Lista verificada con `aapt2 dump badging` sobre el APK 2.0.0 compilado.
 
 Solo con tu consentimiento (Más → Privacidad). Se envían a **tu** servidor, sin números de teléfono, emails ni
 tokens (se filtran antes de guardarse). Sin consentimiento, el registro local del fallo se borra al reabrir la app.
+
+## Modo local (2.1)
+
+No pide permisos nuevos. La clave del proveedor de IA se guarda cifrada con Android Keystore dentro de la app. Los
+recordatorios y rutinas usan WorkManager, que ya estaba incluido. Ver [LOCAL_MODE.md](LOCAL_MODE.md).

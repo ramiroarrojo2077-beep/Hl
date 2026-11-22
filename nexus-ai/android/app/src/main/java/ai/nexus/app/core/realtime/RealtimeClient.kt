@@ -72,6 +72,8 @@ class RealtimeClient(
     private val baseUrl: suspend () -> String,
     private val accessToken: suspend () -> String?,
     private val refreshAccess: suspend () -> Boolean,
+    /** Modo local: eventos del backend dentro del teléfono (sin WebSocket). Devuelve null en modo servidor. */
+    private val localEvents: suspend () -> SharedFlow<String>? = { null },
 ) {
     private val dedupe = EventDeduplicator()
 
@@ -108,6 +110,11 @@ class RealtimeClient(
             val token = accessToken()
             if (token == null) {
                 _state.value = ConnectionState.Disconnected
+                return
+            }
+            localEvents()?.let { flow ->
+                _state.value = ConnectionState.Connected
+                flow.collect { text -> parseEvent(text)?.let { if (dedupe.firstTime(it.id)) _events.tryEmit(it) } }
                 return
             }
             _state.value = ConnectionState.Connecting
