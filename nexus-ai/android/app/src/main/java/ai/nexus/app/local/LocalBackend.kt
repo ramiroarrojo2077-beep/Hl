@@ -73,8 +73,8 @@ class LocalBackend(
     }
 
     internal fun route(method: String, pattern: String, handler: suspend (Req, Map<String, String>) -> String) {
-        val names = Regex("""\{(\w+)}""").findAll(pattern).map { it.groupValues[1] }.toList()
-        val regex = Regex("^" + pattern.replace(Regex("""\{\w+}"""), "([^/]+)") + "$")
+        val names = Regex("""\{(\w+)\}""").findAll(pattern).map { it.groupValues[1] }.toList()
+        val regex = Regex("^" + pattern.replace(Regex("""\{\w+\}"""), "([^/]+)") + "$")
         routes += Route(method, regex, names, handler)
     }
 
