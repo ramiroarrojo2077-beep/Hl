@@ -454,7 +454,13 @@ private fun video(original: String, norm: String, ctx: ClassifyContext): Intent?
 private val AUTO_ON_RE = rx("""^(?:activ(?:a|ame)|habilit(?:a|ame)|prend(?:e|eme))\s+(?:el\s+)?(?:envio\s+automatico|modo\s+automatico|modo\s+comunidad)\s+(?:para|en)\s+(?:el\s+|la\s+)?(?:grupo\s+|chat\s+|comunidad\s+)?(?<chat>.+)$""")
 private val AUTO_OFF_RE = rx("""^(?:desactiv(?:a|ame)|apag(?:a|ame)|deshabilit(?:a|ame)|saca(?:me)?)\s+(?:el\s+)?(?:envio\s+automatico|modo\s+automatico|modo\s+comunidad)(?:\s+(?:para|en|de)\s+(?:el\s+|la\s+)?(?:grupo\s+|chat\s+|comunidad\s+)?(?<chat>.+))?$""")
 
+private val AUTO_LIMIT_RE = rx("""^(?:pon(?:e|eme)|sub(?:i|ime)|baja(?:me)?|cambi(?:a|ame)|configur(?:a|ame))\s+(?:el\s+)?(?:tope|limite|maximo)\s+(?:de\s+)?(?:envios\s+automaticos|mensajes\s+automaticos|envios)\s+(?:en|a|de)\s+(?<n>\d{1,3})(?:\s+(?:por\s+hora|x\s+hora|por\s+h))?$""")
+
 private fun autoSend(original: String, norm: String, ctx: ClassifyContext): Intent? {
+    AUTO_LIMIT_RE.lookingAt(norm)?.let { m ->
+        val n = m.group("n").toInt()
+        return Intent("communication", 0.93, "autosend.limit", actionKey = "autosend.limit", params = mutableMapOf("n" to n), summary = "Tope de envíos automáticos: $n por hora")
+    }
     AUTO_ON_RE.lookingAt(norm)?.let { m ->
         val chat = seg(original, m, "chat").trim(' ', '.', '!', '"', '«', '»')
         if (chat.isEmpty()) return null

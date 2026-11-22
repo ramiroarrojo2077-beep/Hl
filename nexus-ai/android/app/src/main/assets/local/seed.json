@@ -1428,6 +1428,30 @@
     "FAILED"
    ],
    "notes": ""
+  },
+  {
+   "key": "autosend.limit",
+   "name": "Tope de envíos automáticos",
+   "description": "Cuántos mensajes automáticos por hora puede mandar NEXUS (1 a 120).",
+   "category": "communication",
+   "risk": "SENSITIVE",
+   "operation": "modificación",
+   "executor": "server",
+   "params": {
+    "n": {
+     "type": "integer"
+    }
+   },
+   "required": [
+    "n"
+   ],
+   "android_permissions": [],
+   "always_confirm": true,
+   "result_states": [
+    "COMPLETED",
+    "FAILED"
+   ],
+   "notes": ""
   }
  ],
  "provider_kinds": [

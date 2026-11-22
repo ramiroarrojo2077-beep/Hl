@@ -84,7 +84,7 @@ NEXUS responde por WhatsApp con la **respuesta rápida de la notificación** (AP
 - «Respondele a X que …» envía sin confirmar si X está autorizado; en los demás chats sigue pidiendo confirmación.
 
 **Límites que no se pueden saltar**
-- Solo en chats que autorizaste; máximo **12 envíos por hora**; **STOP ALL** lo frena al instante.
+- Solo en chats que autorizaste; máximo **60 envíos por hora** (decí «poné el tope de envíos automáticos en N por hora», hasta 120) y 8 s de pausa entre envíos; **STOP ALL** lo frena al instante.
 - **Solo puede responder a chats con una notificación activa**, es decir, que acaban de escribir. No puede iniciar un mensaje nuevo en un grupo que está en silencio.
 - NEXUS nunca dice «enviado»: solo que se lo pasó a WhatsApp.
 - Los mensajes de esos chats se guardan únicamente en la memoria del teléfono (últimos 40) y se pierden al cerrar la app. NEXUS no lee los demás chats.

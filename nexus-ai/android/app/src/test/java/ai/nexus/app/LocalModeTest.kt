@@ -20,6 +20,7 @@ import ai.nexus.app.local.LocalLlm
 import ai.nexus.app.local.LocalStore
 import ai.nexus.app.local.classify
 import ai.nexus.app.local.tick
+import ai.nexus.app.local.minGapMs
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CoroutineScope
@@ -265,6 +266,7 @@ class LocalBackendTest {
 
     @Test fun autoSendOnlyInAuthorizedChatsWithLimits() = runBlocking {
         val sent = CopyOnWriteArrayList<Pair<String, String>>()
+        minGapMs = 0 // en la prueba no se espera entre envíos
         backend.waSender = { chat, text -> sent += chat to text; null }
         // Sin autorización: pide confirmación y no envía nada.
         val before = api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que hoy hay partido"))
@@ -281,9 +283,14 @@ class LocalBackendTest {
         assertTrue(auto.reply!!.content.contains("No puedo confirmar que se haya entregado"))
         // Otro chat sigue pidiendo confirmación.
         assertEquals("awaiting_confirmation", api.jarvisMessage(JarvisMessageBody("Respondele a Mamá que llego tarde")).action!!.status)
-        // Tope por hora: no pasa de 12 envíos automáticos.
+        // El tope se configura (con confirmación) y se respeta; por defecto son 60 por hora y el techo 120.
+        val limit = api.jarvisMessage(JarvisMessageBody("Poné el tope de envíos automáticos en 12 por hora"))
+        assertEquals("awaiting_confirmation", limit.action!!.status)
+        api.confirmAction(limit.action!!.id)
         repeat(14) { api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que mensaje número $it")) }
         assertEquals(12, sent.size)
+        val tooHigh = api.jarvisMessage(JarvisMessageBody("Poné el tope de envíos automáticos en 500 por hora"))
+        assertTrue(runCatching { api.confirmAction(tooHigh.action!!.id) }.isFailure || api.action(tooHigh.action!!.id).status == "failed")
         // STOP ALL frena el modo automático.
         api.clearEmergencyStop(false); api.emergencyStop("prueba")
         assertTrue(api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que hola")).action!!.status in setOf("blocked", "awaiting_confirmation"))

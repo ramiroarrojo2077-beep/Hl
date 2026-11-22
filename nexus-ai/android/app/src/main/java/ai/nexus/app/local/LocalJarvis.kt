@@ -198,7 +198,7 @@ private fun LocalBackend.executeServerAction(r: ActionRec, d: ActionDef, params:
         buildJsonObject { put("verified", a.a.status == "active"); put("state", "AUTOMATION_ACTIVE"); put("automation_id", a.a.id)
             a.a.nextRunAt?.let { put("next_run_at", it) } }
     }
-    "autosend.enable", "autosend.disable" -> executeAutosend(d.key, params)
+    "autosend.enable", "autosend.disable", "autosend.limit" -> executeAutosend(d.key, params)
     else -> throw bad("La acción ${d.key} no se ejecuta en el teléfono sin la app")
 }
 
@@ -325,7 +325,8 @@ private fun actionReply(intent: Intent, a: ActionDto, tz: java.time.ZoneId): Str
         "whatsapp.open_chat" -> if (p.str("text").isNullOrEmpty())
             "Te preparo el WhatsApp para $who. Escribí el mensaje en la vista previa y, cuando confirmes, abro WhatsApp. El envío lo hacés vos."
         else "Te preparé el WhatsApp para $who. Revisá el destinatario y el texto; cuando confirmes abro WhatsApp con el mensaje listo. El envío lo hacés vos desde WhatsApp."
-        "autosend.enable" -> "Para activar el envío automático en «${p.str("chat")}»: NEXUS va a responder solo ahí (máximo 12 por hora, solo cuando lo mencionen o usen !juego, !trivia o !resumen). Podés quitarlo cuando quieras. ¿Lo activo?"
+        "autosend.enable" -> "Para activar el envío automático en «${p.str("chat")}»: NEXUS va a responder solo ahí (con tope por hora y pausas entre mensajes, solo cuando lo mencionen o usen !juego, !trivia o !resumen). Podés quitarlo cuando quieras. ¿Lo activo?"
+        "autosend.limit" -> "Listo, el tope de envíos automáticos quedó en ${p.int("n")} por hora."
         "autosend.disable" -> "Listo, quité el envío automático."
         "whatsapp.reply" -> if (a.status == "completed") "Le pasé la respuesta a WhatsApp para «${p.str("chat")}». No puedo confirmar que se haya entregado." else "Te preparé la respuesta para «${p.str("chat")}». Al confirmar se la paso a WhatsApp con la respuesta rápida (solo funciona si ese chat acaba de escribir)."
         "device.dial" -> "Te dejo lista la llamada a $who. Al confirmar abro el marcador; la llamada la iniciás vos."

@@ -17,11 +17,14 @@ import java.util.concurrent.ConcurrentLinkedDeque
 /*
  * Envío automático y modo comunidad (WhatsApp), con las condiciones que lo hacen seguro:
  *  1. Solo en los chats que el usuario autorizó a mano («activá el envío automático para el grupo X», con confirmación única).
- *  2. Tope por hora (12) para no spamear ni arriesgar la cuenta. STOP ALL lo frena de inmediato.
+ *  2. Tope por hora (60 por defecto, configurable hasta 120) y pausa mínima de 8 s entre envíos. STOP ALL lo frena de inmediato.
  *  3. Solo responde cuando lo mencionan («nexus …») o usan un comando («!juego», «!trivia», «!resumen»).
  * El historial reciente de esos chats vive solo en la memoria del teléfono (se pierde al cerrar la app) y nunca se envía a otros chats.
  */
-private const val MAX_PER_HOUR = 12
+private const val DEFAULT_PER_HOUR = 60
+private const val CEILING_PER_HOUR = 120
+/** Pausa mínima entre envíos automáticos (los ráfagas son lo que más rápido hace que WhatsApp marque una cuenta). */
+var minGapMs = 8_000L
 private val sentAt = ConcurrentLinkedDeque<Long>()
 private val buffers = ConcurrentHashMap<String, ConcurrentLinkedDeque<String>>()
 private val handled = ConcurrentLinkedDeque<String>()
@@ -43,10 +46,14 @@ internal fun LocalBackend.setAutoChat(chat: String, on: Boolean) {
     saveSettings(s.copy(jarvis = JsonObject(s.jarvis + ("auto_send_chats" to JsonArray(next.map { JsonPrimitive(it) })))))
 }
 
-private fun underRateLimit(): Boolean {
+internal fun LocalBackend.hourlyCap(): Int =
+    ((settings().jarvis["auto_send_max"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: DEFAULT_PER_HOUR).coerceIn(1, CEILING_PER_HOUR)
+
+private fun LocalBackend.underRateLimit(): Boolean {
     val cut = System.currentTimeMillis() - 3_600_000
     while (sentAt.peekFirst()?.let { it < cut } == true) sentAt.pollFirst()
-    return sentAt.size < MAX_PER_HOUR
+    val last = sentAt.peekLast()
+    return sentAt.size < hourlyCap() && (last == null || System.currentTimeMillis() - last >= minGapMs)
 }
 
 internal fun LocalBackend.canAutoSend(chat: String): Boolean =
@@ -91,6 +98,12 @@ fun LocalBackend.communityIncoming(chat: String, text: String) {
 
 internal fun LocalBackend.executeAutosend(key: String, params: JsonObject): JsonObject {
     val chat = params.str("chat") ?: ""
+    if (key == "autosend.limit") {
+        val n = params.int("n") ?: throw bad("Indicá cuántos por hora")
+        if (n !in 1..CEILING_PER_HOUR) throw bad("El tope va de 1 a $CEILING_PER_HOUR por hora")
+        val s = settings(); saveSettings(s.copy(jarvis = JsonObject(s.jarvis + ("auto_send_max" to JsonPrimitive(n)))))
+        return buildJsonObject { put("verified", hourlyCap() == n); put("state", "AUTOSEND_LIMIT_SET"); put("n", n) }
+    }
     return if (key == "autosend.enable") {
         if (chat.trim().length < 2) throw bad("Decime el nombre exacto del grupo o chat")
         setAutoChat(chat, true)
