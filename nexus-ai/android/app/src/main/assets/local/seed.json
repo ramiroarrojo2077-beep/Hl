@@ -823,7 +823,8 @@
       "date",
       "language",
       "security",
-      "storage"
+      "storage",
+      "notification_access"
      ]
     }
    },
@@ -1346,6 +1347,85 @@
     "SHARE_SHEET_OPENED",
     "CANCELLED",
     "ERROR"
+   ],
+   "notes": ""
+  },
+  {
+   "key": "whatsapp.reply",
+   "name": "Responder en WhatsApp",
+   "description": "Responde a un chat de WhatsApp que tiene una notificación activa, con la respuesta rápida oficial de Android. No puede iniciar chats nuevos.",
+   "category": "communication",
+   "risk": "EXTERNAL_COMMUNICATION",
+   "operation": "comunicación",
+   "executor": "device",
+   "params": {
+    "chat": {
+     "type": "string",
+     "maxLength": 120
+    },
+    "text": {
+     "type": "string",
+     "maxLength": 4000
+    }
+   },
+   "required": [
+    "chat",
+    "text"
+   ],
+   "android_permissions": [],
+   "always_confirm": true,
+   "result_states": [
+    "WHATSAPP_REPLY_HANDED",
+    "CANCELLED",
+    "ERROR"
+   ],
+   "notes": "NEXUS nunca informa «enviado»: solo que se lo pasó a WhatsApp."
+  },
+  {
+   "key": "autosend.enable",
+   "name": "Activar envío automático",
+   "description": "Autoriza a NEXUS a responder solo, sin pedir confirmación, en un chat o grupo de WhatsApp que elegís.",
+   "category": "communication",
+   "risk": "SENSITIVE",
+   "operation": "modificación",
+   "executor": "server",
+   "params": {
+    "chat": {
+     "type": "string",
+     "maxLength": 120
+    }
+   },
+   "required": [
+    "chat"
+   ],
+   "android_permissions": [],
+   "always_confirm": true,
+   "result_states": [
+    "COMPLETED",
+    "FAILED"
+   ],
+   "notes": ""
+  },
+  {
+   "key": "autosend.disable",
+   "name": "Desactivar envío automático",
+   "description": "Quita la autorización de envío automático de un chat (o de todos).",
+   "category": "communication",
+   "risk": "LOCAL_REVERSIBLE",
+   "operation": "modificación",
+   "executor": "server",
+   "params": {
+    "chat": {
+     "type": "string",
+     "maxLength": 120
+    }
+   },
+   "required": [],
+   "android_permissions": [],
+   "always_confirm": false,
+   "result_states": [
+    "COMPLETED",
+    "FAILED"
    ],
    "notes": ""
   }

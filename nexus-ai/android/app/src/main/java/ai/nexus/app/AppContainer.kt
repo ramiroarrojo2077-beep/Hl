@@ -18,6 +18,7 @@ import ai.nexus.app.local.LocalLlm
 import ai.nexus.app.local.LocalScheduler
 import ai.nexus.app.local.LocalStore
 import ai.nexus.app.local.isLocalUrl
+import ai.nexus.app.local.communityIncoming
 import ai.nexus.app.local.recover
 import ai.nexus.app.local.tick
 import ai.nexus.app.push.NotificationHelper
@@ -113,6 +114,8 @@ class AppContainer(context: Context, private val crypto: SecretBox = CryptoBox()
                 }
             }
             b.scheduleWake = { delay -> LocalScheduler.wakeIn(appContext, delay) }
+            b.waSender = { chat, text -> ai.nexus.app.actions.WaReplyBridge.reply(appContext, chat, text) }
+            ai.nexus.app.actions.WaReplyBridge.onMessage = { chat, text -> b.communityIncoming(chat, text) }
         }
     }
 
@@ -122,7 +125,7 @@ class AppContainer(context: Context, private val crypto: SecretBox = CryptoBox()
     fun startLocalRuntime() {
         scope.launch {
             if (!isLocalUrl(session.serverUrl())) return@launch
-            runCatching { localBackend.recover() }
+            runCatching { localBackend.recover() } // también deja listos los puentes de WhatsApp
             realtime.start() // en modo local los eventos salen del propio teléfono: no hay red que cuidar
             LocalScheduler.periodic(appContext)
             if (localTicker?.isActive != true) localTicker = scope.launch {

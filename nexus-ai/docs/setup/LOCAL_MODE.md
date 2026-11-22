@@ -69,3 +69,23 @@ modelo compatible.
 
 Cerrá sesión (Ajustes) y en la pantalla inicial usá **Acceso al centro de control** con la URL de tu servidor. Los
 datos del modo local quedan en el teléfono y no se mezclan con los del servidor.
+
+## Comunidad y envío automático de WhatsApp (2.4)
+
+NEXUS responde por WhatsApp con la **respuesta rápida de la notificación** (API oficial de Android; no usa accesibilidad ni simula toques).
+
+**Activarlo**
+1. Ajustes de Android → *Notificaciones* → *Acceso a notificaciones* → activar NEXUS. (Decile «abrí el acceso a notificaciones» y te lleva.)
+2. Decile a NEXUS: **«Activá el envío automático para el grupo Avisos Amigos»** (usá el nombre exacto). Pide UNA confirmación.
+3. Para quitarlo: «Desactivá el envío automático» (todos) o «… en el grupo X».
+
+**Qué hace en los chats autorizados**
+- Cuando alguien lo menciona («nexus …») o usa **!juego**, **!trivia**, **!resumen**, NEXUS responde solo: propone juegos, interactúa y resume qué pasó, según los últimos mensajes.
+- «Respondele a X que …» envía sin confirmar si X está autorizado; en los demás chats sigue pidiendo confirmación.
+
+**Límites que no se pueden saltar**
+- Solo en chats que autorizaste; máximo **12 envíos por hora**; **STOP ALL** lo frena al instante.
+- **Solo puede responder a chats con una notificación activa**, es decir, que acaban de escribir. No puede iniciar un mensaje nuevo en un grupo que está en silencio.
+- NEXUS nunca dice «enviado»: solo que se lo pasó a WhatsApp.
+- Los mensajes de esos chats se guardan únicamente en la memoria del teléfono (últimos 40) y se pierden al cerrar la app. NEXUS no lee los demás chats.
+- Si WhatsApp o Meta cambian cómo funcionan las notificaciones, puede dejar de andar.

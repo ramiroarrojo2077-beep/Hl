@@ -49,7 +49,7 @@ object ActionExecutor {
         "data" to Settings.ACTION_DATA_ROAMING_SETTINGS, "airplane" to Settings.ACTION_AIRPLANE_MODE_SETTINGS,
         "nfc" to Settings.ACTION_NFC_SETTINGS, "accessibility" to Settings.ACTION_ACCESSIBILITY_SETTINGS,
         "date" to Settings.ACTION_DATE_SETTINGS, "language" to Settings.ACTION_LOCALE_SETTINGS,
-        "security" to Settings.ACTION_SECURITY_SETTINGS, "storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS,
+        "notification_access" to Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS, "security" to Settings.ACTION_SECURITY_SETTINGS, "storage" to Settings.ACTION_INTERNAL_STORAGE_SETTINGS,
     )
 
     fun settingsIntent(panel: String, packageName: String): Intent {
@@ -213,6 +213,12 @@ object ActionExecutor {
 
     /** Ejecuta la acción desde una Activity y devuelve lo que realmente pasó. */
     fun execute(activity: Activity, key: String, params: JsonObject): ExecResult {
+        if (key == "whatsapp.reply") {
+            val chat = params.str("chat") ?: ""
+            val err = WaReplyBridge.reply(activity.applicationContext, chat, params.str("text") ?: "")
+            return if (err == null) ExecResult("WHATSAPP_REPLY_HANDED", mapOf("contact_label" to chat.take(60), "text_chars" to (params.str("text") ?: "").length.toString()))
+            else ExecResult("ERROR", mapOf("error" to err))
+        }
         val (intent, state) = buildIntent(activity, key, params)
         if (intent == null) {
             return ExecResult(state, mapOf("error" to when (state) {

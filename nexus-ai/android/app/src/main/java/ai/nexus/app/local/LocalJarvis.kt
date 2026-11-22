@@ -29,7 +29,7 @@ import java.time.temporal.ChronoUnit
 private val ALWAYS_CONFIRM = setOf("EXTERNAL_COMMUNICATION", "SENSITIVE", "IRREVERSIBLE")
 private val FORCE_CONFIRM = setOf("mission.create", "automation.create")
 private val SUCCESS_STATES = setOf("WHATSAPP_OPENED", "DIALER_OPENED", "SHARE_SHEET_OPENED", "APP_OPENED", "SETTINGS_OPENED", "MAPS_OPENED", "ALARM_SET",
-    "TIMER_SET", "CALENDAR_OPENED", "CONTACTS_OPENED", "BROWSER_OPENED", "SCREEN_OPENED")
+    "TIMER_SET", "CALENDAR_OPENED", "CONTACTS_OPENED", "BROWSER_OPENED", "SCREEN_OPENED", "WHATSAPP_REPLY_HANDED")
 private val PROGRESS_STATES = setOf("DRAFT_CREATED", "CONTACT_RESOLVED", "AWAITING_CONFIRMATION", "READY_TO_OPEN")
 private val RESULT_KEYS = setOf("recipient_masked", "contact_label", "app_label", "package", "error", "text_chars", "edited", "tone", "panel", "destination")
 private const val CONFIRMATION_TTL_MIN = 30L
@@ -135,7 +135,9 @@ internal fun LocalBackend.propose(key: String, params: JsonObject, summary: Stri
     validateParams(d, params)?.let { throw bad(it) }
     val st = settings()
     val confirmLocal = st.jarvis["confirm_local_actions"]?.jsonPrimitive?.booleanOrNull == true || source == "automation"
-    val needs = d.needsConfirmation(confirmLocal)
+    // Envío automático: solo whatsapp.reply, solo en chats autorizados por el usuario, con tope por hora y sin STOP ALL.
+    val auto = key == "whatsapp.reply" && source != "user" && canAutoSend(params.str("chat") ?: "")
+    val needs = !auto && d.needsConfirmation(confirmLocal)
     val (stored, enc) = sanitize(d, params)
     val now = Instant.now()
     var r = ActionRec(ActionDto(newId(), key, d.name, d.category, d.executor, d.risk, d.operation, stored, summary.take(2000), "awaiting_confirmation",
@@ -143,7 +145,8 @@ internal fun LocalBackend.propose(key: String, params: JsonObject, summary: Stri
         now.plus(CONFIRMATION_TTL_MIN, ChronoUnit.MINUTES).toString()), enc, user().id)
     if (st.settings.emergencyStop && source != "user" && d.risk != "READ_ONLY") {
         r = r.copy(a = r.a.copy(status = "blocked", error = "STOP ALL está activo: no se ejecutan acciones propuestas automáticamente.", expiresAt = null))
-    } else if (!needs) r = start(r, d, params)
+    } else if (auto) r = autoRun(r, params)
+    else if (!needs) r = start(r, d, params)
     saveAction(r)
     activity("action.proposed", "Acción propuesta: ${d.name}", "info", actor = if (source == "user") "user" else "agent")
     publishAction(r)
@@ -195,6 +198,7 @@ private fun LocalBackend.executeServerAction(r: ActionRec, d: ActionDef, params:
         buildJsonObject { put("verified", a.a.status == "active"); put("state", "AUTOMATION_ACTIVE"); put("automation_id", a.a.id)
             a.a.nextRunAt?.let { put("next_run_at", it) } }
     }
+    "autosend.enable", "autosend.disable" -> executeAutosend(d.key, params)
     else -> throw bad("La acción ${d.key} no se ejecuta en el teléfono sin la app")
 }
 
@@ -268,6 +272,7 @@ private fun LocalBackend.recordActionOutcome(r: ActionRec) {
     val text = when (r.a.stateDetail) {
         "WHATSAPP_OPENED" -> "Abrí WhatsApp con el mensaje para $who. Todavía no está enviado: el envío lo confirmás vos en WhatsApp."
         "DIALER_OPENED" -> "Abrí el marcador con el número de $who."
+        "WHATSAPP_REPLY_HANDED" -> "Le pasé la respuesta a WhatsApp para ${p.str("chat") ?: who}. No puedo confirmar que se haya entregado: revisalo en WhatsApp."
         "APP_NOT_FOUND" -> "No encontré una app instalada llamada «${p.str("app") ?: ""}»."
         else -> when (r.a.status) { "failed" -> "La acción «${r.a.summary.take(100)}» falló: ${r.a.error}"; "cancelled" -> "Listo, lo cancelé."; else -> return }
     }
@@ -320,6 +325,9 @@ private fun actionReply(intent: Intent, a: ActionDto, tz: java.time.ZoneId): Str
         "whatsapp.open_chat" -> if (p.str("text").isNullOrEmpty())
             "Te preparo el WhatsApp para $who. Escribí el mensaje en la vista previa y, cuando confirmes, abro WhatsApp. El envío lo hacés vos."
         else "Te preparé el WhatsApp para $who. Revisá el destinatario y el texto; cuando confirmes abro WhatsApp con el mensaje listo. El envío lo hacés vos desde WhatsApp."
+        "autosend.enable" -> "Para activar el envío automático en «${p.str("chat")}»: NEXUS va a responder solo ahí (máximo 12 por hora, solo cuando lo mencionen o usen !juego, !trivia o !resumen). Podés quitarlo cuando quieras. ¿Lo activo?"
+        "autosend.disable" -> "Listo, quité el envío automático."
+        "whatsapp.reply" -> if (a.status == "completed") "Le pasé la respuesta a WhatsApp para «${p.str("chat")}». No puedo confirmar que se haya entregado." else "Te preparé la respuesta para «${p.str("chat")}». Al confirmar se la paso a WhatsApp con la respuesta rápida (solo funciona si ese chat acaba de escribir)."
         "device.dial" -> "Te dejo lista la llamada a $who. Al confirmar abro el marcador; la llamada la iniciás vos."
         "device.open_app" -> if (!waiting) "Abriendo ${p.str("app")}." else "¿Abro ${p.str("app")}?"
         "device.open_settings" -> ((intent.extra["note"] as? String)?.let { "$it " } ?: "") + "Te abro la configuración."

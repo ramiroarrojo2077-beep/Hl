@@ -263,6 +263,33 @@ class LocalBackendTest {
         assertTrue(prompts.any { "Sos CIPHER" in it })
     }
 
+    @Test fun autoSendOnlyInAuthorizedChatsWithLimits() = runBlocking {
+        val sent = CopyOnWriteArrayList<Pair<String, String>>()
+        backend.waSender = { chat, text -> sent += chat to text; null }
+        // Sin autorización: pide confirmación y no envía nada.
+        val before = api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que hoy hay partido"))
+        assertEquals("awaiting_confirmation", before.action!!.status)
+        assertTrue(sent.isEmpty())
+        // Autorizar el chat requiere UNA confirmación explícita.
+        val enable = api.jarvisMessage(JarvisMessageBody("Activá el envío automático para el grupo Avisos Amigos"))
+        assertEquals("awaiting_confirmation", enable.action!!.status)
+        assertEquals("completed", api.confirmAction(enable.action!!.id).status)
+        // Chat autorizado: envía solo, y lo dice sin afirmar entrega.
+        val auto = api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que hoy hay partido"))
+        assertEquals("completed", auto.action!!.status)
+        assertEquals(listOf("Avisos Amigos" to "Hoy hay partido"), sent.toList())
+        assertTrue(auto.reply!!.content.contains("No puedo confirmar que se haya entregado"))
+        // Otro chat sigue pidiendo confirmación.
+        assertEquals("awaiting_confirmation", api.jarvisMessage(JarvisMessageBody("Respondele a Mamá que llego tarde")).action!!.status)
+        // Tope por hora: no pasa de 12 envíos automáticos.
+        repeat(14) { api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que mensaje número $it")) }
+        assertEquals(12, sent.size)
+        // STOP ALL frena el modo automático.
+        api.clearEmergencyStop(false); api.emergencyStop("prueba")
+        assertTrue(api.jarvisMessage(JarvisMessageBody("Respondele a Avisos Amigos que hola")).action!!.status in setOf("blocked", "awaiting_confirmation"))
+        assertEquals(12, sent.size)
+    }
+
     @Test fun routinesFireWithLimitsAndNoLoops() = runBlocking {
         val r = api.jarvisMessage(JarvisMessageBody("todos los días a las 8 recordame tomar agua", timezone = "America/Argentina/Buenos_Aires"))
         assertEquals("awaiting_confirmation", r.action!!.status) // crear rutinas siempre se confirma

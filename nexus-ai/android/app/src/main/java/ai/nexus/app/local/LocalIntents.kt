@@ -219,7 +219,7 @@ private val TONES = mapOf("formal" to "formal", "informal" to "informal", "amist
     "breve" to "breve", "corto" to "breve", "corta" to "breve", "profesional" to "profesional", "explicativo" to "explicativo",
     "explicativa" to "explicativo", "detallado" to "explicativo")
 private val SETTINGS_WORDS = listOf(
-    "wi fi" to "wifi", "wifi" to "wifi", "internet" to "wifi", "bluetooth" to "bluetooth", "pantalla" to "display",
+    "acceso a notificaciones" to "notification_access", "wi fi" to "wifi", "wifi" to "wifi", "internet" to "wifi", "bluetooth" to "bluetooth", "pantalla" to "display",
     "brillo" to "display", "sonido" to "sound", "volumen" to "sound", "bateria" to "battery", "ubicacion" to "location",
     "gps" to "location", "aplicaciones" to "apps", "apps" to "apps", "notificaciones" to "notifications",
     "datos" to "data", "modo avion" to "airplane", "avion" to "airplane", "nfc" to "nfc", "accesibilidad" to "accessibility",
@@ -389,7 +389,7 @@ fun classify(text: String, ctx: ClassifyContext): Intent {
     if (CONTROL_RESUME.lookingAt(n) != null) return Intent("conversation", 0.99, "control.resume", control = "resume")
     if (CONTROL_REPEAT.lookingAt(n) != null) return Intent("conversation", 0.95, "control.repeat", control = "repeat")
     if (ctx.pending != null) fillPending(original, norm, ctx)?.let { return it }
-    val rules: List<(String, String, ClassifyContext) -> Intent?> = listOf(::video, ::whatsapp, ::call, ::alarm, ::timer, ::reminder, ::event, ::agenda,
+    val rules: List<(String, String, ClassifyContext) -> Intent?> = listOf(::video, ::autoSend, ::waReply, ::whatsapp, ::call, ::alarm, ::timer, ::reminder, ::event, ::agenda,
         ::contactCreate, ::settings, ::navigation, ::map, ::openUrl, ::openProject, ::openScreen, ::share, ::memorySave, ::memoryQuery,
         ::memoryForget, ::mission, ::automation, ::openApp)
     for (r in rules) r(original, norm, ctx)?.let { return it }
@@ -449,6 +449,35 @@ private fun video(original: String, norm: String, ctx: ClassifyContext): Intent?
     if (topic.length < 3) return Intent("productivity", 0.85, "video", question = "¿Sobre qué querés el video? Contame el tema y el mensaje.", missing = listOf("topic"),
         extra = mutableMapOf("pending" to mapOf("kind" to "video")))
     return Intent("productivity", 0.9, "video", params = mutableMapOf("topic" to cap(topic)), summary = "Video: ${topic.take(80)}", specialists = listOf("nova"))
+}
+
+private val AUTO_ON_RE = rx("""^(?:activ(?:a|ame)|habilit(?:a|ame)|prend(?:e|eme))\s+(?:el\s+)?(?:envio\s+automatico|modo\s+automatico|modo\s+comunidad)\s+(?:para|en)\s+(?:el\s+|la\s+)?(?:grupo\s+|chat\s+|comunidad\s+)?(?<chat>.+)$""")
+private val AUTO_OFF_RE = rx("""^(?:desactiv(?:a|ame)|apag(?:a|ame)|deshabilit(?:a|ame)|saca(?:me)?)\s+(?:el\s+)?(?:envio\s+automatico|modo\s+automatico|modo\s+comunidad)(?:\s+(?:para|en|de)\s+(?:el\s+|la\s+)?(?:grupo\s+|chat\s+|comunidad\s+)?(?<chat>.+))?$""")
+
+private fun autoSend(original: String, norm: String, ctx: ClassifyContext): Intent? {
+    AUTO_ON_RE.lookingAt(norm)?.let { m ->
+        val chat = seg(original, m, "chat").trim(' ', '.', '!', '"', '«', '»')
+        if (chat.isEmpty()) return null
+        return Intent("communication", 0.93, "autosend.enable", actionKey = "autosend.enable", params = mutableMapOf("chat" to chat), summary = "Activar el envío automático en $chat")
+    }
+    AUTO_OFF_RE.lookingAt(norm)?.let { m ->
+        val chat = (if (m.g("chat") != null) seg(original, m, "chat") else "").trim(' ', '.', '!', '"', '«', '»')
+        return Intent("communication", 0.93, "autosend.disable", actionKey = "autosend.disable", params = mutableMapOf("chat" to chat),
+            summary = if (chat.isEmpty()) "Desactivar el envío automático en todos los chats" else "Desactivar el envío automático en $chat")
+    }
+    return null
+}
+
+private val WA_REPLY_RE = rx("""^(?:respond(?:e|ele)|contest(?:a|ale))\s+(?:en\s+whatsapp\s+)?(?:a\s+|al\s+grupo\s+|en\s+el\s+grupo\s+)?(?<chat>.+?)\s*(?:,|:|que|diciendo(?:le)?)\s+(?<body>.+)$""")
+
+/** «Respondele a Juan que ya llego»: responde con la respuesta rápida de la notificación de WhatsApp (chat con notificación activa). */
+private fun waReply(original: String, norm: String, ctx: ClassifyContext): Intent? {
+    val m = WA_REPLY_RE.lookingAt(norm) ?: return null
+    val chat = cleanRecipient(seg(original, m, "chat"))
+    val body = cap(seg(original, m, "body"))
+    if (chat.isEmpty() || body.length < 2) return null
+    return Intent("communication", 0.9, "whatsapp.reply", actionKey = "whatsapp.reply", params = mutableMapOf("chat" to chat, "text" to body),
+        summary = "Responder en WhatsApp a $chat: «${body.take(70)}»")
 }
 
 private fun call(original: String, norm: String, ctx: ClassifyContext): Intent? {

@@ -65,6 +65,8 @@ class LocalBackend(
     internal val cancelRequested = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     internal var notifier: (NotificationDto) -> Unit = {}
     internal var scheduleWake: (Long) -> Unit = {}
+    /** Envía una respuesta por la notificación de WhatsApp. Devuelve null si se la pasó a WhatsApp, o el motivo del fallo. */
+    internal var waSender: (String, String) -> String? = { _, _ -> "El envío automático no está disponible" }
 
     init {
         registerCore()
