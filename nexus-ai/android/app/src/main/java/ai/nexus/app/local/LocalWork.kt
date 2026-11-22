@@ -242,6 +242,10 @@ internal fun LocalBackend.createAutomation(p: JsonObject, createdBy: String): Au
         "notify", "reminder" -> if (act.str("title").isNullOrBlank()) throw bad("La notificación necesita un título")
         "mission" -> if ((act.str("objective") ?: "").trim().length < 5) throw bad("La misión necesita un objetivo")
         "jarvis_prompt" -> if ((act.str("prompt") ?: "").trim().length < 3) throw bad("Falta la instrucción para NEXUS")
+        "draft_share" -> {
+            if ((act.str("prompt") ?: "").trim().length < 3) throw bad("Falta qué querés que NEXUS prepare")
+            if ((act.str("target") ?: "any") !in setOf("any", "whatsapp", "whatsapp_business", "instagram")) throw bad("Destino inválido")
+        }
         "action" -> {
             val d = actionDefs()[act.str("action_key") ?: ""] ?: throw bad("Acción del registry desconocida")
             if (d.key == "automation.create") throw bad("Una automatización no puede crear otras automatizaciones")
@@ -317,6 +321,21 @@ internal fun LocalBackend.runAutomation(id: String, trigger: String, data: Map<S
                     } catch (e: Exception) { notify("important_error", "Rutina «${rec.a.name.take(60)}»", "No pude ejecutarla: ${e.message}") }
                 }
                 results += buildJsonObject { put("type", "jarvis_prompt"); put("queued", true) }
+            }
+            "draft_share" -> {
+                // Semi-automático: NEXUS redacta a la hora indicada y deja el envío listo; vos confirmás y tocás Enviar.
+                val prompt = act.str("prompt")!!; val target = act.str("target") ?: "any"
+                scope.launch {
+                    try {
+                        val (r, _) = runAgent(agentBySlug("nova") ?: nexus(), "Escribí el mensaje listo para publicar, para mi comunidad de amigos (tono cercano, español rioplatense, " +
+                            "sin inventar datos). Pedido: $prompt\n\nDevolvé SOLO el texto del mensaje.", emptyList(), 1200, "automation")
+                        val text = r.text.trim().trim('"').take(3500)
+                        val a = propose("device.share_text", buildJsonObject { put("text", text); put("target", target); put("title", rec.a.name.take(60)) },
+                            "Publicar: ${rec.a.name.take(80)}", "automation")
+                        notify("automation", "Listo para publicar: ${rec.a.name.take(60)}", "Tocá para revisar y enviar (${a.a.summary.take(80)}).", mapOf("route" to "actions"))
+                    } catch (e: Exception) { notify("important_error", "Rutina «${rec.a.name.take(60)}»", "No pude preparar el mensaje: ${e.message}") }
+                }
+                results += buildJsonObject { put("type", "draft_share"); put("queued", true) }
             }
             "action" -> {
                 val a = propose(act.str("action_key")!!, act["params"] as? JsonObject ?: JsonObject(emptyMap()), act.str("summary") ?: rec.a.name, "automation")

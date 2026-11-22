@@ -141,8 +141,14 @@ object ActionExecutor {
             val number = p.str("phone")?.filter { it.isDigit() || it == '+' }
             if (number.isNullOrEmpty()) null to "ERROR" else Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")) to "DIALER_OPENED"
         }
-        "device.share_text" -> Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, p.str("text") ?: ""), p.str("title") ?: "Compartir") to "SHARE_SHEET_OPENED"
+        "device.share_text" -> {
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, p.str("text") ?: "")
+            // Con destino (WhatsApp/Instagram) se abre directo esa app: ahí elegís el grupo o el chat y tocás Enviar.
+            val pkg = when (p.str("target")) { "whatsapp" -> "com.whatsapp"; "whatsapp_business" -> "com.whatsapp.w4b"; "instagram" -> "com.instagram.android"; else -> null }
+            val installed = pkg != null && runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
+            if (installed) send.setPackage(pkg)
+            (if (installed) send else Intent.createChooser(send, p.str("title") ?: "Compartir")) to "SHARE_SHEET_OPENED"
+        }
         "device.open_settings" -> settingsIntent(p.str("panel") ?: "general", context.packageName) to "SETTINGS_OPENED"
         "device.navigate" -> {
             val mode = when (p.str("mode")) { "walking" -> "walking"; "bicycling" -> "bicycling"; "transit" -> "transit"; else -> "driving" }

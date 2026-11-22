@@ -704,7 +704,14 @@ private fun automation(original: String, norm: String, ctx: ClassifyContext): In
     val actions = if (rm != null) {
         val what = cap(body.substring(rm.start("what")))
         listOf(mapOf("type" to "notify", "title" to what.take(200), "body" to "Recordatorio de tu rutina."))
-    } else listOf(mapOf("type" to "jarvis_prompt", "prompt" to cap(body)))
+    } else {
+        val social = rx("""\b(whatsapp|wsp|wpp|grupo|comunidad|instagram|insta)\b""").findM(normalize(body))
+        if (social != null) {
+            val n = normalize(body)
+            val target = if (n.contains("instagram") || n.contains("insta")) "instagram" else if (n.contains("whatsapp") || n.contains("wsp") || n.contains("wpp") || n.contains("grupo") || n.contains("comunidad")) "whatsapp" else "any"
+            listOf(mapOf("type" to "draft_share", "prompt" to cap(body), "target" to target))
+        } else listOf(mapOf("type" to "jarvis_prompt", "prompt" to cap(body)))
+    }
     val params = mutableMapOf<String, Any?>("name" to cap(body).take(200), "trigger_type" to "schedule", "cron" to cron, "timezone" to ctx.timezone, "actions" to actions)
     return Intent("automation", 0.88, "automation.schedule", actionKey = "automation.create", params = params,
         summary = "Rutina $whenLabel: ${cap(body).take(100)}", assumptions = w.assumptions)

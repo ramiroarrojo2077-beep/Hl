@@ -170,7 +170,8 @@ _register(ActionDef(
     key="device.share_text", name="Compartir texto",
     description="Abre el selector de Android para compartir un texto con la app que elija el usuario.",
     category="communication", risk=Risk.EXTERNAL_COMMUNICATION, operation="comunicación", executor="device",
-    params={"text": {**S, "maxLength": 8000}, "title": {**S, "maxLength": 120}}, required=("text",),
+    params={"text": {**S, "maxLength": 8000}, "title": {**S, "maxLength": 120},
+            "target": {**S, "enum": ["any", "whatsapp", "whatsapp_business", "instagram"]}}, required=("text",),
     result_states=("SHARE_SHEET_OPENED", "CANCELLED", "ERROR"),
 ))
 _register(ActionDef(

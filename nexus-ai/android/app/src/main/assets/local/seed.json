@@ -722,6 +722,15 @@
     "title": {
      "type": "string",
      "maxLength": 120
+    },
+    "target": {
+     "type": "string",
+     "enum": [
+      "any",
+      "whatsapp",
+      "whatsapp_business",
+      "instagram"
+     ]
     }
    },
    "required": [
@@ -1347,6 +1356,7 @@
  },
  "automation_action_types": [
   "action",
+  "draft_share",
   "jarvis_prompt",
   "mission",
   "notify",
