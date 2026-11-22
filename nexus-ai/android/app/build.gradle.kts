@@ -23,8 +23,8 @@ android {
         applicationId = "ai.nexus.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.4.1"
+        versionCode = 9
+        versionName = "2.4.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"${prop("nexus.defaultServerUrl")}\"")

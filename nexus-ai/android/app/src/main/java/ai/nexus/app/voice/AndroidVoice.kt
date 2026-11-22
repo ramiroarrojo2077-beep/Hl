@@ -53,6 +53,12 @@ class AndroidRecognizer(private val context: Context) : Recognizer {
         override fun onBufferReceived(buffer: ByteArray?) = Unit
         override fun onEndOfSpeech() = Unit
         override fun onError(error: Int) {
+            // Sin el paquete de voz sin conexión (o con el motor local caído) se reintenta una vez con el reconocimiento normal.
+            if (triedOffline && !retried && error in setOf(SpeechRecognizer.ERROR_CLIENT, SpeechRecognizer.ERROR_SERVER, 11, 12, 13)) {
+                retried = true
+                Handler(Looper.getMainLooper()).post { sr?.destroy(); sr = null; begin(lastLanguage, offline = false) }
+                return
+            }
             val (code, msg) = when (error) {
                 SpeechRecognizer.ERROR_NO_MATCH -> VoiceError.NO_MATCH to "No entendí. Probá de nuevo."
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> VoiceError.TIMEOUT to "No escuché nada."
@@ -60,6 +66,9 @@ class AndroidRecognizer(private val context: Context) : Recognizer {
                 SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> VoiceError.NETWORK to "El reconocimiento necesita conexión y no la hay."
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> VoiceError.BUSY to "El reconocedor está ocupado."
                 SpeechRecognizer.ERROR_AUDIO -> VoiceError.AUDIO to "No se pudo usar el micrófono."
+                12, 13 -> VoiceError.UNAVAILABLE to "Falta el idioma español en el reconocimiento de voz. Instalalo en Ajustes → Idioma → Voz, o usá el teclado de voz de Google."
+                SpeechRecognizer.ERROR_SERVER, 11 -> VoiceError.NETWORK to "El servicio de voz de Android no respondió. Revisá que tengas la app de Google actualizada."
+                SpeechRecognizer.ERROR_CLIENT -> VoiceError.OTHER to "El reconocedor de voz no pudo iniciar (error 5). Cerrá y volvé a abrir NEXUS."
                 else -> VoiceError.OTHER to "Error de reconocimiento ($error)."
             }
             listener?.onError(code, msg)
@@ -74,7 +83,20 @@ class AndroidRecognizer(private val context: Context) : Recognizer {
         override fun onEvent(eventType: Int, params: Bundle?) = Unit
     }
 
+    private var triedOffline = false
+    private var retried = false
+    private var lastLanguage = "es-AR"
+
     override fun start(language: String, preferOffline: Boolean) {
+        retried = false
+        // Solo se pide «sin conexión» si el teléfono tiene un reconocedor local real; si no, pedirlo hace fallar el micrófono.
+        begin(language, preferOffline && onDeviceAvailable())
+    }
+
+    private fun begin(language: String, offline: Boolean) {
+        lastLanguage = language
+        triedOffline = offline
+        val preferOffline = offline
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
@@ -85,7 +107,9 @@ class AndroidRecognizer(private val context: Context) : Recognizer {
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1200L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 900L)
         }
-        create(preferOffline).startListening(intent)
+        runCatching { create(preferOffline).startListening(intent) }.onFailure {
+            listener?.onError(VoiceError.OTHER, "No se pudo iniciar el reconocimiento de voz: ${it.javaClass.simpleName}")
+        }
     }
 
     override fun stop() { sr?.stopListening() }
